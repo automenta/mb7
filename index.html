@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Collaborative Reality Editor – Inline Tag Editor & Matching</title>
+    <style>
+        /* Global & Layout Styles */
+        body { margin: 0; font-family: Arial, sans-serif; }
+        .container { display: flex; height: 100vh; }
+        .sidebar-left {
+            width: 220px;
+            background: #f0f0f0;
+            padding: 10px;
+            border-right: 1px solid #ccc;
+            overflow-y: auto;
+        }
+        .sidebar-left h3 { margin-top: 0; }
+        .sidebar-left ul { list-style: none; padding: 0; }
+        .sidebar-left li { margin: 5px 0; }
+        .sidebar-left a { text-decoration: none; color: #333; cursor: pointer; }
+        .main-content { flex: 1; display: flex; flex-direction: column; }
+        .content { flex: 1; padding: 10px; overflow-y: auto; }
+        .view { display: none; }
+        .view.active { display: block; }
+        .filter-bar { margin-bottom: 10px; }
+        .filter-bar input { padding: 5px; width: 200px; margin-right: 5px; }
+        #object-list .object-item {
+            border: 1px solid #ccc;
+            margin-bottom: 5px;
+            padding: 5px;
+            cursor: pointer;
+        }
+        #object-list .object-item:hover { background: #fafafa; }
+        .toolbar {
+            background: #eee;
+            padding: 5px;
+            border: 1px solid #ccc;
+            position: relative;
+        }
+        .toolbar button { margin-right: 5px; }
+        /* Editor & Inline Tag Styles */
+        #editor {
+            border: 1px solid #ccc;
+            min-height: 200px;
+            padding: 10px;
+            margin-bottom: 5px;
+        }
+        .metadata-panel { margin-bottom: 5px; }
+        /* Inline Tag Widget */
+        .inline-tag {
+            display: inline-block;
+            background: #eef;
+            border: 1px solid #99c;
+            border-radius: 3px;
+            padding: 2px 4px;
+            margin: 0 2px;
+            vertical-align: middle;
+            cursor: pointer;
+        }
+        .inline-tag input {
+            width: 50px;
+            margin: 0 2px;
+            border: none;
+            background: #eef;
+            text-align: center;
+        }
+        .inline-tag .tag-controls {
+            display: inline-block;
+            margin-left: 4px;
+            font-size: 0.8em;
+            color: #666;
+        }
+        .inline-tag .tag-controls button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #c00;
+        }
+        /* Tag Insertion Menu / Ontology Browser */
+        #tag-menu {
+            position: absolute;
+            background: #fff;
+            border: 1px solid #ccc;
+            padding: 10px;
+            display: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            z-index: 1100;
+        }
+        #tag-menu ul { list-style: none; padding: 0; margin: 0; }
+        #tag-menu li { padding: 3px 0; cursor: pointer; }
+        #tag-menu li:hover { background: #f0f0f0; }
+        /* Notification Area */
+        #notification-area {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 300px;
+            background: #ffffcc;
+            border: 1px solid #cccc99;
+            padding: 10px;
+            display: none;
+            z-index: 1200;
+        }
+    </style>
+    <!-- jQuery is used for concise DOM manipulation -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Our module script below -->
+    <script type="module">
+        import { relayInit, getEventHash, signEvent, getPublicKey } from "https://esm.sh/nostr-tools@1.8.0";
+
+        /************************************
+         * Utility Functions
+         ************************************/
+        function generateUUID() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c =>
+                ((Math.random() * 16) | 0).toString(16)
+            );
+        }
+        // Insert a jQuery node at the saved selection (or current cursor) in the editor.
+        function insertNodeAtCursor($node) {
+            const editor = document.getElementById("editor");
+            editor.focus();
+            const sel = window.getSelection();
+            let range;
+            if (sel && sel.rangeCount > 0) {
+                range = sel.getRangeAt(0);
+            } else if (window.savedRange) {
+                range = window.savedRange;
+                sel.removeAllRanges();
+                sel.addRange(range);
+            }
+            if (range) {
+                range.deleteContents();
+                range.insertNode($node.get(0));
+                range.setStartAfter($node.get(0));
+                range.collapse(true);
+                sel.removeAllRanges();
+                sel.addRange(range);
+                // Save updated range.
+                window.savedRange = range;
+            }
+        }
+
+        /************************************
+         * Extended Ontology Definition
+         ************************************/
+            // Each tag now has allowed conditions (with labels), a default condition,
+            // and allowed natures (definite vs. indefinite).
+        const ontology = {
+                "General": {
+                    "Location": {
+                        dataType: "location",
+                        conditions: {
+                            "exact": { label: "is exactly" },
+                            "approx": { label: "is near" }
+                        },
+                        defaultCondition: "exact",
+                        allowedNatures: ["definite", "indefinite"]
+                    },
+                    "Time": {
+                        dataType: "time",
+                        conditions: {
+                            "exact": { label: "is exactly" },
+                            "before": { label: "is before" },
+                            "after": { label: "is after" },
+                            "between": { label: "is between" }
+                        },
+                        defaultCondition: "exact",
+                        allowedNatures: ["definite", "indefinite"]
+                    }
+                },
+                "Emotion": {
+                    "Mood": {
+                        dataType: "string",
+                        conditions: {
+                            "exact": { label: "is" }
+                        },
+                        defaultCondition: "exact",
+                        allowedNatures: ["definite"]
+                    }
+                }
+            };
+
+        // Utility to locate a tag definition by name.
+        function findTagDefinition(tagName) {
+            for (let cat in ontology) {
+                if (ontology[cat][tagName]) return ontology[cat][tagName];
+            }
+            return null;
+        }
+
+        /************************************
+         * Inline Tag Widget (Editor Component)
+         ************************************/
+        class InlineTagWidget {
+            constructor(tagName, condition, value, nature) {
+                this.tagName = tagName;
+                const tagDef = findTagDefinition(tagName);
+                this.condition = condition || (tagDef ? tagDef.defaultCondition : "exact");
+                // For 'between', value is expected to be an object with lower/upper fields.
+                this.value = value || (this.condition === "between" ? { lower: "", upper: "" } : "");
+                this.nature = nature || (tagDef && tagDef.allowedNatures.includes("definite") ? "definite" : "indefinite");
+
+                // Create the inline widget element.
+                this.$el = $('<span class="inline-tag" contenteditable="false"></span>');
+                this.render();
+                this.attachEvents();
+            }
+
+            render() {
+                this.$el.empty();
+                const tagDef = findTagDefinition(this.tagName);
+                // Get the human‑readable condition label.
+                const condLabel = (tagDef && tagDef.conditions[this.condition] && tagDef.conditions[this.condition].label)
+                    || this.condition;
+                // Display tag name and condition.
+                this.$el.append($(`<span class="tag-name">${this.tagName}</span>`));
+                this.$el.append($(`<span class="tag-condition"> ${condLabel} </span>`));
+
+                // For conditions requiring two values (e.g., “between”):
+                if (this.condition === "between") {
+                    const $lower = $(`<input type="text" class="tag-value lower" placeholder="min" value="${this.value.lower}" />`);
+                    const $upper = $(`<input type="text" class="tag-value upper" placeholder="max" value="${this.value.upper}" />`);
+                    this.$el.append($lower).append(" and ").append($upper);
+                } else {
+                    // For single-value conditions.
+                    const $valueInput = $(`<input type="text" class="tag-value" placeholder="value" value="${this.value}" />`);
+                    this.$el.append($valueInput);
+                }
+                // Display the tag’s nature.
+                this.$el.append($(`<span class="tag-nature"> (${this.nature})</span>`));
+                // Add controls for editing and removal.
+                const $controls = $(`
+          <span class="tag-controls">
+            <button class="edit-btn" title="Edit Tag">✎</button>
+            <button class="remove-btn" title="Remove Tag">×</button>
+          </span>
+        `);
+                this.$el.append($controls);
+            }
+
+            attachEvents() {
+                // Toggle a detailed editing mode when the edit button is clicked.
+                this.$el.find('.edit-btn').on('click', (e) => {
+                    e.stopPropagation();
+                    this.activateDetailedEditing();
+                });
+                // Remove the widget when the remove button is clicked.
+                this.$el.find('.remove-btn').on('click', (e) => {
+                    e.stopPropagation();
+                    this.$el.remove();
+                });
+                // When an input loses focus, update internal state.
+                this.$el.find("input").on("blur", () => {
+                    this.updateFromInputs();
+                });
+            }
+
+            updateFromInputs() {
+                if (this.condition === "between") {
+                    this.value = {
+                        lower: this.$el.find("input.lower").val(),
+                        upper: this.$el.find("input.upper").val()
+                    };
+                } else {
+                    this.value = this.$el.find("input.tag-value").val();
+                }
+            }
+
+            // A stub for a detailed editing popup.
+            activateDetailedEditing() {
+                alert(`Editing ${this.tagName}\nCondition: ${this.condition}\nValue: ${JSON.stringify(this.value)}\nNature: ${this.nature}`);
+                // In a complete system, this could open a more sophisticated editor.
+            }
+        }
+
+        /************************************
+         * UI Components – Sidebar, Views, Editor
+         ************************************/
+            // Sidebar: menu, additional links, Nostr status and feed.
+        class Sidebar {
+            constructor() {
+                this.$el = $('<div class="sidebar-left"></div>');
+                this.buildMenu();
+                this.buildSidebarLinks();
+                this.buildNostrStatus();
+                this.buildNostrFeed();
+            }
+            buildMenu() {
+                this.$el.append($('<h3>Menu</h3>'));
+                this.$menu = $('<ul></ul>');
+                const menuItems = [
+                    { label: 'Me', view: 'me-view' },
+                    { label: 'Friends', view: 'friends-view' },
+                    { label: 'Network', view: 'network-view' },
+                    { label: 'Database', view: 'database-view' },
+                    { label: 'Settings', view: 'settings-view' }
+                ];
+                menuItems.forEach(item => {
+                    const $li = $(`<li><a href="#" data-view="${item.view}">${item.label}</a></li>`);
+                    this.$menu.append($li);
+                });
+                this.$el.append(this.$menu, $('<hr>'));
+            }
+            buildSidebarLinks() {
+                const $sidebarList = $('<ul></ul>');
+                const links = [
+                    { label: 'Recent Objects', list: 'recent' },
+                    { label: 'Matches', list: 'matches' },
+                    { label: 'Friends', view: 'friends-view' }
+                ];
+                links.forEach(link => {
+                    const attrs = link.list ? `data-list="${link.list}"` : `data-view="${link.view}"`;
+                    const $li = $(`<li><a href="#" ${attrs}>${link.label}</a></li>`);
+                    $sidebarList.append($li);
+                });
+                this.$el.append($('<h3>Sidebar</h3>'), $sidebarList, $('<hr>'));
+            }
+            buildNostrStatus() {
+                this.$el.append($('<h3>Nostr Status</h3>'),
+                    $('<div id="nostr-connection-status">Connecting...</div>'),
+                    $('<hr>'));
+            }
+            buildNostrFeed() {
+                this.$el.append($('<h3>Nostr Feed</h3>'),
+                    $('<div id="nostr-feed" style="max-height: 150px; overflow-y: auto;"></div>'));
+            }
+        }
+
+        // A simple static view.
+        class SimpleView {
+            constructor(title, content) {
+                this.$el = $(`<div class="view" style="display: none;">
+                          <h2>${title}</h2>
+                          <p>${content}</p>
+                        </div>`);
+            }
+        }
+
+        // DatabaseView: shows the filter bar, list of objects, and the redesigned editor.
+        class DatabaseView {
+            constructor() {
+                this.$el = $('<div id="database-view" class="view active"></div>');
+                this.$filterBar = $(`
+          <div class="filter-bar">
+            <input type="text" id="search-input" placeholder="Search TODOs..." />
+            <button id="search-btn">Search</button>
+          </div>
+        `);
+                this.$objectList = $('<div id="object-list"></div>');
+                this.$newObjectBtn = $('<button id="new-object-btn">New TODO</button>');
+                // Editor container now uses our redesigned contentEditable with inline tags.
+                this.$editorContainer = $(`
+          <div id="editor-container" style="display: none;">
+            <div class="toolbar">
+              <button id="bold-btn"><b>B</b></button>
+              <button id="italic-btn"><i>I</i></button>
+              <button id="insert-tag-btn">Insert Tag</button>
+            </div>
+            <div id="editor" contenteditable="true">
+              <!-- Users type text here and inline tag widgets are inserted -->
+            </div>
+            <div class="metadata-panel">
+              <label for="object-name">Name:</label>
+              <input type="text" id="object-name" />
+            </div>
+            <button id="save-object-btn">Save</button>
+            <button id="cancel-edit-btn">Cancel</button>
+          </div>
+        `);
+                this.$el.append(this.$filterBar, this.$objectList, this.$newObjectBtn, this.$editorContainer);
+            }
+        }
+
+        // MainContent holds all views.
+        class MainContent {
+            constructor() {
+                this.$el = $('<div class="main-content"></div>');
+                this.$content = $('<div class="content"></div>');
+                this.$el.append(this.$content);
+                this.views = {};
+                this.createViews();
+            }
+            createViews() {
+                this.views['database-view'] = new DatabaseView();
+                this.views['me-view'] = new SimpleView('User Profile', 'Your personal profile and settings.');
+                this.views['friends-view'] = new SimpleView('Friends', 'Friend activity and connection updates.');
+                this.views['network-view'] = new SimpleView('Network Activity', 'Relay messages and network events.');
+                this.views['settings-view'] = new SimpleView('Settings', 'Application configuration.');
+                for (let viewName in this.views) {
+                    this.$content.append(this.views[viewName].$el);
+                }
+            }
+            showView(viewName) {
+                this.$el.find('.view').removeClass('active').hide();
+                if (this.views[viewName]) {
+                    this.views[viewName].$el.addClass('active').show();
+                }
+            }
+        }
+
+        /************************************
+         * Matching Infrastructure
+         ************************************/
+            // When new events arrive, the Matcher scans stored objects (their HTML content) for inline tags.
+            // A simple substring comparison is used here.
+        class Matcher {
+            constructor(app) {
+                this.app = app;
+            }
+            matchEvent(ev) {
+                const eventText = ev.content.toLowerCase();
+                const matches = [];
+                this.app.store.getAll().forEach(obj => {
+                    const $temp = $('<div></div>').html(obj.content);
+                    let objMatched = false;
+                    $temp.find('.inline-tag').each(function() {
+                        const tagVal = $(this).find('input.tag-value').val();
+                        if (tagVal && eventText.indexOf(tagVal.toLowerCase()) !== -1) {
+                            objMatched = true;
+                        }
+                    });
+                    if (objMatched) {
+                        matches.push(obj);
+                    }
+                });
+                if (matches.length > 0) {
+                    this.app.notifyMatch(matches, ev);
+                }
+            }
+        }
+
+        /************************************
+         * Data Model: NObject Store & Nostr Client
+         ************************************/
+        class NObjectStore {
+            constructor() {
+                this.objs = [];
+                try {
+                    this.objs = JSON.parse(localStorage.getItem("nobjects") || "[]");
+                } catch (e) {
+                    console.error(e);
+                }
+            }
+            getAll() {
+                return this.objs.sort((a, b) => b.updatedAt - a.updatedAt);
+            }
+            save(o) {
+                const i = this.objs.findIndex(x => x.id === o.id);
+                if (i >= 0) this.objs[i] = o;
+                else this.objs.push(o);
+                localStorage.setItem("nobjects", JSON.stringify(this.objs));
+            }
+            delete(id) {
+                this.objs = this.objs.filter(o => o.id !== id);
+                localStorage.setItem("nobjects", JSON.stringify(this.objs));
+            }
+        }
+
+        // Nostr keys & client.
+        const KEY_STORAGE = "nostr_keys";
+        function getKeys() {
+            let keys = localStorage.getItem(KEY_STORAGE);
+            if (keys) return JSON.parse(keys);
+            const priv = Array.from(crypto.getRandomValues(new Uint8Array(32)))
+                .map(n => n.toString(16).padStart(2, "0"))
+                .join("");
+            const pub = getPublicKey(priv);
+            const k = { priv, pub };
+            localStorage.setItem(KEY_STORAGE, JSON.stringify(k));
+            return k;
+        }
+        const keys = getKeys();
+
+        class NostrClient {
+            constructor(matcher) {
+                this.matcher = matcher;
+                this.relayUrl = "wss://relay.damus.io";
+                this.relay = relayInit(this.relayUrl);
+                this.relay.on("connect", () => {
+                    console.log("Connected to relay");
+                    $("#nostr-connection-status").text("Connected to relay");
+                });
+                this.relay.on("error", (err) => {
+                    console.error("Relay error", err);
+                    $("#nostr-connection-status").text("Relay error: " + err);
+                });
+                this.relay.on("disconnect", () => {
+                    console.log("Disconnected from relay");
+                    $("#nostr-connection-status").text("Disconnected from relay");
+                });
+                this.relay.connect();
+                this.subscribe();
+                this.subscribeFeed();
+            }
+            subscribe() {
+                const sub = this.relay.sub([{ kinds: [30000] }]);
+                sub.on("event", (ev) => {
+                    try {
+                        const data = JSON.parse(ev.content);
+                        const nobj = {
+                            id: data.id,
+                            name: data.name,
+                            content: data.content,
+                            tags: ev.tags.filter(t => t[0] === "t").map(t => t[1]),
+                            createdAt: ev.created_at * 1000,
+                            updatedAt: ev.created_at * 1000,
+                        };
+                        app.store.save(nobj);
+                        app.renderList();
+                    } catch (e) {
+                        console.error("Parsing error", e);
+                    }
+                });
+            }
+            subscribeFeed() {
+                const feedSub = this.relay.sub([{ kinds: [1] }]);
+                feedSub.on("event", (ev) => {
+                    const timeStr = new Date(ev.created_at * 1000).toLocaleTimeString();
+                    const $div = $(`<div>[${timeStr}] ${ev.pubkey}: ${ev.content}</div>`);
+                    $("#nostr-feed").prepend($div);
+                    while ($("#nostr-feed").children().length > 20) {
+                        $("#nostr-feed").children().last().remove();
+                    }
+                    // Run matching against incoming feed events.
+                    this.matcher.matchEvent(ev);
+                });
+            }
+            publish(nobj) {
+                const content = JSON.stringify({ id: nobj.id, name: nobj.name, content: nobj.content });
+                const ev = {
+                    pubkey: keys.pub,
+                    created_at: Math.floor(nobj.updatedAt / 1000),
+                    kind: 30000,
+                    tags: nobj.tags.map(tag => ["t", tag]),
+                    content,
+                };
+                ev.id = getEventHash(ev);
+                ev.sig = signEvent(ev, keys.priv);
+                this.relay.publish(ev);
+            }
+        }
+
+        /************************************
+         * Main Application
+         ************************************/
+        class App {
+            constructor() {
+                this.store = new NObjectStore();
+                this.selected = null;
+                this.initUI();
+                this.renderList();
+                this.matcher = new Matcher(this);
+            }
+            initUI() {
+                // Build overall layout from Sidebar and MainContent.
+                this.$container = $('<div class="container"></div>');
+                this.sidebar = new Sidebar();
+                this.mainContent = new MainContent();
+                this.$container.append(this.sidebar.$el, this.mainContent.$el);
+                $("body").append(this.$container);
+                // Create a notification area.
+                this.$notificationArea = $('<div id="notification-area"></div>');
+                $("body").append(this.$notificationArea);
+                // Bind navigation events.
+                this.sidebar.$el.find("a[data-view]").on("click", (e) => {
+                    e.preventDefault();
+                    const view = $(e.currentTarget).data("view");
+                    this.setView(view);
+                });
+                this.sidebar.$el.find("a[data-list]").on("click", (e) => {
+                    e.preventDefault();
+                    const list = $(e.currentTarget).data("list");
+                    if (list === "recent") {
+                        this.setView("database-view");
+                        this.renderList();
+                    }
+                });
+                $("#search-btn").on("click", () => {
+                    const filter = $("#search-input").val();
+                    this.renderList(filter);
+                });
+                $("#new-object-btn").on("click", () => this.createNewObject());
+                $("#save-object-btn").on("click", () => this.saveObject());
+                $("#cancel-edit-btn").on("click", () => this.hideEditor());
+                $("#bold-btn").on("click", () => document.execCommand("bold"));
+                $("#italic-btn").on("click", () => document.execCommand("italic"));
+                $("#insert-tag-btn").on("click", (e) => this.showTagMenu(e));
+                $("#object-list").on("click", ".object-item", (e) => {
+                    const id = $(e.currentTarget).data("id");
+                    const obj = this.store.getAll().find(o => o.id === id);
+                    if (obj) this.editObject(obj);
+                });
+                // Update saved caret position in the editor.
+                $("#editor").on("mouseup keyup", function(){
+                    const sel = window.getSelection();
+                    if (sel.rangeCount > 0) {
+                        window.savedRange = sel.getRangeAt(0);
+                    }
+                });
+            }
+            setView(v) {
+                this.mainContent.$el.find(".view").removeClass("active").hide();
+                if (this.mainContent.views[v]) {
+                    this.mainContent.views[v].$el.addClass("active").show();
+                }
+                if (v !== "database-view") this.hideEditor();
+            }
+            renderList(filter = "") {
+                const $list = $("#object-list");
+                let objs = this.store.getAll();
+                if (filter.trim()) {
+                    const f = filter.toLowerCase();
+                    objs = objs.filter(o => o.name.toLowerCase().includes(f) || o.content.toLowerCase().includes(f));
+                }
+                if (objs.length) {
+                    $list.empty();
+                    objs.forEach(o => {
+                        const $item = $(`
+              <div class="object-item" data-id="${o.id}">
+                <strong>${o.name}</strong>
+                <div>${o.content}</div>
+                <small>Updated: ${new Date(o.updatedAt).toLocaleString()}</small>
+              </div>
+            `);
+                        $list.append($item);
+                    });
+                } else {
+                    $list.html(`<p>No TODO items found. Click "New TODO" to create one.</p>`);
+                }
+            }
+            createNewObject() {
+                this.selected = null;
+                const now = Date.now();
+                const newObj = { id: generateUUID(), name: "", content: "", tags: [], createdAt: now, updatedAt: now };
+                this.showEditor(newObj);
+            }
+            editObject(o) {
+                this.selected = o;
+                this.showEditor(o);
+            }
+            showEditor(o) {
+                $("#object-name").val(o.name);
+                $("#editor").html(o.content);
+                $("#editor-container").show();
+            }
+            hideEditor() {
+                $("#editor-container").hide();
+            }
+            // When saving, update the object with the latest HTML (which may include inline tag widgets).
+            saveObject() {
+                const name = $("#object-name").val();
+                const content = $("#editor").html();
+                if (!name.trim()) {
+                    alert("Name cannot be empty");
+                    return;
+                }
+                const now = Date.now();
+                let o;
+                if (this.selected) {
+                    o = Object.assign({}, this.selected, { name, content, updatedAt: now });
+                } else {
+                    o = { id: generateUUID(), name, content, tags: [], createdAt: now, updatedAt: now };
+                }
+                this.store.save(o);
+                this.hideEditor();
+                this.renderList();
+                nostrClient.publish(o);
+            }
+            // Show the tag insertion menu near the click position.
+            showTagMenu(e) {
+                const $menu = $("#tag-menu");
+                $menu.empty();
+                for (let cat in ontology) {
+                    $menu.append(`<strong>${cat}</strong>`);
+                    const $ul = $("<ul></ul>");
+                    for (let tag in ontology[cat]) {
+                        const $li = $(`<li>${tag}</li>`);
+                        $li.on("click", () => {
+                            const tagDef = ontology[cat][tag];
+                            const widget = new InlineTagWidget(tag, tagDef.defaultCondition, "", tagDef.allowedNatures[0]);
+                            insertNodeAtCursor(widget.$el);
+                            $menu.hide();
+                        });
+                        $ul.append($li);
+                    }
+                    $menu.append($ul);
+                }
+                $menu.css({ top: e.pageY + 5, left: e.pageX + 5, display: "block" });
+            }
+            // Notify the user of matched objects.
+            notifyMatch(matchedObjects, ev) {
+                let msg = `Match found in ${matchedObjects.length} object(s) for event from ${ev.pubkey}:<br>`;
+                matchedObjects.forEach(obj => {
+                    msg += `<em>${obj.name}</em> (updated ${new Date(obj.updatedAt).toLocaleTimeString()})<br>`;
+                });
+                this.$notificationArea.html(msg).fadeIn(300).delay(3000).fadeOut(300);
+            }
+        }
+
+        /************************************
+         * Instantiate Application and Nostr Client
+         ************************************/
+        const app = new App();
+        const nostrClient = new NostrClient(app.matcher);
+    </script>
+</head>
+<body>
+<!-- The body is initially empty; the UI is built dynamically. -->
+<!-- Tag Insertion Menu (hidden by default) -->
+<div id="tag-menu"></div>
+</body>
+</html>
