@@ -1,27 +1,7 @@
-import { getPublicKey } from "https://esm.sh/nostr-tools@1.8.0";
 import * as Net from "./net.js";
+import * as DB from "./db.js";
 import * as dateFns from "https://cdn.jsdelivr.net/npm/date-fns@2.29.3/esm/index.js";
 import * as nanoid from "https://cdn.jsdelivr.net/npm/nanoid@5.0.9/nanoid.js";
-
-const { set, get, del, keys: idbKeys } = idbKeyval;
-const KEY_STORAGE = "nostr_keys";
-
-async function loadKeys() {
-    try {
-        let keysData = await get(KEY_STORAGE);
-        if (!keysData) {
-            const priv = Net.privateKey();
-            const pub = getPublicKey(priv);
-            keysData = { priv, pub };
-            await set(KEY_STORAGE, keysData);
-        }
-        return keysData;
-    } catch (error) {
-        console.error("Error accessing IndexedDB for keys:", error);
-        alert("Failed to access keys. IndexedDB might be unavailable.");
-        return null;
-    }
-}
 
 const Ontology = {
     General: {
@@ -392,45 +372,9 @@ class Matcher {
     }
 }
 
-class DB {
-    async getAll() {
-        try {
-            const allKeys = await idbKeys();
-            const allObjs = await Promise.all(allKeys.map(key => get(key)));
-            return _.orderBy(allObjs.filter(Boolean), ["updatedAt"], ["desc"]);
-        } catch (error) {
-            console.error("Error getting all objects:", error);
-            alert("Failed to retrieve data. IndexedDB might be unavailable.");
-            return [];
-        }
-    }
-    async save(o) {
-        if (!o.id) {
-            console.error("Attempted to save an object without an id:", o);
-            throw new Error("Missing id property on object");
-        }
-        try {
-            await set(o.id, o);
-            return o;
-        } catch (error) {
-            console.error("Error saving object:", error);
-            alert("Failed to save data. IndexedDB might be unavailable.");
-            throw error;
-        }
-    }
-    async delete(id) {
-        try {
-            await del(id);
-        } catch (error) {
-            console.error("Error deleting object:", error);
-            alert("Failed to delete data. IndexedDB might be unavailable.");
-        }
-    }
-}
-
 class App {
     constructor() {
-        this.db = new DB();
+        this.db = new DB.DB();
         this.selected = null;
         this.matcher = new Matcher(this);
         this.renderListDebounced = _.debounce(filter => this.renderList(filter), 300);
@@ -593,7 +537,7 @@ class App {
 
 document.addEventListener("DOMContentLoaded", async () => {
     const app = new App();
-    const loadedKeys = await loadKeys();
+    const loadedKeys = await DB.loadKeys();
     if (loadedKeys) {
         window.app = app;
         window.keys = loadedKeys;

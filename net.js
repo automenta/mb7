@@ -1,4 +1,4 @@
-import { relayInit, getEventHash, signEvent, getPublicKey } from "https://esm.sh/nostr-tools@1.8.0";
+import { relayInit, getEventHash, signEvent } from "https://esm.sh/nostr-tools@1.8.0";
 
 /** generate a Nostr private key */
 export const privateKey = () => {
