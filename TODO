@@ -90,3 +90,175 @@
   - Continually update and review the usage of libraries like DOMPurify to ensure that content sanitization remains robust against new attack vectors.
   - Consider integrating Content Security Policy (CSP) headers to further mitigate XSS risks.
 
+
+
+
+// OntologyView Component
+class OntologyView extends UIComponent {
+    constructor(app) {
+        super(null, `<div id="ontology-view" class="view"><h2>Ontology</h2></div>`);
+        this.app = app;
+        this.build();
+        this.bindEvents();
+    }
+
+    build() {
+        this.$el.append(
+            $(`<button id="add-category-btn">Add Category</button>`),
+            $(`<button id="add-tag-btn">Add Tag</button>`),
+            $(`<div id="ontology-list"></div>`),
+            $(`<div id="ontology-details" style="display:none;"></div>`),
+            $(`<button id="import-ontology-btn">Import Ontology</button>`),
+            $(`<button id="export-ontology-btn">Export Ontology</button>`)
+        );
+    }
+
+    bindEvents() {
+        bind(this.$el, "click", () => this.addCategory(), "#add-category-btn");
+        bind(this.$el, "click", () => this.addTag(), "#add-tag-btn");
+        bind(this.$el, "click", () => this.importOntology(), "#import-ontology-btn");
+        bind(this.$el, "click", () => this.exportOntology(), "#export-ontology-btn");
+        bind(this.$el, "click", (e) => {
+            const $target = $(e.target);
+            const {category, tag} = $target.data();
+            if (category && tag) this.showTagDetails(category, tag);
+        }, ".edit-tag-btn");
+    }
+
+    render() {
+        const $list = this.$el.find("#ontology-list").empty();
+        for (const [category, tags] of Object.entries(Ontology)) {
+            const $catDiv = $(`<div><h3>${category}</h3></div>`);
+            for (const [tagName] of Object.entries(tags)) {
+                $catDiv.append(`<p>${tagName}<button class="edit-tag-btn" data-category="${category}" data-tag="${tagName}">Edit</button></p>`);
+            }
+            $list.append($catDiv);
+        }
+        this.updateAvailableTags();
+    }
+
+    updateAvailableTags() {
+        availableTags = flattenOntology(Ontology);
+        if (this.app.tagger) {
+            this.app.tagger.availableTags = availableTags;
+            this.app.tagger.fuse.setCollection(availableTags);
+        }
+    }
+
+    showTagDetails(category, tagName) {
+        const tagDef = Ontology[category][tagName];
+        this.$el.find("#ontology-details").empty().show().html(`
+            <h3>Edit Tag: <em>${tagName}</em></h3>
+            <label>Name: <input type="text" id="edit-tag-name" value="${tagName}"></label><br>
+            <label>Category: <input type="text" id="edit-tag-category" value="${category}"></label><br>
+            <label>Data Type: <input type="text" id="edit-tag-datatype" value="${tagDef.dataType}"></label><br>
+            <label>Conditions: <textarea id="edit-tag-conditions">${JSON.stringify(tagDef.conditions, null, 2)}</textarea></label><br>
+            <label>Default Condition: <input type="text" id="edit-tag-default-condition" value="${tagDef.defaultCondition}"></label><br>
+            <label>Allowed Natures: <input type="text" id="edit-tag-allowed-natures" value="${(tagDef.allowedNatures || []).join(",")}"></label><br>
+            <button id="save-tag-changes-btn">Save Changes</button>
+            <button id="delete-tag-btn">Delete Tag</button>
+        `);
+
+        bind(this.$el, "click", () => this.saveTagChanges(category, tagName), "#save-tag-changes-btn");
+        bind(this.$el, "click", () => this.deleteTag(category, tagName), "#delete-tag-btn");
+    }
+
+    saveTagChanges(originalCategory, originalTagName) {
+        const $details = this.$el.find("#ontology-details");
+        const newTagName = $details.find("#edit-tag-name").val().trim().toLowerCase() || originalTagName;
+        const newCategory = $details.find("#edit-tag-category").val().trim();
+        const newDataType = $details.find("#edit-tag-datatype").val().trim();
+        let newConditions;
+        try {
+            newConditions = JSON.parse($details.find("#edit-tag-conditions").val());
+        } catch {
+            this.app.showNotification("Invalid conditions JSON.", "error");
+            return;
+        }
+        const newDefaultCond = $details.find("#edit-tag-default-condition").val().trim();
+        const newAllowedNatures = $details.find("#edit-tag-allowed-natures").val().split(",").map(s => s.trim()).filter(Boolean);
+
+        if (!Ontology[originalCategory]?.[originalTagName]) return;
+
+        // Clean up old tag and category if empty
+        delete Ontology[originalCategory][originalTagName];
+        if (!Object.keys(Ontology[originalCategory]).length) delete Ontology[originalCategory];
+
+        // Ensure new category exists
+        Ontology[newCategory] ??= {};
+
+        // Set new tag details
+        Ontology[newCategory][newTagName] = {
+            dataType: newDataType,
+            conditions: newConditions,
+            defaultCondition: newDefaultCond,
+            allowedNatures: newAllowedNatures,
+        };
+
+        this.render();
+        $details.hide();
+        this.app.showNotification(`Tag "${originalTagName}" updated.`, "success");
+    }
+
+    deleteTag(category, tagName) {
+        if (confirm(`Delete tag "${tagName}"?`)) {
+            delete Ontology[category][tagName];
+            if (!Object.keys(Ontology[category]).length) delete Ontology[category];
+            this.render();
+            this.$el.find("#ontology-details").hide();
+            this.app.showNotification(`Tag "${tagName}" deleted.`, "success");
+        }
+    }
+
+    addCategory() {
+        const name = prompt("New category name:");
+        if (name) {
+            Ontology[name] ??= {};
+            this.render();
+            this.app.showNotification(`Category "${name}" added.`, "success");
+        }
+    }
+
+    addTag() {
+        const category = prompt("Category for new tag:");
+        if (!category || !Ontology[category]) {
+            this.app.showNotification("Category does not exist.", "error");
+            return;
+        }
+        const tagName = (prompt("New tag name:") || "").toLowerCase();
+        if (tagName) {
+            Ontology[category][tagName] = {
+                dataType: "string",
+                conditions: {exact: {label: "is"}, contains: {label: "contains"}, regex: {label: "matches regex"}},
+                defaultCondition: "exact",
+                allowedNatures: ["definite"]
+            };
+            this.render();
+            this.app.showNotification(`Tag "${tagName}" added to "${category}".`, "success");
+        }
+    }
+
+    importOntology() {
+        const input = Object.assign(document.createElement("input"), {
+            type: "file", accept: ".json", onchange: async (e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                    try {
+                        Object.assign(Ontology, JSON.parse(await file.text()));
+                        this.render();
+                        this.app.showNotification("Ontology imported.", "success");
+                    } catch (err) {
+                        this.app.showNotification("Invalid JSON.", "error");
+                    }
+                }
+            }
+        });
+        input.click();
+    }
+
+    exportOntology() {
+        const dataStr = `data:text/json;charset=utf-8,${encodeURIComponent(JSON.stringify(Ontology, null, 2))}`;
+        Object.assign(document.createElement("a"), {href: dataStr, download: "ontology.json"}).click();
+        this.app.showNotification("Ontology exported.", "info");
+    }
+}
