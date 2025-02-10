@@ -2,19 +2,19 @@ import * as Net from "./net.js";
 import * as DB from "./db.js";
 import {
     format,
-    parseISO,
+    formatISO,
     isValid as isValidDate,
-    formatISO
+    parseISO
 } from "https://cdn.jsdelivr.net/npm/date-fns@2.29.3/esm/index.js";
 import Fuse from "https://cdn.jsdelivr.net/npm/fuse.js@6.6.2/dist/fuse.esm.js";
-import { nanoid } from "https://cdn.jsdelivr.net/npm/nanoid@5.0.9/nanoid.js";
-
+import {nanoid} from "https://cdn.jsdelivr.net/npm/nanoid@5.0.9/nanoid.js";
 
 function formatDate(timestamp) {
-    const dateFormat = localStorage.getItem("dateFormat") || "Pp";
     if (!timestamp) return "";
-    const date = typeof timestamp === "string" ? parseISO(timestamp) : new Date(timestamp);
-    return isValidDate(date) ? format(date, dateFormat) : "";
+    else {
+        const date = typeof timestamp === "string" ? parseISO(timestamp) : new Date(timestamp);
+        return isValidDate(date) ? format(date, localStorage.getItem("dateFormat") || "Pp") : "";
+    }
 }
 
 function bind(selector, event, handler, delegate = null) {
@@ -23,19 +23,45 @@ function bind(selector, event, handler, delegate = null) {
 
 const Ontology = {
     General: {
-        Location: { dataType: "location", conditions: { exact: { label: "is exactly" }, contains: { label: "contains" }, regex: { label: "matches regex" } }, defaultCondition: "exact", allowedNatures: ["definite", "indefinite"] },
-        Time: { dataType: "time", conditions: { exact: { label: "is exactly" }, before: { label: "is before" }, after: { label: "is after" }, between: { label: "is between" }, regex: { label: "matches regex" } }, defaultCondition: "exact", allowedNatures: ["definite", "indefinite"] },
-        Description: { dataType: "string", conditions: { exact: { label: "is" }, contains: { label: "contains" }, regex: { label: "matches regex" } }, defaultCondition: "exact", allowedNatures: ["definite"] }
+        Location: {
+            dataType: "location",
+            conditions: {exact: {label: "is exactly"}, contains: {label: "contains"}, regex: {label: "matches regex"}},
+            defaultCondition: "exact",
+            allowedNatures: ["definite", "indefinite"]
+        },
+        Time: {
+            dataType: "time",
+            conditions: {
+                exact: {label: "is exactly"},
+                before: {label: "is before"},
+                after: {label: "is after"},
+                between: {label: "is between"},
+                regex: {label: "matches regex"}
+            },
+            defaultCondition: "exact",
+            allowedNatures: ["definite", "indefinite"]
+        },
+        Description: {
+            dataType: "string",
+            conditions: {exact: {label: "is"}, contains: {label: "contains"}, regex: {label: "matches regex"}},
+            defaultCondition: "exact",
+            allowedNatures: ["definite"]
+        }
     },
     Emotion: {
-        Mood: { dataType: "string", conditions: { exact: { label: "is" }, contains: { label: "contains" }, regex: { label: "matches regex" } }, defaultCondition: "exact", allowedNatures: ["definite"] }
+        Mood: {
+            dataType: "string",
+            conditions: {exact: {label: "is"}, contains: {label: "contains"}, regex: {label: "matches regex"}},
+            defaultCondition: "exact",
+            allowedNatures: ["definite"]
+        }
     }
 };
 
 function flattenOntology(ont) {
     return Object.entries(ont)
         .flatMap(([category, tags]) =>
-            Object.entries(tags).map(([name, def]) => ({ name: name.toLowerCase(), category, ...def }))
+            Object.entries(tags).map(([name, def]) => ({name: name.toLowerCase(), category, ...def}))
         );
 }
 
@@ -45,7 +71,7 @@ function getTagDefinition(tagName) {
     return availableTags.find(t => t.name === tagName.toLowerCase()) || {
         name: tagName.toLowerCase(),
         dataType: "string",
-        conditions: { exact: { label: "is" }, contains: { label: "contains" }, regex: { label: "matches regex" } },
+        conditions: {exact: {label: "is"}, contains: {label: "contains"}, regex: {label: "matches regex"}},
         defaultCondition: "exact",
         allowedNatures: ["definite"]
     };
@@ -145,7 +171,9 @@ class Editor extends UIComponent {
             : range.endOffset === endNode.childNodes.length || (endNode === this.$el[0] && range.endOffset === this.$el[0].childNodes.length);
     }
 
-    getContent() { return this.$el.html(); }
+    getContent() {
+        return this.$el.html();
+    }
 
     setContent(html) {
         this.$el.html(html);
@@ -168,7 +196,7 @@ class Editor extends UIComponent {
     }
 }
 
-class InlineTagWidget extends UIComponent {
+class InlineTag extends UIComponent {
     #tagDef;
     #condition;
     #value;
@@ -178,15 +206,14 @@ class InlineTagWidget extends UIComponent {
         super(null, `<span class="inline-tag" contenteditable="false" tabindex="0" id="${nanoid()}"></span>`);
         this.#tagDef = tagDef;
         this.#condition = tagDef.defaultCondition || "exact";
-        this.#value = this.#condition === "between" ? { lower: "", upper: "" } : "";
+        this.#value = this.#condition === "between" ? {lower: "", upper: ""} : "";
         this.options = options;
         this.#debouncedUpdate = _.debounce(() => this.options.onUpdate?.(), 500);
         this.render();
     }
 
     render() {
-        this.$el.empty();
-        this.$el.append(
+        this.$el.empty().append(
             $(`<span class="tag-name" title="${this.#tagDef.category}">${this.#tagDef.name}</span>`),
             this.createConditionSelect(),
             this.createValueInputs(),
@@ -197,7 +224,7 @@ class InlineTagWidget extends UIComponent {
 
     createConditionSelect() {
         const $select = $('<select class="tag-condition" aria-label="Condition"></select>');
-        Object.entries(this.#tagDef.conditions).forEach(([cond, { label }]) => {
+        Object.entries(this.#tagDef.conditions).forEach(([cond, {label}]) => {
             $select.append($(`<option value="${cond}" ${cond === this.#condition ? 'selected' : ''}>${label}</option>`));
         });
         return $select;
@@ -210,8 +237,7 @@ class InlineTagWidget extends UIComponent {
         const makeInput = (className, placeholder, val = "") => $(`<input type="${inputType}" class="tag-value ${className}" placeholder="${placeholder}" value="${DOMPurify.sanitize(val)}">`);
 
         if (this.#condition === "between") {
-            let lowerVal = "";
-            let upperVal = "";
+            let lowerVal = "", upperVal = "";
             if (typeof this.#value === "object") {
                 const val = this.#value;
                 lowerVal = dataType === "time" ? (val.lower ? format(parseISO(val.lower), "yyyy-MM-dd'T'HH:mm") : "") : (val.lower || "");
@@ -219,12 +245,13 @@ class InlineTagWidget extends UIComponent {
             }
             return [makeInput("lower", "min", lowerVal), " and ", makeInput("upper", "max", upperVal)];
         } else {
-            let val = "";
-            if (this.#value && dataType === "time") {
+            let val;
+            if (this.#value && dataType === "time")
                 val = format(parseISO(this.#value), "yyyy-MM-dd'T'HH:mm");
-            } else if (typeof this.#value === "string") {
+            else if (typeof this.#value === "string")
                 val = this.#value;
-            }
+            else
+                val = "";
             return makeInput("", "Enter value", val);
         }
     }
@@ -233,13 +260,16 @@ class InlineTagWidget extends UIComponent {
     bindEvents() {
         this.$el.on("change", ".tag-condition", (e) => this.setCondition(e.target.value));
         this.$el.on("input", ".tag-value", () => this.updateFromInputs());
-        this.$el.on("click", ".tag-remove", (e) => { e.preventDefault(); this.remove(); });
+        this.$el.on("click", ".tag-remove", (e) => {
+            e.preventDefault();
+            this.remove();
+        });
     }
 
     setCondition(newCond) {
         if (this.#condition !== newCond) {
             this.#condition = newCond;
-            this.#value = newCond === "between" ? { lower: "", upper: "" } : "";
+            this.#value = newCond === "between" ? {lower: "", upper: ""} : "";
             this.render();
             this.options.onUpdate?.();
         }
@@ -251,14 +281,15 @@ class InlineTagWidget extends UIComponent {
             if (dataType === "time") {
                 const parsedDate = parseISO(val);
                 return val && isValidDate(parsedDate) ? formatISO(parsedDate) : "";
+            } else {
+                return val;
             }
-            return val;
         };
 
         if (this.#condition === "between") {
             const lowerRaw = this.$el.find(".tag-value.lower").val();
             const upperRaw = this.$el.find(".tag-value.upper").val();
-            const newVal = { lower: updateValue(lowerRaw), upper: updateValue(upperRaw) };
+            const newVal = {lower: updateValue(lowerRaw), upper: updateValue(upperRaw)};
 
             if (!_.isEqual(this.#value, newVal)) {
                 this.#value = newVal;
@@ -281,7 +312,7 @@ class InlineTagWidget extends UIComponent {
     }
 
     getTagData() {
-        return { name: this.#tagDef.name, condition: this.#condition, value: this.#value };
+        return {name: this.#tagDef.name, condition: this.#condition, value: this.#value};
     }
 }
 
@@ -291,7 +322,7 @@ class Tagger extends UIComponent {
         this.editor = editor;
         this.availableTags = availableTags;
         this.options = options;
-        this.fuse = new Fuse(this.availableTags, { keys: ["name"], threshold: 0.3, includeScore: true });
+        this.fuse = new Fuse(this.availableTags, {keys: ["name"], threshold: 0.3, includeScore: true});
         this.initPopup();
         this.bindGlobalEvents();
     }
@@ -335,23 +366,21 @@ class Tagger extends UIComponent {
 
     renderTagList(query = "") {
         const $ul = this.$popup.find("ul").empty();
-        const results = query ? this.fuse.search(query) : this.availableTags.map((tag) => ({ item: tag, score: 0 }));
+        const results = query ? this.fuse.search(query) : this.availableTags.map((tag) => ({item: tag, score: 0}));
 
         if (!results.length) {
             $ul.append(`<li role="option" aria-disabled="true">No matching tags found.</li>`);
             return;
         }
 
-        results.forEach(({ item }) => {
+        results.forEach(({item}) => {
             const highlightedName = item.name.replace(new RegExp(`(${_.escapeRegExp(query)})`, "gi"), "<strong>$1</strong>");
-            const $li = $(`<li role="option" tabindex="0" title="${item.category}">${highlightedName}</li>`);
-            $li.on("click", (ev) => {
+            $ul.append($(`<li role="option" tabindex="0" title="${item.category}">${highlightedName}</li>`).on("click", (ev) => {
                 ev.stopPropagation();
                 this.insertTag(item);
                 this.hide();
                 this.editor.$el.focus();
-            });
-            $ul.append($li);
+            }));
         });
     }
 
@@ -360,29 +389,30 @@ class Tagger extends UIComponent {
         this.editor.ensureFocus();
         this.editor.saveSelection();
         this.renderTagList();
-        const coords = this.getCaretCoordinates();
-        this.$popup.css({ left: coords.x + "px", top: (coords.y + 20) + "px" }).show();
+        const coords = this.caretCoord();
+        this.$popup.css({left: coords.x + "px", top: (coords.y + 20) + "px"}).show();
         this.$popup.find("#tag-search").val("").focus();
     }
 
-    hide() { this.$popup.hide(); }
+    hide() {
+        this.$popup.hide();
+    }
 
-    getCaretCoordinates() {
+    caretCoord() {
         const sel = window.getSelection();
         if (sel?.rangeCount) {
             const range = sel.getRangeAt(0).cloneRange();
             range.collapse(true);
             const rect = range.getBoundingClientRect();
-            return { x: rect?.left || 0, y: rect?.top || 0 };
+            return {x: rect?.left || 0, y: rect?.top || 0};
+        } else {
+            const offset = this.editor.$el.offset();
+            return {x: offset.left, y: offset.top};
         }
-        const offset = this.editor.$el.offset();
-        return { x: offset.left, y: offset.top };
     }
 
     insertTag(tag) {
-        const tagDef = getTagDefinition(tag.name);
-        const widget = new InlineTagWidget(tagDef, { onUpdate: this.options.onWidgetUpdate });
-        this.editor.insertNodeAtCaret(widget.$el[0]);
+        this.editor.insertNodeAtCaret(new InlineTag(getTagDefinition(tag.name), {onUpdate: this.options.onWidgetUpdate}).$el[0]);
     }
 }
 
@@ -396,13 +426,13 @@ class Sidebar extends UIComponent {
 
     build() {
         this.$el.append(
-            this.buildSection("Main Menu", [
-                { label: "Dashboard", view: "dashboard" },
-                { label: "Content", view: "content" },
-                { label: "Ontology", view: "ontology" },
-                { label: "Settings", view: "settings" }
+            this.buildSection("Menu", [
+                {label: "Dashboard", view: "dashboard"},
+                {label: "Content", view: "content"},
+                {label: "Ontology", view: "ontology"},
+                {label: "Settings", view: "settings"}
             ], "view"),
-            this.buildSection("Quick Links", [{ label: "Recent Items", list: "recent" }], "list"),
+            this.buildSection("Links", [{label: "Recent Items", list: "recent"}], "list"),
             this.buildStatus()
         );
     }
@@ -416,7 +446,7 @@ class Sidebar extends UIComponent {
     }
 
     buildStatus() {
-        return [$("<h3>Network Status</h3>"), $(`<div id="network-status">Connecting...</div>`), $("<hr>")];
+        return [$("<h3>Network</h3>"), $(`<div id="network-status">Connecting...</div>`), $("<hr>")];
     }
 
     bindEvents() {
@@ -474,22 +504,27 @@ class ContentView extends UIComponent {
             `)
         );
     }
+
     bindEvents() {
         bind(this.$el, "input", _.debounce(() => this.app.renderList(this.$el.find("#search-input").val()), 300), "#search-input");
         bind(this.$el, "click", this.app.createNewObject.bind(this.app), "#new-object-btn");
         bind(this.$el, "click", this.app.saveObject.bind(this.app), "#save-object-btn");
         bind(this.$el, "click", this.app.hideEditor.bind(this.app), "#cancel-edit-btn");
         bind(this.$el, "click", this.app.deleteCurrentObject.bind(this.app), "#delete-object-btn");
-        bind(this.$el, "click", (e) => { e.preventDefault(); this.app.tagger.show(e); }, "#insert-tag-btn");
+        bind(this.$el, "click", (e) => {
+            e.preventDefault();
+            this.app.tagger.show(e);
+        }, "#insert-tag-btn");
         bind(this.$el, "click", (e) => this.app.editOrViewObject($(e.target).closest(".object-item").data("id")), ".object-item");
     }
 
-    render() { /* Optional, might be needed later */ }
+    render() { /* Optional, might be needed later */
+    }
 }
 
 class OntologyView extends UIComponent {
     constructor(app) {
-        super(null, `<div id="ontology-view" class="view"><h2>Ontology Manager</h2></div>`);
+        super(null, `<div id="ontology-view" class="view"><h2>Ontology</h2></div>`);
         this.app = app;
         this.build();
         this.bindEvents();
@@ -512,7 +547,7 @@ class OntologyView extends UIComponent {
         bind(this.$el, "click", this.importOntology, "#import-ontology-btn");
         bind(this.$el, "click", this.exportOntology, "#export-ontology-btn");
         bind(this.$el, "click", (e) => {
-            const { category, tag } = $(e.target).data();
+            const {category, tag} = $(e.target).data();
             if (category && tag) this.showTagDetails(category, tag);
         }, ".edit-tag-btn");
     }
@@ -614,7 +649,7 @@ class OntologyView extends UIComponent {
         if (tagName) {
             Ontology[category][tagName] = {
                 dataType: "string",
-                conditions: { exact: { label: "is" }, contains: { label: "contains" }, regex: { label: "matches regex" } },
+                conditions: {exact: {label: "is"}, contains: {label: "contains"}, regex: {label: "matches regex"}},
                 defaultCondition: "exact",
                 allowedNatures: ["definite"]
             };
@@ -643,7 +678,7 @@ class OntologyView extends UIComponent {
 
     exportOntology() {
         const dataStr = `data:text/json;charset=utf-8,${encodeURIComponent(JSON.stringify(Ontology, null, 2))}`;
-        Object.assign(document.createElement("a"), { href: dataStr, download: "ontology.json" }).click();
+        Object.assign(document.createElement("a"), {href: dataStr, download: "ontology.json"}).click();
         this.app.showNotification("Ontology exported.", "info");
     }
 }
@@ -704,7 +739,7 @@ class SettingsView extends UIComponent {
         if (privKey) {
             try {
                 if (!/^[0-9a-fA-F]{64}$/.test(privKey)) throw new Error("Invalid key format.");
-                window.keys = { priv: privKey, pub: await window.NostrTools.getPublicKey(privKey) };
+                window.keys = {priv: privKey, pub: await window.NostrTools.getPublicKey(privKey)};
                 this.displayKeys();
                 await DB.saveKeys(window.keys);
                 this.app.showNotification("Key imported.", "success");
@@ -760,7 +795,8 @@ class SettingsView extends UIComponent {
             };
             event.id = await window.NostrTools.getEventHash(event);
             event.sig = await window.NostrTools.signEvent(event, window.keys.priv);
-            window.nostrClient?.publishRawEvent(event);            this.displayProfile(profile);
+            window.nostrClient?.publishRawEvent(event);
+            this.displayProfile(profile);
             this.app.showNotification("Profile saved.", "success");
         } catch (err) {
             this.app.showNotification("Error saving profile.", "error");
@@ -835,7 +871,12 @@ class MainContent extends UIComponent {
 class Matcher {
     constructor(app) {
         this.app = app;
-        this.fuse = new Fuse([], { keys: ["name", "content", "tags.value"], threshold: 0.4, includeScore: true, ignoreLocation: true });
+        this.fuse = new Fuse([], {
+            keys: ["name", "content", "tags.value"],
+            threshold: 0.4,
+            includeScore: true,
+            ignoreLocation: true
+        });
     }
 
     async matchEvent(event) {
@@ -863,7 +904,7 @@ class Matcher {
     }
 
     matchTagData(tagData, text) {
-        const { condition, value, name } = tagData;
+        const {condition, value, name} = tagData;
         const definition = getTagDefinition(name);
         const lowerText = text.toLowerCase();
 
@@ -879,7 +920,9 @@ class Matcher {
                                 const d = parseISO(m);
                                 return isValidDate(d) && d >= lowerDate && d <= upperDate;
                             });
-                    } catch { return false; }
+                    } catch {
+                        return false;
+                    }
                 } else {
                     const lower = parseFloat(value.lower);
                     const upper = parseFloat(value.upper);
@@ -887,24 +930,35 @@ class Matcher {
                     return (text.match(/\d+(\.\d+)?/g) || []).map(Number).some(n => n >= lower && n <= upper);
                 }
             case "regex":
-                try { return new RegExp(value, "i").test(text); } catch { return false; }
+                try {
+                    return new RegExp(value, "i").test(text);
+                } catch {
+                    return false;
+                }
             case "before":
                 if (definition.dataType !== "time") return false;
                 try {
                     const limitDate = parseISO(value);
                     if (!isValidDate(limitDate)) return false;
                     return (text.match(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z/g) || []).some(m => isValidDate(parseISO(m)) && parseISO(m) < limitDate);
-                } catch { return false; }
+                } catch {
+                    return false;
+                }
             case "after":
                 if (definition.dataType !== "time") return false;
                 try {
                     const limitDate = parseISO(value);
                     if (!isValidDate(limitDate)) return false;
                     return (text.match(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z/g) || []).some(m => isValidDate(parseISO(m)) && parseISO(m) > limitDate);
-                } catch { return false; }
-            case "contains": return value && lowerText.includes(value.toLowerCase());
-            case "exact": return value && lowerText === value.toLowerCase();
-            default: return false;
+                } catch {
+                    return false;
+                }
+            case "contains":
+                return value && lowerText.includes(value.toLowerCase());
+            case "exact":
+                return value && lowerText === value.toLowerCase();
+            default:
+                return false;
         }
     }
 }
@@ -932,7 +986,7 @@ class App {
         );
 
         this.editor = new Editor();
-        this.tagger = new Tagger(this.editor, availableTags, { onWidgetUpdate: () => this.updateCurrentObject() });
+        this.tagger = new Tagger(this.editor, availableTags, {onWidgetUpdate: () => this.updateCurrentObject()});
 
         const keys = await DB.loadKeys();
         if (keys) {
@@ -945,11 +999,24 @@ class App {
     setView(viewName) {
         let view;
         switch (viewName) {
-            case "dashboard": view = new DashboardView(this); view.render(); break;
-            case "content": view = new ContentView(this); this.renderList(); break;
-            case "ontology": view = new OntologyView(this); view.render(); break;
-            case "settings": view = new SettingsView(this); break;
-            default: console.warn("Unknown view:", viewName); return;
+            case "dashboard":
+                view = new DashboardView(this);
+                view.render();
+                break;
+            case "content":
+                view = new ContentView(this);
+                this.renderList();
+                break;
+            case "ontology":
+                view = new OntologyView(this);
+                view.render();
+                break;
+            case "settings":
+                view = new SettingsView(this);
+                break;
+            default:
+                console.warn("Unknown view:", viewName);
+                return;
         }
         this.mainContent.showView(view);
     }
@@ -993,12 +1060,19 @@ class App {
     }
 
     createNewObject() {
-        this.showEditor({ id: nanoid(), name: "", content: "", tags: [], createdAt: formatISO(Date.now()), updatedAt: formatISO(Date.now()) });
+        this.showEditor({
+            id: nanoid(),
+            name: "",
+            content: "",
+            tags: [],
+            createdAt: formatISO(Date.now()),
+            updatedAt: formatISO(Date.now())
+        });
     }
 
     async editOrViewObject(id) {
         try {
-            const obj = _.find(await this.db.getAll(), { id });
+            const obj = _.find(await this.db.getAll(), {id});
             if (obj) this.showEditor(obj);
         } catch (err) {
             this.showNotification("Error editing object.", "error");
@@ -1074,7 +1148,7 @@ class App {
                 }
             };
 
-            return { name, condition, value: getValue() };
+            return {name, condition, value: getValue()};
         });
     }
 
@@ -1110,7 +1184,7 @@ class App {
     }
 
     showNotification(message, type = "info") {
-        this.notificationQueue.push({ message, type });
+        this.notificationQueue.push({message, type});
         if (!this.notificationTimeout) this.showNextNotification();
     }
 
@@ -1119,7 +1193,7 @@ class App {
             this.notificationTimeout = null;
             return;
         }
-        const { message, type } = this.notificationQueue.shift();
+        const {message, type} = this.notificationQueue.shift();
         const $notification = $(`<div class="notification ${type}" role="status">${message}</div>`).appendTo("#notification-area");
         $notification.fadeIn(300);
         this.notificationTimeout = setTimeout(() => {
@@ -1130,8 +1204,13 @@ class App {
         }, 4000);
     }
 
-    showLoading() { $(".loading-overlay").show(); }
-    hideLoading() { $(".loading-overlay").hide(); }
+    showLoading() {
+        $(".loading-overlay").show();
+    }
+
+    hideLoading() {
+        $(".loading-overlay").hide();
+    }
 }
 
 document.addEventListener("DOMContentLoaded", async () => {

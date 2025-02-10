@@ -1,4 +1,4 @@
-import { relayInit, getEventHash, signEvent } from "https://esm.sh/nostr-tools@1.8.0";
+import {getEventHash, relayInit, signEvent} from "https://esm.sh/nostr-tools@1.8.0";
 
 /** generate a Nostr private key */
 export const privateKey = () => {
@@ -37,8 +37,9 @@ export class Nostr {
             $("#nostr-connection-status").text("Disconnected");
         });
     }
+
     subscribe() {
-        this.relay.sub([{ kinds: [30000] }]).on("event", (ev) => {
+        this.relay.sub([{kinds: [30000]}]).on("event", (ev) => {
             try {
                 if (!ev.content || ev.content.trim()[0] !== "{") return;
                 const data = JSON.parse(ev.content);
@@ -47,8 +48,21 @@ export class Nostr {
                 window.app.db.getAll().then(allObjs => {
                     const existingObj = allObjs.find(o => o.id === data.id);
                     const nobj = existingObj
-                        ? { ...existingObj, name: data.name, content: sanitizedContent, tags: ev.tags.filter(t => t[0] === "t").map(t => t[1]), updatedAt: ev.created_at * 1000 }
-                        : { id: data.id, name: data.name, content: sanitizedContent, tags: ev.tags.filter(t => t[0] === "t").map(t => t[1]), createdAt: ev.created_at * 1000, updatedAt: ev.created_at * 1000 };
+                        ? {
+                            ...existingObj,
+                            name: data.name,
+                            content: sanitizedContent,
+                            tags: ev.tags.filter(t => t[0] === "t").map(t => t[1]),
+                            updatedAt: ev.created_at * 1000
+                        }
+                        : {
+                            id: data.id,
+                            name: data.name,
+                            content: sanitizedContent,
+                            tags: ev.tags.filter(t => t[0] === "t").map(t => t[1]),
+                            createdAt: ev.created_at * 1000,
+                            updatedAt: ev.created_at * 1000
+                        };
                     window.app.db.save(nobj).then(() => window.app.renderList());
                 });
             } catch (e) {
@@ -56,8 +70,9 @@ export class Nostr {
             }
         });
     }
+
     subscribeFeed() {
-        this.relay.sub([{ kinds: [1] }]).on("event", (ev) => {
+        this.relay.sub([{kinds: [1]}]).on("event", (ev) => {
             const timeStr = dateFns.format(new Date(ev.created_at * 1000), "p");
             $("#nostr-feed")
                 .prepend(
@@ -68,6 +83,7 @@ export class Nostr {
             this.matcher.matchEvent(ev);
         });
     }
+
     publish(nobj) {
         const sanitizedContent = DOMPurify.sanitize(nobj.content);
         const content = JSON.stringify({

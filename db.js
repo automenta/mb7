@@ -1,8 +1,8 @@
 import * as Net from "./net.js";
 
-import { getPublicKey } from "https://esm.sh/nostr-tools@1.8.0";
+import {getPublicKey} from "https://esm.sh/nostr-tools@1.8.0";
 
-const { set, get, del, keys: idbKeys } = idbKeyval;
+const {set, get, del, keys: idbKeys} = idbKeyval;
 const KEY_STORAGE = "nostr_keys";
 
 export async function loadKeys() {
@@ -11,7 +11,7 @@ export async function loadKeys() {
         if (!keysData) {
             const priv = Net.privateKey();
             const pub = getPublicKey(priv);
-            keysData = { priv, pub };
+            keysData = {priv, pub};
             await set(KEY_STORAGE, keysData);
         }
         return keysData;
@@ -34,6 +34,7 @@ export class DB {
             return [];
         }
     }
+
     async save(o) {
         if (!o.id) {
             console.error("Attempted to save an object without an id:", o);
@@ -48,6 +49,7 @@ export class DB {
             throw error;
         }
     }
+
     async delete(id) {
         try {
             await del(id);
@@ -56,8 +58,9 @@ export class DB {
             alert("Failed to delete data. IndexedDB might be unavailable.");
         }
     }
+
     async getRecent(limit = 5) {
-        try{
+        try {
             const objs = await this.getAll();
             // Sort by updatedAt in descending order (most recent first)
             const sortedObjs = objs.sort((a, b) => {
@@ -66,20 +69,21 @@ export class DB {
             // Return the top 'limit' number of objects
             return sortedObjs.slice(0, limit);
 
-        } catch(err) {
+        } catch (err) {
             console.error("Error within getRecent", err);
             throw err; // Re-throw the error to be caught by the caller
         }
     }
-    async getStats(){
+
+    async getStats() {
         try {
             const objs = await this.getAll();
             const objCount = objs.length;
 
             let tagCount = 0;
-            objs.forEach(obj => tagCount += (obj.tags?.length || 0) )
+            objs.forEach(obj => tagCount += (obj.tags?.length || 0))
 
-            return { objectCount: objCount, tagCount: tagCount };
+            return {objectCount: objCount, tagCount: tagCount};
 
         } catch (error) {
             console.error("Error within getStats", error);
