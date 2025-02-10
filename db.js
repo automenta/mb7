@@ -56,4 +56,35 @@ export class DB {
             alert("Failed to delete data. IndexedDB might be unavailable.");
         }
     }
+    async getRecent(limit = 5) {
+        try{
+            const objs = await this.getAll();
+            // Sort by updatedAt in descending order (most recent first)
+            const sortedObjs = objs.sort((a, b) => {
+                return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+            });
+            // Return the top 'limit' number of objects
+            return sortedObjs.slice(0, limit);
+
+        } catch(err) {
+            console.error("Error within getRecent", err);
+            throw err; // Re-throw the error to be caught by the caller
+        }
+    }
+    async getStats(){
+        try {
+            const objs = await this.getAll();
+            const objCount = objs.length;
+
+            let tagCount = 0;
+            objs.forEach(obj => tagCount += (obj.tags?.length || 0) )
+
+            return { objectCount: objCount, tagCount: tagCount };
+
+        } catch (error) {
+            console.error("Error within getStats", error);
+            throw error;
+        }
+    }
+
 }

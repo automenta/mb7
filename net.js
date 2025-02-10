@@ -15,6 +15,9 @@ export class Nostr {
         this.relayUrl = "wss://relay.damus.io";
         this.relay = relayInit(this.relayUrl);
         this.setupRelayEvents();
+    }
+
+    connect() {
         this.relay.connect();
     }
 
