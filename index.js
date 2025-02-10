@@ -1,4 +1,3 @@
-// Imports assumed to exist
 import * as Net from "./net.js";
 import * as DB from "./db.js";
 import {
@@ -8,13 +7,23 @@ import {
     parseISO
 } from "https://cdn.jsdelivr.net/npm/date-fns@2.29.3/esm/index.js";
 import Fuse from "https://cdn.jsdelivr.net/npm/fuse.js@6.6.2/dist/fuse.esm.js";
-import {nanoid} from "https://cdn.jsdelivr.net/npm/nanoid@5.0.9/nanoid.js";
+import { nanoid } from "https://cdn.jsdelivr.net/npm/nanoid@5.0.9/nanoid.js";
 
 const formatDate = (timestamp) => {
     if (!timestamp) return "";
     const date = typeof timestamp === "string" ? parseISO(timestamp) : new Date(timestamp);
     return isValidDate(date) ? format(date, localStorage.getItem("dateFormat") || "Pp") : "";
 };
+
+class UIComponent {
+    constructor(selector = null, template = null) {
+        this.$el = selector ? $(selector) : $(template || "<div></div>");
+    }
+
+    remove() {
+        this.$el.remove();
+    }
+}
 
 const Ontology = {
     General: {
@@ -47,55 +56,30 @@ const Ontology = {
     },
 };
 
-// Flatten and normalize the ontology for easier use.
-const flattenOntology = (ontology) => {
-    const flattened = [];
-    for (const category in ontology) {
-        for (const tagName in ontology[category]) {
-            const tagDef = ontology[category][tagName];
-            const conditions = {};
-            tagDef.conditions.forEach(cond => {
-                conditions[cond] = {label: cond}; // Standardize condition structure
-            });
-
-            flattened.push({
-                name: tagName.toLowerCase(),
-                category: category,
-                dataType: tagDef.dataType,
-                conditions: conditions,
-                defaultCondition: tagDef.defaultCondition,
-                allowedNatures: tagDef.allowedNatures
-            });
-        }
-    }
-    return flattened;
-};
-
-const availableTags = flattenOntology(Ontology);
-
-const getTagDefinition = (tagName) => {
-    const tag = availableTags.find(t => t.name === tagName.toLowerCase());
-    return tag || { // Fallback for unknown tags.
+// Flatten the ontology
+const availableTags = Object.entries(Ontology).flatMap(([category, tags]) =>
+    Object.entries(tags).map(([tagName, tagDef]) => ({
         name: tagName.toLowerCase(),
+        category,
+        dataType: tagDef.dataType,
+        conditions: Object.fromEntries(tagDef.conditions.map(cond => [cond, { label: cond }])),
+        defaultCondition: tagDef.defaultCondition,
+        allowedNatures: tagDef.allowedNatures,
+    }))
+);
+
+// Get tag definition by name
+const getTagDefinition = (tagName) => {
+    return availableTags.find(t => t.name === tagName.toLowerCase()) || {
+        name: tagName.toLowerCase(),
+        category: 'Custom', // Add a 'Custom' category
         dataType: "string",
-        conditions: {"is": {label: "is"}, "contains": {label: "contains"}, "matches regex": {label: "matches regex"}},
+        conditions: { is: { label: "is" }, contains: { label: "contains" }, "matches regex": { label: "matches regex" } },
         defaultCondition: "is",
         allowedNatures: ["definite"],
     };
 };
 
-// Base UI Component
-class UIComponent {
-    constructor(selector = null, template = null) {
-        this.$el = selector ? $(selector) : $(template || "<div></div>");
-    }
-
-    remove() {
-        this.$el.remove();
-    }
-}
-
-// Editor Component
 class Editor extends UIComponent {
     #savedSelection = null;
 
@@ -112,45 +96,55 @@ class Editor extends UIComponent {
                     this.insertLineBreak();
                 }
             })
-            .on("input", () => {
+            .on("input", () => { // input event for content changes
                 this.sanitizeContent();
-                this.restoreSelection();
+                this.restoreSelection(); // Restore after sanitizing
             });
     }
 
     insertLineBreak() {
         this.ensureFocus();
         if (!this.#savedSelection) return;
+
         const sel = window.getSelection();
         const range = this.#savedSelection;
         range.deleteContents();
 
-        // Determine if we're at the end to add an extra <br> for spacing
         const isAtEnd = this.isCaretAtEnd();
         const br = document.createElement("br");
         range.insertNode(br);
+
         if (isAtEnd) {
-            range.insertNode(document.createElement("br")); // Insert another <br>
+            range.insertNode(document.createElement("br"));
         }
+
         range.setStartAfter(br);
         range.collapse(true);
         sel.removeAllRanges();
         sel.addRange(range);
-        this.saveSelection(); // save immediately
+        this.saveSelection(); // Save immediately
     }
 
+
     sanitizeContent() {
-        const safe = DOMPurify.sanitize(this.$el.html(), {
+        const currentContent = this.$el.html();
+        const sanitizedContent = DOMPurify.sanitize(currentContent, {
             ALLOWED_TAGS: ["br", "b", "i", "span"],
             ALLOWED_ATTR: ["class", "contenteditable", "tabindex", "id", "aria-label"]
         });
-        this.$el.html(safe);
+
+        // Only update if content has changed to avoid unnecessary cursor jumps
+        if (currentContent !== sanitizedContent) {
+            this.$el.html(sanitizedContent);
+        }
     }
 
     saveSelection() {
         const sel = window.getSelection();
-        if (sel?.rangeCount) {
+        if (sel?.rangeCount > 0) {
             this.#savedSelection = sel.getRangeAt(0).cloneRange();
+        } else {
+            this.#savedSelection = null; // No selection
         }
     }
 
@@ -174,7 +168,7 @@ class Editor extends UIComponent {
                 sel.removeAllRanges();
                 sel.addRange(range);
             }
-            this.saveSelection(); // Save the current selection or the newly created one
+            this.saveSelection();
         }
     }
 
@@ -185,7 +179,6 @@ class Editor extends UIComponent {
         const range = sel.getRangeAt(0);
         const endNode = range.endContainer;
 
-        // Check if we are at the very end of the editor content
         return endNode.nodeType === Node.TEXT_NODE
             ? range.endOffset === endNode.textContent.length
             : range.endOffset === endNode.childNodes.length || (endNode === this.$el[0] && range.endOffset === this.$el[0].childNodes.length);
@@ -197,18 +190,46 @@ class Editor extends UIComponent {
 
     setContent(html) {
         this.$el.html(html);
-        this.sanitizeContent();
+        this.sanitizeContent();  // Sanitize immediately on setContent
     }
+
 
     insertNodeAtCaret(node) {
         this.ensureFocus();
         this.restoreSelection();
         const sel = window.getSelection();
-        if (sel?.rangeCount) {
-            const range = sel.getRangeAt(0);
+
+        if (sel && sel.rangeCount > 0) {
+            let range = sel.getRangeAt(0);
             range.deleteContents();
+
+            // Check if the range is now at the beginning of the editor
+            let isAtStart = range.startContainer === this.$el[0] && range.startOffset === 0;
+
+            // If at the start, insert a text node before the tag
+            if (isAtStart) {
+                const emptyTextNode = document.createTextNode("\u200B"); // Zero-width space
+                range.insertNode(emptyTextNode);
+                range.setStartAfter(emptyTextNode);
+            }
+
             range.insertNode(node);
-            range.collapse(false); // Move caret after the inserted node.
+
+            // Check if the range is at the very end of the editor
+            let isAtEnd = this.isCaretAtEnd();
+
+            // If at the end, insert a text node after the tag.
+            if (isAtEnd) {
+                const emptyTextNode = document.createTextNode("\u200B"); // Zero-width space
+                range.setStartAfter(node);
+                range.insertNode(emptyTextNode);
+                range.setStartAfter(emptyTextNode);
+
+            } else {
+                range.setStartAfter(node);
+            }
+
+            range.collapse(true);
             sel.removeAllRanges();
             sel.addRange(range);
             this.saveSelection();
@@ -216,13 +237,12 @@ class Editor extends UIComponent {
     }
 }
 
-// InlineTag Component
 class InlineTag extends UIComponent {
     constructor(tagDef, options = {}) {
         super(null, `<span class="inline-tag" contenteditable="false" tabindex="0" id="${nanoid()}"></span>`);
         this.tagDef = tagDef;
         this.condition = tagDef.defaultCondition || "is exactly";
-        this.value = this.condition === "is between" ? {lower: "", upper: ""} : "";
+        this.value = this.condition === "is between" ? { lower: "", upper: "" } : "";
         this.options = options;
         this.debouncedUpdate = _.debounce(() => this.options.onUpdate?.(), 500);
         this.render();
@@ -240,7 +260,7 @@ class InlineTag extends UIComponent {
 
     createConditionSelect() {
         const $select = $('<select class="tag-condition" aria-label="Condition"></select>');
-        for (const [cond, {label}] of Object.entries(this.tagDef.conditions)) {
+        for (const [cond, { label }] of Object.entries(this.tagDef.conditions)) {
             $select.append($(`<option value="${cond}" ${cond === this.condition ? 'selected' : ''}>${label}</option>`));
         }
         return $select;
@@ -264,7 +284,7 @@ class InlineTag extends UIComponent {
         this.$el.on("change", ".tag-condition", (e) => this.setCondition(e.target.value))
             .on("input", ".tag-value", () => this.updateFromInputs())
             .on("click", ".tag-remove", () => {
-                this.remove(); // Uses UIComponent's remove
+                this.remove();
                 this.options.onUpdate?.();
             });
     }
@@ -272,7 +292,7 @@ class InlineTag extends UIComponent {
     setCondition(newCondition) {
         if (this.condition !== newCondition) {
             this.condition = newCondition;
-            this.value = this.condition === "is between" ? {lower: "", upper: ""} : "";
+            this.value = this.condition === "is between" ? { lower: "", upper: "" } : "";
             this.render();
             this.options.onUpdate?.();
         }
@@ -285,7 +305,7 @@ class InlineTag extends UIComponent {
         };
 
         if (this.condition === "is between") {
-            const newValue = {lower: getValue(".lower"), upper: getValue(".upper")};
+            const newValue = { lower: getValue(".lower"), upper: getValue(".upper") };
             if (!_.isEqual(this.value, newValue)) {
                 this.value = newValue;
                 this.debouncedUpdate();
@@ -300,18 +320,17 @@ class InlineTag extends UIComponent {
     }
 
     getTagData() {
-        return {name: this.tagDef.name, condition: this.condition, value: this.value};
+        return { name: this.tagDef.name, condition: this.condition, value: this.value };
     }
 }
 
-// Tagger Component
 class Tagger extends UIComponent {
     constructor(editor, availableTags = [], options = {}) {
         super();
         this.editor = editor;
         this.availableTags = availableTags;
         this.options = options;
-        this.fuse = new Fuse(this.availableTags, {keys: ["name"], threshold: 0.3, includeScore: true});
+        this.fuse = new Fuse(this.availableTags, { keys: ["name"], threshold: 0.3, includeScore: true });
         this.initPopup();
         this.bindGlobalEvents();
     }
@@ -335,7 +354,7 @@ class Tagger extends UIComponent {
     handlePopupKeydown(e) {
         if (e.key === "Escape") {
             this.hide();
-            this.editor.$el.focus();
+            this.editor.$el.focus(); // refocus the editor
             return;
         }
 
@@ -352,7 +371,7 @@ class Tagger extends UIComponent {
             $items.eq(idx).focus();
         } else if (e.key === "Enter") {
             e.preventDefault();
-            $items.filter(":focus").click();
+            $items.filter(":focus").click(); // Trigger click on focused item
         }
     }
 
@@ -366,14 +385,14 @@ class Tagger extends UIComponent {
 
     renderTagList(query = "") {
         this.$list.empty();
-        const results = query ? this.fuse.search(query) : this.availableTags.map(tag => ({item: tag}));
+        const results = query ? this.fuse.search(query) : this.availableTags.map(tag => ({ item: tag }));
 
         if (!results.length) {
             this.$list.append(`<li role="option" aria-disabled="true">No matching tags found.</li>`);
             return;
         }
 
-        results.forEach(({item}) => {
+        results.forEach(({ item }) => {
             const highlightedName = item.name.replace(new RegExp(`(${_.escapeRegExp(query)})`, "gi"), "<strong>$1</strong>");
             this.$list.append($(`<li role="option" tabindex="0" title="${item.category}">${highlightedName}</li>`)
                 .on("click", () => {
@@ -383,14 +402,15 @@ class Tagger extends UIComponent {
         });
     }
 
+
     show(e) {
         e?.stopPropagation();
-        this.editor.ensureFocus();
-        this.editor.saveSelection();
-        this.renderTagList();
+        this.editor.ensureFocus(); // Ensure editor has focus
+        this.editor.saveSelection(); // Save the current selection
+        this.renderTagList(); // Populate the tag list
         const coords = this.getCaretCoordinates();
-        this.$popup.css({left: coords.x, top: coords.y + 20}).show();
-        this.$search.val("").focus();
+        this.$popup.css({ left: coords.x, top: coords.y + 20 }).show(); // Show 20px below
+        this.$search.val("").focus(); // Clear and focus the search input
     }
 
     hide() {
@@ -401,22 +421,21 @@ class Tagger extends UIComponent {
         const sel = window.getSelection();
         if (sel?.rangeCount) {
             const range = sel.getRangeAt(0).cloneRange();
-            range.collapse(true); // Collapse to the start
+            range.collapse(true); // Collapse to start
             const rect = range.getBoundingClientRect();
-            return {x: rect.left, y: rect.top};
+            return { x: rect.left, y: rect.top };
         }
-        // Fallback: top-left of editor
+        // Fallback: If no selection, use editor's position
         const offset = this.editor.$el.offset();
-        return {x: offset.left, y: offset.top};
+        return { x: offset.left, y: offset.top };
     }
 
     insertTag(tag) {
-        const tagComponent = new InlineTag(getTagDefinition(tag.name), {onUpdate: this.options.onWidgetUpdate});
+        const tagComponent = new InlineTag(getTagDefinition(tag.name), { onUpdate: this.options.onWidgetUpdate });
         this.editor.insertNodeAtCaret(tagComponent.$el[0]);
     }
 }
 
-// Sidebar Component
 class Sidebar extends UIComponent {
     constructor(app) {
         super(null, `<div class="sidebar-left" role="navigation"></div>`);
@@ -427,11 +446,11 @@ class Sidebar extends UIComponent {
 
     build() {
         this.$el.append(
-            this.buildSection("Menu", [{label: "Dashboard", view: "dashboard"}, {
+            this.buildSection("Menu", [{ label: "Dashboard", view: "dashboard" }, {
                 label: "Content",
                 view: "content"
-            }, {label: "Settings", view: "settings"}]),
-            this.buildSection("Links", [{label: "Recent Items", list: "recent"}]),
+            }, { label: "Settings", view: "settings" }]),
+            this.buildSection("Links", [{ label: "Recent Items", list: "recent" }]),
             this.buildStatus()
         );
     }
@@ -459,7 +478,7 @@ class Sidebar extends UIComponent {
             if (view) {
                 this.app.setView(view);
             } else if (list === "recent") {
-                this.app.setView("content");
+                this.app.setView("content"); // Assuming "recent" redirects to content view
             }
         });
     }
@@ -566,7 +585,7 @@ class SettingsView extends UIComponent {
         if (privKey) {
             try {
                 if (!/^[0-9a-fA-F]{64}$/.test(privKey)) throw new Error("Invalid key format.");
-                window.keys = {priv: privKey, pub: await window.NostrTools.getPublicKey(privKey)};
+                window.keys = { priv: privKey, pub: await window.NostrTools.getPublicKey(privKey) };
                 this.displayKeys();
                 await DB.saveKeys(window.keys);
                 this.app.showNotification("Key imported.", "success");
@@ -673,7 +692,6 @@ class DashboardView extends UIComponent {
         const $tagCloud = this.$el.find("#tag-cloud").empty();
         const tagCounts = {};
 
-        // Initialize counts
         availableTags.forEach(t => tagCounts[t.name] = 0);
 
         this.app.db.getAll().then(objects => {
@@ -686,10 +704,9 @@ class DashboardView extends UIComponent {
                 });
             });
 
-            // Convert to array, filter, sort, and create elements
             Object.entries(tagCounts)
                 .filter(([, count]) => count > 0)
-                .sort(([, countA], [, countB]) => countB - countA) // Sort by count descending
+                .sort(([, countA], [, countB]) => countB - countA)
                 .forEach(([tagName, count]) => {
                     $tagCloud.append(`<span style="font-size:${10 + count * 2}px; margin-right:5px;">${tagName}</span>`);
                 });
@@ -697,7 +714,7 @@ class DashboardView extends UIComponent {
     }
 }
 
-// MainContent Component (Container for Views)
+// MainContent Component
 class MainContent extends UIComponent {
     constructor() {
         super(null, `<div class="main-content"><div class="content"></div></div>`);
@@ -708,11 +725,11 @@ class MainContent extends UIComponent {
     }
 }
 
-// Matcher Class (for Nostr event matching)
+// Matcher Class
 class Matcher {
     constructor(app) {
         this.app = app;
-        this.fuse = new Fuse([], { // Initialize Fuse.js
+        this.fuse = new Fuse([], {
             keys: ["name", "content", "tags.value"],
             threshold: 0.4,
             includeScore: true,
@@ -722,9 +739,8 @@ class Matcher {
 
     async matchEvent(event) {
         const text = (event.content || "").toLowerCase();
-        const matches = [];
+        let matches = [];
 
-        // First, try direct tag matching.
         const objects = await this.app.db.getAll();
         for (const obj of objects) {
             if (obj.tags?.some(tagData => this.matchTagData(tagData, text))) {
@@ -732,15 +748,10 @@ class Matcher {
             }
         }
 
-        // If no direct matches, use fuzzy search.
         if (!matches.length) {
             this.fuse.setCollection(objects);
             const results = this.fuse.search(text);
-            results.forEach(result => {
-                if (result.score <= this.fuse.options.threshold) {
-                    matches.push(result.item);
-                }
-            });
+            matches = results.filter(result => result.score <= this.fuse.options.threshold).map(result => result.item);
         }
 
         if (matches.length) {
@@ -750,21 +761,16 @@ class Matcher {
     }
 
     matchTagData(tagData, text) {
-        const {condition, value, name} = tagData;
-        const definition = getTagDefinition(name); // Get the tag definition.
+        const { condition, value, name } = tagData;
+        const definition = getTagDefinition(name);
         const lowerText = text.toLowerCase();
 
         const checkDate = (dateStr) => {
-            if (definition.dataType !== "time") return false; // Only applicable for time.
+            if (definition.dataType !== "time") return false;
             try {
                 const limitDate = parseISO(dateStr);
                 if (!isValidDate(limitDate)) return false;
-
-                // Find *any* valid date in the text.
-                return (lowerText.match(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z/g) || []).some(date => {
-                    const d = parseISO(date);
-                    return isValidDate(d); // Check if *this* matched date is valid.
-                });
+                return (lowerText.match(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z/g) || []).some(isValidDate);
             } catch {
                 return false;
             }
@@ -773,7 +779,6 @@ class Matcher {
         switch (condition) {
             case "is between":
                 if (definition.dataType === "time") {
-                    // For time, ensure dates are valid before comparison.
                     try {
                         const lowerDate = parseISO(value.lower);
                         const upperDate = parseISO(value.upper);
@@ -787,7 +792,6 @@ class Matcher {
                         return false;
                     }
                 } else {
-                    // For numeric values, parse and check if any numbers in text fall within range.
                     const lower = parseFloat(value.lower);
                     const upper = parseFloat(value.upper);
                     if (isNaN(lower) || isNaN(upper)) return false;
@@ -797,7 +801,7 @@ class Matcher {
                 try {
                     return new RegExp(value, "i").test(lowerText);
                 } catch {
-                    return false; // Invalid regex.
+                    return false;
                 }
             case "is before":
                 if (!checkDate(value)) return false;
@@ -821,11 +825,11 @@ class App {
     constructor() {
         this.db = new DB.DB();
         this.matcher = new Matcher(this);
-        this.selected = null; // Currently selected object
+        this.selected = null;
         this.notificationQueue = [];
         this.notificationTimeout = null;
         this.$container = $('<div class="container"></div>');
-        window.nostrClient = this.nostrClient = new Net.Nostr(this.matcher); // Expose for debugging
+        window.nostrClient = this.nostrClient = new Net.Nostr(this.matcher);  //For Nostr
         this.initUI();
     }
 
@@ -840,15 +844,15 @@ class App {
         );
 
         this.editor = new Editor();
-        this.tagger = new Tagger(this.editor, availableTags, {onWidgetUpdate: () => this.updateCurrentObject()});
+        this.tagger = new Tagger(this.editor, availableTags, { onWidgetUpdate: () => this.updateCurrentObject() });
 
-        // Load keys and connect to Nostr if available
+        // Load Nostr keys
         const keys = await DB.loadKeys();
         if (keys) {
             window.keys = keys;
-            window.nostrClient.connect();
+            window.nostrClient.connect(); // Connect to Nostr relays
         }
-        this.setView("dashboard"); // Initial view
+        this.setView("dashboard"); // Set initial view
     }
 
     setView(viewName) {
@@ -856,11 +860,11 @@ class App {
         switch (viewName) {
             case "dashboard":
                 view = new DashboardView(this);
-                view.render();
+                view.render(); // Render the dashboard
                 break;
             case "content":
                 view = new ContentView(this);
-                this.renderList();
+                this.renderList(); // Initial list rendering
                 break;
             case "settings":
                 view = new SettingsView(this);
@@ -947,10 +951,9 @@ class App {
             ALLOWED_ATTR: ["class", "contenteditable", "tabindex", "id", "aria-label"]
         });
 
-
         try {
-            // Check for duplicate names (excluding the current object being edited)
             const allObjects = await this.db.getAll();
+            // Check for duplicate names (excluding the current object being edited)
             if (allObjects.some(o => o.name.toLowerCase() === name.toLowerCase() && o.id !== this.selected.id)) {
                 this.showNotification("An object with this name already exists.", "warning");
                 return;
@@ -971,6 +974,7 @@ class App {
         }
     }
 
+
     extractTags(html) {
         const parser = new DOMParser();
         const doc = parser.parseFromString(html, "text/html");
@@ -979,23 +983,24 @@ class App {
         return Array.from(tagElements).map(el => {
             const name = el.querySelector(".tag-name").textContent.trim().toLowerCase();
             const condition = el.querySelector(".tag-condition").value;
-            const tagDef = getTagDefinition(name);
+            const tagDef = getTagDefinition(name);  //Get the tag definition
 
+            // Helper function to get value based on condition and data type
             const getValue = () => {
                 if (condition === "is between") {
                     const lower = el.querySelector(".tag-value.lower")?.value || "";
                     const upper = el.querySelector(".tag-value.upper")?.value || "";
                     return {
-                        lower: tagDef.dataType === "time" ? (lower ? formatISO(parseISO(lower)) : "") : lower,
-                        upper: tagDef.dataType === "time" ? (upper ? formatISO(parseISO(upper)) : "") : upper,
+                        lower: tagDef.dataType === "time" ? (lower && isValidDate(parseISO(lower)) ? formatISO(parseISO(lower)) : "") : lower,
+                        upper: tagDef.dataType === "time" ? (upper && isValidDate(parseISO(upper)) ? formatISO(parseISO(upper)) : "") : upper,
                     };
                 } else {
                     const value = el.querySelector(".tag-value")?.value || "";
-                    return tagDef.dataType === "time" ? (value ? formatISO(parseISO(value)) : "") : value;
+                    return tagDef.dataType === "time" ? (value && isValidDate(parseISO(value)) ? formatISO(parseISO(value)) : "") : value;
                 }
             };
 
-            return {name, condition, value: getValue()};
+            return { name, condition, value: getValue() };
         });
     }
 
@@ -1009,14 +1014,12 @@ class App {
 
         this.selected.content = sanitizedContent;
         this.selected.tags = this.extractTags(sanitizedContent);
+        // No need to set updatedAt here; only on initial save
 
-        // No need to update `updatedAt` here, as this is for *live* updates,
-        // and we only want to change the `updatedAt` field when explicitly saving.
-
-        this.db.save(this.selected)
+        this.db.save(this.selected) // Save changes to DB
             .then(() => {
-                this.nostrClient.publish(this.selected);
-                this.editor.setContent(sanitizedContent); // Reflect changes in the editor.
+                this.nostrClient.publish(this.selected); // Publish to Nostr
+                this.editor.setContent(sanitizedContent); // Reflect changes
             })
             .catch(() => this.showNotification("Object update failed.", "error"));
     }
@@ -1034,9 +1037,8 @@ class App {
         }
     }
 
-    // Notification System
     showNotification(message, type = "info") {
-        this.notificationQueue.push({message, type});
+        this.notificationQueue.push({ message, type });
         if (!this.notificationTimeout) {
             this.showNextNotification();
         }
@@ -1048,20 +1050,19 @@ class App {
             return;
         }
 
-        const {message, type} = this.notificationQueue.shift();
+        const { message, type } = this.notificationQueue.shift();
         const $notification = $(`<div class="notification ${type}" role="status">${message}</div>`).appendTo("#notification-area");
 
-        $notification.fadeIn(300, () => {
+        $notification.fadeIn(300, () => { // Fade in
             this.notificationTimeout = setTimeout(() => {
-                $notification.fadeOut(300, () => {
+                $notification.fadeOut(300, () => { // Fade out
                     $notification.remove();
-                    this.showNextNotification(); // Show the next notification
+                    this.showNextNotification();
                 });
-            }, 4000);
+            }, 4000); // Display for 4 seconds
         });
     }
 
-    // Loading Indicator
     showLoading() {
         $(".loading-overlay").show();
     }
@@ -1071,7 +1072,7 @@ class App {
     }
 }
 
-// Initialize the app on DOMContentLoaded
+// Initialize the app
 document.addEventListener("DOMContentLoaded", () => {
-    window.app = new App(); // Make the app instance globally accessible
+    window.app = new App();
 });
