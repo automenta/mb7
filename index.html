@@ -1,11 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Collaborative Reality Editor</title>
     <style>
-        /* ... (Previous CSS - No changes needed here) ... */
         body { margin: 0; font-family: Arial, sans-serif; }
         .container { display: flex; height: 100vh; }
         .sidebar-left { width: 220px; background: #f0f0f0; padding: 10px; border-right: 1px solid #ccc; overflow-y: auto; }
@@ -23,7 +22,6 @@
         #object-list .object-item:hover { background: #fafafa; }
         .toolbar { background: #eee; padding: 5px; border: 1px solid #ccc; position: relative; }
         .toolbar button { margin-right: 5px; }
-
         #editor { border: 1px solid #ccc; min-height: 200px; padding: 10px; margin-bottom: 5px; }
         .metadata-panel { margin-bottom: 5px; }
         /* Inline Tag Styles (Adjusted for Context Menu) */
@@ -46,7 +44,7 @@
             text-align: center;
         }
         .inline-tag .tag-controls {
-            display: inline-block; /* Changed for context menu */
+            display: inline-block;
             margin-left: 4px;
             font-size: 0.8em;
             color: #666;
@@ -59,71 +57,75 @@
             z-index: 10;
             padding: 5px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-            white-space: nowrap; /* Prevent wrapping of options */
+            white-space: nowrap;
         }
-        .inline-tag:hover .tag-controls { visibility: visible; } /* Show on hover */
+        .inline-tag:hover .tag-controls { visibility: visible; }
         .inline-tag .tag-controls button {
             background: none;
-            border: 1px solid transparent; /* Add some spacing, but keep transparent background */
+            border: 1px solid transparent;
             cursor: pointer;
             color: #c00;
             padding: 2px 5px;
-            display: block; /* Each button on a new line */
+            display: block;
             text-align: left;
         }
-        .inline-tag .tag-controls button:hover{
+        .inline-tag .tag-controls button:hover {
             border-color: #ccc;
         }
-
         /* Tag Insertion Menu (Adjusted) */
         #tag-menu {
             position: absolute;
             background: #fff;
             border: 1px solid #ccc;
             padding: 10px;
-            display: none; /* Hidden by default */
+            display: none;
             box-shadow: 0 2px 8px rgba(0,0,0,0.2);
             z-index: 1100;
             max-height: 300px;
             overflow-y: auto;
-            min-width: 150px; /* Set a minimum width */
+            min-width: 150px;
         }
         #tag-menu ul { list-style: none; padding: 0; margin: 0; }
-        #tag-menu li { padding: 3px 0; cursor: pointer; white-space: nowrap;}
+        #tag-menu li { padding: 3px 0; cursor: pointer; white-space: nowrap; }
         #tag-menu li:hover, #tag-menu li.selected { background: #f0f0f0; }
-        #tag-menu li.selected { background-color: #add8e6; /* Light blue highlight */}
+        #tag-menu li.selected { background-color: #add8e6; }
         #tag-menu input[type="text"] { width: calc(100% - 12px); padding: 5px; margin-bottom: 5px; }
-
-
         /* Notification */
         #notification-area { position: fixed; bottom: 20px; right: 20px; width: 300px; background: #ffffcc; border: 1px solid #cccc99; padding: 10px; display: none; z-index: 1200; }
         .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); display: none; justify-content: center; align-items: center; z-index: 1300; }
         .spinner { border: 4px solid rgba(255, 255, 255, 0.3); border-top: 4px solid #fff; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
     </style>
     <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.8/dist/purify.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/idb-keyval@6.2.0/dist/umd.js"></script>  <!-- idb-keyval -->
-    <script src="https://cdn.jsdelivr.net/npm/date-fns@2.29.3/dist/date_fns.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/nanoid@3.3.4/nanoid.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/idb-keyval@6.2.0/dist/umd.js"></script>
 
     <script type="module">
         import { relayInit, getEventHash, signEvent, getPublicKey } from "https://esm.sh/nostr-tools@1.8.0";
+        import * as dateFns from 'https://cdn.jsdelivr.net/npm/date-fns@2.29.3/esm/index.js';
+        import * as nanoid from 'https://cdn.jsdelivr.net/npm/nanoid@5.0.9/nanoid.js';
 
         const { set, get, del, keys: idbKeys, clear } = idbKeyval;
         const KEY_STORAGE = "nostr_keys";
-        const OBJECT_STORE_NAME = "nobjects"; // Use a consistent store name
+        const OBJECT_STORE_NAME = "nobjects";
 
-        // Get keys, using idb-keyval, and generating if not present
+        function generateNostrPrivateKey() {
+            const array = new Uint8Array(32);
+            window.crypto.getRandomValues(array);
+            return Array.from(array)
+                .map(b => b.toString(16).padStart(2, '0'))
+                .join('');
+        }
+
         const getKeys = async () => {
             try {
                 return await get(KEY_STORAGE) || await (async () => {
-                    const priv = nanoid.nanoid(); // Use nanoid for private key
+                    // Use the proper key generation function
+                    const priv = generateNostrPrivateKey();
                     const pub = getPublicKey(priv);
                     const k = { priv, pub };
-                    await set(KEY_STORAGE, k);  // Await the set operation
+                    await set(KEY_STORAGE, k);
                     return k;
                 })();
             } catch (error) {
@@ -132,7 +134,6 @@
                 return null;
             }
         };
-
 
 
         // Ontology definition
@@ -144,15 +145,14 @@
             "Emotion": { "Mood": { dataType: "string", conditions: { "exact": { label: "is" } }, defaultCondition: "exact", allowedNatures: ["definite"] } }
         };
 
-        // Helper function to find tag definitions (using lodash's find)
+        // Helper to find tag definitions
         const findTagDefinition = (tagName) => _.find(ontology, (category) => category[tagName])?.[tagName];
 
-        // Function to insert a node at the current cursor position
+        // Insert node at current cursor position
         const insertNodeAtCursor = ($node) => {
-            app.$editor.focus();
+            window.app.$editor.focus();
             const sel = window.getSelection();
             let range = sel?.rangeCount > 0 ? sel.getRangeAt(0) : window.savedRange;
-
             if (range) {
                 range.deleteContents();
                 range.insertNode($node.get(0));
@@ -171,14 +171,14 @@
                 const tagDef = findTagDefinition(tagName);
                 this.condition = condition || tagDef?.defaultCondition || "exact";
                 this.value = value || (this.condition === "between" ? { lower: "", upper: "" } : "");
-                this.nature = nature || _.first(tagDef?.allowedNatures) || "indefinite"; // Use lodash's first
+                this.nature = nature || _.first(tagDef?.allowedNatures) || "indefinite";
                 this.$el = $('<span class="inline-tag" contenteditable="false"></span>');
-                this.$lower = null;  // Cache input elements
+                this.$lower = null;
                 this.$upper = null;
                 this.$valueInput = null;
                 this.render();
                 this.attachEvents();
-                this.contextMenuVisible = false; // Track context menu visibility
+                this.contextMenuVisible = false;
             }
 
             render() {
@@ -186,7 +186,6 @@
                 const tagDef = findTagDefinition(this.tagName);
                 const condLabel = tagDef?.conditions[this.condition]?.label || this.condition;
                 this.$el.append($(`<span class="tag-condition"> ${condLabel} </span>`));
-
                 if (this.condition === "between") {
                     this.$lower = $(`<input type="text" class="tag-value lower" placeholder="min" value="${this.value.lower}" />`);
                     this.$upper = $(`<input type="text" class="tag-value upper" placeholder="max" value="${this.value.upper}" />`);
@@ -195,32 +194,26 @@
                     this.$valueInput = $(`<input type="text" class="tag-value" placeholder="value" value="${this.value}" />`);
                     this.$el.append(this.$valueInput);
                 }
-
                 this.$el.append($(`<span class="tag-nature"> (${this.nature})</span>`));
-                this.populateContextMenu(); // Create the context menu
+                this.populateContextMenu();
             }
 
             populateContextMenu() {
                 const $controls = $(`<span class="tag-controls"></span>`);
                 this.$el.append($controls);
                 const tagDef = findTagDefinition(this.tagName);
-
-                // Dynamically create context menu buttons based on ontology
-                _.forEach(tagDef?.conditions, (condData, condKey) => {  // Use lodash forEach
+                _.forEach(tagDef?.conditions, (condData, condKey) => {
                     $controls.append($(`<button data-action="setCondition" data-condition="${condKey}">${condData.label}</button>`));
                 });
-
-                _.forEach(tagDef?.allowedNatures, (nature) => { // Use lodash forEach
+                _.forEach(tagDef?.allowedNatures, (nature) => {
                     $controls.append($(`<button data-action="setNature" data-nature="${nature}">${nature}</button>`));
                 });
-
                 $controls.append($(`<button data-action="remove">Remove Tag</button>`));
             }
 
             attachEvents() {
-                // Use a single event handler for actions, using data attributes
                 this.$el.on('click', '[data-action]', (e) => {
-                    e.stopPropagation(); // Prevent event bubbling
+                    e.stopPropagation();
                     const action = $(e.currentTarget).data('action');
                     switch (action) {
                         case 'remove': this.removeTag(); break;
@@ -228,11 +221,7 @@
                         case 'setNature': this.setNature($(e.currentTarget).data('nature')); break;
                     }
                 });
-
-                // Update value on input blur
                 this.$el.find("input").on("blur", () => this.updateFromInputs());
-
-                // Hide context menu when clicking outside
                 $(document).on("click", (e) => {
                     if (!this.$el.is(e.target) && this.$el.has(e.target).length === 0 && this.contextMenuVisible) {
                         this.$el.find(".tag-controls").css("visibility", "hidden");
@@ -241,47 +230,37 @@
                 });
             }
 
-            // Update the tag's value from input fields
             updateFromInputs() {
-                this.value = this.condition === "between" ? { lower: this.$lower.val(), upper: this.$upper.val() } : this.$valueInput.val();
-                this.debouncedUpdateNobject(); // Debounced update
+                this.value = this.condition === "between"
+                    ? { lower: this.$lower.val(), upper: this.$upper.val() }
+                    : this.$valueInput.val();
+                this.debouncedUpdateNobject();
             }
 
-            // Remove the tag
             removeTag() { setTimeout(() => this.$el.remove(), 0); this.updateNobject(); }
-
-            // Set the tag's condition
             setCondition(newCondition) {
                 this.condition = newCondition;
-                // Ensure correct value type when changing condition
-                this.value = (newCondition === "between") ?  { lower: "", upper: "" } : ""; //Simplified conditional
-                this.render();  // Re-render the tag
-                this.updateNobject(); // Update immediately
+                this.value = (newCondition === "between") ? { lower: "", upper: "" } : "";
+                this.render();
+                this.updateNobject();
             }
-
-            // Set the tag's nature
             setNature(newNature) {
                 this.nature = newNature;
-                this.render(); // Re-render the tag
-                this.updateNobject();  // Update immediately
+                this.render();
+                this.updateNobject();
             }
-
-            // Update the Nobject in storage and publish (non-debounced)
             updateNobject = () => {
-                if (app.selected) {
-                    app.selected.content = app.$editor.html(); // Get current editor content
-                    app.store.save(app.selected).then(() => {
-                        nostrClient.publish(app.selected); // Publish after saving
+                if (window.app.selected) {
+                    window.app.selected.content = window.app.$editor.html();
+                    window.app.store.save(window.app.selected).then(() => {
+                        nostrClient.publish(window.app.selected);
                     }).catch(error => {
-                         console.error("Error in updateNobject:", error);
+                        console.error("Error in updateNobject:", error);
                     });
                 }
             };
-
-            // Debounced NObject Update (only for value entry, using Lodash's debounce)
             debouncedUpdateNobject = _.debounce(this.updateNobject, 500);
         }
-
 
         // Sidebar Class
         class Sidebar {
@@ -292,48 +271,65 @@
                 this.buildNostrStatus();
                 this.buildNostrFeed();
             }
-
             buildMenu() {
                 const menuItems = [
-                    { label: 'Me', view: 'me-view' }, { label: 'Friends', view: 'friends-view' },
-                    { label: 'Network', view: 'network-view' }, { label: 'Database', view: 'database-view' },
+                    { label: 'Me', view: 'me-view' },
+                    { label: 'Friends', view: 'friends-view' },
+                    { label: 'Network', view: 'network-view' },
+                    { label: 'Database', view: 'database-view' },
                     { label: 'Settings', view: 'settings-view' }
                 ];
-                // Use map for concise list creation
-                this.$el.append($('<h3>Menu</h3>'), $('<ul></ul>').append(menuItems.map(item => $(`<li><a href="#" data-view="${item.view}">${item.label}</a></li>`))), $('<hr>'));
+                this.$el.append(
+                    $('<h3>Menu</h3>'),
+                    $('<ul></ul>').append(menuItems.map(item => $(`<li><a href="#" data-view="${item.view}">${item.label}</a></li>`))),
+                    $('<hr>')
+                );
             }
-
             buildSidebarLinks() {
                 const links = [ { label: 'Recent Objects', list: 'recent' }, { label: 'Matches', list: 'matches' } ];
-                this.$el.append($('<h3>Sidebar</h3>'), $('<ul></ul>').append(links.map(link => $(`<li><a href="#" data-list="${link.list}">${link.label}</a></li>`))), $('<hr>'));
+                this.$el.append(
+                    $('<h3>Sidebar</h3>'),
+                    $('<ul></ul>').append(links.map(link => $(`<li><a href="#" data-list="${link.list}">${link.label}</a></li>`))),
+                    $('<hr>')
+                );
             }
-
             buildNostrStatus() { this.$el.append($('<h3>Nostr Status</h3>'), $('<div id="nostr-connection-status">Connecting...</div>'), $('<hr>')); }
             buildNostrFeed() { this.$el.append($('<h3>Nostr Feed</h3>'), $('<div id="nostr-feed" style="max-height: 150px; overflow-y: auto;"></div>')); }
         }
 
-        // Simple View Class (for static views)
-        class SimpleView { constructor(title, content) { this.$el = $(`<div class="view" style="display: none;"><h2>${title}</h2><p>${content}</p></div>`); } }
+        // Simple View Class
+        class SimpleView {
+            constructor(title, content) {
+                this.$el = $(`<div class="view" style="display: none;"><h2>${title}</h2><p>${content}</p></div>`);
+            }
+        }
 
         // Database View Class
         class DatabaseView {
             constructor() {
                 this.$el = $('<div id="database-view" class="view active"></div>');
-                this.$filterBar = $(`<div class="filter-bar"><input type="text" id="search-input" placeholder="Search TODOs..." /><button id="search-btn">Search</button></div>`);
+                this.$filterBar = $(`<div class="filter-bar">
+          <input type="text" id="search-input" placeholder="Search TODOs..." />
+          <button id="search-btn">Search</button>
+        </div>`);
                 this.$objectList = $('<div id="object-list"></div>');
                 this.$newObjectBtn = $('<button id="new-object-btn">New TODO</button>');
                 this.$editorContainer = $(`
-                    <div id="editor-container" style="display: none;">
-                        <div class="toolbar">
-                            <button id="bold-btn"><b>B</b></button>
-                            <button id="italic-btn"><i>I</i></button>
-                            <button id="insert-tag-btn">Insert Tag</button>
-                        </div>
-                        <div id="editor" contenteditable="true"></div>
-                        <div class="metadata-panel"><label for="object-name">Name:</label><input type="text" id="object-name" /></div>
-                        <button id="save-object-btn">Save</button>
-                        <button id="cancel-edit-btn">Cancel</button>
-                    </div>`);
+          <div id="editor-container" style="display: none;">
+            <div class="toolbar">
+              <button id="bold-btn"><b>B</b></button>
+              <button id="italic-btn"><i>I</i></button>
+              <button id="insert-tag-btn">Insert Tag</button>
+            </div>
+            <div id="editor" contenteditable="true"></div>
+            <div class="metadata-panel">
+              <label for="object-name">Name:</label>
+              <input type="text" id="object-name" />
+            </div>
+            <button id="save-object-btn">Save</button>
+            <button id="cancel-edit-btn">Cancel</button>
+          </div>
+        `);
                 this.$el.append(this.$filterBar, this.$objectList, this.$newObjectBtn, this.$editorContainer);
             }
         }
@@ -343,65 +339,58 @@
             constructor() {
                 this.$el = $('<div class="main-content"></div>').append($('<div class="content"></div>'));
                 this.views = {
-                    'database-view': new DatabaseView(), 'me-view': new SimpleView('User Profile', 'Your personal profile and settings.'),
+                    'database-view': new DatabaseView(),
+                    'me-view': new SimpleView('User Profile', 'Your personal profile and settings.'),
                     'friends-view': new SimpleView('Friends', 'Friend activity and connection updates.'),
                     'network-view': new SimpleView('Network Activity', 'Relay messages and network events.'),
                     'settings-view': new SimpleView('Settings', 'Application configuration.')
                 };
-                // Add all views to the content area
-                _.forEach(this.views, view => this.$el.find('.content').append(view.$el)); // Use lodash forEach
+                _.forEach(this.views, view => this.$el.find('.content').append(view.$el));
             }
-
-            showView(viewName) { this.$el.find('.view').removeClass('active').hide(); this.views[viewName]?.$el.addClass('active').show(); }
+            showView(viewName) {
+                this.$el.find('.view').removeClass('active').hide();
+                this.views[viewName]?.$el.addClass('active').show();
+            }
         }
 
         // Matcher Class
         class Matcher {
             constructor(app) { this.app = app; }
-
-          async matchEvent(ev) {
+            async matchEvent(ev) {
                 const eventText = ev.content.toLowerCase();
                 const matches = [];
-            const objs = await this.app.store.getAll();
-
-              for (const obj of objs) { // Iterate using for...of
-                        const $temp = $('<div></div>').html(obj.content);
-                        let objMatched = false;
-                        let allTagsMustMatch = false; // Set to true to require ALL tags to match
-                        let matchedTagCount = 0;
-
-                        $temp.find('.inline-tag').each((index, element) => {
-                            const $this = $(element);
-                            const tagName = $this.find('.tag-name').text();
-                            const tagDef = findTagDefinition(tagName);
-                            if (!tagDef) return;
-
-                            const condition = $this.find('.tag-condition').text().trim();
-                            let tagMatched = false;
-
-                            if (condition.includes("between")) {
-                                const lower = parseFloat($this.find('input.lower').val());
-                                const upper = parseFloat($this.find('input.upper').val());
-                                const numbersInEvent = eventText.match(/\d+/g)?.map(Number) || [];
-                                tagMatched = numbersInEvent.some(num => !isNaN(lower) && !isNaN(upper) && num >= lower && num <= upper);
-
-                            } else {
-                                const tagVal = $this.find('input.tag-value').val()?.toLowerCase();
-                                if (tagVal) {
-                                    tagMatched = (condition === "is exactly") ? eventText === tagVal : eventText.includes(tagVal);
-                                }
+                const objs = await this.app.store.getAll();
+                for (const obj of objs) {
+                    const $temp = $('<div></div>').html(obj.content);
+                    let objMatched = false;
+                    let allTagsMustMatch = false;
+                    let matchedTagCount = 0;
+                    $temp.find('.inline-tag').each((index, element) => {
+                        const $this = $(element);
+                        const tagName = $this.find('.tag-name').text();
+                        const tagDef = findTagDefinition(tagName);
+                        if (!tagDef) return;
+                        const condition = $this.find('.tag-condition').text().trim();
+                        let tagMatched = false;
+                        if (condition.includes("between")) {
+                            const lower = parseFloat($this.find('input.lower').val());
+                            const upper = parseFloat($this.find('input.upper').val());
+                            const numbersInEvent = eventText.match(/\d+/g)?.map(Number) || [];
+                            tagMatched = numbersInEvent.some(num => !isNaN(lower) && !isNaN(upper) && num >= lower && num <= upper);
+                        } else {
+                            const tagVal = $this.find('input.tag-value').val()?.toLowerCase();
+                            if (tagVal) {
+                                tagMatched = (condition === "is exactly") ? eventText === tagVal : eventText.includes(tagVal);
                             }
-                            if (tagMatched) matchedTagCount++;
-                        });
-
-                        objMatched = allTagsMustMatch ? matchedTagCount === $temp.find('.inline-tag').length : matchedTagCount > 0;
-                        if (objMatched) matches.push(obj);
-              }
-
-                    if (matches.length > 0) {
-                        this.app.notifyMatch(matches, ev);
-                    }
-
+                        }
+                        if (tagMatched) matchedTagCount++;
+                    });
+                    objMatched = allTagsMustMatch ? matchedTagCount === $temp.find('.inline-tag').length : matchedTagCount > 0;
+                    if (objMatched) matches.push(obj);
+                }
+                if (matches.length > 0) {
+                    this.app.notifyMatch(matches, ev);
+                }
             }
         }
 
@@ -411,28 +400,30 @@
                 try {
                     const allKeys = await idbKeys();
                     const allObjs = await Promise.all(allKeys.map(key => get(key)));
-                    return _.orderBy(allObjs.filter(obj => obj != null), ['updatedAt'], ['desc']); // Filter out null values and order
+                    return _.orderBy(allObjs.filter(obj => obj != null), ['updatedAt'], ['desc']);
                 } catch (error) {
                     console.error("Error getting all objects:", error);
                     alert("Failed to retrieve data. IndexedDB might be unavailable.");
-                    return []; // Return an empty array on error
+                    return [];
                 }
             }
-
             async save(o) {
+                if (!o.id) {
+                    console.error("Attempted to save an object without an id:", o);
+                    throw new Error("Missing id property on object");
+                }
                 try {
-                    await set(o.id, o); // Use idb-keyval's set
-                    return o; // Return the saved object
+                    await set(o.id, o);
+                    return o;
                 } catch (error) {
                     console.error("Error saving object:", error);
                     alert("Failed to save data. IndexedDB might be unavailable.");
-                    throw error; // Re-throw the error to be caught by callers
+                    throw error;
                 }
             }
-
             async delete(id) {
                 try {
-                    await del(id);  //Use idb-keyval's delete function
+                    await del(id);
                 } catch(error){
                     console.error("Error deleting object:", error);
                     alert("Failed to delete data. IndexedDB might be unavailable.");
@@ -451,33 +442,54 @@
             }
 
             setupRelayEvents() {
-                this.relay.on("connect", () => { console.log("Connected to relay"); $("#nostr-connection-status").text("Connected"); this.subscribe(); this.subscribeFeed(); });
-                this.relay.on("error", (err) => { console.error("Relay error", err); $("#nostr-connection-status").text(`Error: ${err}`); });
-                this.relay.on("disconnect", () => { console.log("Disconnected"); $("#nostr-connection-status").text("Disconnected"); });
+                this.relay.on("connect", () => {
+                    console.log("Connected to relay");
+                    $("#nostr-connection-status").text("Connected");
+                    this.subscribe();
+                    this.subscribeFeed();
+                });
+                this.relay.on("error", (err) => {
+                    console.error("Relay error", err);
+                    $("#nostr-connection-status").text(`Error: ${err}`);
+                });
+                this.relay.on("disconnect", () => {
+                    console.log("Disconnected");
+                    $("#nostr-connection-status").text("Disconnected");
+                });
             }
 
             subscribe() {
                 this.relay.sub([{ kinds: [30000] }]).on("event", (ev) => {
                     try {
+                        // Only process events whose content appears to be valid JSON.
+                        if (!ev.content || ev.content.trim()[0] !== '{') {
+                            //console.warn("Invalid JSON content received:", ev.content);
+                            return;
+                        }
                         const data = JSON.parse(ev.content);
+                        if (!data.id)
+                            return; //???
+
                         const sanitizedContent = DOMPurify.sanitize(data.content);
-                        app.store.getAll().then(allObjs => { // Use getAll to check for existing object
+                        window.app.store.getAll().then(allObjs => {
                             const existingObj = allObjs.find(o => o.id === data.id);
                             const nobj = existingObj
                                 ? { ...existingObj, name: data.name, content: sanitizedContent, tags: ev.tags.filter(t => t[0] === "t").map(t => t[1]), updatedAt: ev.created_at * 1000 }
                                 : { id: data.id, name: data.name, content: sanitizedContent, tags: ev.tags.filter(t => t[0] === "t").map(t => t[1]), createdAt: ev.created_at * 1000, updatedAt: ev.created_at * 1000 };
-
-                            app.store.save(nobj).then(() => app.renderList()); // Save and re-render
+                            window.app.store.save(nobj).then(() => window.app.renderList());
                         });
-                    } catch (e) { console.error("Parsing error", e); }
+                    } catch (e) {
+                        console.error("Parsing error", e);
+                    }
                 });
             }
 
             subscribeFeed() {
                 this.relay.sub([{ kinds: [1] }]).on("event", (ev) => {
-                    const timeStr = dateFns.format(new Date(ev.created_at * 1000), 'p'); // Use date-fns
-                    // Sanitize and prepend feed item, removing old ones
-                    $("#nostr-feed").prepend(`<div>[${timeStr}] ${ev.pubkey}: ${DOMPurify.sanitize(ev.content)}</div>`).children(':gt(19)').remove();
+                    const timeStr = dateFns.format(new Date(ev.created_at * 1000), 'p');
+                    $("#nostr-feed")
+                        .prepend(`<div>[${timeStr}] ${ev.pubkey}: ${DOMPurify.sanitize(ev.content)}</div>`)
+                        .children(':gt(19)').remove();
                     this.matcher.matchEvent(ev);
                 });
             }
@@ -485,9 +497,15 @@
             publish(nobj) {
                 const sanitizedContent = DOMPurify.sanitize(nobj.content);
                 const content = JSON.stringify({ id: nobj.id, name: nobj.name, content: sanitizedContent });
-                const ev = { pubkey: keys.pub, created_at: Math.floor(nobj.updatedAt / 1000), kind: 30000, tags: nobj.tags.map(tag => ["t", tag]), content };
+                const ev = {
+                    pubkey: window.keys.pub,
+                    created_at: Math.floor(nobj.updatedAt / 1000),
+                    kind: 30000,
+                    tags: nobj.tags.map(tag => ["t", tag]),
+                    content
+                };
                 ev.id = getEventHash(ev);
-                ev.sig = signEvent(ev, keys.priv);
+                ev.sig = signEvent(ev, window.keys.priv);
                 this.relay.publish(ev);
             }
         }
@@ -496,177 +514,158 @@
         class App {
             constructor() {
                 this.store = new NObjectStore();
-                this.selected = null; // Track currently selected object
-                this.$editor = $("#editor"); // Cache the editor element
-                this.$objectNameInput = $("#object-name");  //Cache the object name input
+                this.selected = null;
+                this.$editor = $("#editor");
+                this.$objectNameInput = $("#object-name");
                 this.matcher = new Matcher(this);
-                this.debouncedRenderList = _.debounce(() => this.renderList(), 300); // Use lodash debounce
+                this.debouncedRenderList = _.debounce(() => this.renderList(), 300);
                 this.initUI();
-                this.renderList(); // Initial render
+                this.renderList();
             }
-
             async initUI() {
                 this.$container = $('<div class="container"></div>');
                 this.sidebar = new Sidebar();
                 this.mainContent = new MainContent();
                 this.$container.append(this.sidebar.$el, this.mainContent.$el);
-                $("body").append(this.$container, $('<div id="notification-area"></div>'), $('<div class="loading-overlay"><div class="spinner"></div></div>')); // Add notification area and loading overlay
-
-              try {
-                // Ensure keys are loaded before setting up event handlers
-                await this.ensureKeysLoaded();
-                this.setupEventHandlers();
-              } catch (error) {
-                console.error("Error initializing UI:", error);
-                // Handle the error, e.g., display an error message to the user
-              }
+                $("body").append(
+                    this.$container,
+                    $('<div id="notification-area"></div>'),
+                    $('<div class="loading-overlay"><div class="spinner"></div></div>')
+                );
+                try {
+                    await this.ensureKeysLoaded();
+                    this.setupEventHandlers();
+                } catch (error) {
+                    console.error("Error initializing UI:", error);
+                }
             }
-
-             async ensureKeysLoaded() {
-                if (!keys) {
-                  await getKeys(); // Ensure keys are loaded
+            async ensureKeysLoaded() {
+                if (!window.keys) {
+                    await getKeys();
                 }
             }
             setupEventHandlers() {
-                // Sidebar navigation
                 this.sidebar.$el.on("click", "a[data-view]", (e) => { e.preventDefault(); this.setView($(e.currentTarget).data("view")); });
-                this.sidebar.$el.on("click", "a[data-list]", (e) => { e.preventDefault(); if ($(e.currentTarget).data("list") === "recent") { this.setView("database-view"); this.renderList(); } });
-
-                // Database view actions
+                this.sidebar.$el.on("click", "a[data-list]", (e) => {
+                    e.preventDefault();
+                    if ($(e.currentTarget).data("list") === "recent") {
+                        this.setView("database-view");
+                        this.renderList();
+                    }
+                });
                 $("#search-btn").on("click", () => this.debouncedRenderList($("#search-input").val()));
                 $("#new-object-btn").on("click", () => this.createNewObject());
                 $("#save-object-btn").on("click", () => this.saveObject());
                 $("#cancel-edit-btn").on("click", () => this.hideEditor());
-
-                // Editor toolbar actions
                 $("#bold-btn").on("click", () => document.execCommand("bold"));
                 $("#italic-btn").on("click", () => document.execCommand("italic"));
                 $("#insert-tag-btn").on("click", (e) => this.showTagMenu(e));
-
-                // Object list item click (using event delegation)
                 $("#object-list").on("click", ".object-item", async (e) => {
                     const id = $(e.currentTarget).data("id");
-                  try {
-                    const objs = await this.store.getAll();
-                        const objToEdit = _.find(objs, { id }); // Use lodash find
+                    try {
+                        const objs = await this.store.getAll();
+                        const objToEdit = _.find(objs, { id });
                         if (objToEdit) {
                             this.editObject(objToEdit);
                         }
-                  } catch (error){
-                      console.error("Error editing object: ", error);
-                  }
+                    } catch (error) {
+                        console.error("Error editing object: ", error);
+                    }
                 });
-
-                // Save range on mouseup/keyup in editor
                 this.$editor.on("mouseup keyup", () => {
                     const sel = window.getSelection();
                     if (sel?.rangeCount > 0) {
                         window.savedRange = sel.getRangeAt(0);
                     }
                 });
-
-                // Hide tag controls when clicking outside the editor
                 $(document).on("click", (e) => {
                     if (!$(e.target).closest("#editor").length) {
                         $(".inline-tag .tag-controls").css("visibility", "hidden");
                     }
                 });
             }
-
-            setView(v) { this.mainContent.showView(v); if (v !== "database-view") this.hideEditor(); }
-
-             async renderList(filter = "") {
+            setView(v) {
+                this.mainContent.showView(v);
+                if (v !== "database-view") this.hideEditor();
+            }
+            async renderList(filter = "") {
                 const $list = $("#object-list");
-                try{
-                  const objs = await this.store.getAll();
+                try {
+                    const objs = await this.store.getAll();
                     let filteredObjs = objs;
                     if (filter.trim()) {
-                        const regex = new RegExp(_.escapeRegExp(filter), 'i'); // Use lodash escapeRegExp
-                        filteredObjs = _.filter(objs, (o) => regex.test(o.name) || regex.test(o.content)); // Use lodash filter
+                        const regex = new RegExp(_.escapeRegExp(filter), 'i');
+                        filteredObjs = _.filter(objs, (o) => regex.test(o.name) || regex.test(o.content));
                     }
-
                     $list.empty().append(filteredObjs.length
-                        ? _.map(filteredObjs, o => this.renderObjectItem(o))  // Use lodash map
+                        ? _.map(filteredObjs, o => this.renderObjectItem(o))
                         : '<p>No TODO items found.  Click "New TODO" to create one.</p>');
-                } catch (error){
+                } catch (error) {
                     console.error("Error rendering list: ", error);
                 }
-
             }
-
-            //Function to create a list item.
-            renderObjectItem(o){
+            renderObjectItem(o) {
                 const safeContent = DOMPurify.sanitize(o.content);
+                const updatedStr = o.updatedAt ? dateFns.format(o.updatedAt, 'Pp') : "?";
                 return $(`
-                    <div class="object-item" data-id="${o.id}">
-                        <strong>${o.name}</strong>
-                        <div>${safeContent}</div>
-                        <small>Updated: ${dateFns.format(o.updatedAt, 'Pp')}</small>
-                    </div>`);
+          <div class="object-item" data-id="${o.id}">
+            <strong>${o.name}</strong>
+            <div>${safeContent}</div>
+            <small>Updated: ${updatedStr}</small>
+          </div>
+        `);
             }
-
             createNewObject() {
-                // Show editor with a new, empty object (using nanoid for ID)
                 this.showEditor({ id: nanoid.nanoid(), name: "", content: "", tags: [], createdAt: Date.now(), updatedAt: Date.now() });
             }
-
             editObject(o) {
-                this.selected = o; // Set the selected object
-                this.showEditor(o);  // Show the editor with the object's data
+                this.selected = o;
+                this.showEditor(o);
             }
-
             showEditor(o) {
                 this.$objectNameInput.val(o.name);
-                this.$editor.html(DOMPurify.sanitize(o.content)); // Sanitize content before loading
+                this.$editor.html(DOMPurify.sanitize(o.content));
                 $("#editor-container").show();
             }
-
             hideEditor() {
                 $("#editor-container").hide();
-                this.selected = null; // Clear selected object
+                this.selected = null;
             }
-
             async saveObject() {
                 const name = this.$objectNameInput.val();
                 const content = this.$editor.html();
-
                 if (!name.trim()) {
                     alert("Name cannot be empty");
                     return;
                 }
-
                 const now = Date.now();
                 const sanitizedContent = DOMPurify.sanitize(content);
-                const o = this.selected ? { ...this.selected, name, content: sanitizedContent, updatedAt: now }
+                const o = this.selected
+                    ? { ...this.selected, name, content: sanitizedContent, updatedAt: now }
                     : { id: nanoid.nanoid(), name, content: sanitizedContent, tags: [], createdAt: now, updatedAt: now };
                 try {
-                await this.store.save(o);  // Await the save operation
-                this.hideEditor();
-                this.renderList();
-                nostrClient.publish(o);
+                    await this.store.save(o);
+                    this.hideEditor();
+                    this.renderList();
+                    nostrClient.publish(o);
                 } catch (error) {
-                    // Error is already handled in NObjectStore, but you can add additional handling here if needed
                     console.error("Error in App.saveObject:", error);
                 }
             }
             showTagMenu(e) {
                 const $menu = $("#tag-menu").empty();
                 const $searchInput = $('<input type="text" placeholder="Search tags...">').appendTo($menu);
-
                 const renderTagList = () => {
-                    $menu.find('ul, strong').remove(); // Clear previous lists
+                    $menu.find('ul, strong').remove();
                     const filterText = $searchInput.val().toLowerCase();
-
-                    _.forEach(ontology, (tags, cat) => { // Use lodash forEach
-                        const filteredTags = _.pickBy(tags, (tagDef, tagName) => _.includes(tagName.toLowerCase(), filterText)); // Use lodash pickBy and includes
-
-                        if (!_.isEmpty(filteredTags)) {  // Use lodash isEmpty
+                    _.forEach(ontology, (tags, cat) => {
+                        const filteredTags = _.pickBy(tags, (tagDef, tagName) => _.includes(tagName.toLowerCase(), filterText));
+                        if (!_.isEmpty(filteredTags)) {
                             $menu.append(`<strong>${cat}</strong>`);
                             const $ul = $("<ul></ul>");
-
-                            _.forEach(filteredTags, (tagDef, tag) => { // Use lodash forEach
+                            _.forEach(filteredTags, (tagDef, tag) => {
                                 const $li = $(`<li>${tag}</li>`).on("click", () => {
-                                    const widget = new InlineTagWidget(tag, tagDef.defaultCondition, "", _.first(tagDef.allowedNatures)); // Use lodash first
+                                    const widget = new InlineTagWidget(tag, tagDef.defaultCondition, "", _.first(tagDef.allowedNatures));
                                     insertNodeAtCursor(widget.$el);
                                     $menu.hide();
                                 });
@@ -676,26 +675,17 @@
                         }
                     });
                 }
-
-                $searchInput.on('input', renderTagList); //Re-render on input.
-
-                renderTagList(); // Initial render
-
+                $searchInput.on('input', renderTagList);
+                renderTagList();
                 let top = e.pageY + 5;
                 let left = e.pageX + 5;
-
-                // Temporarily show to get dimensions, then hide
                 $menu.css({ top: 0, left: 0, display: "block" });
                 const { width: menuWidth, height: menuHeight } = $menu[0].getBoundingClientRect();
                 $menu.hide();
                 const { width: windowWidth, height: windowHeight } = document.documentElement.getBoundingClientRect();
-
-                // Adjust position to prevent overflow, with a small margin
                 left = Math.max(10, Math.min(left, windowWidth - menuWidth - 10));
                 top = Math.max(10, Math.min(top, windowHeight - menuHeight - 10));
                 $menu.css({ top, left, display: "block" });
-
-                //Key handling
                 const handleMenuKeydown = (event) => {
                     if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
                         event.preventDefault();
@@ -704,61 +694,50 @@
                         let $next = (event.key === 'ArrowDown')
                             ? ($current.removeClass('selected').nextAll('li:visible:first').length > 0 ? $current.removeClass('selected').nextAll('li:visible:first') : $items.first())
                             : ($current.removeClass('selected').prevAll('li:visible:first').length > 0 ? $current.removeClass('selected').prevAll('li:visible:first') : $items.last());
-
-                        //Wrap around.
                         if($next.length === 0 && $items.length > 0){
                             $next = (event.key === 'ArrowDown') ? $items.first() : $items.last();
                         }
                         $next.addClass('selected');
-
                     } else if (event.key === 'Enter') {
                         event.preventDefault();
                         $menu.find('li:visible.selected').click();
                     }
                 };
-
                 $menu.on('keydown', handleMenuKeydown);
-
-
-                // Hide menu on click outside, and remove keydown
                 $(document).one("click", (ev) => {
                     if (!$(ev.target).closest("#tag-menu, #insert-tag-btn").length) {
-                        $menu.hide().off('keydown', handleMenuKeydown); // Remove keydown listener when menu is hidden
+                        $menu.hide().off('keydown', handleMenuKeydown);
                     }
                 });
-
-                setTimeout(() => $searchInput.focus(), 0); // Focus after menu is shown and positioned
+                setTimeout(() => $searchInput.focus(), 0);
             }
-
             notifyMatch(matchedObjects, ev) {
                 const formattedDate = dateFns.format(new Date(), 'Pp');
-                const msg = `Match found in ${matchedObjects.length} object(s) for event from ${ev.pubkey}:<br>${_.map(matchedObjects, (obj) => `<em>${obj.name}</em> (updated ${dateFns.format(obj.updatedAt, 'Pp')})`).join('<br>')}`; // Use lodash map and dateFns
+                const msg = `Match found in ${matchedObjects.length} object(s) for event from ${ev.pubkey}:<br>
+                     ${_.map(matchedObjects, (obj) => `<em>${obj.name}</em> (updated ${dateFns.format(obj.updatedAt, 'Pp')})`).join('<br>')}`;
                 this.$notificationArea.html(msg).fadeIn(300).delay(3000).fadeOut(300);
             }
-
-
             showLoading() { $(".loading-overlay").show(); }
             hideLoading() { $(".loading-overlay").hide(); }
         }
 
-        // const app = new App();
-        // const nostrClient = new NostrClient(app.matcher);
-
         // Wait for the DOM to be fully loaded
         document.addEventListener('DOMContentLoaded', async () => {
-            const app = new App(); // Initialize the app
-            const loadedKeys = await getKeys(); // Ensure keys are loaded (or created)
-            if(loadedKeys){
-                const nostrClient = new NostrClient(app.matcher);
-            }
-            else{
-                //handle the error appropriately
+            const app = new App();
+            const loadedKeys = await getKeys();
+            if (loadedKeys) {
+                // Make the app and keys globally available so that NostrClient can use them.
+                window.app = app;
+                window.keys = loadedKeys;
+                window.nostrClient = new NostrClient(app.matcher);
+            } else {
+                // Handle key loading errors appropriately.
             }
         });
     </script>
 </head>
 <body>
-<!-- The body is initially empty; the UI is built dynamically. -->
+<!-- The UI is built dynamically -->
 <!-- Tag Insertion Menu (hidden by default) -->
 <div id="tag-menu"></div>
 </body>
