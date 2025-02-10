@@ -1,0 +1,245 @@
+/* Global Styles */
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+}
+
+.container {
+    display: flex;
+    height: 100vh;
+}
+
+.main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.content {
+    flex: 1;
+    padding: 10px;
+    overflow-y: auto;
+}
+
+.view {
+    display: none;
+}
+
+.view.active {
+    display: block;
+}
+
+/* Sidebar Styles */
+.sidebar-left {
+    width: 220px;
+    background: #f0f0f0;
+    padding: 10px;
+    border-right: 1px solid #ccc;
+    overflow-y: auto;
+}
+
+.sidebar-left h3 {
+    margin-top: 0;
+}
+
+.sidebar-left ul {
+    list-style: none;
+    padding: 0;
+}
+
+.sidebar-left li {
+    margin: 5px 0;
+}
+
+.sidebar-left a {
+    text-decoration: none;
+    color: #333;
+    cursor: pointer;
+}
+
+/* Editor and Toolbar Styles */
+.toolbar {
+    background: #eee;
+    padding: 5px;
+    border: 1px solid #ccc;
+    position: relative;
+}
+
+.toolbar button {
+    margin-right: 5px;
+}
+
+#editor {
+    border: 1px solid #ccc;
+    min-height: 200px;
+    padding: 10px;
+    margin-bottom: 5px;
+}
+
+.metadata-panel {
+    margin-bottom: 5px;
+}
+
+/* Object List */
+#object-list .object-item {
+    border: 1px solid #ccc;
+    margin-bottom: 5px;
+    padding: 5px;
+    cursor: pointer;
+}
+
+#object-list .object-item:hover {
+    background: #fafafa;
+}
+
+/* Filter Bar */
+.filter-bar {
+    margin-bottom: 10px;
+}
+
+.filter-bar input {
+    padding: 5px;
+    width: 200px;
+    margin-right: 5px;
+}
+
+/* Inline Tag Styles */
+.inline-tag {
+    display: inline-block;
+    background: #eef;
+    border: 1px solid #99c;
+    border-radius: 3px;
+    padding: 2px 4px;
+    margin: 0 2px;
+    vertical-align: middle;
+    cursor: pointer;
+    position: relative;
+}
+
+.inline-tag input {
+    width: 50px;
+    margin: 0 2px;
+    border: none;
+    background: #eef;
+    text-align: center;
+}
+
+.inline-tag .tag-controls {
+    display: inline-block;
+    margin-left: 4px;
+    font-size: 0.8em;
+    color: #666;
+    visibility: hidden;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background: #fff;
+    border: 1px solid #ccc;
+    z-index: 10;
+    padding: 5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    white-space: nowrap;
+}
+
+.inline-tag:hover .tag-controls {
+    visibility: visible;
+}
+
+.inline-tag .tag-controls button {
+    background: none;
+    border: 1px solid transparent;
+    cursor: pointer;
+    color: #c00;
+    padding: 2px 5px;
+    display: block;
+    text-align: left;
+}
+
+.inline-tag .tag-controls button:hover {
+    border-color: #ccc;
+}
+
+/* Tag Insertion Menu */
+#app {
+    position: absolute;
+    background: #fff;
+    border: 1px solid #ccc;
+    padding: 10px;
+    display: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    z-index: 1100;
+    max-height: 300px;
+    overflow-y: auto;
+    min-width: 150px;
+}
+
+#app ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+#app li {
+    padding: 3px 0;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+#app li:hover,
+#app li.selected {
+    background: #f0f0f0;
+}
+
+#app li.selected {
+    background-color: #add8e6;
+}
+
+#app input[type="text"] {
+    width: calc(100% - 12px);
+    padding: 5px;
+    margin-bottom: 5px;
+}
+
+/* Notification and Loading */
+#notification-area {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 300px;
+    background: #ffffcc;
+    border: 1px solid #cccc99;
+    padding: 10px;
+    display: none;
+    z-index: 1200;
+}
+
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1300;
+}
+
+.spinner {
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    border-top: 4px solid #fff;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
