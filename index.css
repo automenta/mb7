@@ -141,19 +141,6 @@ body {
     white-space: nowrap;
 }
 
-.inline-tag:hover .tag-controls {
-    visibility: visible;
-}
-
-.inline-tag .tag-controls button {
-    background: none;
-    border: 1px solid transparent;
-    cursor: pointer;
-    color: #c00;
-    padding: 2px 5px;
-    display: block;
-    text-align: left;
-}
 
 .inline-tag .tag-controls button:hover {
     border-color: #ccc;
@@ -185,14 +172,10 @@ body {
     white-space: nowrap;
 }
 
-#app li:hover,
-#app li.selected {
+#app li:hover {
     background: #f0f0f0;
 }
 
-#app li.selected {
-    background-color: #add8e6;
-}
 
 #app input[type="text"] {
     width: calc(100% - 12px);

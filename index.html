@@ -5,141 +5,12 @@
     <title>Collaborative Reality Editor</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="index.css" rel="stylesheet">
-    <style>
-        /* --- Global & Layout Styles --- */
-        body {
-            font-family: sans-serif;
-            margin: 0;
-            padding: 0;
-        }
-        .container {
-            display: flex;
-            height: 100vh;
-        }
-        .sidebar-left {
-            width: 200px;
-            background: #f7f7f7;
-            border-right: 1px solid #ccc;
-            padding: 10px;
-            box-sizing: border-box;
-        }
-        .main-content {
-            flex: 1;
-            padding: 10px;
-            box-sizing: border-box;
-        }
-        .view {
-            display: none;
-        }
-        .view.active {
-            display: block;
-        }
 
-        /* --- Editor & Toolbar Styles --- */
-        #editor-container {
-            border: 1px solid #ccc;
-            padding: 10px;
-            margin-top: 10px;
-        }
-        .toolbar {
-            border-bottom: 1px solid #ccc;
-            margin-bottom: 5px;
-            padding-bottom: 5px;
-        }
-        .toolbar button {
-            margin-right: 5px;
-            padding: 5px 10px;
-            cursor: pointer;
-        }
-        #editor {
-            min-height: 200px;
-            outline: none;
-        }
-        .metadata-panel {
-            margin-top: 10px;
-        }
-        .metadata-panel input {
-            width: 100%;
-            padding: 5px;
-            box-sizing: border-box;
-        }
-
-        /* --- Inline Tag Styles --- */
-        .inline-tag {
-            background-color: #e0f7fa;
-            border: 1px solid #00838f;
-            border-radius: 4px;
-            margin: 0 2px;
-            padding: 2px 4px;
-            display: inline-flex;
-            align-items: center;
-        }
-        .inline-tag .tag-name {
-            font-weight: bold;
-            margin-right: 4px;
-        }
-        .inline-tag select.tag-condition {
-            margin-right: 4px;
-        }
-        .inline-tag input.tag-value {
-            border: 1px solid #ccc;
-            border-radius: 3px;
-            padding: 2px;
-            width: 80px;
-            margin-right: 4px;
-        }
-        .inline-tag button.tag-remove {
-            background: none;
-            border: none;
-            color: #d00;
-            font-weight: bold;
-            cursor: pointer;
-        }
-
-        /* --- Popup Menu Styles --- */
-        .popup-menu {
-            position: absolute;
-            background: #fff;
-            border: 1px solid #aaa;
-            box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
-            padding: 5px;
-            border-radius: 3px;
-            z-index: 1000;
-            display: none;
-        }
-        .popup-menu ul {
-            list-style: none;
-            margin: 0;
-            padding: 0;
-        }
-        .popup-menu li {
-            padding: 5px;
-            cursor: pointer;
-        }
-        .popup-menu li:hover {
-            background-color: #f0f0f0;
-        }
-
-        /* --- Notification Area --- */
-        #notification-area {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: #ffd;
-            border: 1px solid #ccc;
-            padding: 10px;
-            display: none;
-            z-index: 1000;
-        }
-    </style>
-
-    <!-- --- External Libraries --- -->
     <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.8/dist/purify.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/idb-keyval@6.2.0/dist/umd.js"></script>
 
-    <!-- --- Main JavaScript (ES Module) --- -->
     <script type="module">
         import { relayInit, getEventHash, signEvent, getPublicKey } from "https://esm.sh/nostr-tools@1.8.0";
         import * as dateFns from "https://cdn.jsdelivr.net/npm/date-fns@2.29.3/esm/index.js";
@@ -148,7 +19,6 @@
         const { set, get, del, keys: idbKeys } = idbKeyval;
         const KEY_STORAGE = "nostr_keys";
 
-        // --- Key Generation & Storage ---
         const generateNostrPrivateKey = () => {
             const array = new Uint8Array(32);
             window.crypto.getRandomValues(array);
@@ -174,7 +44,6 @@
             }
         };
 
-        // --- Ontology & Available Tags ---
         const ontology = {
             General: {
                 Location: {
@@ -216,8 +85,6 @@
             { name: "Mood", defaultCondition: "is" }
         ];
 
-        // --- Inline Tag Helpers ---
-
         let savedRange = null;
         function saveSelection() {
             const sel = window.getSelection();
@@ -248,7 +115,7 @@
             return { x, y };
         }
 
-        // NEW: ensure the caret is inside the editor before any insertion.
+        // ensure the caret is inside the editor before any insertion.
         function ensureFocusInEditor() {
             const editor = document.getElementById('editor');
             if (!editor.contains(document.activeElement)) {
@@ -547,7 +414,6 @@
             }
         }
 
-        // NObjectStore using idb-keyval for persistence
         class NObjectStore {
             async getAll() {
                 try {
@@ -588,7 +454,6 @@
             }
         }
 
-        // Nostr Client to handle relay connections and event publishing
         class NostrClient {
             constructor(matcher) {
                 this.matcher = matcher;
@@ -664,7 +529,6 @@
             }
         }
 
-        // Main App Class: ties everything together
         class App {
             constructor() {
                 this.store = new NObjectStore();
@@ -687,7 +551,7 @@
                 // Now that the elements are in the DOM, grab the editor and name input.
                 this.$editor = $("#editor");
                 this.$objectNameInput = $("#object-name");
-                this.renderList();
+                await this.renderList();
                 this.setupEventHandlers();
             }
             setupEventHandlers() {
@@ -730,7 +594,6 @@
                 this.$editor.on("mouseup keyup", function() {
                     saveSelection();
                 });
-                // Fix newline behavior:
                 // On Enter, ensure the focus is in the editor and then insert a <br> or <br><br> if at the end.
                 this.$editor.on("keydown", function(e) {
                     if (e.key === "Enter") {
@@ -750,11 +613,7 @@
                                 atEnd = range.endOffset === editor.childNodes.length;
                             }
                         }
-                        if (atEnd) {
-                            document.execCommand('insertHTML', false, '<br><br>');
-                        } else {
-                            document.execCommand('insertHTML', false, '<br>');
-                        }
+                        document.execCommand('insertHTML', false, atEnd ? '<br><br>' : '<br>');
                         saveSelection();
                     }
                 });
@@ -843,7 +702,7 @@
                 try {
                     await this.store.save(o);
                     this.hideEditor();
-                    this.renderList();
+                    await this.renderList();
                     window.nostrClient.publish(o);
                 } catch (error) {
                     console.error("Error in App.saveObject:", error);
