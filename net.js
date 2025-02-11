@@ -122,10 +122,6 @@ export class Nostr {
                     console.log(`EOSE from ${relay.url} for subscription ${subId}`);
                 } });
             this.subscriptions[relay.url] = { ...(this.subscriptions[relay.url] || {}), [subId]: sub };
-            // sub.on('event', options.onEvent || this.onEvent.bind(this));  // Use onEvent if provided, otherwise default to this.onEvent
-            // sub.on('eose', () => {
-            //     console.log(`EOSE from ${relay.url} for subscription ${subId}`);
-            // });
             return { relay: relay.url, id: subId };
 
         } else {
@@ -173,21 +169,27 @@ export class Nostr {
             return;
         }
 
-        if (event.kind === 1) {
-            this.app.matcher.matchEvent(event); // Existing content matching
-            const timeStr = new Date(event.created_at * 1000).toLocaleTimeString();
-            $("#nostr-feed") // Assuming an element with this ID exists
-                .prepend(`<div>[${timeStr}] ${nip19.npubEncode(event.pubkey)}: ${DOMPurify.sanitize(event.content)}</div>`)
-                .children(":gt(19)")
-                .remove();
-        } else if (event.kind === 0) {
-            this.handleKind0(event);
-        } else if (event.kind === 3) {
-            this.handleKind3(event);
-        } else if (event.kind === 5) {
-            this.handleKind5(event);
-        } else if (event.kind === 30000) {
-            this.handleObjectEvent(event); //handle custom object
+        switch (event.kind) {
+            case 1:
+                this.app.matcher.matchEvent(event); // Existing content matching
+                const timeStr = new Date(event.created_at * 1000).toLocaleTimeString();
+                $("#nostr-feed") // Assuming an element with this ID exists
+                    .prepend(`<div>[${timeStr}] ${nip19.npubEncode(event.pubkey)}: ${DOMPurify.sanitize(event.content)}</div>`)
+                    .children(":gt(19)")
+                    .remove();
+                break;
+            case 0:
+                this.handleKind0(event);
+                break;
+            case 3:
+                this.handleKind3(event);
+                break;
+            case 5:
+                this.handleKind5(event);
+                break;
+            case 30000:
+                this.handleObjectEvent(event); //handle custom object
+                break;
         }
     }
 
