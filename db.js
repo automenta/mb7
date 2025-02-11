@@ -1,37 +1,55 @@
-import * as Net from "./net.js";
+// db.js
+import { set, get, del, keys as idbKeys, clear } from 'https://cdn.jsdelivr.net/npm/idb-keyval@6/+esm';
+import { getPublicKey } from "https://esm.sh/nostr-tools@1.8.0";
 
-import {getPublicKey} from "https://esm.sh/nostr-tools@1.8.0";
-
-const {set, get, del, keys: idbKeys} = idbKeyval;
 const KEY_STORAGE = "nostr_keys";
+const FRIENDS_STORAGE = "nostr_friends";
 
 export async function loadKeys() {
     try {
         let keysData = await get(KEY_STORAGE);
         if (!keysData) {
-            const priv = Net.privateKey();
+            const priv = generatePrivateKey();
             const pub = getPublicKey(priv);
-            keysData = {priv, pub};
+            keysData = { priv, pub };
             await set(KEY_STORAGE, keysData);
         }
         return keysData;
     } catch (error) {
         console.error("Error accessing IndexedDB for keys:", error);
-        alert("Failed to access keys. IndexedDB might be unavailable.");
-        return null;
+        return null; // Don't re-throw; handle gracefully
     }
 }
+
+export const generatePrivateKey = () => {
+    const array = new Uint8Array(32);
+    window.crypto.getRandomValues(array);
+    return Array.from(array)
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("");
+};
+
 
 export class DB {
     async getAll() {
         try {
             const allKeys = await idbKeys();
-            const allObjs = await Promise.all(allKeys.map(key => get(key)));
-            return _.orderBy(allObjs.filter(Boolean), ["updatedAt"], ["desc"]);
+            // Filter out special keys
+            const objectKeys = allKeys.filter(key => key !== KEY_STORAGE && key !== FRIENDS_STORAGE);
+            const allObjs = await Promise.all(objectKeys.map(key => get(key)));
+            return allObjs.filter(Boolean).sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)); //sort directly
         } catch (error) {
             console.error("Error getting all objects:", error);
-            alert("Failed to retrieve data. IndexedDB might be unavailable.");
-            return [];
+            return []; // Return empty array on error
+        }
+    }
+
+    async get(id) {
+        try {
+            return await get(id);
+        } catch (error) {
+            console.error(`Error getting object with id ${id}:`, error);
+            return null; // Return null on error
         }
     }
 
@@ -45,8 +63,7 @@ export class DB {
             return o;
         } catch (error) {
             console.error("Error saving object:", error);
-            alert("Failed to save data. IndexedDB might be unavailable.");
-            throw error;
+            throw error; // Re-throw for higher-level handling
         }
     }
 
@@ -55,23 +72,17 @@ export class DB {
             await del(id);
         } catch (error) {
             console.error("Error deleting object:", error);
-            alert("Failed to delete data. IndexedDB might be unavailable.");
+            // Don't re-throw; deleting is often non-critical
         }
     }
 
     async getRecent(limit = 5) {
         try {
             const objs = await this.getAll();
-            // Sort by updatedAt in descending order (most recent first)
-            const sortedObjs = objs.sort((a, b) => {
-                return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
-            });
-            // Return the top 'limit' number of objects
-            return sortedObjs.slice(0, limit);
-
-        } catch (err) {
-            console.error("Error within getRecent", err);
-            throw err; // Re-throw the error to be caught by the caller
+            return objs.slice(0, limit); // Already sorted in getAll
+        } catch (error) {
+            console.error("Error within getRecent", error);
+            return []; // Return empty array on error
         }
     }
 
@@ -79,16 +90,64 @@ export class DB {
         try {
             const objs = await this.getAll();
             const objCount = objs.length;
-
-            let tagCount = 0;
-            objs.forEach(obj => tagCount += (obj.tags?.length || 0))
-
-            return {objectCount: objCount, tagCount: tagCount};
-
+            let tagCount = objs.reduce((acc, obj) => acc + (obj.tags?.length || 0), 0);
+            return { objectCount: objCount, tagCount: tagCount };
         } catch (error) {
             console.error("Error within getStats", error);
+            return { objectCount: 0, tagCount: 0 }; // Return default stats on error
+        }
+    }
+
+    async addFriend(pubkey) {
+        try {
+            const friends = await this.getFriends();
+            if (!friends.some(friend => friend.pubkey === pubkey)) {
+                friends.push({ pubkey });
+                await set(FRIENDS_STORAGE, friends);
+            }
+        } catch(error) {
+            console.error("Error adding friend:", error);
             throw error;
         }
     }
 
+    async getFriends() {
+        try {
+            let friends = await get(FRIENDS_STORAGE);
+            return friends ? friends : [];
+        } catch (error) {
+            console.error("Error getting friends", error);
+            return []; // Return empty array on error.
+        }
+    }
+
+    async removeFriend(pubkey) {
+        try {
+            let friends = await this.getFriends();
+            friends = friends.filter(friend => friend.pubkey !== pubkey);
+            await set(FRIENDS_STORAGE, friends);
+        } catch (error) {
+            console.error("Error removing friend:", error);
+            throw error;
+        }
+    }
+
+    async clearAllData() {
+        try {
+            await clear();
+            console.log("All data cleared from IndexedDB.");
+        } catch (error) {
+            console.error("Error clearing all data:", error);
+            throw error;
+        }
+    }
+
+    async saveKeys(keys) {
+        try {
+            await set(KEY_STORAGE, keys);
+        } catch (error) {
+            console.error("Error saving keys:", error);
+            throw error; // Re-throw for handling by the caller
+        }
+    }
 }
