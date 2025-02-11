@@ -1,92 +1,274 @@
-// net.js
-import { getEventHash, relayInit, signEvent, nip19 } from "https://esm.sh/nostr-tools@1.8.0";
+import {
+    validateEvent,
+    verifyEvent,
+    getEventHash,
+    nip19,
+    Relay
+} from 'https://cdn.jsdelivr.net/npm/nostr-tools@latest/+esm';
+
+//import { Relay } from 'nostr-tools/relay'
+
+import { nanoid } from "https://cdn.jsdelivr.net/npm/nanoid@5.0.9/nanoid.js";
 
 export class Nostr {
-    constructor(matcher) {
-        this.matcher = matcher;
-        this.relays = ["wss://relay.damus.io", "wss://relay.snort.social"]; // Use multiple relays
-        this.subscriptions = {}; // Keep track of subscriptions
+    constructor(app) {
+        this.app = app;
+        this.relays = ["wss://relay.damus.io", "wss://relay.snort.social"];
+        this.subscriptions = {}; // Centralized subscription management
+        this.relayStatuses = {}; // Track relay connection status
+        this.relayObjects = {}; //Store the actual relay objects
+    }
+
+    setRelays(relays) {
+        // Close existing connections and clear subscriptions
+        Object.values(this.subscriptions).forEach(subs => {
+            Object.values(subs).forEach(sub => this.unsubscribe(sub)); // Use the new unsubscribe
+        });
+        this.subscriptions = {};
+        this.relayStatuses = {};
+
+        //Close existing relay objects
+        for (const url in this.relayObjects) {
+            this.relayObjects[url].close();
+        }
+        this.relayObjects = {};
+
+
+        this.relays = relays;
+        this.connect(); // Reconnect with new relays
     }
 
     connect() {
-        this.relays.forEach(relayUrl => {
-            try {
-                const relay = relayInit(relayUrl);
-                relay.on("connect", () => {
-                    console.log(`Connected to ${relayUrl}`);
-                    this.relayConnected(relay); // Call common connection handler
+        // Close any existing connections
+        for (const url in this.relayObjects) {
+            this.relayObjects[url].close();
+        }
 
-                });
-                relay.on("error", (err) => {
-                    console.error(`Relay error (${relayUrl}):`, err);
-                });
-                relay.on("disconnect", () => {
-                    console.log(`Disconnected from ${relayUrl}`);
-                    this.relayDisconnected(relay);
-                });
-
-                relay.connect();
-                relay.url = relayUrl; // Store the URL for later use
-                this.relay = relay;
-
-            } catch (error) {
-                console.error(`Failed to initialize relay ${relayUrl}`, error)
-            }
-        });
+        this.relayStatuses = {}; // Reset relay statuses
+        this.relayObjects = {};
+        this.connectToRelays(); // Connect to all relays
     }
 
-    // Common handler for relay connections
-    relayConnected(relay) {
-        $("#network-status").text("Connected"); //generic status
-        this.subscribe(relay);
-        this.subscribeFeed(relay);
-        this.subscribeToFriends(relay); // Subscribe to friends' updates
+
+    connectToRelays() {
+        if (this.relays.length === 0) {
+            this.app.showNotification("No relays configured.", "warning");
+            return;
+        }
+
+        for (const relayUrl of this.relays) {
+            this.connectToRelay(relayUrl);
+        }
     }
 
-    relayDisconnected(relay) {
+    async connectToRelay(relayUrl) {
+        if (this.relayStatuses[relayUrl]?.status === "connecting" || this.relayStatuses[relayUrl]?.status === "connected") {
+            return; // Already connecting or connected
+        }
+
+        console.log(`Connecting to relay: ${relayUrl}`);
+        this.relayStatuses[relayUrl] = { status: "connecting" };
+        this.app.updateNetworkStatus("Connecting to " + relayUrl + "...");
+
+        try {
+            const relay = await Relay.connect(relayUrl);
+            this.relayObjects[relayUrl] = relay; //Store the relay object
+
+            //relay.on('connect', () => this.onOpen(relay));
+            //relay.on('notice', (notice) => this.onNotice(relay, notice));
+            //relay.on('disconnect', () => this.onClose(relay));
+            //Event handled in subscribe.
+
+            this.onOpen(relay); //Manually call onOpen, since it might have already happened.
+
+        } catch (error) {
+            console.error("WebSocket connection error:", error);
+            this.relayStatuses[relayUrl] = { status: "error" };
+            this.app.updateNetworkStatus(`Error connecting to ${relayUrl}`);
+        }
+    }
+
+    onOpen(relay) {
+        console.log("Connected to relay:", relay.url);
+        this.relayStatuses[relay.url] = { status: "connected" };
+        this.app.updateNetworkStatus("Connected to " + relay.url);
+        this.relayConnected(relay);
+    }
+
+    onNotice(relay, notice) {
+        console.log(`NOTICE from ${relay.url}: ${notice}`);
+        this.app.showNotification(`NOTICE from ${relay.url}: ${notice}`, "warning");
+    }
+
+    onClose(relay) {
+        console.log("Disconnected from relay:", relay.url);
+        this.relayStatuses[relay.url].status = "disconnected";
+
         //check if *all* relays are disconnected
-        if (this.relays.every(r => {
-            const testRelay = relayInit(r);
-            return testRelay.status === 3; // 3 = CLOSED (per Nostr spec)
-        })) {
-            $("#network-status").text("Disconnected");
+        if (this.relays.every(r => this.relayStatuses[r]?.status === "disconnected" || this.relayStatuses[r] === undefined)) {
+            this.app.updateNetworkStatus("Disconnected from all relays.");
         }
     }
 
-    subscribe(relay) {
-        if (this.subscriptions[relay.url] && this.subscriptions[relay.url].objects) {
-            this.subscriptions[relay.url].objects.unsub(); // Unsubscribe first
+
+
+    // Unified subscription method (supports relay objects)
+    subscribe(filters, options) {
+        const relay = options.relay;
+        const subId = options.id || nanoid();
+
+        if (relay) {
+            const sub = relay.subscribe(filters, { id: subId,  onevent: options.onEvent || this.onEvent.bind(this), eose: () => {
+                    console.log(`EOSE from ${relay.url} for subscription ${subId}`);
+                } });
+            this.subscriptions[relay.url] = { ...(this.subscriptions[relay.url] || {}), [subId]: sub };
+            // sub.on('event', options.onEvent || this.onEvent.bind(this));  // Use onEvent if provided, otherwise default to this.onEvent
+            // sub.on('eose', () => {
+            //     console.log(`EOSE from ${relay.url} for subscription ${subId}`);
+            // });
+            return { relay: relay.url, id: subId };
+
+        } else {
+            //fallback, subscribe to *all* connected relays
+            this.relays.forEach(relayUrl => {
+                if (this.relayStatuses[relayUrl]?.status === 'connected') {
+                    const relay = this.relayObjects[relayUrl];
+                    const sub = relay.subscribe(filters, { id: subId });
+                    this.subscriptions[relayUrl] = { ...(this.subscriptions[relayUrl] || {}), [subId]: sub };
+                    sub.on('event', options.onEvent || this.onEvent.bind(this));
+                    sub.on('eose', () => {
+                        console.log(`EOSE from ${relay.url} for subscription ${subId}`);
+                    });
+                }
+            });
+            return { id: subId };
         }
-        const sub = relay.sub([{ kinds: [30000], authors: [window.keys.pub] }]);
-        sub.on("event", this.handleObjectEvent.bind(this));
-        // Store the subscription
-        this.subscriptions[relay.url] = { ...(this.subscriptions[relay.url] || {}), objects: sub };
+    }
+
+    // Unified unsubscription method
+    unsubscribe(subInfo) {
+        if (!subInfo) return;
+
+        if (subInfo.relay) {
+            //we have a specific relay.
+            if (this.subscriptions[subInfo.relay] && this.subscriptions[subInfo.relay][subInfo.id]) {
+                this.subscriptions[subInfo.relay][subInfo.id].close();
+                delete this.subscriptions[subInfo.relay][subInfo.id];
+            }
+        } else {
+            //unsubscribe from *all* relays
+            for (let relayUrl in this.subscriptions) {
+                if (this.subscriptions[relayUrl][subInfo.id]) {
+                    this.subscriptions[relayUrl][subInfo.id].close();
+                    delete this.subscriptions[relayUrl][subInfo.id];
+                }
+            }
+        }
     }
 
 
-    subscribeFeed(relay) {
-        if (this.subscriptions[relay.url] && this.subscriptions[relay.url].feed) {
-            this.subscriptions[relay.url].feed.unsub(); //unsub first
+    async onEvent(event) {
+        if(!validateEvent(event) || !verifyEvent(event)) {
+            console.warn("Invalid event received:", event);
+            return;
         }
-        const sub = relay.sub([{ kinds: [1] }]); // Subscribe to kind 1 (short text notes)
-        sub.on("event", (ev) => {
-            const timeStr = new Date(ev.created_at * 1000).toLocaleTimeString();
-            $("#nostr-feed") //Assuming an element with this ID exists
-                .prepend(`<div>[${timeStr}] ${ev.pubkey}: ${DOMPurify.sanitize(ev.content)}</div>`)
+
+        if (event.kind === 1) {
+            this.app.matcher.matchEvent(event); // Existing content matching
+            const timeStr = new Date(event.created_at * 1000).toLocaleTimeString();
+            $("#nostr-feed") // Assuming an element with this ID exists
+                .prepend(`<div>[${timeStr}] ${nip19.npubEncode(event.pubkey)}: ${DOMPurify.sanitize(event.content)}</div>`)
                 .children(":gt(19)")
                 .remove();
-            this.matcher.matchEvent(ev);
-        });
-        this.subscriptions[relay.url] = { ...(this.subscriptions[relay.url] || {}), feed: sub };
+        } else if (event.kind === 0) {
+            this.handleKind0(event);
+        } else if (event.kind === 3) {
+            this.handleKind3(event);
+        } else if (event.kind === 5) {
+            this.handleKind5(event);
+        } else if (event.kind === 30000) {
+            this.handleObjectEvent(event); //handle custom object
+        }
     }
 
+    async handleKind0(event) {
+        try {
+            const profileData = JSON.parse(event.content);
+            if (event.pubkey === window.keys.pub) {
+                // Update own profile display
+                this.app.settingsView?.displayProfile(profileData);
+            } else {
+                // Update friend's profile (if we're subscribed to it)
+                await this.app.db.updateFriendProfile(event.pubkey, profileData.name, profileData.picture);
+                // Refresh friends list only if FriendsView is active *AND* this friend is in the list
+                if (this.app.mainContent.currentView instanceof this.app.FriendsView && (await this.app.db.getFriend(event.pubkey))) {
+                    this.app.friendsView.loadFriends(); // Refresh the entire list
+                }
+            }
+        } catch (error) {
+            console.error("Error processing Kind 0 event:", error);
+        }
+    }
+    async handleKind3(event) {
+        try {
+            let contacts = [];
+            try {
+                const content = JSON.parse(event.content);
+                if (Array.isArray(content)) {
+                    contacts = content;
+                } else if (typeof content === 'object' && content !== null) {
+                    contacts = Object.keys(content);
+                }
+            } catch (e) {
+                // content might not be there.
+            }
+
+            // Extract p tags
+            const pTags = event.tags.filter(tag => tag[0] === 'p').map(tag => tag[1]);
+            contacts = contacts.concat(pTags);
+
+            // remove duplicates.
+            contacts = [...new Set(contacts)];
+
+            for (const pubkey of contacts) {
+                // Check if the pubkey is valid before adding
+                if (/^[0-9a-fA-F]{64}$/.test(pubkey) && pubkey !== window.keys.pub) {
+                    await this.app.db.addFriend(pubkey);
+                    // Subscribe to the friend's profile (Kind 0) - Use the unified subscribe
+                    this.subscribe([{ kinds: [0], authors: [pubkey] }], { id: `friend-profile-${pubkey}` });
+                }
+            }
+            // Refresh friends list if the current user sent the event
+            if (event.pubkey === window.keys.pub) {
+                this.app.friendsView?.loadFriends();
+            }
+        } catch (error) {
+            console.error("Error processing kind 3 event:", error);
+        }
+    }
+
+    async handleKind5(event) {
+        const eventIdsToDelete = event.tags.filter(tag => tag[0] === 'e').map(tag => tag[1]);
+        for (const eventId of eventIdsToDelete) {
+            try {
+                await this.app.db.delete(eventId);
+            } catch (error) {
+                console.error("Failed to delete object with id " + eventId + ": ", error)
+            }
+        }
+
+        // Refresh the content list if it's the current view
+        if (this.app.mainContent.currentView instanceof this.app.ContentView) {
+            this.app.renderList();
+        }
+    }
     async handleObjectEvent(ev) {
         try {
             if (!ev.content || ev.content.trim()[0] !== "{") return;
             const data = JSON.parse(ev.content);
             if (!data.id) return;
 
-            const existingObj = await window.app.db.get(data.id);
+            const existingObj = await this.app.db.get(data.id);
             const nobj = {
                 ...existingObj, // Preserve existing data
                 id: data.id,
@@ -96,13 +278,12 @@ export class Nostr {
                 createdAt: existingObj?.createdAt || (ev.created_at * 1000), // Keep existing, if present
                 updatedAt: ev.created_at * 1000,
             };
-            await window.app.db.save(nobj);
+            await this.app.db.save(nobj);
 
         } catch (e) {
             console.error("Parsing error", e);
         }
     }
-
     extractTagsFromEvent(event) {
         // Extract and normalize tags, handling both 't' and custom tags
         const tags = [];
@@ -111,9 +292,9 @@ export class Nostr {
                 const tagName = tag[0];
                 const tagValue = tag[1];
 
-                if(tagName === 't') {
+                if (tagName === 't') {
                     //keep the "t" tags as they were
-                    tags.push({name: tagValue, condition: 'is', value: ''}) //Add the standard tag structure
+                    tags.push({ name: tagValue, condition: 'is', value: '' }) //Add the standard tag structure
                 } else {
                     //custom tags, like p, e, etc.
                     let condition = 'is'; // Default condition
@@ -123,103 +304,93 @@ export class Nostr {
                     if ((tagName === 'p' || tagName === 'e') && tag.length >= 2) {
                         condition = 'references'; // Or any other suitable condition name
                     }
-                    tags.push({ name: tagName, condition, value});
+                    tags.push({ name: tagName, condition, value });
                 }
             }
         }
         return tags;
     }
 
-    publish(nobj) {
-        const content = JSON.stringify({ id: nobj.id, name: nobj.name, content: DOMPurify.sanitize(nobj.content) });
-        const ev = {
-            pubkey: window.keys.pub,
-            created_at: Math.floor(Date.now()/1000), //Use the *current* time
-            kind: 30000,
-            tags: nobj.tags.map(tag => [tag.name, tag.value, tag.condition]),  // Include condition if needed
-            content,
-        };
-        ev.id = getEventHash(ev);
-        ev.sig = signEvent(ev, window.keys.priv);
+    publish(object) {
+        const event = {
+            kind: 1, //or 30000 for custom objects.  Using 1 for now.
+            created_at: Math.floor(Date.now() / 1000),
+            tags: object.tags.map(tag => {
+                // Serialize the tag value based on its type
+                const tagDef = this.app.getTagDefinition(tag.name);
+                const serializedValue = tagDef.serialize(tag.value);
 
-        // Publish to all connected relays
-        this.relays.forEach(async relayUrl => {
-            try {
-                const relay = relayInit(relayUrl);
-                await relay.connect(); // Ensure connection (important!)
-                let pub = relay.publish(ev)
-                pub.on('ok', () => {
-                    console.log(`${relay.url} has accepted our event`)
-                })
-                pub.on('failed', reason => {
-                    console.log(`failed to publish to ${relay.url}: ${reason}`)
-                })
-            } catch (error) {
-                console.error(`Failed to publish to ${relayUrl}`, error)
-            }
-        });
+                // Construct the tag array as expected by Nostr
+                return [tag.name, ...(Array.isArray(serializedValue) ? serializedValue : [String(serializedValue)])];
+            }),
+            content: object.content,
+            pubkey: window.keys.pub,
+        };
+        this.publishEvent(event);
     }
 
-    async publishRawEvent(event) {
-        this.relays.forEach(async relayUrl => {
-            try {
-                const relay = relayInit(relayUrl);
-                await relay.connect();
+
+    async publishEvent(event) {
+        try {
+            event.id = getEventHash(event);
+            event.sig = await signEvent(event, window.keys.priv);
+            this.publishRawEvent(event)
+            return event;
+        } catch (error) {
+            console.error("Failed to publish event", error);
+            this.app.showNotification("Failed to publish event: " + error.message, "error");
+            throw error; // Re-throw for caller handling
+        }
+    }
+    publishRawEvent(event) {
+        if (!this.relays || this.relays.length === 0) {
+            this.app.showNotification("No relays configured. Cannot publish.", "error");
+            return
+        }
+        this.relays.forEach(relayUrl => {
+            if (this.relayStatuses[relayUrl]?.status === 'connected') {
+                const relay = this.relayObjects[relayUrl];
                 let pub = relay.publish(event)
                 pub.on('ok', () => {
                     console.log(`${relay.url} has accepted our event`)
                 })
                 pub.on('failed', reason => {
                     console.log(`failed to publish to ${relay.url}: ${reason}`)
+                    this.app.showNotification(`Failed to publish to ${relayUrl}: ${reason}.`, "warning");
                 })
-            } catch(error) {
-                console.error(`Failed to publish raw event to ${relayUrl}`, error)
+            } else {
+                console.warn(`Trying to publish to a disconnected relay ${relay.url}`);
+                //optionally, queue the event for later.
             }
         });
     }
 
-    setRelays(relays) {
-        // Unsubscribe from existing relays
-        Object.values(this.subscriptions).forEach(subs => {
-            Object.values(subs).forEach(sub => sub.unsub());
-        });
-        this.subscriptions = {}; // Clear subscriptions
 
-        this.relays = relays;
-        this.connect(); // Reconnect with the new relays
+    // Common handler for relay connections, for both initial and friend connections
+    relayConnected(relay) {
+        this.subscribe([{ kinds: [30000], authors: [window.keys.pub] }], { relay, onEvent: this.handleObjectEvent.bind(this) }); //custom objects
+        this.subscribe([{ kinds: [1] }], { relay, id: `feed-${relay.url}` }); // General feed
+        this.subscribeToFriends(relay); // Subscribe to friends' updates
     }
 
     connectToPeer(pubkey) {
         // We'll subscribe to events tagged with this pubkey.
         this.relays.forEach(relayUrl => {
-            const relay = relayInit(relayUrl);
-            if (relay.status === 1) { // Check if connected (0: CONNECTING, 1: CONNECTED, 2: DISCONNECTING, 3: DISCONNECTED)
+            if (this.relayStatuses[relayUrl]?.status === 'connected') {
+                const relay = this.relayObjects[relayUrl];
                 this.subscribeToPubkey(relay, pubkey);
             } else {
-                relay.on("connect", () => {
-                    this.subscribeToPubkey(relay, pubkey);
-                });
+                //If not connected, we rely on the 'connect' event listener already set up in connectToRelay.
             }
         });
     }
 
     subscribeToPubkey(relay, pubkey) {
         // Check for and remove existing subscription for this pubkey on this relay
-        if (this.subscriptions[relay.url] && this.subscriptions[relay.url][`friend_${pubkey}`]) {
-            this.subscriptions[relay.url][`friend_${pubkey}`].unsub();
-            delete this.subscriptions[relay.url][`friend_${pubkey}`];
-        }
+        const subId = `friend_${pubkey}`;
+        this.unsubscribe({ relay: relay.url, id: subId });
 
-        const sub = relay.sub([{ kinds: [1, 30000], authors: [pubkey] }, { kinds: [1, 30000], '#p': [pubkey] }]); //Also get posts *mentioning* the pubkey
-        sub.on('event', (event) => {
-            // Handle the event - display a notification, update UI, etc.
-            console.log('Received event from followed pubkey:', event);
-            this.matcher.matchEvent(event); // Use the matcher!
-            window.app.showNotification(`New event from ${nip19.npubEncode(pubkey)}`, "info"); // Show "nPubKey"
-        });
-
-        // Store the subscription
-        this.subscriptions[relay.url] = { ...(this.subscriptions[relay.url] || {}), [`friend_${pubkey}`]: sub };
+        this.subscribe([{ kinds: [1, 30000], authors: [pubkey] }, { kinds: [1, 30000], '#p': [pubkey] }], { relay, id: subId }); //unified subscribe
     }
 
     subscribeToFriends(relay) {
