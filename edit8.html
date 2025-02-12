@@ -137,7 +137,7 @@
             gap: 5px;
         }
         #toolbar select { padding: 5px; }
-        #word-count { margin-left: auto; font-style: italic; }
+
     </style>
 </head>
 <body>
@@ -162,7 +162,7 @@
         <button id="save-content">Save</button>
         <button id="load-content">Load</button>
     </div>
-    <div id="word-count">0 words</div>
+
 </div>
 <div id="editor" contenteditable="true">
     Type your free‑form text here. As you type, eligible words are underlined. Click an underlined word to see ontology suggestions.
@@ -657,9 +657,8 @@
                 if (saved) this.deserialize(saved);
             });
 
-            // Update word count & autosuggest on keyup
+            // Update autosuggest on keyup
             this.editor.addEventListener("keyup", () => {
-                this.updateWordCount();
                 clearTimeout(this.suggestionTimeout);
                 if (this.suggestionDropdown.element.style.display === "block") return;
                 this.suggestionTimeout = setTimeout(() => {
@@ -709,11 +708,7 @@
                     this.suggestionDropdown.hide();
             });
         }
-        updateWordCount() {
-            const text = this.editor.textContent || "";
-            const words = text.trim().split(/\s+/).filter(Boolean);
-            document.getElementById("word-count").textContent = words.length + " words";
-        }
+
         findSuggestion(text) {
             for (const cat in this.ontology) {
                 for (const tag of this.ontology[cat]) {
@@ -729,9 +724,8 @@
          ***********************************************************/
         applyAutosuggestUnderlines() {
             const walker = document.createTreeWalker(this.editor, NodeFilter.SHOW_TEXT, {
-                acceptNode: node => {
-                    return node.parentNode.closest(".tag, .autosuggest") ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT;
-                }
+                acceptNode: n =>
+                    n.parentNode.closest(".tag, .autosuggest") ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT
             });
             const regex = /\b([a-zA-Z]{3,})\b/g;
             let node;
@@ -831,9 +825,9 @@
         }
     }
 
-    /*****************************************************************
-     * Initialization
-     *****************************************************************/
+
+
+
     const editor = document.getElementById("editor");
     const serializationOutput = document.getElementById("serialization-output");
     const semanticEditor = new SemanticEditor(editor, ontology);
