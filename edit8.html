@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Next‑Gen Semantic Text Editor</title>
     <style>
-        /* Basic Page & Editor Styles */
         body { font-family: sans-serif; margin: 20px; }
         h1 { margin-bottom: 10px; }
         #editor {
@@ -109,7 +108,6 @@
         .autosuggest:hover {
             background-color: rgba(255, 255, 0, 0.2);
         }
-        /* Pulsating Popup Trigger */
         #popup-ontology-trigger {
             position: absolute;
             width: 20px;
@@ -126,7 +124,6 @@
             50% { transform: scale(1.3); opacity: 0.4; }
             100% { transform: scale(1); opacity: 0.8; }
         }
-        /* Toolbar Styles */
         #toolbar {
             margin-bottom: 10px;
             display: flex;
@@ -167,21 +164,16 @@
     </div>
     <div id="word-count">0 words</div>
 </div>
-<!-- Editable Area -->
 <div id="editor" contenteditable="true">
     Type your free‑form text here. As you type, eligible words are underlined. Click an underlined word to see ontology suggestions.
 </div>
-<!-- Floating Ontology Browser, Suggestion Dropdown & Popup Trigger -->
 <div id="ontology-browser"></div>
 <div id="suggestion-dropdown"></div>
 <div id="popup-ontology-trigger" title="Click to open Ontology Browser"></div>
-<!-- Serialization Output -->
 <textarea id="serialization-output" placeholder="Serialization will appear here"></textarea>
 
 <script>
-    /*****************************************************************
-     * Data Model: Ontology with Optional Emoji Icons
-     *****************************************************************/
+
     const ontology = {
         Physical: [
             { name: "Mass", type: "number", unit: "kg", emoji: "⚖️", modes: { is: "is", "is between": "is between", "is below": "is below", "is above": "is above" } },
@@ -246,7 +238,7 @@
         createInput() {
             const input = createElement("input", { type: "number", placeholder: this.placeholder });
             input.value = this.value ?? "";
-            input.addEventListener("input", (e) => {
+            input.addEventListener("input", e => {
                 const parsed = parseFloat(e.target.value || 0);
                 if (!isNaN(parsed)) this.onChange(parsed);
             });
@@ -262,7 +254,7 @@
         createInput() {
             const input = createElement("input", { type: "text", placeholder: this.placeholder });
             input.value = this.value ?? "";
-            input.addEventListener("input", (e) => this.onChange(e.target.value));
+            input.addEventListener("input", e => this.onChange(e.target.value));
             return input;
         }
     }
@@ -289,7 +281,7 @@
         createInput() {
             const input = createElement("input", { type: "text", placeholder: this.placeholder });
             input.value = this.value ? `${this.value.lat}, ${this.value.lng}` : "";
-            input.addEventListener("input", (e) => {
+            input.addEventListener("input", e => {
                 const parts = e.target.value.split(",");
                 const lat = parseFloat(parts[0]?.trim());
                 const lng = parseFloat(parts[1]?.trim());
@@ -306,7 +298,7 @@
         createInput() {
             const input = createElement("input", { type: "color" });
             input.value = this.value || "#000000";
-            input.addEventListener("input", (e) => this.onChange(e.target.value));
+            input.addEventListener("input", e => this.onChange(e.target.value));
             return input;
         }
     }
@@ -326,7 +318,7 @@
             super();
             this.onRemove = onRemove;
             this.element = createElement("span", { class: "remove-tag" }, "x");
-            this.element.addEventListener("click", (e) => { e.stopPropagation(); onRemove(); });
+            this.element.addEventListener("click", e => { e.stopPropagation(); onRemove(); });
         }
     }
 
@@ -342,52 +334,56 @@
     }
     class NumericTagInputControl extends TagInputControl {
         getElement() {
-            const frag = document.createDocumentFragment();
-            const mode = this.tag.data.mode;
-            const update = () => this.tag.updateTagData();
+            const f = document.createDocumentFragment();
+            const d = this.tag.data;
+            const m = d.mode;
+            const update = () => this.tag.updateData();
             const createNumInput = (key, placeholder) => {
-                const input = new NumberInput(this.tag.data[key], (v) => { this.tag.data[key] = v; update(); }, placeholder);
-                return input.getElement();
+                return new NumberInput(d[key], v => {
+                    d[key] = v;
+                    update();
+                }, placeholder).getElement();
             };
-            if (mode === "is") {
-                frag.appendChild(createNumInput("value", ""));
-            } else if (mode === "is between") {
-                frag.appendChild(createNumInput("min", "Min"));
-                frag.appendChild(document.createTextNode(" and "));
-                frag.appendChild(createNumInput("max", "Max"));
-            } else if (mode === "is below" || mode === "is above") {
-                const key = mode === "is below" ? "max" : "min";
-                frag.appendChild(createNumInput(key, mode === "is below" ? "Max" : "Min"));
+            if (m === "is") {
+                f.appendChild(createNumInput("value", ""));
+            } else if (m === "is between") {
+                f.appendChild(createNumInput("min", "Min"));
+                f.appendChild(document.createTextNode(" and "));
+                f.appendChild(createNumInput("max", "Max"));
+            } else if (m === "is below" || m === "is above") {
+                f.appendChild(createNumInput(
+                    m === "is below" ? "max" : "min",
+                    m === "is below" ? "Max" : "Min"));
             }
-            frag.appendChild(new UnitLabel(this.tag.data.unit).getElement());
-            return frag;
+            f.appendChild(new UnitLabel(d.unit).getElement());
+            return f;
         }
     }
     class ListTagInputControl extends TagInputControl {
         getElement() {
-            return new ListInput(this.tag.data.options, this.tag.data.value, (v) => {
+            return new ListInput(this.tag.data.options, this.tag.data.value, v => {
                 this.tag.data.value = v;
-                this.tag.updateTagData();
+                this.tag.updateData();
             }).getElement();
         }
     }
     class LocationTagInputControl extends TagInputControl {
         getElement() {
-            return new LocationInput(this.tag.data.value, (v) => {
+            return new LocationInput(this.tag.data.value, v => {
                 this.tag.data.value = v;
-                this.tag.updateTagData();
+                this.tag.updateData();
             }).getElement();
         }
     }
     class ColorTagInputControl extends TagInputControl {
         getElement() {
             const frag = document.createDocumentFragment();
-            const colorInput = new ColorInput(this.tag.data.value, (v) => {
-                this.tag.data.value = v;
-                this.tag.updateTagData();
-            });
-            frag.appendChild(colorInput.getElement());
-            frag.appendChild(new ColorPreview(this.tag.data.value).getElement());
+            let t = this.tag;
+            frag.appendChild(new ColorInput(t.data.value, v => {
+                t.data.value = v;
+                t.updateData();
+            }).getElement());
+            frag.appendChild(new ColorPreview(t.data.value).getElement());
             return frag;
         }
     }
@@ -395,10 +391,12 @@
         getElement() {
             const frag = document.createDocumentFragment();
             const mode = this.tag.data.mode;
-            const update = () => this.tag.updateTagData();
+            const update = () => this.tag.updateData();
             const createTextInput = (key, placeholder) => {
-                const input = new TextInput(this.tag.data[key], (v) => { this.tag.data[key] = v; update(); }, placeholder);
-                return input.getElement();
+                return new TextInput(this.tag.data[key], v => {
+                    this.tag.data[key] = v;
+                    update();
+                }, placeholder).getElement();
             };
             if (mode === "is") {
                 frag.appendChild(createTextInput("value", ""));
@@ -418,32 +416,34 @@
      * Tag Class (Semantic Tag)
      *****************************************************************/
     class Tag extends UIComponent {
-        constructor(tagData) {
+        constructor(tag) {
             super();
             // Make a shallow copy and set a default mode if not provided.
-            this.data = { ...tagData, mode: tagData.mode || Object.keys(tagData.modes)[0] };
+            this.data = { ...tag, mode: tag.mode || Object.keys(tag.modes)[0] };
             this.initializeValues();
             this.element = this.createElement();
         }
         initializeValues() {
-            if (["number", "range"].includes(this.data.type))
-                this.data.value = this.data.value ?? 0;
-            else if (this.data.type === "list")
-                this.data.value = this.data.value ?? (this.data.options?.[0] || "");
-            else if (this.data.type === "color")
-                this.data.value = this.data.value ?? "#000000";
+            const d = this.data;
+            const t = d.type;
+            if (["number", "range"].includes(t))
+                d.value = d.value ?? 0;
+            else if (t === "list")
+                d.value = d.value ?? (d.options?.[0] || "");
+            else if (t === "color")
+                d.value = d.value ?? "#000000";
         }
         createElement() {
-            const tagEl = createElement("span", { class: `tag ${this.isConditional() ? "conditional" : ""}`, contenteditable: "false" });
+            const e = createElement("span", { class: `tag ${this.isConditional() ? "conditional" : ""}`, contenteditable: "false" });
             // If an emoji icon is provided, add it.
             if (this.data.emoji) {
                 const emojiSpan = createElement("span", { class: "tag-emoji" }, this.data.emoji + " ");
-                tagEl.appendChild(emojiSpan);
+                e.appendChild(emojiSpan);
             }
-            tagEl.appendChild(document.createTextNode(`${this.data.name} `));
-            tagEl.appendChild(this.createModeSelect());
-            this.rebuildInputs(tagEl);
-            return tagEl;
+            e.appendChild(document.createTextNode(`${this.data.name} `));
+            e.appendChild(this.createModeSelect());
+            this.rebuildInputs(e);
+            return e;
         }
         createModeSelect() {
             const select = createElement("select");
@@ -455,16 +455,20 @@
                 this.data.mode = select.value;
                 this.adjustValuesForMode();
                 this.rebuildInputs(this.element);
-                this.updateTagData();
+                this.updateData();
             });
             return select;
         }
-        isConditional() { return this.data.mode !== "is" && String(this.data.mode).startsWith("is"); }
+        isConditional() {
+            const d = this.data;
+            return d.mode !== "is" && String(d.mode).startsWith("is"); }
         adjustValuesForMode() {
-            if (this.data.mode === "is between") { this.data.min = this.data.min ?? 0; this.data.max = this.data.max ?? 0; }
-            else if (this.data.mode === "is below") { this.data.max = this.data.max ?? 0; this.data.min = null; }
-            else if (this.data.mode === "is above") { this.data.min = this.data.min ?? 0; this.data.max = null; }
-            else { this.data.value = this.data.value ?? (this.data.type === "list" ? this.data.options[0] : 0); }
+            const d = this.data;
+            const m = d.mode;
+            if (m === "is between") { d.min = d.min ?? 0; d.max = d.max ?? 0; }
+            else if (m === "is below") { d.max = d.max ?? 0; d.min = null; }
+            else if (m === "is above") { d.min = d.min ?? 0; d.max = null; }
+            else { d.value = d.value ?? (d.type === "list" ? d.options[0] : 0); }
         }
         rebuildInputs(tagEl) {
             // Remove any existing input controls.
@@ -481,7 +485,7 @@
             if (control) tagEl.appendChild(control.getElement());
             tagEl.appendChild(new RemoveTagButton(() => tagEl.remove()).getElement());
         }
-        updateTagData() { this.element.dataset.tagData = JSON.stringify(this.data); }
+        updateData() { this.element.dataset.tagData = JSON.stringify(this.data); }
     }
 
     /*****************************************************************
@@ -498,14 +502,15 @@
         show(suggestions, x, y, onSelect) {
             this.element.innerHTML = "";
             suggestions.forEach((sugg, i) => {
-                const suggEl = createElement("div", {}, (sugg.tagData.emoji ? sugg.tagData.emoji + " " : "") + sugg.displayText);
-                suggEl.dataset.index = i;
-                suggEl.addEventListener("click", () => { onSelect(sugg); this.hide(); });
-                this.element.appendChild(suggEl);
+                const e = createElement("div", {}, (sugg.tagData.emoji ? sugg.tagData.emoji + " " : "") + sugg.displayText);
+                e.dataset.index = i;
+                e.addEventListener("click", () => { onSelect(sugg); this.hide(); });
+                this.element.appendChild(e);
             });
-            this.element.style.left = `${x}px`;
-            this.element.style.top = `${y}px`;
-            this.element.style.display = "block";
+            const s = this.element.style;
+            s.left = `${x}px`;
+            s.top = `${y}px`;
+            s.display = "block";
             this.selectedIndex = -1;
             this.updateSelection();
         }
@@ -522,8 +527,9 @@
             );
         }
         getSelectedSuggestion() {
-            return this.selectedIndex >= 0 && this.selectedIndex < this.element.children.length
-                ? this.element.children[this.selectedIndex].textContent
+            let i = this.selectedIndex;
+            return i >= 0 && i < this.element.children.length
+                ? this.element.children[i].textContent
                 : null;
         }
     }
@@ -542,26 +548,24 @@
             const browser = createElement("div", { id: "ontology-browser" });
             for (const category in this.ontology) {
                 const catDiv = createElement("div", { class: "category" }, category);
-                this.ontology[category].forEach(tagData => {
-                    const tagItem = createElement("div", { class: "tag-item" }, (tagData.emoji ? tagData.emoji + " " : "") + tagData.name);
-                    tagItem.addEventListener("click", () => this.onTagSelect(new Tag(tagData)));
-                    catDiv.appendChild(tagItem);
+                this.ontology[category].forEach(tag => {
+                    const e = createElement("div", { class: "tag-item" }, (tag.emoji ? tag.emoji + " " : "") + tag.name);
+                    e.addEventListener("click", () => this.onTagSelect(new Tag(tag)));
+                    catDiv.appendChild(e);
                 });
                 browser.appendChild(catDiv);
             }
             return browser;
         }
         showAt(x, y) {
-            this.element.style.display = "block";
-            this.element.style.top = `${y}px`;
-            this.element.style.left = `${x}px`;
+            const s = this.element.style;
+            s.display = "block";
+            s.top = `${y}px`;
+            s.left = `${x}px`;
         }
         hide() { this.element.style.display = "none"; }
     }
 
-    /*****************************************************************
-     * Semantic Editor with Integrated Autosuggest & Popup Ontology
-     *****************************************************************/
     class SemanticEditor extends UIComponent {
         constructor(editorEl, ontology) {
             super();
@@ -594,8 +598,7 @@
         insertTagFromSuggestion(sugg, autosuggestSpan = null) {
             // If invoked from clicking an autosuggest span, replace that span.
             if (autosuggestSpan) {
-                const tagElement = new Tag(sugg.tagData).getElement();
-                autosuggestSpan.parentNode.replaceChild(tagElement, autosuggestSpan);
+                autosuggestSpan.parentNode.replaceChild(new Tag(sugg.tagData).getElement(), autosuggestSpan);
             } else {
                 // Otherwise, insert at the caret.
                 this.insertTagAtSelection(new Tag(sugg.tagData));
@@ -614,9 +617,8 @@
             const tagRegex = /\[TAG:(.*?)\]/g;
             let lastIndex = 0, match;
             while ((match = tagRegex.exec(text)) !== null) {
-                if (match.index > lastIndex) {
+                if (match.index > lastIndex)
                     this.editor.appendChild(document.createTextNode(text.substring(lastIndex, match.index)));
-                }
                 try {
                     const data = JSON.parse(match[1]);
                     this.editor.appendChild(new Tag(data).getElement());
@@ -626,9 +628,8 @@
                 }
                 lastIndex = tagRegex.lastIndex;
             }
-            if (lastIndex < text.length) {
+            if (lastIndex < text.length)
                 this.editor.appendChild(document.createTextNode(text.substring(lastIndex)));
-            }
         }
         setupEventListeners() {
             document.getElementById("focus-editor").addEventListener("click", () => this.editor.focus());
@@ -670,7 +671,7 @@
             });
 
             // Global key handler for hotkeys:
-            document.addEventListener("keydown", (e) => {
+            document.addEventListener("keydown", e => {
                 if (e.altKey && e.key.toLowerCase() === "o") {
                     e.preventDefault();
                     this.showPopupTriggerAtCaret();
@@ -703,10 +704,9 @@
             });
 
             // Hide suggestion dropdown when clicking outside.
-            document.addEventListener("click", (e) => {
-                if (!this.editor.contains(e.target) && !this.ontologyBrowser.getElement().contains(e.target)) {
+            document.addEventListener("click", e => {
+                if (!this.editor.contains(e.target) && !this.ontologyBrowser.getElement().contains(e.target))
                     this.suggestionDropdown.hide();
-                }
             });
         }
         updateWordCount() {
@@ -716,8 +716,8 @@
         }
         findSuggestion(text) {
             for (const cat in this.ontology) {
-                for (const tagData of this.ontology[cat]) {
-                    if (tagData.name === text) return { displayText: tagData.name, tagData };
+                for (const tag of this.ontology[cat]) {
+                    if (tag.name === text) return { displayText: tag.name, tagData: tag };
                 }
             }
             return null;
@@ -729,9 +729,8 @@
          ***********************************************************/
         applyAutosuggestUnderlines() {
             const walker = document.createTreeWalker(this.editor, NodeFilter.SHOW_TEXT, {
-                acceptNode: (node) => {
-                    if (node.parentNode.closest(".tag, .autosuggest")) return NodeFilter.FILTER_REJECT;
-                    return NodeFilter.FILTER_ACCEPT;
+                acceptNode: node => {
+                    return node.parentNode.closest(".tag, .autosuggest") ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT;
                 }
             });
             const regex = /\b([a-zA-Z]{3,})\b/g;
@@ -744,16 +743,15 @@
                     const word = match[1];
                     if (this.matchesOntology(word)) { shouldWrap = true; break; }
                 }
-                if (shouldWrap) {
+                if (shouldWrap)
                     this.wrapMatchesInTextNode(node, regex);
-                }
             }
         }
         matchesOntology(word) {
             word = word.toLowerCase();
             for (const cat in this.ontology) {
-                for (const tagData of this.ontology[cat]) {
-                    if (tagData.name.toLowerCase().startsWith(word)) return true;
+                for (const tag of this.ontology[cat]) {
+                    if (tag.name.toLowerCase().startsWith(word)) return true;
                 }
             }
             return false;
@@ -776,7 +774,7 @@
                     const span = document.createElement("span");
                     span.className = "autosuggest";
                     span.textContent = word;
-                    span.addEventListener("click", (e) => {
+                    span.addEventListener("click", e => {
                         e.stopPropagation();
                         this.showSuggestionForSpan(span);
                     });
@@ -799,16 +797,15 @@
             const word = span.textContent;
             const suggestions = [];
             for (const cat in this.ontology) {
-                for (const tagData of this.ontology[cat]) {
-                    if (tagData.name.toLowerCase().startsWith(word.toLowerCase())) {
-                        suggestions.push({ displayText: tagData.name, tagData });
-                    }
+                for (const tag of this.ontology[cat]) {
+                    if (tag.name.toLowerCase().startsWith(word.toLowerCase()))
+                        suggestions.push({ displayText: tag.name, tagData: tag });
                 }
             }
             if (suggestions.length) {
                 const rect = span.getBoundingClientRect();
                 this.suggestionDropdown.show(suggestions, rect.left + window.scrollX, rect.bottom + window.scrollY,
-                    (sugg) => this.insertTagFromSuggestion(sugg, span));
+                    sugg => this.insertTagFromSuggestion(sugg, span));
             }
         }
         /***********************************************************
@@ -824,7 +821,7 @@
                 const trigger = document.getElementById("popup-ontology-trigger");
                 trigger.style.display = "block";
                 trigger.style.top = (rect.top + window.scrollY - 30) + "px";
-                trigger.style.left = (rect.left + window.scrollX) + "px";
+                trigger.style.left = rect.left + window.scrollX + "px";
                 trigger.onclick = () => {
                     this.ontologyBrowser.showAt(rect.left + window.scrollX, rect.bottom + window.scrollY + 5);
                     trigger.style.display = "none";
@@ -847,17 +844,16 @@
         const select = createElement("select", { class: "tag-dropdown" });
         const defaultOption = createElement("option", { disabled: true, selected: true }, `Insert ${category}`);
         select.appendChild(defaultOption);
-        ontology[category].forEach(tagData => {
-            const optionText = (tagData.emoji ? tagData.emoji + " " : "") + tagData.name;
-            const option = new Option(optionText, JSON.stringify(tagData));
-            select.appendChild(option);
+        ontology[category].forEach(tag => {
+            const optionText = (tag.emoji ? tag.emoji + " " : "") + tag.name;
+            select.appendChild(new Option(optionText, JSON.stringify(tag)));
         });
-        select.addEventListener("change", (e) => {
+        select.addEventListener("change", e => {
             try {
-                const tagData = JSON.parse(e.target.value);
-                semanticEditor.insertTagAtSelection(new Tag(tagData));
-                // Reset selection to default.
-                e.target.selectedIndex = 0;
+                const tag = JSON.parse(e.target.value);
+                semanticEditor.insertTagAtSelection(new Tag(tag));
+
+                e.target.selectedIndex = 0; // Reset selection to default.
             } catch(err) {
                 console.error("Error parsing tag data:", err);
             }

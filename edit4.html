@@ -277,10 +277,10 @@
 
     // --- Tag Class (Semantic Tag) ---
     class Tag extends UIComponent {
-        constructor(tagData) {
+        constructor(tag) {
             super();
             // Ensure a default mode and make a shallow copy.
-            this.tagData = { ...tagData, mode: tagData.mode || Object.keys(tagData.modes)[0] };
+            this.tag = { ...tag, mode: tag.mode || Object.keys(tag.modes)[0] };
             this.initializeValues();
             this.inputComponents = {};
             this.element = this.createElement();
@@ -310,7 +310,7 @@
                 this.data.mode = select.value;
                 this.adjustValuesForMode();
                 this.rebuildInputs(this.element);
-                this.updateTagData();
+                this.updateData();
             });
             return select;
         }
@@ -338,7 +338,7 @@
         createNumberInputs(tagEl) {
             const appendInput = (comp, key) => { tagEl.appendChild(comp.getElement()); if (key) this.inputComponents[key] = comp; };
             const createAndAppend = (value, placeholder, key) =>
-                appendInput(new NumberInput(value, (v) => { this.data[key || "value"] = v; this.updateTagData(); }, placeholder), key);
+                appendInput(new NumberInput(value, (v) => { this.data[key || "value"] = v; this.updateData(); }, placeholder), key);
             if (this.data.mode === "is") createAndAppend(this.data.value, "", "value");
             else if (this.data.mode === "is between") {
                 createAndAppend(this.data.min, "Min", "min");
@@ -351,17 +351,17 @@
             tagEl.appendChild(new UnitLabel(this.data.unit).getElement());
         }
         createListInput(tagEl) {
-            const listInput = new ListInput(this.data.options, this.data.value, (v) => { this.data.value = v; this.updateTagData(); });
+            const listInput = new ListInput(this.data.options, this.data.value, (v) => { this.data.value = v; this.updateData(); });
             tagEl.appendChild(listInput.getElement());
             this.inputComponents.value = listInput;
         }
         createLocationInput(tagEl) {
-            const locInput = new LocationInput(this.data.value, (v) => { this.data.value = v; this.updateTagData(); });
+            const locInput = new LocationInput(this.data.value, (v) => { this.data.value = v; this.updateData(); });
             tagEl.appendChild(locInput.getElement());
             this.inputComponents.value = locInput;
         }
         createColorInput(tagEl) {
-            const colorInput = new ColorInput(this.data.value, (v) => { this.data.value = v; this.updateTagData(); });
+            const colorInput = new ColorInput(this.data.value, (v) => { this.data.value = v; this.updateData(); });
             tagEl.appendChild(colorInput.getElement());
             this.inputComponents.value = colorInput;
             tagEl.appendChild(new ColorPreview(this.data.value).getElement());
@@ -370,7 +370,7 @@
         createTimeInputs(tagEl) {
             const appendInput = (comp, key) => { tagEl.appendChild(comp.getElement()); if (key) this.inputComponents[key] = comp; };
             const createAndAppend = (value, placeholder, key) =>
-                appendInput(new TextInput(value, (v) => { this.data[key || "value"] = v; this.updateTagData(); }, placeholder), key);
+                appendInput(new TextInput(value, (v) => { this.data[key || "value"] = v; this.updateData(); }, placeholder), key);
             if (this.data.mode === "is") createAndAppend(this.data.value, "", "value");
             else if (this.data.mode === "is between") {
                 createAndAppend(this.data.min, "Start Time", "min");
@@ -381,7 +381,7 @@
                 createAndAppend(this.data[key], this.data.mode === "is before" ? "Before" : "After", key);
             }
         }
-        updateTagData() { this.element.dataset.tagData = JSON.stringify(this.data); }
+        updateData() { this.element.dataset.tag = JSON.stringify(this.data); }
     }
 
     // --- Suggestion Dropdown ---
@@ -438,9 +438,9 @@
             const browser = createElement("div", { id: "ontology-browser" });
             for (const category in this.ontology) {
                 const catDiv = createElement("div", { class: "category" }, category);
-                this.ontology[category].forEach((tagData) => {
-                    const tagItem = createElement("div", { class: "tag-item" }, tagData.name);
-                    tagItem.addEventListener("click", () => this.onTagSelect(new Tag(tagData)));
+                this.ontology[category].forEach(tag => {
+                    const tagItem = createElement("div", { class: "tag-item" }, tag.name);
+                    tagItem.addEventListener("click", () => this.onTagSelect(new Tag(tag)));
                     catDiv.appendChild(tagItem);
                 });
                 browser.appendChild(catDiv);
@@ -492,13 +492,13 @@
                 if (range.startContainer.nodeType === Node.TEXT_NODE) {
                     range.startContainer.textContent = range.startContainer.textContent.replace(/(\s*\S+)$/, "");
                 }
-                this.insertTagAtSelection(new Tag(sugg.tagData));
+                this.insertTagAtSelection(new Tag(sugg.tag));
             }
         }
         serialize() {
             const clone = this.editor.cloneNode(true);
             clone.querySelectorAll(".tag").forEach((tagEl) => {
-                const data = JSON.parse(tagEl.dataset.tagData);
+                const data = JSON.parse(tagEl.dataset.tag);
                 tagEl.replaceWith(document.createTextNode(`[TAG:${JSON.stringify(data)}]`));
             });
             return clone.textContent;
@@ -586,9 +586,9 @@
             if (!lastWord) { this.suggestionDropdown.hide(); return; }
             const suggestions = [];
             for (const cat in this.ontology) {
-                for (const tagData of this.ontology[cat]) {
-                    if (tagData.name.toLowerCase().startsWith(lastWord.toLowerCase()))
-                        suggestions.push({ displayText: tagData.name, tagData });
+                for (const tag of this.ontology[cat]) {
+                    if (tag.name.toLowerCase().startsWith(lastWord.toLowerCase()))
+                        suggestions.push({ displayText: tag.name, tag: tag });
                 }
             }
             if (suggestions.length) {
@@ -601,8 +601,8 @@
         }
         findSuggestion(text) {
             for (const cat in this.ontology) {
-                for (const tagData of this.ontology[cat]) {
-                    if (tagData.name === text) return { displayText: tagData.name, tagData };
+                for (const tag of this.ontology[cat]) {
+                    if (tag.name === text) return { displayText: tag.name, tag: tag };
                 }
             }
             return null;

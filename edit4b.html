@@ -297,7 +297,7 @@
         getElement() {
             const frag = document.createDocumentFragment();
             const mode = this.tag.tagData.mode;
-            const update = () => this.tag.updateTagData();
+            const update = () => this.tag.updateData();
             const createNumInput = (key, placeholder) => {
                 const input = new NumberInput(this.tag.tagData[key], (v) => { this.tag.tagData[key] = v; update(); }, placeholder);
                 return input.getElement();
@@ -321,7 +321,7 @@
         getElement() {
             return new ListInput(this.tag.tagData.options, this.tag.tagData.value, (v) => {
                 this.tag.tagData.value = v;
-                this.tag.updateTagData();
+                this.tag.updateData();
             }).getElement();
         }
     }
@@ -330,7 +330,7 @@
         getElement() {
             return new LocationInput(this.tag.tagData.value, (v) => {
                 this.tag.tagData.value = v;
-                this.tag.updateTagData();
+                this.tag.updateData();
             }).getElement();
         }
     }
@@ -340,7 +340,7 @@
             const frag = document.createDocumentFragment();
             const colorInput = new ColorInput(this.tag.tagData.value, (v) => {
                 this.tag.tagData.value = v;
-                this.tag.updateTagData();
+                this.tag.updateData();
             });
             frag.appendChild(colorInput.getElement());
             frag.appendChild(new ColorPreview(this.tag.tagData.value).getElement());
@@ -352,7 +352,7 @@
         getElement() {
             const frag = document.createDocumentFragment();
             const mode = this.tag.tagData.mode;
-            const update = () => this.tag.updateTagData();
+            const update = () => this.tag.updateData();
             const createTextInput = (key, placeholder) => {
                 const input = new TextInput(this.tag.tagData[key], (v) => { this.tag.tagData[key] = v; update(); }, placeholder);
                 return input.getElement();
@@ -407,7 +407,7 @@
                 this.data.mode = select.value;
                 this.adjustValuesForMode();
                 this.rebuildInputs(this.element);
-                this.updateTagData();
+                this.updateData();
             });
             return select;
         }
@@ -432,7 +432,7 @@
             if (control) tagEl.appendChild(control.getElement());
             tagEl.appendChild(new RemoveTagButton(() => tagEl.remove()).getElement());
         }
-        updateTagData() { this.element.dataset.tagData = JSON.stringify(this.data); }
+        updateData() { this.element.dataset.tagData = JSON.stringify(this.data); }
     }
 
     /*****************************************************************
@@ -473,8 +473,9 @@
             );
         }
         getSelectedSuggestion() {
-            return this.selectedIndex >= 0 && this.selectedIndex < this.element.children.length
-                ? this.element.children[this.selectedIndex].textContent
+            let i = this.selectedIndex;
+            return i >= 0 && i < this.element.children.length
+                ? this.element.children[i].textContent
                 : null;
         }
     }
@@ -493,9 +494,9 @@
             const browser = createElement("div", { id: "ontology-browser" });
             for (const category in this.ontology) {
                 const catDiv = createElement("div", { class: "category" }, category);
-                this.ontology[category].forEach(tagData => {
-                    const tagItem = createElement("div", { class: "tag-item" }, tagData.name);
-                    tagItem.addEventListener("click", () => this.onTagSelect(new Tag(tagData)));
+                this.ontology[category].forEach(tag => {
+                    const tagItem = createElement("div", { class: "tag-item" }, tag.name);
+                    tagItem.addEventListener("click", () => this.onTagSelect(new Tag(tag)));
                     catDiv.appendChild(tagItem);
                 });
                 browser.appendChild(catDiv);
@@ -643,9 +644,9 @@
             if (!lastWord) { this.suggestionDropdown.hide(); return; }
             const suggestions = [];
             for (const cat in this.ontology) {
-                for (const tagData of this.ontology[cat]) {
-                    if (tagData.name.toLowerCase().startsWith(lastWord.toLowerCase()))
-                        suggestions.push({ displayText: tagData.name, tagData });
+                for (const tag of this.ontology[cat]) {
+                    if (tag.name.toLowerCase().startsWith(lastWord.toLowerCase()))
+                        suggestions.push({ displayText: tag.name, tagData: tag });
                 }
             }
             if (suggestions.length) {
