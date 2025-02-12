@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Semantic Text Editor</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 20px;
+        }
+        /* Toolbar styles */
+        #toolbar {
+            margin-bottom: 10px;
+        }
+        #toolbar button {
+            padding: 5px 10px;
+            margin-right: 5px;
+        }
+        /* Editor styles */
+        #editor {
+            border: 1px solid #ccc;
+            min-height: 200px;
+            padding: 10px;
+        }
+        /* Semantic tag styles */
+        .semantic-tag {
+            background-color: #ffffcc;
+            border: 1px solid #e6e600;
+            border-radius: 4px;
+            padding: 2px 4px;
+            margin: 0 2px;
+            display: inline-block;
+            cursor: pointer;
+        }
+        /* Modal (dialog) styles */
+        .modal {
+            display: none; /* hidden by default */
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background: rgba(0, 0, 0, 0.4);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 10% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 300px;
+            border-radius: 5px;
+            position: relative;
+        }
+        .modal-content label {
+            display: block;
+            margin-top: 10px;
+        }
+        .modal-content input,
+        .modal-content select {
+            width: 100%;
+            padding: 5px;
+            margin-top: 5px;
+        }
+        .modal-content button {
+            margin-top: 15px;
+            padding: 5px 10px;
+        }
+        .close {
+            position: absolute;
+            right: 10px;
+            top: 5px;
+            font-size: 20px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Semantic Text Editor</h1>
+
+<div id="toolbar">
+    <button id="insertTagBtn">Insert Semantic Tag</button>
+    <!-- You could add other rich-text formatting buttons here -->
+</div>
+
+<!-- The rich-text editor -->
+<div id="editor" contenteditable="true">
+    <p>Type your message here…</p>
+</div>
+
+<!-- Modal dialog for inserting/editing a semantic tag -->
+<div id="tagModal" class="modal">
+    <div class="modal-content">
+        <span class="close" id="modalClose">&times;</span>
+        <h2 id="modalTitle">Insert Semantic Tag</h2>
+        <form id="tagForm">
+            <label for="tagCategory">Category:</label>
+            <select id="tagCategory" name="tagCategory">
+                <option value="Physical">Physical</option>
+                <option value="Emotion">Emotion</option>
+                <option value="Business">Business</option>
+                <option value="Location">Location</option>
+                <option value="Time">Time</option>
+            </select>
+
+            <label for="tagLabel">Tag Label:</label>
+            <input type="text" id="tagLabel" name="tagLabel" required placeholder="Enter tag text">
+
+            <label for="tagMode">Mode:</label>
+            <select id="tagMode" name="tagMode">
+                <option value="is">is</option>
+                <option value="is between">is between</option>
+                <option value="is below">is below</option>
+                <option value="is above">is above</option>
+            </select>
+
+            <div id="valueInputs">
+                <div class="valueInput" id="value1Container">
+                    <label for="tagValue1">Value:</label>
+                    <input type="text" id="tagValue1" name="tagValue1" placeholder="e.g., 100">
+                </div>
+                <div class="valueInput" id="value2Container" style="display: none;">
+                    <label for="tagValue2">And:</label>
+                    <input type="text" id="tagValue2" name="tagValue2" placeholder="e.g., 200">
+                </div>
+            </div>
+
+            <button type="submit" id="saveTagBtn">Save Tag</button>
+            <button type="button" id="deleteTagBtn" style="display: none; background-color:#f66; color:#fff;">Delete Tag</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    /*****************************************************************
+     * Global Variables
+     *****************************************************************/
+        // For insertion: store the current selection range
+    let savedRange = null;
+    // For editing: store reference to the tag element (if any) being edited
+    let currentEditingTag = null;
+
+    /*****************************************************************
+     * Utility Functions
+     *****************************************************************/
+    // Save the current selection (so that we know where to insert a new tag)
+    function saveSelection() {
+        const sel = window.getSelection();
+        if (sel.rangeCount > 0) {
+            savedRange = sel.getRangeAt(0);
+        }
+    }
+
+    // Restore a previously saved selection range
+    function restoreSelection() {
+        if (savedRange) {
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(savedRange);
+        }
+    }
+
+    // Create a semantic tag element with the given parameters
+    function createSemanticTag({category, label, mode, value1, value2}) {
+        const span = document.createElement("span");
+        span.className = "semantic-tag";
+        span.contentEditable = "false";
+        // Save data as data-attributes (for serialization)
+        span.dataset.category = category;
+        span.dataset.label = label;
+        span.dataset.mode = mode;
+        span.dataset.value1 = value1;
+        span.dataset.value2 = value2 || "";
+        // Display text (you can change this formatting as desired)
+        let displayText = `[${category}: ${label} (${mode}`;
+        if (mode === "is between") {
+            displayText += ` ${value1} and ${value2}`;
+        } else if (value1) {
+            displayText += ` ${value1}`;
+        }
+        displayText += `)]`;
+        span.textContent = displayText;
+        return span;
+    }
+
+    /*****************************************************************
+     * Modal Handling
+     *****************************************************************/
+    const modal = document.getElementById("tagModal");
+    const modalTitle = document.getElementById("modalTitle");
+    const modalClose = document.getElementById("modalClose");
+    const tagForm = document.getElementById("tagForm");
+    const deleteTagBtn = document.getElementById("deleteTagBtn");
+
+    // Form fields
+    const tagCategory = document.getElementById("tagCategory");
+    const tagLabel = document.getElementById("tagLabel");
+    const tagMode = document.getElementById("tagMode");
+    const tagValue1 = document.getElementById("tagValue1");
+    const tagValue2 = document.getElementById("tagValue2");
+    const value2Container = document.getElementById("value2Container");
+
+    // Show modal dialog. If editingTag is provided, pre-populate form values.
+    function openModal(editingTag = null) {
+        currentEditingTag = editingTag;
+        if (editingTag) {
+            modalTitle.textContent = "Edit Semantic Tag";
+            deleteTagBtn.style.display = "inline-block";
+            // Pre-populate fields from the tag's data attributes.
+            tagCategory.value = editingTag.dataset.category;
+            tagLabel.value = editingTag.dataset.label;
+            tagMode.value = editingTag.dataset.mode;
+            tagValue1.value = editingTag.dataset.value1;
+            tagValue2.value = editingTag.dataset.value2;
+        } else {
+            modalTitle.textContent = "Insert Semantic Tag";
+            deleteTagBtn.style.display = "none";
+            tagCategory.value = "Physical";
+            tagLabel.value = "";
+            tagMode.value = "is";
+            tagValue1.value = "";
+            tagValue2.value = "";
+        }
+        // Adjust the input display based on the mode.
+        adjustValueInputs();
+        modal.style.display = "block";
+    }
+
+    // Close the modal dialog.
+    function closeModal() {
+        modal.style.display = "none";
+        // Clear saved editing state
+        currentEditingTag = null;
+    }
+
+    // Adjust the value input fields depending on the chosen mode.
+    function adjustValueInputs() {
+        if (tagMode.value === "is between") {
+            value2Container.style.display = "block";
+        } else {
+            value2Container.style.display = "none";
+        }
+    }
+
+    // When the mode selection changes, update the UI
+    tagMode.addEventListener("change", adjustValueInputs);
+
+    // Close modal when the close icon is clicked
+    modalClose.addEventListener("click", closeModal);
+
+    // Close modal if clicking outside the modal content
+    window.addEventListener("click", (e) => {
+        if (e.target === modal) {
+            closeModal();
+        }
+    });
+
+    /*****************************************************************
+     * Insertion / Editing Handlers
+     *****************************************************************/
+    // Handle the toolbar "Insert Semantic Tag" button.
+    document.getElementById("insertTagBtn").addEventListener("click", () => {
+        // Save the current selection for later insertion.
+        saveSelection();
+        openModal(); // New tag (no editing tag provided)
+    });
+
+    // Delegate click events in the editor: if a semantic tag is clicked, open the modal for editing.
+    document.getElementById("editor").addEventListener("click", (e) => {
+        if (e.target.classList.contains("semantic-tag")) {
+            openModal(e.target);
+        }
+    });
+
+    // Handle form submission (for both new tag insertion and editing an existing tag)
+    tagForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+        // Get values from form fields
+        const data = {
+            category: tagCategory.value,
+            label: tagLabel.value.trim(),
+            mode: tagMode.value,
+            value1: tagValue1.value.trim(),
+            value2: tagMode.value === "is between" ? tagValue2.value.trim() : ""
+        };
+
+        // Validate (for example, if mode is "is between", both values are required)
+        if (data.mode === "is between" && (!data.value1 || !data.value2)) {
+            alert("Please provide both values for 'is between' mode.");
+            return;
+        }
+
+        if (currentEditingTag) {
+            // Update the existing semantic tag.
+            currentEditingTag.dataset.category = data.category;
+            currentEditingTag.dataset.label = data.label;
+            currentEditingTag.dataset.mode = data.mode;
+            currentEditingTag.dataset.value1 = data.value1;
+            currentEditingTag.dataset.value2 = data.value2;
+            // Update displayed text
+            let displayText = `[${data.category}: ${data.label} (${data.mode}`;
+            if (data.mode === "is between") {
+                displayText += ` ${data.value1} and ${data.value2}`;
+            } else if (data.value1) {
+                displayText += ` ${data.value1}`;
+            }
+            displayText += `)]`;
+            currentEditingTag.textContent = displayText;
+        } else {
+            // Create a new semantic tag element.
+            const tagEl = createSemanticTag(data);
+            // Insert it at the previously saved range.
+            if (savedRange) {
+                restoreSelection();
+                // Insert a space before tag if needed.
+                const space = document.createTextNode(" ");
+                savedRange.insertNode(space);
+                savedRange.collapse(false);
+                savedRange.insertNode(tagEl);
+                // Place the caret after the inserted tag.
+                savedRange.setStartAfter(tagEl);
+                savedRange.collapse(true);
+                const sel = window.getSelection();
+                sel.removeAllRanges();
+                sel.addRange(savedRange);
+            } else {
+                // Fallback: append to the editor.
+                document.getElementById("editor").appendChild(tagEl);
+            }
+        }
+        closeModal();
+    });
+
+    // Handle deletion of a tag (only active when editing an existing tag)
+    deleteTagBtn.addEventListener("click", () => {
+        if (currentEditingTag) {
+            currentEditingTag.parentNode.removeChild(currentEditingTag);
+            closeModal();
+        }
+    });
+
+    /*****************************************************************
+     * (Optional) Serialization / Deserialization Example
+     *****************************************************************/
+    // You could implement functions to save/load the editor content with tags.
+    // For example:
+    // function serializeEditor() {
+    //   return document.getElementById("editor").innerHTML;
+    // }
+    // function deserializeEditor(html) {
+    //   document.getElementById("editor").innerHTML = html;
+    // }
+</script>
+</body>
+</html>

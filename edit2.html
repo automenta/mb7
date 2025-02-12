@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Semantic Text Editor</title>
+    <style>
+        body { font-family: sans-serif; }
+        #editor { border: 1px solid #ccc; padding: 10px; min-height: 200px; cursor: text; margin-bottom: 10px; white-space: pre-wrap; } /* pre-wrap is important! */
+        .tag { background-color: #e0f7fa; border: 1px solid #80deea; border-radius: 4px;
+            padding: 2px 5px; margin: 0 2px; display: inline-flex; align-items: center; cursor: pointer; }
+        .tag.conditional { background-color: #fff3e0; border-color: #ffcc80; }
+        .tag input[type="number"], .tag input[type="text"], .tag select {
+            border: none; background: transparent; font-size: inherit; padding: 0; margin: 0;
+            width: auto; /* Let the input size to its content */ outline: none; /* Remove focus outline */
+        }
+        .tag .remove-tag { margin-left: 5px; cursor: pointer; color: #888; font-size: smaller; }
+        /* Style the select to look like part of the sentence */
+        .tag select {
+            -webkit-appearance: none; /* Remove default styling on WebKit */
+            -moz-appearance: none;  /* Remove default styling on Firefox */
+            appearance: none;
+            border: none;
+            background-color: transparent;
+            padding: 0 2px;
+            font-size: inherit;
+            cursor: pointer;
+        }
+        /* Style the select dropdown arrow (optional, browser-dependent) */
+        .tag select::-ms-expand { display: none; } /* Hide default arrow in IE */
+
+        #ontology-browser { border: 1px solid #ccc; padding: 10px;
+            width: 250px; height: 300px; overflow-y: auto; display: none;
+            position: absolute; background-color: white; z-index: 50; }
+        #ontology-browser .category { font-weight: bold; margin-top: 1em; }
+        #ontology-browser .tag-item { cursor: pointer; padding: 2px 5px; }
+        #ontology-browser .tag-item:hover { background-color: #eee; }
+        #serialization-output { width: 100%; height: 100px; margin-top: 10px; }
+        .color-preview { width: 1em; height: 1em; display: inline-block; border: 1px solid #ccc; }
+
+    </style>
+</head>
+<body>
+
+<h1>Semantic Text Editor</h1>
+
+<div id="editor" contenteditable="true"></div>
+<button id="show-ontology">Show Ontology</button>
+<button id="serialize">Serialize</button>
+
+<div id="ontology-browser"></div>
+<textarea id="serialization-output" placeholder="Serialization will appear here"></textarea>
+
+<script>
+    const editor = document.getElementById('editor');
+    const ontologyBrowser = document.getElementById('ontology-browser');
+    const showOntologyButton = document.getElementById('show-ontology');
+    const serializeButton = document.getElementById('serialize');
+    const serializationOutput = document.getElementById('serialization-output');
+
+    const ontology = { /* (Same Ontology as before, but with better mode labels) */
+        "Physical": [
+            { name: "Mass", type: "number", unit: "kg", modes: { "is": "is", "is between": "is between", "is below": "is below", "is above": "is above" }, singleton: false },
+            { name: "Length", type: "number", unit: "m", modes: { "is": "is", "is between": "is between", "is below": "is below", "is above": "is above" }, singleton: false },
+            { name: "Temperature", type: "number", unit: "°C", modes: { "is": "is", "is between": "is between", "is below": "is below", "is above": "is above" }, singleton: false },
+            { name: "Location", type: "location", modes: { "is": "is at", "is within": "is within" }, singleton: false, editor: 'map' },
+            { name: "Color", type: "color", modes: { "is": "is" }, singleton: false },
+        ],
+        "Emotion": [
+            { name: "Happiness", type: "range", min: 0, max: 10, modes: { "is": "is", "is between": "is between", "is below": "is below", "is above": "is above" }, singleton: false },
+            { name: "Sadness", type: "range", min: 0, max: 10, modes: { "is": "is", "is between": "is between", "is below": "is below", "is above": "is above" }, singleton: false },
+            { name: "Anger", type: "range", min: 0, max: 10, modes: { "is": "is", "is between": "is between", "is below": "is below", "is above": "is above" }, singleton: false },
+        ],
+        "Business": [
+            { name: "Revenue", type: "number", unit: "USD", modes: { "is": "is", "is between": "is between", "is below": "is below", "is above": "is above" }, singleton: false },
+            { name: "Product", type: "list", options: ["Software", "Hardware", "Service"], modes: { "is one of": "is" }, singleton: true },
+            { name: "Customer Segment", type: "list", options: ["B2B", "B2C", "Government"], modes: { "is one of": "is" }, singleton: false },
+        ],
+        "Time": [
+            { name: "Time", type: "time", modes: { "is": "is at", "is between": "is between", "is before": "is before", "is after": "is after" }, singleton: false, editor: 'calendar' }
+        ],
+        "Misc": [
+            { name: "Generic List", type: "list", options: [], modes: { "is one of": "is" }, singleton: false },
+        ]
+    };
+
+
+    function createTagElement(tagData) {
+        const tagElement = document.createElement('span');
+        tagElement.classList.add('tag');
+        if (tagData.mode && tagData.mode.startsWith("is") && tagData.mode !== "is") {
+            tagElement.classList.add('conditional');
+        }
+        tagElement.dataset.tagData = JSON.stringify(tagData);  // Store *before* modifications
+
+        // 1. Property Name (Static Text)
+        const propertyName = document.createTextNode(tagData.name + " ");
+        tagElement.appendChild(propertyName);
+
+
+        // 2. Mode Selector (Combobox)
+        const modeSelect = document.createElement('select');
+        for (const modeKey in tagData.modes) {
+            const option = document.createElement('option');
+            option.value = modeKey;
+            option.textContent = tagData.modes[modeKey];  // Use the human-readable mode label
+            modeSelect.appendChild(option);
+        }
+        modeSelect.value = tagData.mode || Object.keys(tagData.modes)[0]; // Default mode
+
+        modeSelect.addEventListener('change', () => {
+            tagData.mode = modeSelect.value; //Update the mode.
+
+            //Adjust for new modes.
+            if (tagData.mode === "is between") {
+                tagData.min = tagData.min || 0;
+                tagData.max = tagData.max || 0;
+            } else if (tagData.mode === "is below") {
+                tagData.max = tagData.max || 0;
+                tagData.min = null;
+            } else if(tagData.mode === "is above"){
+                tagData.min = tagData.min || 0;
+                tagData.max = null;
+            }
+            else if(tagData.mode === "is") {
+                tagData.value = tagData.value || 0;
+            }
+            rebuildTagInputs(tagElement, tagData);
+        });
+        tagElement.appendChild(modeSelect);
+
+        // 3. Input Fields (Dynamically Created)
+        function rebuildTagInputs(tagEl, tagData) {
+            // Remove existing inputs (but keep property name and mode select)
+            const inputsToRemove = tagEl.querySelectorAll('input, select:not(:first-of-type), .color-preview'); // Select everything but first select
+            inputsToRemove.forEach(input => input.remove());
+
+            // Create new inputs based on tagData
+            if (tagData.type === 'number') {
+                if (tagData.mode === 'is') {
+                    const input = createNumberInput(tagData.value, (newValue) => tagData.value = parseFloat(newValue));
+                    tagElement.appendChild(input);
+                    tagElement.appendChild(document.createTextNode(" " + tagData.unit)); // Add unit
+
+                } else if (tagData.mode === 'is between') {
+                    const minInput = createNumberInput(tagData.min, (newValue) => tagData.min = parseFloat(newValue), "Min");
+                    const maxInput = createNumberInput(tagData.max, (newValue) => tagData.max = parseFloat(newValue), "Max");
+                    tagElement.appendChild(minInput);
+                    tagElement.appendChild(document.createTextNode(" and "));
+                    tagElement.appendChild(maxInput);
+                    tagElement.appendChild(document.createTextNode(" " + tagData.unit));
+
+                } else if (tagData.mode === 'is below') {
+                    const maxInput = createNumberInput(tagData.max, (newValue) => tagData.max = parseFloat(newValue), "Max");
+                    tagElement.appendChild(maxInput);
+                    tagElement.appendChild(document.createTextNode(" " + tagData.unit));
+
+                } else if (tagData.mode === 'is above') {
+                    const minInput = createNumberInput(tagData.min, (newValue) => tagData.min = parseFloat(newValue), "Min");
+                    tagElement.appendChild(minInput);
+                    tagElement.appendChild(document.createTextNode(" " + tagData.unit));
+                }
+
+            } else if (tagData.type === 'list') {
+                const select = document.createElement('select');
+                tagData.options.forEach(option => {
+                    const optionEl = document.createElement('option');
+                    optionEl.value = option;
+                    optionEl.textContent = option;
+                    select.appendChild(optionEl);
+                });
+                select.value = tagData.value;
+                select.addEventListener('change', () => {
+                    tagData.value = select.value;
+                    updateTagData();
+                });
+                tagElement.appendChild(select);
+
+            }  else if (tagData.type === 'location') {
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.value = tagData.value ? `${tagData.value.lat}, ${tagData.value.lng}` : '';
+                input.placeholder = 'Lat, Lng';
+                input.addEventListener('input', () => {
+                    const [lat, lng] = input.value.split(',').map(v => parseFloat(v.trim()));
+                    if (!isNaN(lat) && !isNaN(lng)) {
+                        tagData.value = { lat, lng };
+                    } else {
+                        tagData.value = null;
+                    }
+                    updateTagData();
+                });
+                tagElement.appendChild(input);
+
+            } else if (tagData.type === 'color') {
+                const colorInput = document.createElement('input');
+                colorInput.type = 'color';
+                colorInput.value = tagData.value || '#000000';
+                colorInput.addEventListener('input', () => {
+                    tagData.value = colorInput.value;
+                    updateTagData();
+                    // Update the color preview
+                    const preview = tagElement.querySelector('.color-preview');
+                    if (preview) {
+                        preview.style.backgroundColor = tagData.value;
+                    }
+                });
+                tagElement.appendChild(colorInput);
+                // Color preview (now created *after* the color input)
+                const colorPreview = document.createElement('span');
+                colorPreview.classList.add('color-preview');
+                colorPreview.style.backgroundColor = tagData.value;
+                tagElement.appendChild(colorPreview);
+
+            } else if (tagData.type === 'time') { // Simplified; use a time picker in a real app
+                if (tagData.mode === 'is') {
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.value = tagData.value;
+                    input.addEventListener('input', () => {
+                        tagData.value = input.value;
+                        updateTagData();
+                    });
+                    tagElement.appendChild(input);
+                } else if(tagData.mode === "is between") {
+                    const minInput = document.createElement('input');
+                    minInput.type = 'text';
+                    minInput.value = tagData.min;
+                    minInput.placeholder = "Start Time";
+                    minInput.addEventListener('input', () => {
+                        tagData.min = minInput.value;
+                        updateTagData();
+                    });
+                    tagElement.appendChild(minInput);
+
+                    const maxInput = document.createElement('input');
+                    maxInput.type = 'text';
+                    maxInput.value = tagData.max;
+                    maxInput.placeholder = "End Time";
+                    maxInput.addEventListener('input', () => {
+                        tagData.max = maxInput.value;
+                        updateTagData();
+                    });
+                    tagElement.appendChild(maxInput);
+
+                }  else if (tagData.mode === 'is before') {
+                    const maxInput = document.createElement('input');
+                    maxInput.type = 'text';
+                    maxInput.value = tagData.max;
+                    maxInput.placeholder = "Before";
+                    maxInput.addEventListener('input', () => {
+                        tagData.max = maxInput.value;
+                        updateTagData();
+                    });
+                    tagElement.appendChild(maxInput);
+                } else if(tagData.mode === "is after") {
+                    const minInput = document.createElement('input');
+                    minInput.type = 'text';
+                    minInput.value = tagData.min;
+                    minInput.placeholder = "After";
+                    minInput.addEventListener('input', () => {
+                        tagData.min = minInput.value;
+                        updateTagData();
+                    });
+                    tagElement.appendChild(minInput);
+                }
+
+            }  else if (tagData.type === "range") {
+                if (tagData.mode === 'is') {
+                    const input = document.createElement('input');
+                    input.type = 'number';
+                    input.value = tagData.value;
+                    input.addEventListener('input', () => {
+                        tagData.value = parseFloat(input.value);
+                        updateTagData();
+                    });
+                    tagElement.appendChild(input);
+
+                } else if (tagData.mode === 'is between') {
+                    const minInput = document.createElement('input');
+                    minInput.type = 'number';
+                    minInput.value = tagData.min;
+                    minInput.placeholder = "Min";
+                    minInput.addEventListener('input', () => {
+                        tagData.min = parseFloat(minInput.value);
+                        updateTagData();
+                    });
+                    tagElement.appendChild(minInput);
+
+                    const maxInput = document.createElement('input');
+                    maxInput.type = 'number';
+                    maxInput.value = tagData.max;
+                    maxInput.placeholder = "Max";
+                    maxInput.addEventListener('input', () => {
+                        tagData.max = parseFloat(maxInput.value);
+                        updateTagData();
+                    });
+                    tagElement.appendChild(maxInput);
+
+                } else if (tagData.mode === 'is below') {
+                    const maxInput = document.createElement('input');
+                    maxInput.type = 'number';
+                    maxInput.value = tagData.max;
+                    maxInput.placeholder = "Max";
+                    maxInput.addEventListener('input', () => {
+                        tagData.max = parseFloat(maxInput.value);
+                        updateTagData();
+                    });
+                    tagElement.appendChild(maxInput);
+
+                } else if (tagData.mode === 'is above') {
+                    const minInput = document.createElement('input');
+                    minInput.type = 'number';
+                    minInput.value = tagData.min;
+                    minInput.placeholder = "Min";
+                    minInput.addEventListener('input', () => {
+                        tagData.min = parseFloat(minInput.value);
+                        updateTagData();
+                    });
+                    tagElement.appendChild(minInput);
+                }
+            }
+
+
+            // 4. Remove Tag Button
+            const removeTag = document.createElement('span');
+            removeTag.classList.add('remove-tag');
+            removeTag.textContent = 'x';
+            removeTag.addEventListener('click', (event) => {
+                tagElement.remove();
+                event.stopPropagation(); // Prevent triggering other events
+            });
+            tagElement.appendChild(removeTag); //Add remove button *after* inputs.
+
+            // Update tagData in the dataset
+            function updateTagData() {
+                tagElement.dataset.tagData = JSON.stringify(tagData);
+            }
+        }
+
+
+        // Initial input creation
+        rebuildTagInputs(tagElement, tagData); //Call the first time!
+        return tagElement;
+    }
+    function createNumberInput(initialValue, onChange, placeholder = "") {
+        const input = document.createElement('input');
+        input.type = 'number';
+        input.value = initialValue;
+        input.placeholder = placeholder;
+        input.addEventListener('input', () => {
+            onChange(input.value);
+        });
+        return input;
+    }
+    function renderOntologyBrowser() {
+        ontologyBrowser.innerHTML = '';
+        for (const category in ontology) {
+            const categoryDiv = document.createElement('div');
+            categoryDiv.classList.add('category');
+            categoryDiv.textContent = category;
+            ontologyBrowser.appendChild(categoryDiv);
+
+            ontology[category].forEach(tag => {
+                const tagItem = document.createElement('div');
+                tagItem.classList.add('tag-item');
+                tagItem.textContent = tag.name;
+                tagItem.addEventListener('click', () => {
+                    const tagData = { ...tag, value: null, mode: Object.keys(tag.modes)[0] }; // Use first mode
+                    if(tagData.type === "number") {
+                        tagData.value = 0;
+                    } else if(tagData.type === "list") {
+                        tagData.value = tag.options[0];
+                    }
+                    const tagElement = createTagElement(tagData);
+
+                    // Insert at cursor position
+                    const selection = window.getSelection();
+                    if (selection.rangeCount > 0) {
+                        const range = selection.getRangeAt(0);
+                        range.deleteContents();
+                        range.insertNode(tagElement);
+
+                        // Set the cursor at end of tag:
+                        const newRange = document.createRange();
+                        newRange.setStartAfter(tagElement); // Set start to *after* the tag
+                        newRange.collapse(true);
+                        selection.removeAllRanges(); // Clear any existing
+                        selection.addRange(newRange); //
+
+                    } else {
+                        editor.appendChild(tagElement); // Fallback
+                    }
+                });
+                categoryDiv.appendChild(tagItem);
+            });
+        }
+    }
+
+
+    function serialize() {
+        const fragment = document.createDocumentFragment();
+        const clonedContent = editor.cloneNode(true);
+        fragment.appendChild(clonedContent);
+
+        const tags = fragment.querySelectorAll('.tag');
+        tags.forEach(tag => {
+            const tagData = JSON.parse(tag.dataset.tagData);
+            const tagText = document.createTextNode(`[TAG:${JSON.stringify(tagData)}]`);
+            tag.replaceWith(tagText);  // Replace the entire tag element
+        });
+
+        serializationOutput.value = clonedContent.textContent;
+    }
+
+
+    function deserialize(text) {
+        editor.innerHTML = '';
+        const tagRegex = /\[TAG:(.*?)\]/g;
+        let match;
+        let lastIndex = 0;
+
+        while ((match = tagRegex.exec(text)) !== null) {
+            if (match.index > lastIndex) {
+                editor.appendChild(document.createTextNode(text.substring(lastIndex, match.index)));
+            }
+            const tagData = JSON.parse(match[1]);
+            const tagElement = createTagElement(tagData);
+            editor.appendChild(tagElement);
+            lastIndex = tagRegex.lastIndex;
+        }
+
+        if (lastIndex < text.length) {
+            editor.appendChild(document.createTextNode(text.substring(lastIndex)));
+        }
+    }
+
+
+
+    // --- Event Listeners ---
+    showOntologyButton.addEventListener('click', () => {
+        if (ontologyBrowser.style.display === 'none') {
+            renderOntologyBrowser();
+            ontologyBrowser.style.display = 'block';
+            const rect = showOntologyButton.getBoundingClientRect();
+            ontologyBrowser.style.top = `${rect.bottom + window.scrollY}px`;
+            ontologyBrowser.style.left = `${rect.left + window.scrollX}px`;
+        } else {
+            ontologyBrowser.style.display = 'none';
+        }
+    });
+    serializeButton.addEventListener('click', serialize);
+    serializationOutput.addEventListener('input', () => {
+        deserialize(serializationOutput.value);
+    });
+</script>
+
+</body>
+</html>

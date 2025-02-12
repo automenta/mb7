@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Next‑Gen Semantic Text Editor</title>
+    <style>
+        /* Basic Page & Editor Styles */
+        body { font-family: sans-serif; margin: 20px; }
+        h1 { margin-bottom: 10px; }
+        #editor {
+            border: 1px solid #ccc;
+            padding: 10px;
+            min-height: 200px;
+            cursor: text;
+            margin-bottom: 10px;
+            white-space: pre-wrap;
+            position: relative;
+        }
+        /* Tag Styles */
+        .tag {
+            background-color: #e0f7fa;
+            border: 1px solid #80deea;
+            border-radius: 4px;
+            padding: 2px 5px;
+            margin: 0 2px;
+            display: inline-flex;
+            align-items: center;
+            cursor: pointer;
+        }
+        .tag.conditional { background-color: #fff3e0; border-color: #ffcc80; }
+        .tag input,
+        .tag select {
+            border: none;
+            background: transparent;
+            font-size: inherit;
+            padding: 0;
+            margin: 0;
+            outline: none;
+        }
+        .tag select {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            padding: 0 2px;
+            cursor: pointer;
+        }
+        .tag select::-ms-expand { display: none; }
+        .tag .remove-tag {
+            margin-left: 5px;
+            cursor: pointer;
+            color: #888;
+            font-size: smaller;
+        }
+        .color-preview {
+            width: 1em;
+            height: 1em;
+            display: inline-block;
+            border: 1px solid #ccc;
+            margin-left: 2px;
+        }
+        .unit-label {
+            font-style: italic;
+            margin-left: 2px;
+        }
+        /* Ontology Browser & Serialization Output */
+        #ontology-browser {
+            border: 1px solid #ccc;
+            padding: 10px;
+            width: 250px;
+            height: 300px;
+            overflow-y: auto;
+            display: none;
+            position: absolute;
+            background-color: white;
+            z-index: 50;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+        #ontology-browser .category { font-weight: bold; margin-top: 1em; }
+        #ontology-browser .tag-item { cursor: pointer; padding: 2px 5px; }
+        #ontology-browser .tag-item:hover { background-color: #eee; }
+        #serialization-output {
+            width: 100%;
+            height: 100px;
+            margin-top: 10px;
+        }
+        /* Suggestion Dropdown Styles */
+        #suggestion-dropdown {
+            position: absolute;
+            display: none;
+            background-color: white;
+            border: 1px solid #ccc;
+            z-index: 100;
+            max-height: 200px;
+            overflow-y: auto;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        #suggestion-dropdown div {
+            padding: 5px;
+            cursor: pointer;
+        }
+        #suggestion-dropdown div:hover { background-color: #eee; }
+        /* Autosuggest Underline */
+        .autosuggest {
+            text-decoration: underline dotted;
+            cursor: pointer;
+            position: relative;
+        }
+        .autosuggest:hover {
+            background-color: rgba(255, 255, 0, 0.2);
+        }
+        /* Pulsating Popup Trigger */
+        #popup-ontology-trigger {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background-color: rgba(0, 150, 136, 0.5);
+            border-radius: 50%;
+            z-index: 200;
+            display: none;
+            animation: pulse 1.5s infinite;
+            cursor: pointer;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.3); opacity: 0.4; }
+            100% { transform: scale(1); opacity: 0.8; }
+        }
+        /* Toolbar Styles */
+        #toolbar {
+            margin-bottom: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px;
+        }
+        #toolbar .group {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        #toolbar select { padding: 5px; }
+        #word-count { margin-left: auto; font-style: italic; }
+    </style>
+</head>
+<body>
+<h1>Next‑Gen Semantic Text Editor</h1>
+<!-- Rich‑Text Edit Toolbar -->
+<div id="toolbar">
+    <div id="style-buttons" class="group">
+        <button id="bold-btn" title="Bold (Ctrl+B)"><strong>B</strong></button>
+        <button id="italic-btn" title="Italic (Ctrl+I)"><em>I</em></button>
+        <button id="underline-btn" title="Underline (Ctrl+U)"><u>U</u></button>
+        <button id="strike-btn" title="Strike Through">S</button>
+        <button id="undo-btn" title="Undo (Ctrl+Z)">Undo</button>
+        <button id="redo-btn" title="Redo (Ctrl+Y)">Redo</button>
+        <button id="clear-format-btn" title="Clear Formatting">Clear</button>
+        <button id="focus-editor">Focus Editor</button>
+    </div>
+    <div id="tag-dropdowns" class="group">
+        <!-- Dropdowns for Tag Categories will be generated dynamically -->
+    </div>
+    <div class="group">
+        <button id="serialize">Serialize</button>
+        <button id="save-content">Save</button>
+        <button id="load-content">Load</button>
+    </div>
+    <div id="word-count">0 words</div>
+</div>
+<!-- Editable Area -->
+<div id="editor" contenteditable="true">
+    Type your free‑form text here. As you type, eligible words are underlined. Click an underlined word to see ontology suggestions.
+</div>
+<!-- Floating Ontology Browser, Suggestion Dropdown & Popup Trigger -->
+<div id="ontology-browser"></div>
+<div id="suggestion-dropdown"></div>
+<div id="popup-ontology-trigger" title="Click to open Ontology Browser"></div>
+<!-- Serialization Output -->
+<textarea id="serialization-output" placeholder="Serialization will appear here"></textarea>
+
+<script>
+    /*****************************************************************
+     * Data Model: Ontology with Optional Emoji Icons
+     *****************************************************************/
+    const ontology = {
+        Physical: [
+            { name: "Mass", type: "number", unit: "kg", emoji: "⚖️", modes: { is: "is", "is between": "is between", "is below": "is below", "is above": "is above" } },
+            { name: "Length", type: "number", unit: "m", emoji: "📏", modes: { is: "is", "is between": "is between", "is below": "is below", "is above": "is above" } },
+            { name: "Temperature", type: "number", unit: "°C", emoji: "🌡️", modes: { is: "is", "is between": "is between", "is below": "is below", "is above": "is above" } },
+            { name: "Location", type: "location", emoji: "📍", modes: { is: "is at", "is within": "is within" }, editor: "map" },
+            { name: "Color", type: "color", emoji: "🎨", modes: { is: "is" } }
+        ],
+        Emotion: [
+            { name: "Happiness", type: "range", emoji: "😊", min: 0, max: 10, modes: { is: "is", "is between": "is between", "is below": "is below", "is above": "is above" } },
+            { name: "Sadness", type: "range", emoji: "😢", min: 0, max: 10, modes: { is: "is", "is between": "is between", "is below": "is below", "is above": "is above" } },
+            { name: "Anger", type: "range", emoji: "😡", min: 0, max: 10, modes: { is: "is", "is between": "is between", "is below": "is below", "is above": "is above" } }
+        ],
+        Business: [
+            { name: "Revenue", type: "number", unit: "USD", emoji: "💰", modes: { is: "is", "is between": "is between", "is below": "is below", "is above": "is above" } },
+            { name: "Product", type: "list", emoji: "📦", options: ["Software", "Hardware", "Service"], modes: { "is one of": "is" } },
+            { name: "Customer Segment", type: "list", emoji: "👥", options: ["B2B", "B2C", "Government"], modes: { "is one of": "is" } }
+        ],
+        Time: [
+            { name: "Time", type: "time", emoji: "⏰", modes: { is: "is at", "is between": "is between", "is before": "is before", "is after": "is after" }, editor: "calendar" }
+        ],
+        Misc: [
+            { name: "Generic List", type: "list", emoji: "🔖", options: [], modes: { "is one of": "is" } }
+        ]
+    };
+
+    /*****************************************************************
+     * Helper Function
+     *****************************************************************/
+    const createElement = (tag, attrs = {}, text = "") => {
+        const el = document.createElement(tag);
+        for (const [key, value] of Object.entries(attrs)) {
+            if (key.startsWith("on") && typeof value === "function")
+                el.addEventListener(key.substring(2), value);
+            else
+                el.setAttribute(key, value);
+        }
+        if (text) el.textContent = text;
+        return el;
+    };
+
+    /*****************************************************************
+     * Base Classes & Input Components (unchanged from earlier)
+     *****************************************************************/
+    class UIComponent {
+        constructor() { this.element = null; }
+        getElement() { return this.element; }
+    }
+    class InputComponent extends UIComponent {
+        constructor(value, onChange) {
+            super();
+            this.value = value;
+            this.onChange = onChange;
+        }
+    }
+    class NumberInput extends InputComponent {
+        constructor(value, onChange, placeholder = "") {
+            super(value, onChange);
+            this.placeholder = placeholder;
+            this.element = this.createInput();
+        }
+        createInput() {
+            const input = createElement("input", { type: "number", placeholder: this.placeholder });
+            input.value = this.value ?? "";
+            input.addEventListener("input", (e) => {
+                const parsed = parseFloat(e.target.value || 0);
+                if (!isNaN(parsed)) this.onChange(parsed);
+            });
+            return input;
+        }
+    }
+    class TextInput extends InputComponent {
+        constructor(value, onChange, placeholder = "") {
+            super(value, onChange);
+            this.placeholder = placeholder;
+            this.element = this.createInput();
+        }
+        createInput() {
+            const input = createElement("input", { type: "text", placeholder: this.placeholder });
+            input.value = this.value ?? "";
+            input.addEventListener("input", (e) => this.onChange(e.target.value));
+            return input;
+        }
+    }
+    class ListInput extends InputComponent {
+        constructor(options, value, onChange) {
+            super(value, onChange);
+            this.options = options;
+            this.element = this.createSelect();
+        }
+        createSelect() {
+            const select = createElement("select");
+            this.options.forEach(opt => select.appendChild(new Option(opt, opt)));
+            select.value = this.value || this.options[0];
+            select.addEventListener("change", () => this.onChange(select.value));
+            return select;
+        }
+    }
+    class LocationInput extends InputComponent {
+        constructor(value, onChange, placeholder = "Lat, Lng") {
+            super(value, onChange);
+            this.placeholder = placeholder;
+            this.element = this.createInput();
+        }
+        createInput() {
+            const input = createElement("input", { type: "text", placeholder: this.placeholder });
+            input.value = this.value ? `${this.value.lat}, ${this.value.lng}` : "";
+            input.addEventListener("input", (e) => {
+                const parts = e.target.value.split(",");
+                const lat = parseFloat(parts[0]?.trim());
+                const lng = parseFloat(parts[1]?.trim());
+                this.onChange(!isNaN(lat) && !isNaN(lng) ? { lat, lng } : null);
+            });
+            return input;
+        }
+    }
+    class ColorInput extends InputComponent {
+        constructor(value, onChange) {
+            super(value, onChange);
+            this.element = this.createInput();
+        }
+        createInput() {
+            const input = createElement("input", { type: "color" });
+            input.value = this.value || "#000000";
+            input.addEventListener("input", (e) => this.onChange(e.target.value));
+            return input;
+        }
+    }
+    class ColorPreview extends UIComponent {
+        constructor(color) {
+            super();
+            this.element = createElement("span", { class: "color-preview" });
+            this.setColor(color);
+        }
+        setColor(color) { this.element.style.backgroundColor = color; }
+    }
+    class UnitLabel extends UIComponent {
+        constructor(unit) { super(); this.element = createElement("span", { class: "unit-label" }, ` ${unit || ""}`); }
+    }
+    class RemoveTagButton extends UIComponent {
+        constructor(onRemove) {
+            super();
+            this.onRemove = onRemove;
+            this.element = createElement("span", { class: "remove-tag" }, "x");
+            this.element.addEventListener("click", (e) => { e.stopPropagation(); onRemove(); });
+        }
+    }
+
+    /*****************************************************************
+     * Tag Input Controls (unchanged)
+     *****************************************************************/
+    class TagInputControl extends UIComponent {
+        constructor(tag) {
+            super();
+            this.tag = tag;
+        }
+        getElement() { throw new Error("Abstract method 'getElement' must be implemented"); }
+    }
+    class NumericTagInputControl extends TagInputControl {
+        getElement() {
+            const frag = document.createDocumentFragment();
+            const mode = this.tag.data.mode;
+            const update = () => this.tag.updateTagData();
+            const createNumInput = (key, placeholder) => {
+                const input = new NumberInput(this.tag.data[key], (v) => { this.tag.data[key] = v; update(); }, placeholder);
+                return input.getElement();
+            };
+            if (mode === "is") {
+                frag.appendChild(createNumInput("value", ""));
+            } else if (mode === "is between") {
+                frag.appendChild(createNumInput("min", "Min"));
+                frag.appendChild(document.createTextNode(" and "));
+                frag.appendChild(createNumInput("max", "Max"));
+            } else if (mode === "is below" || mode === "is above") {
+                const key = mode === "is below" ? "max" : "min";
+                frag.appendChild(createNumInput(key, mode === "is below" ? "Max" : "Min"));
+            }
+            frag.appendChild(new UnitLabel(this.tag.data.unit).getElement());
+            return frag;
+        }
+    }
+    class ListTagInputControl extends TagInputControl {
+        getElement() {
+            return new ListInput(this.tag.data.options, this.tag.data.value, (v) => {
+                this.tag.data.value = v;
+                this.tag.updateTagData();
+            }).getElement();
+        }
+    }
+    class LocationTagInputControl extends TagInputControl {
+        getElement() {
+            return new LocationInput(this.tag.data.value, (v) => {
+                this.tag.data.value = v;
+                this.tag.updateTagData();
+            }).getElement();
+        }
+    }
+    class ColorTagInputControl extends TagInputControl {
+        getElement() {
+            const frag = document.createDocumentFragment();
+            const colorInput = new ColorInput(this.tag.data.value, (v) => {
+                this.tag.data.value = v;
+                this.tag.updateTagData();
+            });
+            frag.appendChild(colorInput.getElement());
+            frag.appendChild(new ColorPreview(this.tag.data.value).getElement());
+            return frag;
+        }
+    }
+    class TimeTagInputControl extends TagInputControl {
+        getElement() {
+            const frag = document.createDocumentFragment();
+            const mode = this.tag.data.mode;
+            const update = () => this.tag.updateTagData();
+            const createTextInput = (key, placeholder) => {
+                const input = new TextInput(this.tag.data[key], (v) => { this.tag.data[key] = v; update(); }, placeholder);
+                return input.getElement();
+            };
+            if (mode === "is") {
+                frag.appendChild(createTextInput("value", ""));
+            } else if (mode === "is between") {
+                frag.appendChild(createTextInput("min", "Start Time"));
+                frag.appendChild(document.createTextNode(" and "));
+                frag.appendChild(createTextInput("max", "End Time"));
+            } else if (mode === "is before" || mode === "is after") {
+                const key = mode === "is before" ? "max" : "min";
+                frag.appendChild(createTextInput(key, mode === "is before" ? "Before" : "After"));
+            }
+            return frag;
+        }
+    }
+
+    /*****************************************************************
+     * Tag Class (Semantic Tag)
+     *****************************************************************/
+    class Tag extends UIComponent {
+        constructor(tagData) {
+            super();
+            // Make a shallow copy and set a default mode if not provided.
+            this.data = { ...tagData, mode: tagData.mode || Object.keys(tagData.modes)[0] };
+            this.initializeValues();
+            this.element = this.createElement();
+        }
+        initializeValues() {
+            if (["number", "range"].includes(this.data.type))
+                this.data.value = this.data.value ?? 0;
+            else if (this.data.type === "list")
+                this.data.value = this.data.value ?? (this.data.options?.[0] || "");
+            else if (this.data.type === "color")
+                this.data.value = this.data.value ?? "#000000";
+        }
+        createElement() {
+            const tagEl = createElement("span", { class: `tag ${this.isConditional() ? "conditional" : ""}`, contenteditable: "false" });
+            // If an emoji icon is provided, add it.
+            if (this.data.emoji) {
+                const emojiSpan = createElement("span", { class: "tag-emoji" }, this.data.emoji + " ");
+                tagEl.appendChild(emojiSpan);
+            }
+            tagEl.appendChild(document.createTextNode(`${this.data.name} `));
+            tagEl.appendChild(this.createModeSelect());
+            this.rebuildInputs(tagEl);
+            return tagEl;
+        }
+        createModeSelect() {
+            const select = createElement("select");
+            for (const mode in this.data.modes) {
+                select.appendChild(new Option(this.data.modes[mode], mode));
+            }
+            select.value = this.data.mode;
+            select.addEventListener("change", () => {
+                this.data.mode = select.value;
+                this.adjustValuesForMode();
+                this.rebuildInputs(this.element);
+                this.updateTagData();
+            });
+            return select;
+        }
+        isConditional() { return this.data.mode !== "is" && String(this.data.mode).startsWith("is"); }
+        adjustValuesForMode() {
+            if (this.data.mode === "is between") { this.data.min = this.data.min ?? 0; this.data.max = this.data.max ?? 0; }
+            else if (this.data.mode === "is below") { this.data.max = this.data.max ?? 0; this.data.min = null; }
+            else if (this.data.mode === "is above") { this.data.min = this.data.min ?? 0; this.data.max = null; }
+            else { this.data.value = this.data.value ?? (this.data.type === "list" ? this.data.options[0] : 0); }
+        }
+        rebuildInputs(tagEl) {
+            // Remove any existing input controls.
+            tagEl.querySelectorAll("input, select:not(:first-of-type), .color-preview, .unit-label").forEach(el => el.remove());
+            let control;
+            switch (this.data.type) {
+                case "number":
+                case "range": control = new NumericTagInputControl(this); break;
+                case "list": control = new ListTagInputControl(this); break;
+                case "location": control = new LocationTagInputControl(this); break;
+                case "color": control = new ColorTagInputControl(this); break;
+                case "time": control = new TimeTagInputControl(this); break;
+            }
+            if (control) tagEl.appendChild(control.getElement());
+            tagEl.appendChild(new RemoveTagButton(() => tagEl.remove()).getElement());
+        }
+        updateTagData() { this.element.dataset.tagData = JSON.stringify(this.data); }
+    }
+
+    /*****************************************************************
+     * Suggestion Dropdown Component
+     *****************************************************************/
+    class SuggestionDropdown extends UIComponent {
+        constructor() {
+            super();
+            this.element = createElement("div", { id: "suggestion-dropdown" });
+            this.hide();
+            document.body.appendChild(this.element);
+            this.selectedIndex = -1;
+        }
+        show(suggestions, x, y, onSelect) {
+            this.element.innerHTML = "";
+            suggestions.forEach((sugg, i) => {
+                const suggEl = createElement("div", {}, (sugg.tagData.emoji ? sugg.tagData.emoji + " " : "") + sugg.displayText);
+                suggEl.dataset.index = i;
+                suggEl.addEventListener("click", () => { onSelect(sugg); this.hide(); });
+                this.element.appendChild(suggEl);
+            });
+            this.element.style.left = `${x}px`;
+            this.element.style.top = `${y}px`;
+            this.element.style.display = "block";
+            this.selectedIndex = -1;
+            this.updateSelection();
+        }
+        hide() { this.element.style.display = "none"; }
+        moveSelection(dir) {
+            const count = this.element.children.length;
+            if (!count) return;
+            this.selectedIndex = (this.selectedIndex + dir + count) % count;
+            this.updateSelection();
+        }
+        updateSelection() {
+            Array.from(this.element.children).forEach((child, i) =>
+                child.style.backgroundColor = i === this.selectedIndex ? "#ddd" : "transparent"
+            );
+        }
+        getSelectedSuggestion() {
+            return this.selectedIndex >= 0 && this.selectedIndex < this.element.children.length
+                ? this.element.children[this.selectedIndex].textContent
+                : null;
+        }
+    }
+
+    /*****************************************************************
+     * Ontology Browser Component
+     *****************************************************************/
+    class OntologyBrowser extends UIComponent {
+        constructor(ontology, onTagSelect) {
+            super();
+            this.ontology = ontology;
+            this.onTagSelect = onTagSelect;
+            this.element = this.createBrowser();
+        }
+        createBrowser() {
+            const browser = createElement("div", { id: "ontology-browser" });
+            for (const category in this.ontology) {
+                const catDiv = createElement("div", { class: "category" }, category);
+                this.ontology[category].forEach(tagData => {
+                    const tagItem = createElement("div", { class: "tag-item" }, (tagData.emoji ? tagData.emoji + " " : "") + tagData.name);
+                    tagItem.addEventListener("click", () => this.onTagSelect(new Tag(tagData)));
+                    catDiv.appendChild(tagItem);
+                });
+                browser.appendChild(catDiv);
+            }
+            return browser;
+        }
+        showAt(x, y) {
+            this.element.style.display = "block";
+            this.element.style.top = `${y}px`;
+            this.element.style.left = `${x}px`;
+        }
+        hide() { this.element.style.display = "none"; }
+    }
+
+    /*****************************************************************
+     * Semantic Editor with Integrated Autosuggest & Popup Ontology
+     *****************************************************************/
+    class SemanticEditor extends UIComponent {
+        constructor(editorEl, ontology) {
+            super();
+            this.editor = editorEl;
+            this.ontology = ontology;
+            this.ontologyBrowser = new OntologyBrowser(this.ontology, this.insertTagFromOntology.bind(this));
+            document.body.appendChild(this.ontologyBrowser.getElement());
+            this.suggestionDropdown = new SuggestionDropdown();
+            this.suggestionTimeout = null;
+            this.setupEventListeners();
+        }
+        insertTagFromOntology(tag) {
+            // If called from the ontology browser, insert at caret.
+            this.insertTagAtSelection(tag);
+            this.ontologyBrowser.hide();
+        }
+        insertTagAtSelection(tag) {
+            const sel = window.getSelection();
+            if (sel.rangeCount) {
+                const range = sel.getRangeAt(0);
+                range.deleteContents();
+                range.insertNode(tag.getElement());
+                range.collapse(false);
+                sel.removeAllRanges();
+                sel.addRange(range);
+            } else {
+                this.editor.appendChild(tag.getElement());
+            }
+        }
+        insertTagFromSuggestion(sugg, autosuggestSpan = null) {
+            // If invoked from clicking an autosuggest span, replace that span.
+            if (autosuggestSpan) {
+                const tagElement = new Tag(sugg.tagData).getElement();
+                autosuggestSpan.parentNode.replaceChild(tagElement, autosuggestSpan);
+            } else {
+                // Otherwise, insert at the caret.
+                this.insertTagAtSelection(new Tag(sugg.tagData));
+            }
+        }
+        serialize() {
+            const clone = this.editor.cloneNode(true);
+            clone.querySelectorAll(".tag").forEach(tagEl => {
+                const data = JSON.parse(tagEl.dataset.tagData);
+                tagEl.replaceWith(document.createTextNode(`[TAG:${JSON.stringify(data)}]`));
+            });
+            return clone.textContent;
+        }
+        deserialize(text) {
+            this.editor.innerHTML = "";
+            const tagRegex = /\[TAG:(.*?)\]/g;
+            let lastIndex = 0, match;
+            while ((match = tagRegex.exec(text)) !== null) {
+                if (match.index > lastIndex) {
+                    this.editor.appendChild(document.createTextNode(text.substring(lastIndex, match.index)));
+                }
+                try {
+                    const data = JSON.parse(match[1]);
+                    this.editor.appendChild(new Tag(data).getElement());
+                } catch (e) {
+                    console.error("Error parsing tag:", e);
+                    this.editor.appendChild(document.createTextNode(match[0]));
+                }
+                lastIndex = tagRegex.lastIndex;
+            }
+            if (lastIndex < text.length) {
+                this.editor.appendChild(document.createTextNode(text.substring(lastIndex)));
+            }
+        }
+        setupEventListeners() {
+            document.getElementById("focus-editor").addEventListener("click", () => this.editor.focus());
+            document.getElementById("serialize").addEventListener("click", () => {
+                serializationOutput.value = this.serialize();
+            });
+            serializationOutput.addEventListener("input", () => this.deserialize(serializationOutput.value));
+
+            // Rich‑text style buttons
+            document.getElementById("bold-btn").addEventListener("click", () => document.execCommand('bold'));
+            document.getElementById("italic-btn").addEventListener("click", () => document.execCommand('italic'));
+            document.getElementById("underline-btn").addEventListener("click", () => document.execCommand('underline'));
+            document.getElementById("strike-btn").addEventListener("click", () => document.execCommand('strikeThrough'));
+            document.getElementById("undo-btn").addEventListener("click", () => document.execCommand('undo'));
+            document.getElementById("redo-btn").addEventListener("click", () => document.execCommand('redo'));
+            document.getElementById("clear-format-btn").addEventListener("click", () => document.execCommand('removeFormat'));
+
+            // Save and Load buttons
+            document.getElementById("save-content").addEventListener("click", () => {
+                localStorage.setItem("semanticEditorContent", this.serialize());
+                alert("Content saved!");
+            });
+            document.getElementById("load-content").addEventListener("click", () => {
+                const saved = localStorage.getItem("semanticEditorContent");
+                if (saved) this.deserialize(saved);
+            });
+
+            // Update word count & autosuggest on keyup
+            this.editor.addEventListener("keyup", () => {
+                this.updateWordCount();
+                clearTimeout(this.suggestionTimeout);
+                if (this.suggestionDropdown.element.style.display === "block") return;
+                this.suggestionTimeout = setTimeout(() => {
+                    this.applyAutosuggestUnderlines();
+                }, 300);
+            });
+            this.editor.addEventListener("click", () => {
+                this.suggestionDropdown.hide();
+            });
+
+            // Global key handler for hotkeys:
+            document.addEventListener("keydown", (e) => {
+                if (e.altKey && e.key.toLowerCase() === "o") {
+                    e.preventDefault();
+                    this.showPopupTriggerAtCaret();
+                }
+                if (this.suggestionDropdown.element.style.display === "block") {
+                    switch (e.key) {
+                        case "ArrowDown":
+                            e.preventDefault();
+                            this.suggestionDropdown.moveSelection(1);
+                            break;
+                        case "ArrowUp":
+                            e.preventDefault();
+                            this.suggestionDropdown.moveSelection(-1);
+                            break;
+                        case "Enter":
+                            e.preventDefault();
+                            const selText = this.suggestionDropdown.getSelectedSuggestion();
+                            if (selText) {
+                                const suggestion = this.findSuggestion(selText);
+                                if (suggestion) this.insertTagFromSuggestion(suggestion);
+                            }
+                            this.suggestionDropdown.hide();
+                            break;
+                        case "Escape":
+                            e.preventDefault();
+                            this.suggestionDropdown.hide();
+                            break;
+                    }
+                }
+            });
+
+            // Hide suggestion dropdown when clicking outside.
+            document.addEventListener("click", (e) => {
+                if (!this.editor.contains(e.target) && !this.ontologyBrowser.getElement().contains(e.target)) {
+                    this.suggestionDropdown.hide();
+                }
+            });
+        }
+        updateWordCount() {
+            const text = this.editor.textContent || "";
+            const words = text.trim().split(/\s+/).filter(Boolean);
+            document.getElementById("word-count").textContent = words.length + " words";
+        }
+        findSuggestion(text) {
+            for (const cat in this.ontology) {
+                for (const tagData of this.ontology[cat]) {
+                    if (tagData.name === text) return { displayText: tagData.name, tagData };
+                }
+            }
+            return null;
+        }
+        /***********************************************************
+         * Autosuggest Underlines:
+         * Scan through text nodes (ignoring existing tags or autosuggest spans)
+         * and wrap any word (of at least 3 letters) that matches an ontology prefix.
+         ***********************************************************/
+        applyAutosuggestUnderlines() {
+            const walker = document.createTreeWalker(this.editor, NodeFilter.SHOW_TEXT, {
+                acceptNode: (node) => {
+                    if (node.parentNode.closest(".tag, .autosuggest")) return NodeFilter.FILTER_REJECT;
+                    return NodeFilter.FILTER_ACCEPT;
+                }
+            });
+            const regex = /\b([a-zA-Z]{3,})\b/g;
+            let node;
+            while (node = walker.nextNode()) {
+                if (!node.nodeValue.trim()) continue;
+                let match;
+                let shouldWrap = false;
+                while ((match = regex.exec(node.nodeValue)) !== null) {
+                    const word = match[1];
+                    if (this.matchesOntology(word)) { shouldWrap = true; break; }
+                }
+                if (shouldWrap) {
+                    this.wrapMatchesInTextNode(node, regex);
+                }
+            }
+        }
+        matchesOntology(word) {
+            word = word.toLowerCase();
+            for (const cat in this.ontology) {
+                for (const tagData of this.ontology[cat]) {
+                    if (tagData.name.toLowerCase().startsWith(word)) return true;
+                }
+            }
+            return false;
+        }
+        wrapMatchesInTextNode(textNode, regex) {
+            const parent = textNode.parentNode;
+            const text = textNode.nodeValue;
+            let match;
+            let lastIndex = 0;
+            const frag = document.createDocumentFragment();
+            regex.lastIndex = 0;
+            while ((match = regex.exec(text)) !== null) {
+                const word = match[1];
+                const start = match.index;
+                const end = regex.lastIndex;
+                if (start > lastIndex) {
+                    frag.appendChild(document.createTextNode(text.substring(lastIndex, start)));
+                }
+                if (this.matchesOntology(word)) {
+                    const span = document.createElement("span");
+                    span.className = "autosuggest";
+                    span.textContent = word;
+                    span.addEventListener("click", (e) => {
+                        e.stopPropagation();
+                        this.showSuggestionForSpan(span);
+                    });
+                    frag.appendChild(span);
+                } else {
+                    frag.appendChild(document.createTextNode(word));
+                }
+                lastIndex = end;
+            }
+            if (lastIndex < text.length) {
+                frag.appendChild(document.createTextNode(text.substring(lastIndex)));
+            }
+            parent.replaceChild(frag, textNode);
+        }
+        /***********************************************************
+         * When an autosuggest span is clicked, show a dropdown
+         * with matching ontology suggestions anchored to that span.
+         ***********************************************************/
+        showSuggestionForSpan(span) {
+            const word = span.textContent;
+            const suggestions = [];
+            for (const cat in this.ontology) {
+                for (const tagData of this.ontology[cat]) {
+                    if (tagData.name.toLowerCase().startsWith(word.toLowerCase())) {
+                        suggestions.push({ displayText: tagData.name, tagData });
+                    }
+                }
+            }
+            if (suggestions.length) {
+                const rect = span.getBoundingClientRect();
+                this.suggestionDropdown.show(suggestions, rect.left + window.scrollX, rect.bottom + window.scrollY,
+                    (sugg) => this.insertTagFromSuggestion(sugg, span));
+            }
+        }
+        /***********************************************************
+         * Popup Trigger: When the user presses Alt+O, a small pulsating
+         * translucent block appears at the caret. Clicking it opens
+         * the ontology browser at that position.
+         ***********************************************************/
+        showPopupTriggerAtCaret() {
+            const sel = window.getSelection();
+            if (sel.rangeCount) {
+                const range = sel.getRangeAt(0);
+                const rect = range.getBoundingClientRect();
+                const trigger = document.getElementById("popup-ontology-trigger");
+                trigger.style.display = "block";
+                trigger.style.top = (rect.top + window.scrollY - 30) + "px";
+                trigger.style.left = (rect.left + window.scrollX) + "px";
+                trigger.onclick = () => {
+                    this.ontologyBrowser.showAt(rect.left + window.scrollX, rect.bottom + window.scrollY + 5);
+                    trigger.style.display = "none";
+                };
+                setTimeout(() => { trigger.style.display = "none"; }, 3000);
+            }
+        }
+    }
+
+    /*****************************************************************
+     * Initialization
+     *****************************************************************/
+    const editor = document.getElementById("editor");
+    const serializationOutput = document.getElementById("serialization-output");
+    const semanticEditor = new SemanticEditor(editor, ontology);
+
+    // Setup Tag Category Dropdowns in the Toolbar
+    const tagDropdownsContainer = document.getElementById("tag-dropdowns");
+    for (const category in ontology) {
+        const select = createElement("select", { class: "tag-dropdown" });
+        const defaultOption = createElement("option", { disabled: true, selected: true }, `Insert ${category}`);
+        select.appendChild(defaultOption);
+        ontology[category].forEach(tagData => {
+            const optionText = (tagData.emoji ? tagData.emoji + " " : "") + tagData.name;
+            const option = new Option(optionText, JSON.stringify(tagData));
+            select.appendChild(option);
+        });
+        select.addEventListener("change", (e) => {
+            try {
+                const tagData = JSON.parse(e.target.value);
+                semanticEditor.insertTagAtSelection(new Tag(tagData));
+                // Reset selection to default.
+                e.target.selectedIndex = 0;
+            } catch(err) {
+                console.error("Error parsing tag data:", err);
+            }
+        });
+        tagDropdownsContainer.appendChild(select);
+    }
+</script>
+</body>
+</html>
