@@ -152,7 +152,6 @@
         <button id="undo-btn" title="Undo (Ctrl+Z)">Undo</button>
         <button id="redo-btn" title="Redo (Ctrl+Y)">Redo</button>
         <button id="clear-format-btn" title="Clear Formatting">Clear</button>
-        <button id="focus-editor">Focus Editor</button>
     </div>
     <div id="tag-dropdowns" class="group">
         <!-- Dropdowns for Tag Categories will be generated dynamically -->
@@ -412,9 +411,6 @@
         }
     }
 
-    /*****************************************************************
-     * Tag Class (Semantic Tag)
-     *****************************************************************/
     class Tag extends UIComponent {
         constructor(tag) {
             super();
@@ -632,7 +628,6 @@
                 this.editor.appendChild(document.createTextNode(text.substring(lastIndex)));
         }
         setupEventListeners() {
-            document.getElementById("focus-editor").addEventListener("click", () => this.editor.focus());
             document.getElementById("serialize").addEventListener("click", () => {
                 serializationOutput.value = this.serialize();
             });
@@ -658,15 +653,16 @@
             });
 
             // Update autosuggest on keyup
+            const d = this.suggestionDropdown;
             this.editor.addEventListener("keyup", () => {
                 clearTimeout(this.suggestionTimeout);
-                if (this.suggestionDropdown.element.style.display === "block") return;
+                if (d.element.style.display === "block") return;
                 this.suggestionTimeout = setTimeout(() => {
                     this.applyAutosuggestUnderlines();
                 }, 300);
             });
             this.editor.addEventListener("click", () => {
-                this.suggestionDropdown.hide();
+                d.hide();
             });
 
             // Global key handler for hotkeys:
@@ -675,28 +671,28 @@
                     e.preventDefault();
                     this.showPopupTriggerAtCaret();
                 }
-                if (this.suggestionDropdown.element.style.display === "block") {
+                if (d.element.style.display === "block") {
                     switch (e.key) {
                         case "ArrowDown":
                             e.preventDefault();
-                            this.suggestionDropdown.moveSelection(1);
+                            d.moveSelection(1);
                             break;
                         case "ArrowUp":
                             e.preventDefault();
-                            this.suggestionDropdown.moveSelection(-1);
+                            d.moveSelection(-1);
                             break;
                         case "Enter":
                             e.preventDefault();
-                            const selText = this.suggestionDropdown.getSelectedSuggestion();
+                            const selText = d.getSelectedSuggestion();
                             if (selText) {
                                 const suggestion = this.findSuggestion(selText);
                                 if (suggestion) this.insertTagFromSuggestion(suggestion);
                             }
-                            this.suggestionDropdown.hide();
+                            d.hide();
                             break;
                         case "Escape":
                             e.preventDefault();
-                            this.suggestionDropdown.hide();
+                            d.hide();
                             break;
                     }
                 }
@@ -705,7 +701,7 @@
             // Hide suggestion dropdown when clicking outside.
             document.addEventListener("click", e => {
                 if (!this.editor.contains(e.target) && !this.ontologyBrowser.getElement().contains(e.target))
-                    this.suggestionDropdown.hide();
+                    d.hide();
             });
         }
 
@@ -728,17 +724,17 @@
                     n.parentNode.closest(".tag, .autosuggest") ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT
             });
             const regex = /\b([a-zA-Z]{3,})\b/g;
-            let node;
-            while (node = walker.nextNode()) {
-                if (!node.nodeValue.trim()) continue;
+            let n;
+            while (n = walker.nextNode()) {
+                if (!n.nodeValue.trim()) continue;
                 let match;
-                let shouldWrap = false;
-                while ((match = regex.exec(node.nodeValue)) !== null) {
+                let wrap = false;
+                while ((match = regex.exec(n.nodeValue)) !== null) {
                     const word = match[1];
-                    if (this.matchesOntology(word)) { shouldWrap = true; break; }
+                    if (this.matchesOntology(word)) { wrap = true; break; }
                 }
-                if (shouldWrap)
-                    this.wrapMatchesInTextNode(node, regex);
+                if (wrap)
+                    this.wrapMatchesInTextNode(n, regex);
             }
         }
         matchesOntology(word) {
@@ -761,9 +757,8 @@
                 const word = match[1];
                 const start = match.index;
                 const end = regex.lastIndex;
-                if (start > lastIndex) {
+                if (start > lastIndex)
                     frag.appendChild(document.createTextNode(text.substring(lastIndex, start)));
-                }
                 if (this.matchesOntology(word)) {
                     const span = document.createElement("span");
                     span.className = "autosuggest";
@@ -773,14 +768,12 @@
                         this.showSuggestionForSpan(span);
                     });
                     frag.appendChild(span);
-                } else {
+                } else
                     frag.appendChild(document.createTextNode(word));
-                }
                 lastIndex = end;
             }
-            if (lastIndex < text.length) {
+            if (lastIndex < text.length)
                 frag.appendChild(document.createTextNode(text.substring(lastIndex)));
-            }
             parent.replaceChild(frag, textNode);
         }
         /***********************************************************
@@ -797,8 +790,8 @@
                 }
             }
             if (suggestions.length) {
-                const rect = span.getBoundingClientRect();
-                this.suggestionDropdown.show(suggestions, rect.left + window.scrollX, rect.bottom + window.scrollY,
+                const r = span.getBoundingClientRect();
+                this.suggestionDropdown.show(suggestions, r.left + window.scrollX, r.bottom + window.scrollY,
                     sugg => this.insertTagFromSuggestion(sugg, span));
             }
         }
@@ -813,14 +806,15 @@
                 const range = sel.getRangeAt(0);
                 const rect = range.getBoundingClientRect();
                 const trigger = document.getElementById("popup-ontology-trigger");
-                trigger.style.display = "block";
-                trigger.style.top = (rect.top + window.scrollY - 30) + "px";
-                trigger.style.left = rect.left + window.scrollX + "px";
+                let s = trigger.style;
+                s.display = "block";
+                s.top = (rect.top + window.scrollY - 30) + "px";
+                s.left = rect.left + window.scrollX + "px";
                 trigger.onclick = () => {
                     this.ontologyBrowser.showAt(rect.left + window.scrollX, rect.bottom + window.scrollY + 5);
-                    trigger.style.display = "none";
+                    s.display = "none";
                 };
-                setTimeout(() => { trigger.style.display = "none"; }, 3000);
+                setTimeout(() => { s.display = "none"; }, 3000);
             }
         }
     }
