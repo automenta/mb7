@@ -3,122 +3,59 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Semantic Editor</title>
+    <title>Semantic Editor (Always Editable)</title>
     <style>
         body { font-family: sans-serif; margin: 1em; }
-        #editor {
-            border: 1px solid #ccc;
-            padding: 0.5em;
-            cursor: text;
-            min-height: 100px;
-        }
-        .tag {
-            background-color: #e0f7fa;
-            border: 1px solid #80deea;
-            border-radius: 4px;
-            padding: 2px 5px;
-            margin: 0 2px;
-            display: inline-flex;
-            align-items: center;
-            cursor: pointer;
-        }
-        .tag.conditional {
-            background-color: #fff3e0;
-            border-color: #ffcc80;
-        }
-        .tag input,
-        .tag select {
-            border: none;
-            background: transparent;
-            font-size: inherit;
-            padding: 0;
-            margin: 0;
-            outline: none;
-        }
-        .tag select {
-            appearance: none;
-            padding: 0 2px;
-            cursor: pointer;
-        }
-        .tag .remove-tag {
-            margin-left: 5px;
-            cursor: pointer;
-            color: #888;
-            font-size: smaller;
-        }
-        .color-preview {
-            width: 1em;
-            height: 1em;
-            display: inline-block;
-            border: 1px solid #ccc;
-            margin-left: 2px;
-        }
-        .unit-label {
-            font-style: italic;
-            margin-left: 2px;
-        }
-        /* Suggestion Dropdown Styles */
-        #suggestion-dropdown {
-            position: absolute;
-            display: none;
-            background-color: white;
-            border: 1px solid #ccc;
-            z-index: 100;
-            max-height: 200px;
-            overflow-y: auto;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-        }
-        #suggestion-dropdown div {
-            cursor: pointer;
-            padding: 2px 5px;
-        }
-        #suggestion-dropdown div:hover { background-color: #eee; }
-        /* Autosuggest Underline */
-        .autosuggest {
-            text-decoration: underline dotted;
-            cursor: pointer;
-            position: relative;
-        }
-        .autosuggest:hover {
-            background-color: rgba(255, 255, 0, 0.2);
-        }
-        #toolbar {
-            margin-bottom: 10px;
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: 10px;
-        }
-        #toolbar .group {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
+        #editor { border: 1px solid #ccc; padding: 0.5em; cursor: text; min-height: 100px; }
+        .tag { background: #e0f7fa; border: 1px solid #80deea; border-radius: 4px; padding: 2px 5px; margin: 0 2px; display: inline-flex; align-items: center; }
+        .tag.conditional { background: #fff3e0; border-color: #ffcc80; }
+        .tag select, .tag input { border: none; background: transparent; font-size: inherit; padding: 0; margin: 0; outline: none; }
+        .tag select { appearance: none; -webkit-appearance: none; -moz-appearance: none; padding: 0 2px; cursor: pointer; }
+        .tag .remove-tag { margin-left: 5px; cursor: pointer; color: #888; font-size: smaller; }
+        .color-preview { width: 1em; height: 1em; display: inline-block; border: 1px solid #ccc; margin-left: 2px; vertical-align: middle; }
+        .unit-label { font-style: italic; margin-left: 2px; }
+        #suggestion-dropdown { position: absolute; display: none; background: #fff; border: 1px solid #ccc; z-index: 100; max-height: 200px; overflow-y: auto; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+        #suggestion-dropdown div { cursor: pointer; padding: 2px 5px; }
+        #suggestion-dropdown div:hover { background: #eee; }
+        .autosuggest { text-decoration: underline dotted; cursor: pointer; position: relative; }
+        .autosuggest:hover { background: rgba(255,255,0,0.2); }
+        #toolbar { margin-bottom: 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+        #toolbar .group { display: flex; align-items: center; gap: 5px; }
+        #ontology-browser { margin-top: 10px; border: 1px solid #ccc; padding: 0.5em; }
+        .category { margin-bottom: 0.5em; font-weight: bold; }
+        .tag-item { cursor: pointer; padding: 2px 5px; display: inline-block; margin-right: 5px; border: 1px solid #eee; border-radius: 4px; background: #f8f8f8; }
+        .tag-item:hover { background: #eee; }
     </style>
 </head>
 <body>
 <script>
-    /* ---------------------- Helper ---------------------- */
     const createElement = (tag, attrs = {}, text = "") => {
         const el = document.createElement(tag);
-        for (const [key, value] of Object.entries(attrs)) {
-            if (key.startsWith("on") && typeof value === "function") {
-                el.addEventListener(key.substring(2), value);
+        Object.entries(attrs).forEach(([k, v]) => {
+            if (k.startsWith("on") && typeof v === "function") {
+                el.addEventListener(k.substring(2), v);
             } else {
-                el.setAttribute(key, value);
+                el.setAttribute(k, v);
             }
-        }
+        });
         if (text) el.textContent = text;
         return el;
     };
 
-    /* ---------------------- Ontology Data ---------------------- */
-    const ontology = {
+    const debounce = (fn, delay) => {
+        let timer;
+        return (...args) => {
+            clearTimeout(timer);
+            timer = setTimeout(() => fn(...args), delay);
+        };
+    };
+
+    const ontologyData = {
         Physical: [
             { name: "Mass", type: "number", unit: "kg", emoji: "⚖️", modes: { is: "is", "is between": "is between", "is below": "is below", "is above": "is above" } },
             { name: "Length", type: "number", unit: "m", emoji: "📏", modes: { is: "is", "is between": "is between", "is below": "is below", "is above": "is above" } },
             { name: "Temperature", type: "number", unit: "°C", emoji: "🌡️", modes: { is: "is", "is between": "is between", "is below": "is below", "is above": "is above" } },
-            { name: "Location", type: "location", emoji: "📍", modes: { is: "is at", "is within": "is within" }, editor: "map" },
+            { name: "Location", type: "location", emoji: "📍", modes: { "is at": "is at", "is within": "is within" } },
             { name: "Color", type: "color", emoji: "🎨", modes: { is: "is" } }
         ],
         Emotion: [
@@ -128,542 +65,419 @@
         ],
         Business: [
             { name: "Revenue", type: "number", unit: "USD", emoji: "💰", modes: { is: "is", "is between": "is between", "is below": "is below", "is above": "is above" } },
-            { name: "Product", type: "list", emoji: "📦", options: ["Software", "Hardware", "Service"], modes: { "is one of": "is" } },
-            { name: "Customer", type: "list", emoji: "👥", options: ["B2B", "B2C", "Government"], modes: { "is one of": "is" } }
+            { name: "Product", type: "list", emoji: "📦", options: ["Software", "Hardware", "Service"], modes: { "is one of": "is one of" } },
+            { name: "Customer", type: "list", emoji: "👥", options: ["B2B", "B2C", "Government"], modes: { "is one of": "is one of" } }
         ],
         Time: [
-            { name: "Time", type: "time", emoji: "⏰", modes: { is: "is at", "is between": "is between", "is before": "is before", "is after": "is after" }, editor: "calendar" }
+            { name: "Time", type: "time", emoji: "⏰", modes: { "is at": "is at", "is between": "is between", "is before": "is before", "is after": "is after" } }
         ],
         Data: [
-            { name: "List", type: "list", emoji: "🔖", options: [], modes: { "is one of": "is" } }
+            { name: "List", type: "list", emoji: "🔖", options: [], modes: { "is one of": "is one of" } }
         ]
     };
 
-    /* ---------------------- UI Components ---------------------- */
-    class UIComponent {
-        constructor() {
-            this.element = null;
-        }
-        getElement() { return this.element; }
-    }
+    const tagDataMap = new WeakMap();
 
-    class InputComponent extends UIComponent {
-        constructor(value, onChange) {
-            super();
-            this.value = value;
-            this.onChange = onChange;
-        }
-    }
-
-    class NumberInput extends InputComponent {
-        constructor(value, onChange, placeholder = "") {
-            super(value, onChange);
-            this.placeholder = placeholder;
-            this.element = this.createInput();
-        }
-        createInput() {
-            const input = createElement("input", { type: "number", placeholder: this.placeholder });
-            input.value = this.value ?? "";
-            input.addEventListener("input", (e) => {
-                const parsed = parseFloat(e.target.value || 0);
-                if (!isNaN(parsed)) this.onChange(parsed);
-            });
-            return input;
-        }
-    }
-
-    class TextInput extends InputComponent {
-        constructor(value, onChange, placeholder = "") {
-            super(value, onChange);
-            this.placeholder = placeholder;
-            this.element = this.createInput();
-        }
-        createInput() {
-            const input = createElement("input", { type: "text", placeholder: this.placeholder });
-            input.value = this.value ?? "";
-            input.addEventListener("input", (e) => this.onChange(e.target.value));
-            return input;
-        }
-    }
-
-    class ListInput extends InputComponent {
-        constructor(options, value, onChange) {
-            super(value, onChange);
-            this.options = options;
-            this.element = this.createSelect();
-        }
-        createSelect() {
-            const select = createElement("select");
-            this.options.forEach(opt => select.appendChild(new Option(opt, opt)));
-            select.value = this.value || this.options[0];
-            select.addEventListener("change", () => this.onChange(select.value));
-            return select;
-        }
-    }
-
-    class LocationInput extends InputComponent {
-        constructor(value, onChange, placeholder = "Lat, Lng") {
-            super(value, onChange);
-            this.placeholder = placeholder;
-            this.element = this.createInput();
-        }
-        createInput() {
-            const input = createElement("input", { type: "text", placeholder: this.placeholder });
-            input.value = this.value ? `${this.value.lat}, ${this.value.lng}` : "";
-            input.addEventListener("input", (e) => {
-                const parts = e.target.value.split(",");
-                const lat = parseFloat(parts[0]?.trim());
-                const lng = parseFloat(parts[1]?.trim());
-                this.onChange(!isNaN(lat) && !isNaN(lng) ? { lat, lng } : null);
-            });
-            return input;
-        }
-    }
-
-    class ColorInput extends InputComponent {
-        constructor(value, onChange) {
-            super(value, onChange);
-            this.element = this.createInput();
-        }
-        createInput() {
-            const input = createElement("input", { type: "color" });
-            input.value = this.value || "#000000";
-            input.addEventListener("input", (e) => this.onChange(e.target.value));
-            return input;
-        }
-    }
-
-    class ColorPreview extends UIComponent {
-        constructor(color) {
-            super();
-            this.element = createElement("span", { class: "color-preview" });
-            this.setColor(color);
-        }
-        setColor(color) { this.element.style.backgroundColor = color; }
-    }
-
-    class UnitLabel extends UIComponent {
-        constructor(unit) {
-            super();
-            this.element = createElement("span", { class: "unit-label" }, ` ${unit || ""}`);
-        }
-    }
-
-    class RemoveTagButton extends UIComponent {
-        constructor(onRemove) {
-            super();
-            this.onRemove = onRemove;
-            this.element = createElement("span", { class: "remove-tag" }, "x");
-            this.element.addEventListener("click", (e) => {
-                e.stopPropagation();
-                onRemove();
-            });
-        }
-    }
-
-    /* ---------------------- Tag Input Controls ---------------------- */
-    class TagInputControl extends UIComponent {
-        constructor(tag) {
-            super();
-            this.tag = tag;
-        }
-        getElement() { throw new Error("Abstract method 'getElement' must be implemented"); }
-    }
-
-    class NumericTagInputControl extends TagInputControl {
-        getElement() {
-            const frag = document.createDocumentFragment();
-            const d = this.tag.data;
-            const update = () => this.tag.updateData();
-            const createNumInput = (key, placeholder) =>
-                new NumberInput(d[key], (v) => { d[key] = v; update(); }, placeholder).getElement();
-            if (d.mode === "is") {
-                frag.appendChild(createNumInput("value", ""));
-            } else if (d.mode === "is between") {
-                frag.appendChild(createNumInput("min", "Min"));
-                frag.appendChild(document.createTextNode(" and "));
-                frag.appendChild(createNumInput("max", "Max"));
-            } else if (d.mode === "is below" || d.mode === "is above") {
-                frag.appendChild(createNumInput(d.mode === "is below" ? "max" : "min", d.mode === "is below" ? "Max" : "Min"));
+    class Tag {
+        constructor(tagData) {
+            this.data = { ...tagData, mode: tagData.mode || Object.keys(tagData.modes)[0] };
+            if (["number", "range"].includes(this.data.type)) {
+                if (this.data.value == null) this.data.value = 0;
+                if (this.data.mode === "is between") {
+                    if (this.data.min == null) this.data.min = 0;
+                    if (this.data.max == null) this.data.max = 0;
+                }
+            } else if (this.data.type === "list") {
+                if (this.data.value == null) this.data.value = (this.data.options && this.data.options.length) ? this.data.options[0] : "";
+            } else if (this.data.type === "color") {
+                if (!this.data.value) this.data.value = "#000000";
             }
-            frag.appendChild(new UnitLabel(d.unit).getElement());
-            return frag;
+            this.el = createElement("span", { class: "tag", contenteditable: "false" });
+            tagDataMap.set(this.el, this.data);
+            this.buildTag();
+            this.updateAppearance();
         }
-    }
 
-    class ListTagInputControl extends TagInputControl {
-        getElement() {
-            return new ListInput(this.tag.data.options, this.tag.data.value, (v) => {
-                this.tag.data.value = v;
-                this.tag.updateData();
-            }).getElement();
-        }
-    }
-
-    class LocationTagInputControl extends TagInputControl {
-        getElement() {
-            return new LocationInput(this.tag.data.value, (v) => {
-                this.tag.data.value = v;
-                this.tag.updateData();
-            }).getElement();
-        }
-    }
-
-    class ColorTagInputControl extends TagInputControl {
-        getElement() {
-            const frag = document.createDocumentFragment();
-            frag.appendChild(new ColorInput(this.tag.data.value, (v) => {
-                this.tag.data.value = v;
-                this.tag.updateData();
-            }).getElement());
-            frag.appendChild(new ColorPreview(this.tag.data.value).getElement());
-            return frag;
-        }
-    }
-
-    class TimeTagInputControl extends TagInputControl {
-        getElement() {
-            const frag = document.createDocumentFragment();
-            const update = () => this.tag.updateData();
-            const createTextInput = (key, placeholder) =>
-                new TextInput(this.tag.data[key], (v) => { this.tag.data[key] = v; update(); }, placeholder).getElement();
-            if (this.tag.data.mode === "is") {
-                frag.appendChild(createTextInput("value", ""));
-            } else if (this.tag.data.mode === "is between") {
-                frag.appendChild(createTextInput("min", "Start Time"));
-                frag.appendChild(document.createTextNode(" and "));
-                frag.appendChild(createTextInput("max", "End Time"));
-            } else if (this.tag.data.mode === "is before" || this.tag.data.mode === "is after") {
-                frag.appendChild(createTextInput(this.tag.data.mode === "is before" ? "max" : "min",
-                    this.tag.data.mode === "is before" ? "Before" : "After"));
-            }
-            return frag;
-        }
-    }
-
-    /* ---------------------- Tag Component ---------------------- */
-    class Tag extends UIComponent {
-        constructor(tag) {
-            super();
-            // Copy tag data and set default mode if not provided.
-            this.data = { ...tag, mode: tag.mode || Object.keys(tag.modes)[0] };
-            this.initializeValues();
-            this.element = this.createElement();
-            this.updateData();
-        }
-        initializeValues() {
-            const d = this.data;
-            if (["number", "range"].includes(d.type))
-                d.value = d.value ?? 0;
-            else if (d.type === "list")
-                d.value = d.value ?? (d.options?.[0] || "");
-            else if (d.type === "color")
-                d.value = d.value ?? "#000000";
-        }
-        createElement() {
-            const e = createElement("span", { class: `tag ${this.isConditional() ? "conditional" : ""}`, contenteditable: "false" });
+        buildTag() {
+            this.el.innerHTML = "";
             if (this.data.emoji) {
-                const emojiSpan = createElement("span", { class: "tag-emoji" }, this.data.emoji + " ");
-                e.appendChild(emojiSpan);
+                this.el.appendChild(createElement("span", { class: "tag-emoji" }, this.data.emoji + " "));
             }
-            e.appendChild(document.createTextNode(`${this.data.name} `));
-            e.appendChild(this.createModeSelect());
-            this.rebuildInputs(e);
-            return e;
-        }
-        createModeSelect() {
-            const select = createElement("select");
-            for (const mode in this.data.modes) {
-                select.appendChild(new Option(this.data.modes[mode], mode));
-            }
-            select.value = this.data.mode;
-            select.addEventListener("change", () => {
-                this.data.mode = select.value;
-                this.adjustValuesForMode();
-                this.rebuildInputs(this.element);
-                this.updateData();
+            this.el.appendChild(document.createTextNode(this.data.name + " "));
+            const modeSelect = createElement("select");
+            Object.entries(this.data.modes).forEach(([value, label]) => {
+                modeSelect.appendChild(new Option(label, value));
             });
-            return select;
+            modeSelect.value = this.data.mode;
+            modeSelect.addEventListener("change", () => {
+                this.data.mode = modeSelect.value;
+                this.buildTag();
+                this.updateAppearance();
+            });
+            this.el.appendChild(modeSelect);
+            this.buildEditingControls();
+            const rmBtn = createElement("span", { class: "remove-tag" }, "x");
+            rmBtn.addEventListener("click", e => { e.stopPropagation(); this.el.remove(); });
+            this.el.appendChild(rmBtn);
         }
-        isConditional() {
-            return this.data.mode !== "is" && String(this.data.mode).startsWith("is");
-        }
-        adjustValuesForMode() {
-            const d = this.data;
-            if (d.mode === "is between") {
-                d.min = d.min ?? 0; d.max = d.max ?? 0;
-            } else if (d.mode === "is below") {
-                d.max = d.max ?? 0; d.min = null;
-            } else if (d.mode === "is above") {
-                d.min = d.min ?? 0; d.max = null;
-            } else {
-                d.value = d.value ?? (d.type === "list" ? d.options[0] : 0);
+
+        buildEditingControls() {
+            const { type, mode, unit, value, min, max, options } = this.data;
+            if (["number", "range"].includes(type)) {
+                if (mode === "is") {
+                    const inp = createElement("input", { type: "number", value: value ?? "", placeholder: "Value" });
+                    inp.addEventListener("input", e => { const p = parseFloat(e.target.value); if (!isNaN(p)) this.data.value = p; });
+                    this.el.appendChild(inp);
+                    if (unit) this.el.appendChild(createElement("span", { class: "unit-label" }, " " + unit));
+                } else if (mode === "is between") {
+                    const inpMin = createElement("input", { type: "number", value: min ?? "", placeholder: "Min" });
+                    inpMin.addEventListener("input", e => { const p = parseFloat(e.target.value); this.data.min = isNaN(p) ? 0 : p; });
+                    const inpMax = createElement("input", { type: "number", value: max ?? "", placeholder: "Max" });
+                    inpMax.addEventListener("input", e => { const p = parseFloat(e.target.value); this.data.max = isNaN(p) ? 0 : p; });
+                    this.el.appendChild(inpMin);
+                    this.el.appendChild(document.createTextNode(" and "));
+                    this.el.appendChild(inpMax);
+                    if (unit) this.el.appendChild(createElement("span", { class: "unit-label" }, " " + unit));
+                } else if (mode === "is below") {
+                    const inp = createElement("input", { type: "number", value: max ?? "", placeholder: "Max" });
+                    inp.addEventListener("input", e => { const p = parseFloat(e.target.value); this.data.max = isNaN(p) ? 0 : p; });
+                    this.el.appendChild(inp);
+                    if (unit) this.el.appendChild(createElement("span", { class: "unit-label" }, " " + unit));
+                } else if (mode === "is above") {
+                    const inp = createElement("input", { type: "number", value: min ?? "", placeholder: "Min" });
+                    inp.addEventListener("input", e => { const p = parseFloat(e.target.value); this.data.min = isNaN(p) ? 0 : p; });
+                    this.el.appendChild(inp);
+                    if (unit) this.el.appendChild(createElement("span", { class: "unit-label" }, " " + unit));
+                }
+            } else if (type === "time") {
+                if (mode === "is at") {
+                    const inp = createElement("input", { type: "text", value: this.data.value ?? "", placeholder: "Time" });
+                    inp.addEventListener("input", e => { this.data.value = e.target.value; });
+                    this.el.appendChild(inp);
+                } else if (mode === "is between") {
+                    const inpMin = createElement("input", { type: "text", value: this.data.min ?? "", placeholder: "Start Time" });
+                    inpMin.addEventListener("input", e => { this.data.min = e.target.value; });
+                    const inpMax = createElement("input", { type: "text", value: this.data.max ?? "", placeholder: "End Time" });
+                    inpMax.addEventListener("input", e => { this.data.max = e.target.value; });
+                    this.el.appendChild(inpMin);
+                    this.el.appendChild(document.createTextNode(" and "));
+                    this.el.appendChild(inpMax);
+                } else if (mode === "is before") {
+                    const inp = createElement("input", { type: "text", value: this.data.max ?? "", placeholder: "Before" });
+                    inp.addEventListener("input", e => { this.data.max = e.target.value; });
+                    this.el.appendChild(inp);
+                } else if (mode === "is after") {
+                    const inp = createElement("input", { type: "text", value: this.data.min ?? "", placeholder: "After" });
+                    inp.addEventListener("input", e => { this.data.min = e.target.value; });
+                    this.el.appendChild(inp);
+                }
+            } else if (type === "color") {
+                const colorInput = createElement("input", { type: "color", value: this.data.value });
+                const preview = createElement("span", { class: "color-preview" });
+                preview.style.backgroundColor = this.data.value;
+                colorInput.addEventListener("input", e => {
+                    this.data.value = e.target.value;
+                    preview.style.backgroundColor = e.target.value;
+                });
+                this.el.appendChild(colorInput);
+                this.el.appendChild(preview);
+            } else if (type === "list") {
+                const sel = createElement("select");
+                (options || []).forEach(opt => sel.appendChild(new Option(opt, opt)));
+                sel.value = this.data.value;
+                sel.addEventListener("change", () => { this.data.value = sel.value; });
+                this.el.appendChild(sel);
+            } else if (type === "location") {
+                const locInp = createElement("input", {
+                    type: "text",
+                    value: this.data.value ? `${this.data.value.lat}, ${this.data.value.lng}` : "",
+                    placeholder: "Lat, Lng"
+                });
+                locInp.addEventListener("input", e => {
+                    const [latStr, lngStr] = e.target.value.split(",").map(s => s.trim());
+                    const lat = parseFloat(latStr), lng = parseFloat(lngStr);
+                    if (!isNaN(lat) && !isNaN(lng)) this.data.value = { lat, lng };
+                });
+                this.el.appendChild(locInp);
             }
         }
-        rebuildInputs(tagEl) {
-            // Remove any previous inputs (leaving the mode select intact)
-            tagEl.querySelectorAll("input, select:not(:first-of-type), .color-preview, .unit-label")
-                .forEach(el => el.remove());
-            let control;
-            switch (this.data.type) {
-                case "number":
-                case "range":
-                    control = new NumericTagInputControl(this);
-                    break;
-                case "list":
-                    control = new ListTagInputControl(this);
-                    break;
-                case "location":
-                    control = new LocationTagInputControl(this);
-                    break;
-                case "color":
-                    control = new ColorTagInputControl(this);
-                    break;
-                case "time":
-                    control = new TimeTagInputControl(this);
-                    break;
-            }
-            if (control) tagEl.appendChild(control.getElement());
-            tagEl.appendChild(new RemoveTagButton(() => tagEl.remove()).getElement());
+
+        updateAppearance() {
+            const nonConditional = ["is", "is at", "is one of"];
+            this.el.classList.toggle("conditional", !nonConditional.includes(this.data.mode));
         }
-        updateData() {
-            this.element.dataset.tagData = JSON.stringify(this.data);
-        }
+
+        getElement() { return this.el; }
     }
 
-    /* ---------------------- Suggestion Dropdown ---------------------- */
-    class SuggestionDropdown extends UIComponent {
-        constructor() {
-            super();
-            this.element = createElement("div", { id: "suggestion-dropdown" });
+    class OntologyBrowser {
+        constructor(ontology, onTagSelect) {
+            this.ontology = ontology;
+            this.onTagSelect = onTagSelect;
+            this.el = createElement("div", { id: "ontology-browser" });
+            this.build();
             this.hide();
-            document.body.appendChild(this.element);
+        }
+        build() {
+            Object.keys(this.ontology).forEach(cat => {
+                const catDiv = createElement("div", { class: "category" }, cat);
+                this.ontology[cat].forEach(tagData => {
+                    const label = (tagData.emoji ? tagData.emoji + " " : "") + tagData.name;
+                    const tagItem = createElement("div", { class: "tag-item" }, label);
+                    tagItem.onclick = () => { this.onTagSelect(new Tag(tagData)); this.hide(); };
+                    catDiv.appendChild(tagItem);
+                });
+                this.el.appendChild(catDiv);
+            });
+        }
+        show() { this.el.style.display = "block"; }
+        hide() { this.el.style.display = "none"; }
+        getElement() { return this.el; }
+    }
+
+    class SuggestionDropdown {
+        constructor() {
+            this.el = createElement("div", { id: "suggestion-dropdown" });
+            document.body.appendChild(this.el);
             this.selectedIndex = -1;
         }
         show(suggestions, x, y, onSelect) {
-            this.element.innerHTML = "";
-            suggestions.forEach((sugg, i) => {
-                const display = (sugg.tagData.emoji ? sugg.tagData.emoji + " " : "") + sugg.displayText;
-                const optionEl = createElement("div", {}, display);
-                optionEl.dataset.index = i;
-                optionEl.addEventListener("click", () => {
-                    onSelect(sugg);
-                    this.hide();
-                });
-                this.element.appendChild(optionEl);
+            this.el.innerHTML = "";
+            suggestions.forEach((s, i) => {
+                const opt = createElement("div", {}, (s.tagData.emoji ? s.tagData.emoji + " " : "") + s.displayText);
+                opt.onclick = () => { onSelect(s); this.hide(); };
+                this.el.appendChild(opt);
             });
-            this.element.style.left = `${x}px`;
-            this.element.style.top = `${y}px`;
-            this.element.style.display = "block";
+            this.el.style.left = x + "px";
+            this.el.style.top = y + "px";
+            this.el.style.display = "block";
             this.selectedIndex = -1;
             this.updateSelection();
         }
-        hide() { this.element.style.display = "none"; }
+        hide() { this.el.style.display = "none"; }
         moveSelection(dir) {
-            const count = this.element.children.length;
+            const count = this.el.children.length;
             if (!count) return;
             this.selectedIndex = (this.selectedIndex + dir + count) % count;
             this.updateSelection();
         }
         updateSelection() {
-            Array.from(this.element.children).forEach((child, i) => {
-                child.style.backgroundColor = (i === this.selectedIndex ? "#ddd" : "transparent");
+            Array.from(this.el.children).forEach((child, i) => {
+                child.style.backgroundColor = i === this.selectedIndex ? "#ddd" : "transparent";
             });
         }
         getSelectedSuggestion() {
-            return (this.selectedIndex >= 0 && this.selectedIndex < this.element.children.length)
-                ? this.element.children[this.selectedIndex].textContent
-                : null;
+            return this.selectedIndex < 0 ? null : this.el.children[this.selectedIndex]?.textContent;
         }
     }
 
-    /* ---------------------- Ontology Browser ---------------------- */
-    class OntologyBrowser extends UIComponent {
-        constructor(ontology, onTagSelect) {
-            super();
-            this.ontology = ontology;
-            this.onTagSelect = onTagSelect;
-            this.element = this.createBrowser();
-        }
-        createBrowser() {
-            const browser = createElement("div", { id: "ontology-browser" });
-            for (const category in this.ontology) {
-                const catDiv = createElement("div", { class: "category" }, category);
-                this.ontology[category].forEach(tag => {
-                    const tagItem = createElement("div", { class: "tag-item" }, (tag.emoji ? tag.emoji + " " : "") + tag.name);
-                    tagItem.addEventListener("click", () => this.onTagSelect(new Tag(tag)));
-                    catDiv.appendChild(tagItem);
-                });
-                browser.appendChild(catDiv);
-            }
-            return browser;
-        }
-        getElement() { return this.element; }
-        showAt(x, y) {
-            this.element.style.display = "block";
-            this.element.style.left = `${x}px`;
-            this.element.style.top = `${y}px`;
-        }
-        hide() { this.element.style.display = "none"; }
-    }
-
-    /* ---------------------- Editor ---------------------- */
     class Editor {
         constructor(ontology) {
             this.ontology = ontology;
-            this.suggestionTimeout = null;
-            this.container = createElement("div", { class: "semantic-editor-container" });
+            this.createUI();
+            this.suggestionDropdown = new SuggestionDropdown();
+            this.ontologyBrowser = new OntologyBrowser(this.ontology, tag => this.insertTagAtSelection(tag));
+            this.toolbarTagContainer.appendChild(this.ontologyBrowser.getElement());
+            this.setupTagDropdowns();
+            this.setupFormattingButtons();
+            this.setupLoadSave();
+            this.setupEditorEvents();
+        }
 
-            // --- Toolbar Setup ---
+        createUI() {
+            this.container = createElement("div", { id: "editor-container" });
+            // Toolbar
             this.toolbar = createElement("div", { id: "toolbar" });
-            this.container.appendChild(this.toolbar);
-
-            // Load & Save group.
+            // Load/Save group
             const loadSaveGroup = createElement("div", { class: "group" });
-            this.loadBtn = createElement("button", { id: "load-content" }, "Load");
-            this.saveBtn = createElement("button", { id: "save-content" }, "Save");
-            loadSaveGroup.appendChild(this.loadBtn);
-            loadSaveGroup.appendChild(this.saveBtn);
-            this.toolbar.appendChild(loadSaveGroup);
-
-            // Rich‑text style buttons.
-            const styleGroup = createElement("div", { id: "style-buttons", class: "group" });
-            this.boldBtn = createElement("button", { id: "bold-btn", title: "Bold (Ctrl+B)" });
-            this.boldBtn.innerHTML = "<strong>B</strong>";
-            this.italicBtn = createElement("button", { id: "italic-btn", title: "Italic (Ctrl+I)" });
-            this.italicBtn.innerHTML = "<em>I</em>";
-            this.underlineBtn = createElement("button", { id: "underline-btn", title: "Underline (Ctrl+U)" });
-            this.underlineBtn.innerHTML = "<u>U</u>";
-            this.strikeBtn = createElement("button", { id: "strike-btn", title: "Strike Through" }, "S");
-            this.clearFormatBtn = createElement("button", { id: "clear-format-btn", title: "Clear Formatting" }, "Unformat");
-            styleGroup.appendChild(this.boldBtn);
-            styleGroup.appendChild(this.italicBtn);
-            styleGroup.appendChild(this.underlineBtn);
-            styleGroup.appendChild(this.strikeBtn);
-            styleGroup.appendChild(this.clearFormatBtn);
-            this.toolbar.appendChild(styleGroup);
-
-            // Undo / Redo buttons.
-            const undoRedoGroup = createElement("div", { id: "undoredo-buttons", class: "group" });
-            this.undoBtn = createElement("button", { id: "undo-btn", title: "Undo (Ctrl+Z)" }, "Undo");
-            this.redoBtn = createElement("button", { id: "redo-btn", title: "Redo (Ctrl+Y)" }, "Redo");
-            undoRedoGroup.appendChild(this.undoBtn);
-            undoRedoGroup.appendChild(this.redoBtn);
-            this.toolbar.appendChild(undoRedoGroup);
-
-            // Tag Dropdowns.
-            this.tagDropdownsContainer = createElement("div", { id: "tag-dropdowns", class: "group" });
-            this.toolbar.appendChild(this.tagDropdownsContainer);
-
-            // --- Editor Area ---
+            this.loadBtn = createElement("button", {}, "Load");
+            this.saveBtn = createElement("button", {}, "Save");
+            loadSaveGroup.append(this.loadBtn, this.saveBtn);
+            // Formatting group
+            const formattingGroup = createElement("div", { class: "group" });
+            this.boldBtn = createElement("button", { title: "Bold (Ctrl+B)" });
+            this.boldBtn.appendChild(createElement("strong", {}, "B"));
+            this.italicBtn = createElement("button", { title: "Italic (Ctrl+I)" });
+            this.italicBtn.appendChild(createElement("em", {}, "I"));
+            this.underlineBtn = createElement("button", { title: "Underline (Ctrl+U)" });
+            this.underlineBtn.appendChild(createElement("u", {}, "U"));
+            this.strikeBtn = createElement("button", { title: "Strike Through" }, "S");
+            this.clearFormatBtn = createElement("button", { title: "Clear Formatting" }, "Unformat");
+            formattingGroup.append(this.boldBtn, this.italicBtn, this.underlineBtn, this.strikeBtn, this.clearFormatBtn);
+            // Undo/Redo group
+            const undoRedoGroup = createElement("div", { class: "group" });
+            this.undoBtn = createElement("button", { title: "Undo (Ctrl+Z)" }, "Undo");
+            this.redoBtn = createElement("button", { title: "Redo (Ctrl+Y)" }, "Redo");
+            undoRedoGroup.append(this.undoBtn, this.redoBtn);
+            // Tag dropdowns group (for ontology tags)
+            this.toolbarTagContainer = createElement("div", { class: "group", id: "tag-dropdowns" });
+            // Assemble toolbar
+            this.toolbar.append(loadSaveGroup, formattingGroup, undoRedoGroup, this.toolbarTagContainer);
+            // Editor area
             this.editorArea = createElement("div", { id: "editor", contenteditable: "true" },
                 "Type your free‑form text here. As you type, eligible words are underlined. Click an underlined word to see ontology suggestions."
             );
-            this.container.appendChild(this.editorArea);
+            this.container.append(this.toolbar, this.editorArea);
             document.body.appendChild(this.container);
-
-            // Create auxiliary UI components.
-            this.ontologyBrowser = new OntologyBrowser(this.ontology, this.insertTagFromOntology.bind(this));
-            this.container.appendChild(this.ontologyBrowser.getElement());
-            this.ontologyBrowser.hide();
-
-            this.suggestionDropdown = new SuggestionDropdown();
-
-            this.setupTagDropdowns();
-            this.setupEventListeners();
         }
+
         setupTagDropdowns() {
-            for (const category in this.ontology) {
-                const select = createElement("select", { class: "tag-dropdown" });
-                const defaultOption = createElement("option", { disabled: true, selected: true }, category);
-                select.appendChild(defaultOption);
+            Object.keys(this.ontology).forEach(category => {
+                const sel = createElement("select");
+                sel.appendChild(new Option(category, "", true, true));
                 this.ontology[category].forEach(tag => {
-                    const optionText = (tag.emoji ? tag.emoji + " " : "") + tag.name;
-                    select.appendChild(new Option(optionText, JSON.stringify(tag)));
+                    const label = (tag.emoji ? tag.emoji + " " : "") + tag.name;
+                    sel.appendChild(new Option(label, JSON.stringify(tag)));
                 });
-                select.addEventListener("change", (e) => {
+                sel.onchange = () => {
                     try {
-                        const tag = JSON.parse(e.target.value);
-                        this.insertTagAtSelection(new Tag(tag));
-                        e.target.selectedIndex = 0; // Reset selection.
+                        const data = JSON.parse(sel.value);
+                        this.insertTagAtSelection(new Tag(data));
                     } catch (err) {
-                        console.error("Error parsing tag data:", err);
-                    }
-                });
-                this.tagDropdownsContainer.appendChild(select);
-            }
+                        console.error("Error parsing tag data", err);
+                    } finally { sel.selectedIndex = 0; }
+                };
+                this.toolbarTagContainer.appendChild(sel);
+            });
         }
-        setupEventListeners() {
-            // Rich‑text buttons.
-            this.boldBtn.addEventListener("click", () => document.execCommand('bold'));
-            this.italicBtn.addEventListener("click", () => document.execCommand('italic'));
-            this.underlineBtn.addEventListener("click", () => document.execCommand('underline'));
-            this.strikeBtn.addEventListener("click", () => document.execCommand('strikeThrough'));
-            this.clearFormatBtn.addEventListener("click", () => document.execCommand('removeFormat'));
-            this.undoBtn.addEventListener("click", () => document.execCommand('undo'));
-            this.redoBtn.addEventListener("click", () => document.execCommand('redo'));
 
-            this.loadBtn.addEventListener("click", () => {
+        setupFormattingButtons() {
+            const cmdMap = [
+                [this.boldBtn, "bold"],
+                [this.italicBtn, "italic"],
+                [this.underlineBtn, "underline"],
+                [this.strikeBtn, "strikeThrough"],
+                [this.clearFormatBtn, "removeFormat"],
+                [this.undoBtn, "undo"],
+                [this.redoBtn, "redo"]
+            ];
+            cmdMap.forEach(([btn, cmd]) => {
+                btn.onclick = () => document.execCommand(cmd, false, null);
+            });
+        }
+
+        setupLoadSave() {
+            this.loadBtn.onclick = () => {
                 const saved = localStorage.getItem("semanticEditorContent");
                 if (saved) this.deserialize(saved);
-            });
-            this.saveBtn.addEventListener("click", () => {
+            };
+            this.saveBtn.onclick = () => {
                 localStorage.setItem("semanticEditorContent", this.serialize());
                 alert("Content saved!");
-            });
+            };
+        }
 
-            // Update autosuggest underlines.
-            this.editorArea.addEventListener("keyup", () => {
-                clearTimeout(this.suggestionTimeout);
-                if (this.suggestionDropdown.element.style.display === "block") return;
-                this.suggestionTimeout = setTimeout(() => this.applyAutosuggestUnderlines(), 300);
-            });
-            this.editorArea.addEventListener("click", () => this.suggestionDropdown.hide());
+        setupEditorEvents() {
+            this.editorArea.addEventListener("keyup", debounce(() => {
+                if (this.suggestionDropdown.el.style.display === "block") return;
+                this.applyAutosuggestUnderlines();
+            }, 300));
 
-            // Global hotkeys for suggestion dropdown.
-            document.addEventListener("keydown", (e) => {
-                if (this.suggestionDropdown.element.style.display === "block") {
-                    switch (e.key) {
-                        case "ArrowDown":
-                            e.preventDefault();
-                            this.suggestionDropdown.moveSelection(1);
-                            break;
-                        case "ArrowUp":
-                            e.preventDefault();
-                            this.suggestionDropdown.moveSelection(-1);
-                            break;
-                        case "Enter":
-                            e.preventDefault();
-                            const selText = this.suggestionDropdown.getSelectedSuggestion();
-                            if (selText) {
-                                const suggestion = this.findSuggestion(selText);
-                                if (suggestion) this.insertTagFromSuggestion(suggestion);
-                            }
-                            this.suggestionDropdown.hide();
-                            break;
-                        case "Escape":
-                            e.preventDefault();
-                            this.suggestionDropdown.hide();
-                            break;
-                    }
+            this.editorArea.addEventListener("click", evt => {
+                if (evt.target.classList.contains("autosuggest")) {
+                    evt.stopPropagation();
+                    this.showSuggestionsForSpan(evt.target);
                 }
             });
 
-            // Hide suggestion dropdown when clicking outside.
-            document.addEventListener("click", (e) => {
-                if (!this.editorArea.contains(e.target) && !this.ontologyBrowser.getElement().contains(e.target))
+            document.addEventListener("keydown", evt => {
+                if (this.suggestionDropdown.el.style.display === "block" &&
+                    ["ArrowDown", "ArrowUp", "Enter", "Escape"].includes(evt.key)) {
+                    evt.preventDefault();
+                    if (evt.key === "ArrowDown") this.suggestionDropdown.moveSelection(1);
+                    else if (evt.key === "ArrowUp") this.suggestionDropdown.moveSelection(-1);
+                    else if (evt.key === "Enter") {
+                        const selected = this.suggestionDropdown.getSelectedSuggestion();
+                        if (selected) {
+                            this.findSuggestion(selected).then(sugg => { if (sugg) this.insertTagFromSuggestion(sugg); });
+                        }
+                        this.suggestionDropdown.hide();
+                    } else if (evt.key === "Escape") this.suggestionDropdown.hide();
+                }
+            });
+
+            document.addEventListener("click", evt => {
+                if (!this.editorArea.contains(evt.target) &&
+                    !this.ontologyBrowser.getElement().contains(evt.target) &&
+                    !this.suggestionDropdown.el.contains(evt.target)) {
                     this.suggestionDropdown.hide();
+                }
             });
         }
+
+        async applyAutosuggestUnderlines() {
+            const walker = document.createTreeWalker(this.editorArea, NodeFilter.SHOW_TEXT, {
+                acceptNode: node => (node.parentNode.closest(".tag, .autosuggest") ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT)
+            });
+            const wordRegex = /\b([a-zA-Z]{3,})\b/g;
+            let node;
+            while ((node = walker.nextNode())) {
+                if (!node.nodeValue.trim()) continue;
+                wordRegex.lastIndex = 0;
+                let match, wrap = false;
+                while ((match = wordRegex.exec(node.nodeValue)) !== null) {
+                    if (await this.matchesOntology(match[1])) { wrap = true; break; }
+                }
+                if (wrap) this.wrapMatches(node, wordRegex);
+            }
+        }
+
+        async matchesOntology(word) {
+            const lower = word.toLowerCase();
+            for (const cat in this.ontology) {
+                for (const t of this.ontology[cat]) {
+                    if (t.name.toLowerCase().startsWith(lower)) return true;
+                }
+            }
+            return false;
+        }
+
+        wrapMatches(textNode, regex) {
+            const text = textNode.nodeValue;
+            const frag = document.createDocumentFragment();
+            let lastIndex = 0, match;
+            regex.lastIndex = 0;
+            while ((match = regex.exec(text)) !== null) {
+                const start = match.index, end = regex.lastIndex;
+                if (start > lastIndex) frag.appendChild(document.createTextNode(text.slice(lastIndex, start)));
+                const span = createElement("span", { class: "autosuggest" }, match[1]);
+                frag.appendChild(span);
+                lastIndex = end;
+            }
+            if (lastIndex < text.length) frag.appendChild(document.createTextNode(text.slice(lastIndex)));
+            textNode.parentNode.replaceChild(frag, textNode);
+        }
+
+        showSuggestionsForSpan(span) {
+            const word = span.textContent;
+            const suggestions = [];
+            Object.keys(this.ontology).forEach(cat => {
+                this.ontology[cat].forEach(tag => {
+                    if (tag.name.toLowerCase().startsWith(word.toLowerCase())) {
+                        suggestions.push({ displayText: tag.name, tagData: tag, span });
+                    }
+                });
+            });
+            if (!suggestions.length) return;
+            const rect = span.getBoundingClientRect();
+            this.suggestionDropdown.show(suggestions, rect.left + window.scrollX, rect.bottom + window.scrollY,
+                choice => this.insertTagFromSuggestion(choice));
+        }
+
+        insertTagFromSuggestion(sugg) {
+            const newTag = new Tag(sugg.tagData);
+            sugg.span.parentNode.replaceChild(newTag.getElement(), sugg.span);
+        }
+
         insertTagAtSelection(tag) {
             this.editorArea.focus();
             const sel = window.getSelection();
             if (!sel.rangeCount || !this.editorArea.contains(sel.anchorNode)) {
                 sel.removeAllRanges();
-                const range = document.createRange();
-                range.selectNodeContents(this.editorArea);
-                range.collapse(false);
-                sel.addRange(range);
+                const r = document.createRange();
+                r.selectNodeContents(this.editorArea);
+                r.collapse(false);
+                sel.addRange(r);
             }
             const range = sel.getRangeAt(0);
             range.deleteContents();
@@ -672,127 +486,50 @@
             sel.removeAllRanges();
             sel.addRange(range);
         }
-        insertTagFromOntology(tag) {
-            this.insertTagAtSelection(tag);
-            this.ontologyBrowser.hide();
-        }
-        insertTagFromSuggestion(sugg, autosuggestSpan = null) {
-            if (autosuggestSpan) {
-                autosuggestSpan.parentNode.replaceChild(new Tag(sugg.tagData).getElement(), autosuggestSpan);
-            } else {
-                this.insertTagAtSelection(new Tag(sugg.tagData));
-            }
-        }
+
         serialize() {
             const clone = this.editorArea.cloneNode(true);
-            clone.querySelectorAll(".tag").forEach(tagEl => {
-                const data = JSON.parse(tagEl.dataset.tagData);
-                tagEl.replaceWith(document.createTextNode(`[TAG:${JSON.stringify(data)}]`));
+            clone.querySelectorAll(".tag").forEach(tEl => {
+                const data = tagDataMap.get(tEl);
+                if (data) tEl.replaceWith(document.createTextNode(`[TAG:${JSON.stringify(data)}]`));
             });
             return clone.textContent;
         }
+
         deserialize(text) {
             this.editorArea.innerHTML = "";
             const tagRegex = /\[TAG:(.*?)\]/g;
             let lastIndex = 0, match;
             while ((match = tagRegex.exec(text)) !== null) {
-                if (match.index > lastIndex)
+                if (match.index > lastIndex) {
                     this.editorArea.appendChild(document.createTextNode(text.substring(lastIndex, match.index)));
+                }
                 try {
                     const data = JSON.parse(match[1]);
-                    this.editorArea.appendChild(new Tag(data).getElement());
-                } catch (e) {
-                    console.error("Error parsing tag:", e);
+                    const tag = new Tag(data);
+                    this.editorArea.appendChild(tag.getElement());
+                } catch (err) {
+                    console.error("Failed to parse tag data:", err);
                     this.editorArea.appendChild(document.createTextNode(match[0]));
                 }
                 lastIndex = tagRegex.lastIndex;
             }
-            if (lastIndex < text.length)
+            if (lastIndex < text.length) {
                 this.editorArea.appendChild(document.createTextNode(text.substring(lastIndex)));
+            }
         }
-        findSuggestion(text) {
+
+        async findSuggestion(name) {
             for (const cat in this.ontology) {
-                for (const tag of this.ontology[cat]) {
-                    if (tag.name === text) return { displayText: tag.name, tagData: tag };
+                for (const t of this.ontology[cat]) {
+                    if (t.name === name) return { displayText: t.name, tagData: t };
                 }
             }
             return null;
         }
-        matchesOntology(word) {
-            word = word.toLowerCase();
-            for (const cat in this.ontology) {
-                for (const tag of this.ontology[cat]) {
-                    if (tag.name.toLowerCase().startsWith(word)) return true;
-                }
-            }
-            return false;
-        }
-        applyAutosuggestUnderlines() {
-            const walker = document.createTreeWalker(this.editorArea, NodeFilter.SHOW_TEXT, {
-                acceptNode: (n) =>
-                    n.parentNode.closest(".tag, .autosuggest") ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT
-            });
-            const regex = /\b([a-zA-Z]{3,})\b/g;
-            let node;
-            while ((node = walker.nextNode())) {
-                if (!node.nodeValue.trim()) continue;
-                let match, wrap = false;
-                regex.lastIndex = 0;
-                while ((match = regex.exec(node.nodeValue)) !== null) {
-                    if (this.matchesOntology(match[1])) { wrap = true; break; }
-                }
-                if (wrap) this.wrapMatchesInTextNode(node, regex);
-            }
-        }
-        wrapMatchesInTextNode(textNode, regex) {
-            const parent = textNode.parentNode;
-            const text = textNode.nodeValue;
-            let match, lastIndex = 0;
-            const frag = document.createDocumentFragment();
-            regex.lastIndex = 0;
-            while ((match = regex.exec(text)) !== null) {
-                const word = match[1],
-                    start = match.index,
-                    end = regex.lastIndex;
-                if (start > lastIndex)
-                    frag.appendChild(document.createTextNode(text.substring(lastIndex, start)));
-                if (this.matchesOntology(word)) {
-                    const span = document.createElement("span");
-                    span.className = "autosuggest";
-                    span.textContent = word;
-                    span.addEventListener("click", (e) => {
-                        e.stopPropagation();
-                        this.showSuggestionForSpan(span);
-                    });
-                    frag.appendChild(span);
-                } else {
-                    frag.appendChild(document.createTextNode(word));
-                }
-                lastIndex = end;
-            }
-            if (lastIndex < text.length)
-                frag.appendChild(document.createTextNode(text.substring(lastIndex)));
-            parent.replaceChild(frag, textNode);
-        }
-        showSuggestionForSpan(span) {
-            const word = span.textContent;
-            const suggestions = [];
-            for (const cat in this.ontology) {
-                for (const tag of this.ontology[cat]) {
-                    if (tag.name.toLowerCase().startsWith(word.toLowerCase()))
-                        suggestions.push({ displayText: tag.name, tagData: tag });
-                }
-            }
-            if (suggestions.length) {
-                const r = span.getBoundingClientRect();
-                this.suggestionDropdown.show(suggestions, r.left + window.scrollX, r.bottom + window.scrollY,
-                    (sugg) => this.insertTagFromSuggestion(sugg, span));
-            }
-        }
     }
 
-    /* ---------------------- Instantiate Editor ---------------------- */
-    new Editor(ontology);
+    window.addEventListener("DOMContentLoaded", () => new Editor(ontologyData));
 </script>
 </body>
 </html>
