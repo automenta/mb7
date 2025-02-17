@@ -8,12 +8,10 @@ import { UIComponent, View } from "./view.js";
 import { FriendsView } from "./view.friends.js";
 import { SettingsView } from "./view.settings.js";
 
-
 const formatDate = (timestamp) =>
     timestamp && isValidDate(typeof timestamp === "string" ? parseISO(timestamp) : new Date(timestamp))
         ? format(typeof timestamp === "string" ? parseISO(timestamp) : new Date(timestamp), localStorage.getItem("dateFormat") || "Pp")
         : "";
-
 
 const TagOntology = {
     "location": {
@@ -390,84 +388,12 @@ class MainContent extends UIComponent {
     showView(view) { this.$el.find(".content").empty().append(view.$el); }
 }
 
-class Matcher {
-    constructor(app) {
-        this.app = app;
-        this.fuse = new Fuse([], { keys: ["name", "content", "tags.value"], threshold: 0.4, includeScore: true, ignoreLocation: true });
-    }
-
-    async matchEvent(event) {
-        const text = (event.content || "").toLowerCase();
-        const matches = [];
-        const objects = await this.app.db.getAll();
-
-        for (const obj of objects) {
-            if (obj.tags?.some(tagData => this.matchTagData(tagData, text, event)))
-                matches.push(obj);
-        }
-
-        if (!matches.length) {
-            this.fuse.setCollection(objects);
-            matches.push(...this.fuse.search(text).filter(r => r.score <= this.fuse.options.threshold).map(r => r.item));
-        }
-
-        if(matches.length) {
-            //dedupe matches
-            const uniqueMatches = [...new Set(matches.map(m => m.id))].map(id => matches.find(m => m.id === id));
-
-            this.app.showNotification(
-                `Match in ${uniqueMatches.length} object(s) for event from ${NostrTools.nip19.npubEncode(event.pubkey)}:<br>${uniqueMatches.map(m => `<em>${m.name}</em> (updated ${formatDate(m.updatedAt)})`).join("<br>")}`
-            );
-        }
-    }
-
-    matchTagData(tagData, text, event) {
-        const { name, condition, value } = tagData;
-        const tagDef = this.app.getTagDefinition(name);
-
-        if (!tagDef.validate(value, condition)) return false;
-
-        const checkTime = (val) => {
-            if (tagDef.name !== 'time') return false;
-            try {
-                const eventDate = new Date(event.created_at * 1000);
-                const parsedValue = parseISO(val);
-                if (!isValidDate(parsedValue)) return false;
-                if (condition === "is") return eventDate.getTime() === parsedValue.getTime();
-                if (condition === "before") return eventDate < parsedValue;
-                if (condition === "after") return eventDate > parsedValue;
-            } catch {  }
-            return false;
-        };
-
-        if (condition === "between" && tagDef.name === "time") {
-            try {
-                const startDate = parseISO(value.start);
-                const endDate = parseISO(value.end);
-                const eventDate = new Date(event.created_at * 1000);
-                return isValidDate(startDate) && isValidDate(endDate) && eventDate >= startDate && eventDate <= endDate;
-
-            } catch { return false; }
-        } else if (condition === "between" && tagDef.name === "number") {
-            const lower = parseFloat(value.lower);
-            const upper = parseFloat(value.upper);
-            const numValue = parseFloat(text); //Try to get a numeric value
-            return !isNaN(lower) && !isNaN(upper) && !isNaN(numValue) && numValue >= lower && numValue <= upper;
-        }
-        else if (condition === "matches regex") { try { return new RegExp(value, "i").test(text); } catch { return false; } }
-        else if (["is", "contains"].includes(condition)) { return text.includes(value.toLowerCase()); }
-        else if (["before", "after"].includes(condition)) { return checkTime(value); }
-        return false;
-    }
-}
-
 class App {
 
     constructor() {
         this.db = new DB.DB();
         this.matcher = new Matcher(this);
         this.selected = null;
-        this.$container = $('<div class="container"></div>');
         this.notificationQueue = [];
         window.nostrClient = this.nostrClient = new Net.Nostr(this);  // Make globally accessible and get tag defs
         this.init(); // Call the initialization
@@ -485,12 +411,12 @@ class App {
         this.settingsView = new SettingsView(this); // Create settingsView here
         this.friendsView = new FriendsView(this);
 
-
+        this.$container = $('<div class="container"></div>');
         $("body").append(
             this.$container.append(this.sidebar.$el, this.mainContent.$el),
             $('<div id="notification-area"></div>'),
-            $('<div class="loading-overlay"><div class="spinner"></div></div>')
-        );
+            //$('<div class="loading-overlay"><div class="spinner"></div></div>'
+        ));
 
         // Load keys, *then* connect to Nostr and load initial data
         try {
@@ -606,16 +532,12 @@ class App {
 
         const sanitizedContent = DOMPurify.sanitize(this.editor.getContent(), { ALLOWED_TAGS: ["br", "b", "i", "span"], ALLOWED_ATTR: ["class", "contenteditable", "tabindex", "id", "aria-label"] });
 
-        if ((await this.db.getAll()).some(o => o.name.toLowerCase() === name.toLowerCase() && o.id !== this.selected.id)) {
-            this.showNotification("An object with this name already exists.", "warning");
-            return;
-        }
-
         this.selected = { ...this.selected, name, content: sanitizedContent, tags: this.extractTags(sanitizedContent), updatedAt: formatISO(new Date()) };
         await this.db.save(this.selected);
+        this.nostrClient.publish(this.selected); //use this.nostrClient
+
         this.hideEditor();
         await this.renderList();
-        this.nostrClient.publish(this.selected); //use this.nostrClient
         this.showNotification("Object saved.", "success");
     }
 
@@ -625,22 +547,22 @@ class App {
             const name = el.querySelector(".tag-name").textContent.trim();
             const condition = el.querySelector(".tag-condition").value;
             const tagDef = getTagDefinition(name);
-            const valueElements = el.querySelectorAll(".tag-value");
+            const v = el.querySelectorAll(".tag-value");
 
             let value;
             if (condition === "between" && tagDef.name === "time") {
                 value = {
-                    start: valueElements[0]?.value,
-                    end: valueElements[1]?.value
+                    start: v[0]?.value,
+                    end: v[1]?.value
                 }
             } else if (condition === "between" && tagDef.name === "number") {
                 value = {
-                    lower: valueElements[0]?.value,
-                    upper: valueElements[1]?.value
+                    lower: v[0]?.value,
+                    upper: v[1]?.value
                 };
             }
             else {
-                value = valueElements[0]?.value;
+                value = v[0]?.value;
             }
             return { name, condition, value };
         });
@@ -672,9 +594,6 @@ class App {
         });
     }
 
-    showLoading() { $(".loading-overlay").show(); }
-    hideLoading() { $(".loading-overlay").hide(); }
 }
 
-// Initialize the app.
 $(() => { window.app = new App(); });

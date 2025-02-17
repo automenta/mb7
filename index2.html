@@ -1,0 +1,1231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Collaborative Reality Editor</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <!-- Consolidated Styles -->
+    <style>
+        body { font-family: sans-serif; margin: 1em; display: flex; gap: 1em; }
+        .sidebar-left { width: 220px; flex-shrink: 0; border-right: 1px solid #ccc; padding: 0.5em; }
+        .main-content { flex-grow: 1; }
+        #editor-container { border: 1px solid #ccc; padding: 1em; margin-top: 1em; }
+        #editor { border: 1px solid #ccc; padding: 0.5em; min-height: 120px; cursor: text; margin: 0.5em 0; }
+        .inline-tag { background: #e0f7fa; border: 1px solid #80deea; border-radius: 4px; padding: 2px 5px; margin: 0 2px; display: inline-flex; align-items: center; }
+        .inline-tag .tag-remove { margin-left: 5px; cursor: pointer; color: #888; font-size: smaller; background: none; border: none; padding: 0; }
+        .inline-tag .tag-name { margin-right: 4px; }
+        .invalid-tag { border: 1px solid red !important; background: #ffe0e0 !important; }
+        #tag-popup { position: absolute; background-color: #fff; border: 1px solid #ccc; display: none; padding: 0.5em; z-index: 9999; min-width: 150px; }
+        #tag-popup ul { list-style: none; margin: 0; padding: 0; max-height: 180px; overflow-y: auto; }
+        #tag-popup li { cursor: pointer; padding: 2px 5px; }
+        #tag-popup li:hover { background: #eee; }
+        #suggestion-dropdown { position: absolute; display: none; background: #fff; border: 1px solid #ccc; z-index: 100; max-height: 200px; overflow-y: auto; box-shadow: 0 2px 8px rgba(0,0,0,0.2); min-width: 100px; }
+        #suggestion-dropdown div { cursor: pointer; padding: 4px 8px; }
+        #suggestion-dropdown div:hover { background: #eee; }
+        #notification-area { position: fixed; top: 1em; right: 1em; width: 300px; }
+        .notification { background-color: #333; color: #fff; padding: 0.5em 1em; margin-bottom: 0.5em; border-radius: 4px; display: none; }
+        .notification.success { background-color: #4caf50; }
+        .notification.warning { background-color: #ff9800; }
+        .notification.error   { background-color: #f44336; }
+        .popup-menu input#tag-search { width: 100%; box-sizing: border-box; margin-bottom: 0.5em; }
+        .toolbar { margin: 0.5em 0; display: flex; flex-wrap: wrap; gap: 0.5em; align-items: center;}
+        .toolbar button { cursor: pointer; }
+        .toolbar .group { display: flex; align-items: center; gap: 0.5em; }
+        .autosuggest { text-decoration: underline dotted; cursor: pointer; }
+        .color-preview {display: inline-block; width: 1em; height: 1em; margin-left: 4px; border: 1px solid #aaa;}
+        .object-item {border-bottom: 1px solid #eee; padding: 0.5em 0; cursor: pointer;}
+        .object-item:hover {background-color: #f8f8f8;}
+        .metadata-panel label { display: block; margin-bottom: 0.2em; }
+        .metadata-panel input[type="text"] { width: 100%; padding: 0.3em; margin-bottom: 0.5em; box-sizing: border-box; }
+        #ontology-browser { margin-top: 10px; border: 1px solid #ccc; padding: 0.5em; display: none; position: absolute; background-color: white; z-index: 101; }
+        .category { font-weight: bold; margin-top: 0.5em; }
+        .tag-item { cursor: pointer; display: inline-block; padding: 2px 5px; margin-right: 5px; border: 1px solid #eee; border-radius: 4px; background: #f8f8f8; }
+        .tag-item:hover { background: #eee; }
+        .tag-condition, .tag-value { margin-right: 4px; }
+
+    </style>
+
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.8/dist/purify.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2/dist/fuse.esm.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/nanoid@5.0.9/nanoid.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/nostr-tools@latest/+esm"></script>
+    <script src="https://cdn.jsdelivr.net/npm/date-fns@2.29.3/esm/index.js"></script>
+</head>
+<body>
+<div class="container">
+    <div class="sidebar-left"></div>
+    <div class="main-content"></div>
+</div>
+<div id="notification-area"></div>
+<div id="tag-popup" class="popup-menu">
+    <input type="text" id="tag-search" placeholder="Search tags...">
+    <ul></ul>
+</div>
+<div id="suggestion-dropdown"></div>
+
+<script type="module">
+    // --- Imports ---
+    import * as Net from "./net.js";
+    import * as DB from "./db.js";
+    import { UIComponent, View } from "./view.js";
+    import { FriendsView } from "./view.friends.js";
+    import { SettingsView } from "./view.settings.js";
+    import { format, formatISO, isValid as isValidDate, parseISO } from "https://cdn.jsdelivr.net/npm/date-fns@2.29.3/esm/index.js";
+
+    // --- Utility Functions ---
+
+    const formatDate = (timestamp) => {
+        if (!timestamp) return "";
+        try {
+            const date = typeof timestamp === "string" ? parseISO(timestamp) : new Date(timestamp);
+            return isValidDate(date) ? format(date, localStorage.getItem("dateFormat") || "Pp") : "";
+        } catch (e) {
+            console.error("Date formatting error:", e);
+            return "";
+        }
+    };
+
+    const isValidDate = (d) => d instanceof Date && !isNaN(d);
+
+    // --- Combined Ontology ---
+    // Organized by category, consistent format
+    const TagOntology = {
+        "Location": {
+            conditions: ["is", "contains", "near"],
+            validate: (value, condition) => typeof value === "string" && value.length > 0,
+            serialize: (value) => value,
+            deserialize: (value) => value,
+            name: "Location" // Added name for consistency
+        },
+        "Time": {
+            conditions: ["is", "before", "after", "between"],
+            validate: (value, condition) => {
+                if (condition === "between") {
+                    return isValidDate(parseISO(value.start)) && isValidDate(parseISO(value.end));
+                }
+                return isValidDate(parseISO(value));
+            },
+            serialize: (value) => typeof value === 'object' && value !== null ?
+                { start: formatISO(parseISO(value.start)), end: formatISO(parseISO(value.end)) } : formatISO(parseISO(value)),
+            deserialize: (value) => value,
+            name: "Time"
+        },
+        "String": {
+            conditions: ["is", "contains", "matches regex"],
+            validate: (value, condition) => typeof value === "string",
+            serialize: (value) => value,
+            deserialize: (value) => value,
+            name: "String"
+        },
+        "Number": {
+            conditions: ["is", "greater than", "less than", "between"],
+            validate: (value, condition) => {
+                if (condition === "between") {
+                    return !isNaN(parseFloat(value.lower)) && isFinite(value.lower) &&
+                        !isNaN(parseFloat(value.upper)) && isFinite(value.upper);
+                }
+                return !isNaN(parseFloat(value)) && isFinite(value);
+            },
+            serialize: (value) => {
+                if (typeof value === 'object' && value !== null) {
+                    return { lower: String(value.lower), upper: String(value.upper) };
+                }
+                return String(value)
+            },
+            deserialize: (value) => value,
+            name: "Number"
+        },
+        "Mass": {
+            name: "Mass",
+            conditions: ["is", "is between", "is below", "is above"],
+            type: "number",
+            unit: "kg",
+            validate: (v) => !isNaN(parseFloat(v))
+        },
+        "Length": {
+            name: "Length",
+            conditions: ["is", "is between", "is below", "is above"],
+            type: "number",
+            unit: "m",
+            validate: (v) => !isNaN(parseFloat(v))
+        },
+        "Temperature": {
+            name: "Temperature",
+            conditions: ["is", "is between", "is below", "is above"],
+            type: "number",
+            unit: "°C",
+            validate: (v) => !isNaN(parseFloat(v))
+        },
+        "Color": {
+            name: "Color",
+            conditions: ["is"],
+            type: "color",
+            validate: (v) => /^#[0-9A-Fa-f]{6}$/.test(v)
+        }
+    };
+    // Helper to get a tag definition, falling back to a generic "string" type
+    const getTagDefinition = (name) => TagOntology[name] || { ...TagOntology.String, name: name };
+
+
+    // --- UIComponent (Base Class) ---
+    class UIComponent {
+        constructor(selectorOrElement) {
+            this.setElement(selectorOrElement);
+            UIComponent.register(this); // For easy access later
+        }
+
+        setElement(selectorOrElement) {
+            this.$el = $(selectorOrElement);
+        }
+
+        remove() {
+            this.$el.remove();
+            UIComponent.unregister(this);
+        }
+
+        static registry = new Map();
+
+        static register(component) {
+            if (component.$el[0]?.id) {
+                UIComponent.registry.set(component.$el[0].id, component);
+            }
+        }
+
+        static unregister(component) {
+            if (component.$el[0]?.id) {
+                UIComponent.registry.delete(component.$el[0].id);
+            }
+        }
+
+        static fromElement(element) {
+            return UIComponent.registry.get(element.id);
+        }
+    }
+
+
+    // --- InlineTag Component ---
+    class InlineTag extends UIComponent {
+        constructor(tagData, onUpdate) {
+            super(`<span class="inline-tag" contenteditable="false" tabindex="0" id="${nanoid()}"></span>`);
+            this.tagData = this.initializeTagData(tagData);
+            this.onUpdate = onUpdate;
+            this.render();
+        }
+
+        initializeTagData(tagData) {
+            const tagDef = getTagDefinition(tagData.name);
+            return {
+                name: tagData.name,
+                condition: tagData.condition || tagDef.conditions[0],
+                value: tagData.value ?? '',
+            };
+        }
+
+        render() {
+            const { name, condition, value } = this.tagData;
+            const tagDef = getTagDefinition(name);
+            this.$el.empty().append(
+                `<span class="tag-name">${name}</span>`,
+                this.createConditionSelect(tagDef, condition),
+                ...this.createValueInput(tagDef, condition, value),
+                `<button class="tag-remove">×</button>`
+            );
+            this.bindEvents();
+        }
+
+        createConditionSelect(tagDef, condition) {
+            return $(`<select class="tag-condition">${tagDef.conditions.map(c => `<option value="${c}" ${c === condition ? 'selected' : ''}>${c}</option>`).join('')}</select>`);
+        }
+
+        createValueInput(tagDef, condition, value) {
+            const inputCreators = {
+                "Time": this.createTimeInput,
+                "Number": this.createNumberInput,
+                "Color": this.createColorInput,
+                "default": this.createDefaultInput
+            };
+            const creator = inputCreators[tagDef.name] || inputCreators["default"];
+            return creator.call(this, tagDef, condition, value); // Use call to set 'this' context
+        }
+
+        createTimeInput(tagDef, condition, value) {
+            const makeInput = (className, val = "") => `<input type="datetime-local" class="tag-value ${className}" value="${val}">`;
+            return condition === "between"
+                ? [makeInput("lower", value?.start ? format(parseISO(value.start), "yyyy-MM-dd'T'HH:mm") : ""), $("<span>and</span>"), makeInput("upper", value?.end ? format(parseISO(value.end), "yyyy-MM-dd'T'HH:mm") : "")]
+                : [makeInput("", value ? format(parseISO(value), "yyyy-MM-dd'T'HH:mm") : "")];
+        }
+
+        createNumberInput(tagDef, condition, value) {
+            const makeInput = (className, val = "") => `<input type="number" class="tag-value ${className}" value="${val}">`;
+            return condition === "between"
+                ? [makeInput("lower", value?.lower), $("<span>and</span>"), makeInput("upper", value?.upper)]
+                : [makeInput("", value ?? "")];
+        }
+
+        createColorInput(tagDef, condition, value) {
+            const $input = $(`<input type="color" class="tag-value" value="${value || '#000000'}">`);
+            const $preview = $(`<span class="color-preview" style="background-color: ${value || '#000000'};"></span>`);
+            $input.on('input', (e) => $preview.css('background-color', e.target.value));
+            return [$input, $preview];
+        }
+
+        createDefaultInput(tagDef, condition, value) {
+            return $(`<input type="text" class="tag-value" value="${DOMPurify.sanitize(value)}">`);
+        }
+
+        bindEvents() {
+            this.$el.on("change", ".tag-condition", (e) => this.updateCondition(e.target.value))
+                .on("input", ".tag-value", () => this.updateValue())
+                .on("click", ".tag-remove", () => { this.remove(); this.onUpdate?.(); });
+        }
+
+        updateCondition(newCondition) {
+            this.tagData.condition = newCondition;
+            this.tagData.value = newCondition === "between" ? { lower: "", upper: "" } : '';
+            this.render();
+            this.onUpdate?.();
+        }
+
+        updateValue() {
+            const tagDef = getTagDefinition(this.tagData.name);
+            const condition = this.tagData.condition;
+            const valueElements = this.$el.find(".tag-value");
+
+            const newValue = this.extractValue(tagDef, condition, valueElements);
+
+            if (tagDef.validate(newValue, condition)) {
+                this.tagData.value = newValue;
+                valueElements.removeClass("invalid-tag");
+                this.onUpdate?.();
+            } else {
+                valueElements.addClass("invalid-tag");
+            }
+        }
+
+        extractValue(tagDef, condition, valueElements) {
+            if (condition === "between" && tagDef.name === "Number") {
+                return { lower: valueElements.filter(".lower").val(), upper: valueElements.filter(".upper").val() };
+            } else if (condition === "between" && tagDef.name === "Time") {
+                return { start: valueElements.filter(".lower").val(), end: valueElements.filter(".upper").val() };
+            } else if (tagDef.name === "Color") {
+                return valueElements.val();
+            }
+            return valueElements.val();
+        }
+    }
+
+    // --- Editor Component ---
+
+    class Editor extends UIComponent {
+        #savedSelection = null;
+
+        constructor() {
+            super(`<div id="editor" contenteditable="true"></div>`);
+            this.suggestionDropdown = new SuggestionDropdown();
+            this.ontologyBrowser = new OntologyBrowser(TagOntology, (tagItem) => this.insertTagFromOntology(tagItem)); // Add OntologyBrowser
+            this.bindEvents();
+        }
+
+        bindEvents() {
+            this.$el.on("mouseup keyup", () => this.saveSelection())
+                .on("keydown", e => this.handleKeyDown(e))
+                .on("input", () => this.handleInput())
+                .on("click", ".autosuggest", (e) => {
+                    e.stopPropagation();
+                    this.showSuggestionsForSpan($(e.target));
+                });
+
+            $(document).on("click", e => {
+                if (!$(e.target).closest("#suggestion-dropdown, #editor, #ontology-browser, #show-ontology-btn").length) {
+                    this.suggestionDropdown.hide();
+                    this.ontologyBrowser.hide(); // Hide ontology browser
+                }
+            });
+        }
+
+        saveSelection() {
+            this.#savedSelection = window.getSelection()?.rangeCount > 0
+                ? window.getSelection().getRangeAt(0).cloneRange()
+                : null;
+        }
+
+        handleKeyDown(e) {
+            if (e.code === "Enter") {
+                e.preventDefault();
+                this.insertLineBreak();
+            }
+            this.handleSuggestionDropdownNavigation(e);
+        }
+
+        handleSuggestionDropdownNavigation(e) {
+            if (this.suggestionDropdown.$el.is(":visible")) {
+                if (["ArrowDown", "ArrowUp", "Enter", "Escape"].includes(e.key)) {
+                    e.preventDefault();
+                    const keyActions = {
+                        ArrowDown: () => this.suggestionDropdown.moveSelection(1),
+                        ArrowUp: () => this.suggestionDropdown.moveSelection(-1),
+                        Enter: () => {
+                            const text = this.suggestionDropdown.getSelectedSuggestion();
+                            if (text) {
+                                this.insertAutosuggestedTag(text);
+                            }
+                            this.suggestionDropdown.hide();
+                        },
+                        Escape: () => this.suggestionDropdown.hide()
+                    };
+                    keyActions[e.key]();
+                }
+            }
+        }
+
+        handleInput() {
+            this.sanitizeContent();
+            this.#savedSelection && this.restoreSelection();
+            this.applyAutosuggestUnderlinesDebounced();
+        }
+
+        insertLineBreak() {
+            if (!this.#savedSelection) return;
+            const br = document.createElement("br");
+            this.#savedSelection.insertNode(br);
+            if (this.isCaretAtEnd()) {
+                this.#savedSelection.insertNode(document.createElement("br"));
+            }
+            this.#savedSelection.setStartAfter(br);
+            this.#savedSelection.collapse(true);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(this.#savedSelection);
+            this.saveSelection(); // Update saved selection
+        }
+
+
+        sanitizeContent() {
+            const current = this.$el.html();
+            const sanitized = DOMPurify.sanitize(current, { ALLOWED_TAGS: ["br", "b", "i", "span"], ALLOWED_ATTR: ["class", "contenteditable", "tabindex", "id", "aria-label"] });
+            if (current !== sanitized) {
+                this.$el.html(sanitized);
+            }
+        }
+
+
+        restoreSelection() {
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(this.#savedSelection);
+        }
+
+        ensureFocus() {
+            if (this.$el.is(":focus")) return;
+            this.$el.focus();
+            if (!window.getSelection()?.rangeCount) {
+                const range = document.createRange();
+                range.selectNodeContents(this.$el[0]);
+                range.collapse(false);
+                const selection = window.getSelection();
+                selection.removeAllRanges();
+                selection.addRange(range);
+                this.saveSelection(); // Update saved selection after restoring
+            }
+        }
+
+        isCaretAtEnd() {
+            if (!window.getSelection()?.rangeCount) return false;
+            const range = window.getSelection().getRangeAt(0);
+            const endNode = range.endContainer;
+            return endNode.nodeType === Node.TEXT_NODE
+                ? range.endOffset === endNode.textContent.length
+                : range.endOffset === endNode.childNodes.length || (endNode === this.$el[0] && range.endOffset === this.$el[0].childNodes.length);
+        }
+
+        getContent() { return this.$el.html(); }
+
+        setContent(html) {
+            this.$el.html(html);
+            this.sanitizeContent();
+        }
+
+        insertNodeAtCaret(node) {
+            this.ensureFocus();
+            this.restoreSelection();
+            const selection = window.getSelection();
+            if (!selection?.rangeCount) return;
+
+            let range = selection.getRangeAt(0);
+            range.deleteContents();
+            range.insertNode(node);
+            range.setStartAfter(node);
+            if (this.isCaretAtEnd()) {
+                range.insertNode(document.createTextNode("\u200B"));
+            }
+            range.collapse(true);
+            selection.removeAllRanges();
+            selection.addRange(range);
+            this.saveSelection(); // Update saved selection
+        }
+
+        // --- Autosuggest ---
+        applyAutosuggestUnderlinesDebounced = _.debounce(() => this.applyAutosuggestUnderlines(), 300);
+
+        applyAutosuggestUnderlines() {
+            const walker = document.createTreeWalker(this.$el[0], NodeFilter.SHOW_TEXT, {
+                acceptNode: node =>
+                    (node.parentNode.closest(".tag, .autosuggest, .inline-tag")
+                        ? NodeFilter.FILTER_REJECT
+                        : NodeFilter.FILTER_ACCEPT)
+            });
+            const wordRegex = /\b([a-zA-Z]{3,})\b/g;
+            let node;
+            while ((node = walker.nextNode())) {
+                if (!node.nodeValue.trim()) continue;
+                let match, hasSuggestion = false;
+                wordRegex.lastIndex = 0;
+                while ((match = wordRegex.exec(node.nodeValue)) !== null) {
+                    if (this.matchesOntology(match[1])) { hasSuggestion = true; break; }
+                }
+                if (hasSuggestion) { this.wrapMatches(node, wordRegex); }
+            }
+        }
+
+        matchesOntology(word) {
+            const lower = word.toLowerCase();
+            return Object.keys(TagOntology).some(tagName =>
+                TagOntology[tagName].name.toLowerCase().startsWith(lower));
+        }
+
+        wrapMatches(textNode, regex) {
+            const text = textNode.nodeValue;
+            const frag = document.createDocumentFragment();
+            let lastIndex = 0;
+            let match;
+            regex.lastIndex = 0; // Reset lastIndex for each text node
+
+            while ((match = regex.exec(text)) !== null) {
+                const start = match.index;
+                const end = regex.lastIndex;
+
+                if (start > lastIndex) {
+                    frag.appendChild(document.createTextNode(text.slice(lastIndex, start)));
+                }
+
+                const span = document.createElement("span");
+                span.className = "autosuggest";
+                span.textContent = match[1];
+                frag.appendChild(span);
+                lastIndex = end;
+            }
+
+            if (lastIndex < text.length) {
+                frag.appendChild(document.createTextNode(text.slice(lastIndex)));
+            }
+
+            textNode.parentNode.replaceChild(frag, textNode);
+        }
+
+        showSuggestionsForSpan($span) {
+            const word = $span.text();
+            const suggestions = this.getSuggestions(word);
+            if (suggestions.length === 0) return;
+
+            const rect = $span[0].getBoundingClientRect();
+            this.suggestionDropdown.show(suggestions, rect.left, rect.bottom + 5, (choice) => this.insertAutosuggestedTag(choice.displayText));
+        }
+
+        getSuggestions(word) {
+            return Object.keys(TagOntology)
+                .filter(tagName => TagOntology[tagName].name.toLowerCase().startsWith(word.toLowerCase()))
+                .map(tagName => ({
+                    displayText: TagOntology[tagName].name,
+                    tagData: { name: TagOntology[tagName].name, condition: TagOntology[tagName].conditions[0], value: "" }
+                }));
+        }
+
+        insertAutosuggestedTag(tagName) {
+            const tagDef = getTagDefinition(tagName);
+            const tagData = { name: tagName, condition: tagDef.conditions[0], value: '' };
+            const tagComponent = new InlineTag(tagData, () => { });
+
+            const selection = window.getSelection();
+            if (selection.rangeCount) {
+                let range = selection.getRangeAt(0);
+                if (range.commonAncestorContainer.parentNode.classList.contains('autosuggest')) {
+                    range.selectNode(range.commonAncestorContainer.parentNode);
+                    range.deleteContents();
+                    this.insertNodeAtCaret(tagComponent.$el[0]);
+                }
+            }
+        }
+
+        // Method to insert tag from OntologyBrowser
+        insertTagFromOntology(tagItem) {
+            const tagData = { name: tagItem.name, condition: tagItem.conditions[0], value: '' };
+            const tagComponent = new InlineTag(tagData, () => { });
+            this.insertNodeAtCaret(tagComponent.$el[0]);
+        }
+    }
+
+    // --- SuggestionDropdown Component ---
+
+    class SuggestionDropdown {
+        constructor() {
+            this.$el = $('<div id="suggestion-dropdown" class="popup-menu"></div>').hide();
+            this.selectedIndex = -1;
+            $("body").append(this.$el);
+        }
+
+        show(suggestions, x, y, onSelect) {
+            this.$el.empty().css({ left: x, top: y, display: 'block' });
+            this.selectedIndex = -1;
+            suggestions.forEach((suggestion, index) => {
+                const $div = $(`<div>${suggestion.displayText}</div>`);
+                $div.data("suggestion", suggestion);
+                $div.on("click", () => {
+                    onSelect(suggestion);
+                    this.hide();
+                });
+                if (index === 0) {
+                    $div.addClass("selected");
+                }
+                this.$el.append($div);
+            });
+            this.updateSelection();
+        }
+
+        hide() { this.$el.hide(); }
+
+        moveSelection(direction) {
+            const $items = this.$el.children();
+            if ($items.length === 0) return;
+
+            let $selected = $items.filter(".selected");
+            let index = $items.index($selected);
+
+            $selected.removeClass("selected");
+            index = (index + direction + $items.length) % $items.length;
+            $selected = $items.eq(index);
+            $selected.addClass("selected");
+        }
+
+        updateSelection() {
+            this.$el.children().removeClass('selected');
+            if (this.selectedIndex >= 0) {
+                this.$el.children().eq(this.selectedIndex).addClass('selected');
+            }
+        }
+
+        getSelectedSuggestion() {
+            const selected = this.$el.find('.selected');
+            return selected.length ? selected.data('suggestion') : null;
+        }
+    }
+
+    // --- Tagger Component ---
+
+    class Tagger extends UIComponent {
+        constructor(editor, onUpdate) {
+            super();
+            this.editor = editor;
+            this.onUpdate = onUpdate;
+            this.fuse = new Fuse(Object.keys(TagOntology), { shouldSort: true, threshold: 0.4, keys: ['name'] }); // Keys option
+            this.initPopup();
+        }
+
+        initPopup() {
+            this.$popup = $("#tag-popup");
+            if (this.$popup.length) return;
+
+            this.$popup = $(`<div id="tag-popup" class="popup-menu">
+                            <input type="text" id="tag-search" placeholder="Search tags...">
+                            <ul></ul>
+                        </div>`).hide().appendTo("body");
+            this.$search = this.$popup.find("#tag-search");
+            this.$list = this.$popup.find("ul");
+
+            this.$search.on("input", () => this.renderTagList(this.$search.val()));
+            this.$popup.on("keydown", e => this.handlePopupKeyDown(e));
+            $(document).on("click.tagger", e => {
+                if (!$(e.target).closest("#tag-popup, #insert-tag-btn").length) {
+                    this.hide();
+                }
+            });
+        }
+
+        handlePopupKeyDown(e) {
+            if (e.key === "Escape") {
+                this.hide();
+                this.editor.$el.focus();
+                return;
+            }
+            const items = this.$list.find("li");
+            let index = items.index(items.filter(":focus"));
+
+            const keyActions = {
+                ArrowDown: () => {
+                    e.preventDefault();
+                    index = (index + 1) % items.length;
+                    items.eq(index).focus();
+                },
+                ArrowUp: () => {
+                    e.preventDefault();
+                    index = (index - 1 + items.length) % items.length;
+                    items.eq(index).focus();
+                },
+                Enter: () => {
+                    e.preventDefault();
+                    items.filter(":focus").click();
+                }
+            };
+
+            if (keyActions[e.key]) {
+                keyActions[e.key]();
+            }
+        }
+
+        renderTagList(query = "") {
+            this.$list.empty();
+            const results = query
+                ? this.fuse.search(query).map(result => result.item) // Use Fuse.js correctly
+                : Object.keys(TagOntology);
+
+            results.forEach(item =>
+                this.$list.append($(`<li>${item}</li>`).on("click", () => { this.insertTag(item); this.hide(); }))
+            );
+        }
+
+        show(e) {
+            e?.stopPropagation();
+            this.editor.ensureFocus();
+            const coords = this.getCaretCoordinates();
+            this.$popup.css({ left: coords.x, top: coords.y + 20 }).show();
+            this.$search.val("").focus();
+        }
+
+        hide() { this.$popup.hide(); }
+
+        getCaretCoordinates() {
+            const selection = window.getSelection();
+            if (!selection?.rangeCount) {
+                const offset = this.editor.$el.offset();
+                return { x: offset.left, y: offset.top };
+            }
+            const range = selection.getRangeAt(0).cloneRange();
+            range.collapse(true);
+            const rect = range.getBoundingClientRect();
+            return { x: rect.left, y: rect.top };
+        }
+
+        insertTag(tag) {
+            const tagComponent = new InlineTag({ name: tag }, this.onUpdate);
+            this.editor.insertNodeAtCaret(tagComponent.$el[0]);
+        }
+    }
+
+    // --- OntologyBrowser Component ---
+    class OntologyBrowser {
+        constructor(ontology, onTagSelect) {
+            this.ontology = ontology;
+            this.onTagSelect = onTagSelect;
+            this.$el = $('<div id="ontology-browser" style="display: none;"></div>');
+            this.build();
+            $('body').append(this.$el); // Append to body
+        }
+
+        build() {
+            this.$el.empty(); // Clear any existing content
+            for (let category in this.ontology) {
+                const $category = $(`<div class="category"><strong>${category}</strong></div>`);
+                const tagData = this.ontology[category];
+                if (tagData.name) {
+                    // Single tag
+                    this.appendTagItem($category, tagData);
+                } else {
+                    // Array of tags
+                    for (const tagItem of Object.values(tagData)) {
+                        this.appendTagItem($category, tagItem);
+                    }
+                }
+                this.$el.append($category);
+            }
+        }
+
+        appendTagItem($category, tagItem) {
+            const label = tagItem.name;
+            const $tagDiv = $(`<div class="tag-item">${label}</div>`).on("click", () => {
+                this.onTagSelect(tagItem);          this.hide(); // Hide after selection
+            });
+            $category.append($tagDiv);
+        }
+
+        show() {
+            this.$el.show();
+        }
+
+        hide() {
+            this.$el.hide();
+        }
+    }
+
+    // --- View (Base Class) ---
+    class View {
+        constructor(app, html) {
+            this.app = app;
+            this.$el = $(html);
+            this.build();
+            this.bindEvents();
+        }
+        build() { }
+        bindEvents() { }
+    }
+
+    // --- DashboardView ---
+
+    class DashboardView extends View {
+        constructor(app) { super(app, `<div id="dashboard-view" class="view"><h2>Dashboard</h2></div>`); }
+
+        build() {
+            this.$el.append(
+                `<div id="dashboard-stats"></div>
+                <h3>Recent Activity</h3><div id="recent-activity"></div>
+                <h3>Tag Cloud</h3><div id="tag-cloud"></div>`
+            );
+            this.app.displayPubkeyOnDashboard(); //display pubkey on load
+        }
+
+        async render() {
+            const stats = await this.app.db.getStats();
+            this.$el.find("#dashboard-stats").html(this.createStatsHtml(stats));
+
+            const recent = await this.app.db.getRecent(5);
+            this.$el.find("#recent-activity").html(this.createRecentActivityHtml(recent));
+
+            this.renderTagCloud();
+        }
+
+        createStatsHtml(stats) {
+            return `<p>Objects: ${stats.objectCount}</p><p>Tags: ${stats.tagCount}</p>`;
+        }
+
+        createRecentActivityHtml(recent) {
+            return recent.map(obj => `<p><strong>${obj.name}</strong> - Updated: ${formatDate(obj.updatedAt)}</p>`).join('');
+        }
+
+        renderTagCloud() {
+            this.app.db.getAll().then(objects => {
+                const tagCounts = this.aggregateTagCounts(objects);
+                this.$el.find("#tag-cloud").html(this.createTagCloudHtml(tagCounts));
+            });
+        }
+
+        aggregateTagCounts(objects) {
+            const tagCounts = {};
+            objects.forEach(obj => obj.tags?.forEach(tag => tagCounts[tag.name] = (tagCounts[tag.name] || 0) + 1));
+            return tagCounts;
+        }
+
+        createTagCloudHtml(tagCounts) {
+            return Object.entries(tagCounts)
+                .sort(([, countA], [, countB]) => countB - countA)
+                .map(([tagName, count]) => `<span style="font-size:${10 + count * 2}px; margin-right:5px;">${tagName}</span>`).join('');
+        }
+    }
+
+    // --- ContentView ---
+
+    class ContentView extends View {
+        constructor(app) {
+            super(app, '<div id="content-view" class="view"><h2>Content</h2></div>');
+            this.tagger = null; // Initialize tagger property
+        }
+
+        build() {
+            this.$el.append(
+                `<div class="filter-bar"><input type="text" id="search-input" placeholder="Search items..."></div>`,
+                `<div id="object-list"></div>`,
+                `<button id="new-object-btn">New Object</button>`,
+                `<div id="editor-container" style="display:none;">
+              <div class="toolbar">
+                <div class="group">
+                    <button id="insert-tag-btn">Insert Tag</button>
+                    <button id="show-ontology-btn">Ontology</button>
+                </div>
+                <div class="group">
+                    <button id="bold-btn"><b>B</b></button>
+                    <button id="italic-btn"><i>I</i></button>
+                    <button id="underline-btn"><u>U</u></button>
+                    <button id="strike-btn"><s>S</s></button>
+                </div>
+              </div>
+              <div id="editor" contenteditable="true"></div>
+              <div class="metadata-panel">
+                  <label for="object-name">Name:</label>
+                  <input type="text" id="object-name">
+                  <p>Created At: <span id="created-at"></span></p>
+              </div>
+              <button id="save-object-btn">Save</button>
+              <button id="cancel-edit-btn">Cancel</button>
+              <button id="delete-object-btn">Delete Object</button>
+          </div>`
+            );
+            this.tagger = new Tagger(this.app.editor, () => this.app.updateCurrentObject());
+            this.app.editor.ontologyBrowser.$el.appendTo($('body')); // Important: Move to body
+
+            // Add event listener for showing the ontology browser
+            this.$el.find("#show-ontology-btn").on("click", () => {
+                this.app.editor.ontologyBrowser.show();
+            });
+
+            // Basic text formatting
+            this.$el.find("#bold-btn").on("click", () => document.execCommand("bold"));
+            this.$el.find("#italic-btn").on("click", () => document.execCommand("italic"));
+            this.$el.find("#underline-btn").on("click", () => document.execCommand("underline"));
+            this.$el.find("#strike-btn").on("click", () => document.execCommand("strikeThrough"));
+        }
+
+        bindEvents() {
+            this.$el.find("#search-input").on("input", _.debounce(() => this.app.renderList(this.$el.find("#search-input").val()), 300));
+            this.$el.find("#new-object-btn").on("click", () => this.app.createNewObject());
+            this.$el.find("#save-object-btn").on("click", () => this.app.saveObject());
+            this.$el.find("#cancel-edit-btn").on("click", () => this.app.hideEditor());
+            this.$el.find("#delete-object-btn").on("click", () => this.app.deleteCurrentObject());
+            this.$el.find("#insert-tag-btn").on("click", (e) => {
+                e.preventDefault();
+                this.tagger.show(e)
+            });
+            this.$el.find("#object-list").on("click", ".object-item", (e) => this.app.editOrViewObject($(e.currentTarget).data("id")));
+        }
+    }
+    // --- Sidebar ---
+    class Sidebar extends View {
+        constructor(app) { super(app, `<div class="sidebar-left"></div>`); }
+
+        build() {
+            this.$el.append(
+                this.createSidebarSection("Menu", [
+                    { label: "Dashboard", view: "dashboard" },
+                    { label: "Content", view: "content" },
+                    { label: "Settings", view: "settings" },
+                    { label: "Friends", view: "friends" }
+                ]),
+                this.createSidebarSection("Links", [{ label: "Recent Items", list: "recent" }]),
+                $("<h3>Network</h3>", `<div id="network-status">Connecting...</div><hr>`),
+                $("<div id='nostr-feed'></div>") // Placeholder for Nostr feed
+            );
+        }
+
+        createSidebarSection(title, items) {
+            return [
+                `<h3>${title}</h3>`,
+                `<ul>${items.map(item => `<li><a href="#" ${item.view ? `data-view="${item.view}"` : `data-list="${item.list}"`}>${item.label}</a></li>`).join('')}</ul><hr>`
+            ];
+        }
+
+        bindEvents() {
+            this.$el.on("click", "a[data-view], a[data-list]", (e) => {
+                e.preventDefault();
+                this.app.setView($(e.currentTarget).data("view") || "content");
+            });
+        }
+    }
+    // --- MainContent ---
+
+    class MainContent {
+        constructor() {
+            this.$el = $('<div class="main-content"></div>');
+            this.currentView = null; // Keep track of the current view
+        }
+        showView(view) {
+            this.$el.empty().append(view.$el);
+            this.currentView = view;
+        }
+    }
+    // --- App (Main Application) ---
+
+    class App {
+
+        constructor() {
+            this.db = new DB.DB();
+            this.selected = null;
+            this.notificationQueue = [];
+            this.notificationTimeout = null;
+            window.nostrClient = this.nostrClient = new Net.Nostr(this);  // Make globally accessible
+            this.init();
+        }
+
+        async init() {
+            await DB.DB.initDB();
+            this.initUI();
+        }
+
+        async initUI() {
+            this.sidebar = new Sidebar(this);
+            this.mainContent = new MainContent();
+            this.editor = new Editor();
+            this.settingsView = new SettingsView(this);
+            this.friendsView = new FriendsView(this);
+
+            this.$container = $('.container'); // Use existing container
+
+            this.$container.find(".sidebar-left").append(this.sidebar.$el);
+            this.$container.find(".main-content").append(this.mainContent.$el);
+
+            this.loadKeysAndConnect();
+            this.setView("dashboard"); // Set initial view
+        }
+
+        async loadKeysAndConnect() {
+            try {
+                const keys = await DB.loadKeys();
+                if (keys) {
+                    window.keys = keys;
+                    this.nostrClient.connect(); // Connect after loading keys
+                }
+            } catch (error) {
+                console.error("Failed to load or generate keys:", error);
+            }
+        }
+
+        updateNetworkStatus(message) {
+            $("#network-status").text(message);
+        }
+
+        getTagDefinition(tagName) {
+            return TagOntology[tagName] || { ...TagOntology.String, name: tagName }; // Fallback to String
+        }
+
+        async deleteCurrentObject() {
+            if (!this.selected) return;
+
+            if (confirm(`Delete "${this.selected.name}"?`)) {
+                try {
+                    await this.publishDeletionEvent();
+                    await this.db.delete(this.selected.id);
+                    this.hideEditor();
+                    await this.renderList();
+                    this.showNotification(`"${this.selected.name}" deleted.`, "success");
+                } catch (error) {
+                    this.handleDeletionError(error);
+                }
+            }
+        }
+
+        async publishDeletionEvent() {
+            const event = {
+                kind: 5,
+                created_at: Math.floor(Date.now() / 1000),
+                tags: [["e", this.selected.id]],
+                content: "",
+                pubkey: window.keys.pub,
+            };
+            await this.nostrClient.publishEvent(event);
+        }
+
+        handleDeletionError(error) {
+            this.showNotification("Failed to delete object.", "error");
+            console.error("Failed to delete object:", error);
+        }
+
+        displayPubkeyOnDashboard() {
+            if (window.keys && window.keys.pub) {
+                //check if the element has already been added.
+                if ($("#dashboard-view #pubkey-display").length === 0) {
+                    $("#dashboard-view").append(`<p id="pubkey-display">Your Public Key: ${NostrTools.nip19.npubEncode(window.keys.pub)}</p>`)
+                }
+            }
+        }
+
+
+        setView(viewName) {
+            const viewMap = {
+                dashboard: () => { const v = new DashboardView(this); v.render(); return v; },
+                content: () => new ContentView(this),
+                settings: () => this.settingsView,
+                friends: () => this.friendsView,
+            };
+            const view = (viewMap[viewName] || viewMap.dashboard)();
+            this.mainContent.showView(view);
+            if (viewName === "content") {
+                this.renderList();
+            }
+        }
+
+        async renderList(filter = "") {
+            const $list = $("#object-list").empty();
+            const objects = await this.db.getAll();
+            const filteredObjects = this.filterObjects(objects, filter);
+            this.displayObjects(filteredObjects, $list);
+        }
+
+        filterObjects(objects, filter) {
+            return filter
+                ? objects.filter(object =>
+                    Object.values(object).some(value =>
+                        typeof value === 'string' && value.toLowerCase().includes(filter.toLowerCase())
+                    )
+                )
+                : objects;
+        }
+
+        displayObjects(objects, $list) {
+            $list.html(objects.length
+                ? objects.map(object => this.createObjectListItem(object)).join('')
+                : "<p>No objects found.</p>");
+        }
+
+
+        createObjectListItem(object) {
+            return `<div class="object-item" data-id="${object.id}" tabindex="0">
+                <strong>${object.name}</strong>
+                <div>${object.content}</div>
+                <small>Updated: ${formatDate(object.updatedAt)}</small>
+            </div>`;
+        }
+
+        createNewObject() {
+            this.showEditor({ id: nanoid(), name: "", content: "", tags: [], createdAt: formatISO(new Date()), updatedAt: formatISO(new Date()) });
+        }
+
+        async editOrViewObject(id) {
+            const obj = await this.db.get(id);
+            if (obj) {
+                this.showEditor(obj);
+            }
+        }
+
+        showEditor(object) {
+            this.selected = object;
+            $("#editor-container").show();
+            $("#object-name").val(object.name || "");
+            $("#created-at").text(object.createdAt ? formatDate(object.createdAt) : "");
+            this.editor.setContent(object.content || "");
+            this.editor.ensureFocus(); // Ensure editor is focused
+        }
+
+        hideEditor() {
+            $("#editor-container").hide();
+            this.selected = null;
+            $("#object-name").val('');
+            $("#created-at").text('');
+            this.editor.setContent('');
+        }
+
+        async saveObject() {
+            if (!this.selected) return;
+
+            const name = $("#object-name").val().trim();
+            if (!name) {
+                this.showNotification("Object name is required.", "warning");
+                return;
+            }
+
+            try {
+                const sanitizedContent = this.getSanitizedContent();
+                this.updateSelectedObject(name, sanitizedContent);
+                await this.db.save(this.selected);
+                await this.nostrClient.publish(this.selected);
+                this.hideEditor();
+                await this.renderList();
+                this.showNotification("Object saved.", "success");
+            } catch (error) {
+                this.handleSaveError(error);
+            }
+        }
+
+        getSanitizedContent() {
+            return DOMPurify.sanitize(this.editor.getContent(), {
+                ALLOWED_TAGS: ["br", "b", "i", "span"],
+                ALLOWED_ATTR: ["class", "contenteditable", "tabindex", "id", "aria-label"]
+            });
+        }
+
+        updateSelectedObject(name, content) {
+            this.selected = {
+                ...this.selected,
+                name,
+                content,
+                tags: this.extractTags(content),
+                updatedAt: formatISO(new Date())
+            };
+        }
+
+        handleSaveError(error) {
+            this.showNotification("Failed to save object.", "error");
+            console.error("Failed to save object:", error);
+        }
+
+        extractTags(html) {
+            const doc = new DOMParser().parseFromString(html, "text/html");
+            return Array.from(doc.querySelectorAll(".inline-tag")).map(el => this.extractTagData(el));
+        }
+
+        extractTagData(element) {
+            const name = element.querySelector(".tag-name").textContent.trim();
+            const condition = element.querySelector(".tag-condition").value;
+            const tagDef = getTagDefinition(name);
+            const valueElements = element.querySelectorAll(".tag-value");
+
+            return {
+                name,
+                condition,
+                value: this.extractTagValue(tagDef, condition, valueElements)
+            };
+        }
+
+        extractTagValue(tagDef, condition, valueElements) {
+            if (condition === "between" && tagDef.name === "Number") {
+                return { lower: valueElements[0]?.value, upper: valueElements[1]?.value };
+            } else if (condition === "between" && tagDef.name === "Time") {
+                return { start: valueElements[0]?.value, end: valueElements[1]?.value };
+            } else if (tagDef.name === "Color") {
+                return valueElements[0]?.value;
+            }
+            return valueElements[0]?.value;
+        }
+
+        updateCurrentObject() {
+            if (!this.selected) return;
+
+            const sanitizedContent = this.getSanitizedContent();
+            this.selected.content = sanitizedContent;
+            this.selected.tags = this.extractTags(sanitizedContent);
+            this.selected.updatedAt = formatISO(new Date());
+
+            this.db.save(this.selected)
+                .then(() => {
+                    this.nostrClient.publish(this.selected);
+                    this.editor.setContent(sanitizedContent); // Refresh editor content
+                })
+                .catch(() => this.showNotification("Object update failed.", "error"));
+        }
+
+        showNotification(message, type = "info") {
+            this.notificationQueue.push({ message, type });
+            if (!this.notificationTimeout) { this.showNextNotification(); }
+        }
+
+        showNextNotification() {
+            if (this.notificationQueue.length === 0) {
+                this.notificationTimeout = null;
+                return;
+            }
+
+            const { message, type } = this.notificationQueue.shift();
+            const $notification = $(`<div class="notification ${type}">${message}</div>`).appendTo("#notification-area");
+
+            $notification.fadeIn(300, () => {
+                this.notificationTimeout = setTimeout(() => {
+                    $notification.fadeOut(300, () => {
+                        $notification.remove();
+                        this.showNextNotification(); // Show the next notification
+                    });
+                }, 4000);
+            });
+        }
+    }
+
+    $(() => { window.app = new App(); });
+
+</script>
+</body>
+</html>
