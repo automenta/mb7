@@ -3,6 +3,7 @@ import { formatISO } from "date-fns";
 import { ContentView, formatDate, MainContent, Menubar } from "./view.app.js";
 import { FriendsView } from "./view.friends.js";
 import { SettingsView } from "./view.settings.js";
+import { EditView } from "./view.edit.js";
 import * as Net from "./net.js";
 import * as DB from "./db.js";
 import{Matcher}from "./match.js";
@@ -20,8 +21,7 @@ class App{
         this.nostrClient = new Net.Nostr(this);  // Initialize Nostr client and make it globally accessible within the app
         this.sidebar = new Menubar(this);
         this.mainContent = new MainContent();
-        this.editor = new Edit();
-        this.$editorContainer = $("#editor-container");
+        //this.$editorContainer = $("#editor-container");
         this.$objectName = $("#object-name");
         this.$createdAt = $("#created-at");
 
@@ -100,8 +100,9 @@ class App{
             }
        };
         views["new_object"] = () => {
-            this.createNewObject();
-            return this.editor;
+            const editView = new EditView(this);
+            this.createNewObject(editView);
+            return editView;
         };
 
         const view = (views[viewName] || views["default"])();
@@ -136,9 +137,11 @@ class App{
             $list.html("<p>No objects found.</p>");
        }
    }
-
-    createNewObject(){
-        this.showEditor({
+createNewObject(editView){
+    editView.setContent(""); // Clear the editor content
+    this.showEditor({
+        id: nanoid(),
+        editView: editView,
             id: nanoid(),
             name: "",
             content: "",
@@ -155,10 +158,10 @@ class App{
 
     showEditor(object){
         this.selected = object;
-        this.$editorContainer.show();
-        this.$objectName.val(object.name || "");
-        this.$createdAt.text(object.createdAt ? formatDate(object.createdAt) : "");
-        this.editor.setContent(object.content || "");
+        this.mainContent.showView(object.editView);
+        $("#object-name").val(object.name || "");
+        $("#created-at").text(object.createdAt ? formatDate(object.createdAt) : "");
+        object.editView.setContent(object.content || "");
    }
 
     hideEditor(){

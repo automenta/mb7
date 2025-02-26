@@ -148,13 +148,13 @@ export class Edit extends UIComponent{
     ontologyBrowser;
     toolbar;
 
-    constructor(){
-        super("#editor");
-        this.ontologyBrowser = new OntologyBrowser((tagData) => this.insertTag(tagData));
-        this.createUI();
-        this.setupFormattingButtons();
-        this.bindEvents();
-    }
+    constructor(toolbar){
+                super("#editor");
+                this.toolbar = toolbar;
+                this.ontologyBrowser = new OntologyBrowser((tag) => this.insertTag(tag));
+                this.setupFormattingButtons();
+                this.bindEvents();
+            }
 
     bindEvents() {
         this.$el.on("mouseup keyup", () => this.#savedSelection = window.getSelection()?.rangeCount > 0 ? window.getSelection().getRangeAt(0).cloneRange() : null)
@@ -286,9 +286,9 @@ export class Edit extends UIComponent{
    }
 
     insertTag(tagData){
-        const tagComponent = new InlineTag(tagData, this.onUpdate);
-        this.insertNodeAtCaret(tagComponent.$el[0]);
-   }
+            const tagComponent = new InlineTag({ name: tagData.category, condition: tagData.condition }, this.onUpdate);
+            this.insertNodeAtCaret(tagComponent.$el[0]);
+        }
 
     serialize(){
         let content = "";
@@ -329,26 +329,23 @@ export class Edit extends UIComponent{
    }
 
     setupFormattingButtons(){
-        const cmdMap = [
-            [$("<button title='Bold (Ctrl+B)'><strong style='font-size: 1.2em;'>B</strong></button>"), "bold"],
-            [$("<button title='Italic (Ctrl+I)'><em style='font-size: 1.2em;'>I</em></button>"), "italic"],
-            [$("<button title='Underline (Ctrl+U)'><u style='font-size: 1.2em;'>U</u></button>"), "underline"],
-            [$("<button title='Heading 1'><h1 style='font-size: 1.2em;'>H1</h1></button>"), "formatBlock", "H1"],
-            [$("<button title='Heading 2'><h2 style='font-size: 1.2em;'>H2</h2></button>"), "formatBlock", "H2"],
-            [$("<button title='Heading 3'><h3 style='font-size: 1.2em;'>H3</h3></button>"), "formatBlock", "H3"],
-            [$("<button title='Unordered List'>UL</button>"), "insertUnorderedList"],
-            [$("<button title='Ordered List'>OL</button>"), "insertOrderedList"],
-            [$("<button title='Clear Formatting'>Unformat</button>"), "removeFormat"],
-        ];
-        cmdMap.forEach(([btn, cmd, arg]) =>{
-            btn.on("click", () => document.execCommand(cmd, false, arg || null));
-            this.toolbar.append(btn);
-       });
-   }
+                const cmdMap = [
+                    [$("<button title='Bold (Ctrl+B)'><strong style='font-size: 1.2em;'>B</strong></button>"), "bold"],
+                    [$("<button title='Italic (Ctrl+I)'><em style='font-size: 1.2em;'>I</em></button>"), "italic"],
+                    [$("<button title='Underline (Ctrl+U)'><u style='font-size: 1.2em;'>U</u></button>"), "underline"],
+                    [$("<button title='Heading 1'><h1 style='font-size: 1.2em;'>H1</h1></button>"), "formatBlock", "H1"],
+                    [$("<button title='Heading 2'><h2 style='font-size: 1.2em;'>H2</h2></button>"), "formatBlock", "H2"],
+                    [$("<button title='Heading 3'><h3 style='font-size: 1.2em;'>H3</h3></button>"), "formatBlock", "H3"],
+                    [$("<button title='Unordered List'>UL</button>"), "insertUnorderedList"],
+                    [$("<button title='Ordered List'>OL</button>"), "insertOrderedList"],
+                    [$("<button title='Clear Formatting'>Unformat</button>"), "removeFormat"],
+                ];
+                cmdMap.forEach(([btn, cmd, arg]) =>{
+                    btn.on("click", () => document.execCommand(cmd, false, arg || null));
+                    this.toolbar.append(btn);
+                });
+            }
 
-    createUI(){
-        this.toolbar = $("<div></div>").attr("id", "toolbar").insertBefore(this.$el);
-   }
 
     async applyAutosuggestUnderlines(){
         const walker = document.createTreeWalker(this.$el[0], NodeFilter.SHOW_TEXT,{

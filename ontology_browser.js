@@ -10,24 +10,24 @@ class OntologyBrowser extends UIComponent {
     }
 
     build() {
-        Object.keys(TagOntology).forEach(cat => {
-            const catDiv = document.createElement("div");
-            catDiv.className = "category";
-            catDiv.textContent = cat;
-            TagOntology[cat].conditions.forEach(condition => {
-                const label = condition;
-                const tagItem = document.createElement("div");
-                tagItem.className = "tag-item";
-                tagItem.textContent = label;
-                tagItem.onclick = () => {
-                    this.onTagSelect(condition);
-                    this.hide();
-                };
-                catDiv.appendChild(tagItem);
+            Object.keys(TagOntology).forEach(cat => {
+                const catDiv = document.createElement("div");
+                catDiv.className = "category";
+                catDiv.textContent = cat;
+                TagOntology[cat].conditions.forEach(condition => {
+                    const label = condition;
+                    const tagItem = document.createElement("div");
+                    tagItem.className = "tag-item";
+                    tagItem.textContent = label;
+                    tagItem.onclick = () => {
+                        this.onTagSelect({ category: cat, condition: condition });
+                        this.hide();
+                    };
+                    catDiv.appendChild(tagItem);
+                });
+                this.$el[0].appendChild(catDiv);
             });
-            this.$el[0].appendChild(catDiv);
-        });
-    }
+        }
 
     show() {
         this.$el.show();
