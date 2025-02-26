@@ -1,175 +1,163 @@
 import DOMPurify from 'dompurify';
 import $ from 'jquery';
 import { nanoid } from 'nanoid';
-import{UIComponent}from "./view.js";
-import{TagOntology}from './ontology.js';
+import { UIComponent } from "./view.js";
+import { TagOntology } from './ontology.js';
+
+// Preprocess TagOntology to create LowerCaseTagOntology with lowercase names
 const LowerCaseTagOntology = {};
 for (const cat in TagOntology) {
     LowerCaseTagOntology[cat] = TagOntology[cat];
 }
-import{OntologyBrowser}from './ontology_browser.js';
 
-class InlineTag extends UIComponent{
-    constructor(tagData, onUpdate){
+import { OntologyBrowser } from './ontology_browser.js';
+
+// Helper function to get tag definition (assumed to be available)
+function getTagDefinition(tagName) {
+    for (const cat in TagOntology) {
+        const tag = TagOntology[cat].find(t => t.name === tagName);
+        if (tag) return tag;
+    }
+    throw new Error(`Tag definition not found for ${tagName}`);
+}
+
+class InlineTag extends UIComponent {
+    constructor(tagData, onUpdate) {
         super(`<span class="inline-tag" contenteditable="false" tabindex="0" id="${nanoid()}"></span>`);
-        this.tagData ={
+        this.tagData = {
             name: tagData.name,
             condition: tagData.condition || getTagDefinition(tagData.name).conditions[0],
             value: tagData.value ?? ''
-       };
+        };
         this.onUpdate = onUpdate;
+        this.$el.data('instance', this); // Store instance reference for serialization
         this.render();
-   }
+    }
 
-    render(){
-        const{name, condition, value}= this.tagData;
+    render() {
+        const { name, condition, value } = this.tagData;
         const tagDef = getTagDefinition(name);
         this.$el.empty().append(
             `<span class="tag-name">${name}</span>`,
             `<select class="tag-condition">${tagDef.conditions.map(c => `<option value="${c}" ${c === condition ? 'selected' : ''}>${c}</option>`).join('')}</select>`,
-            this.createValueInput(tagDef, condition, value),
+            this.createValueInput(tagDef),
             `<button class="tag-remove">×</button>`
         );
         this.bindEvents();
-   }
+    }
 
-    createValueInput(tagDef, condition, value){
-        const{type, unit, options}= tagDef;
-        const{mode, min, max}= this.tagData;
+    createValueInput(tagDef) {
+        const { type, unit, options } = tagDef;
+        const { condition, value } = this.tagData;
 
-        if (["number", "range"].includes(type)){
-            if (mode === "is"){
-                const inp = $(`<input type="number" value="${this.tagData.value ?? ""}" placeholder="Value">`);
-                inp.on("input", e =>{
+        if (["number", "range"].includes(type)) {
+            if (condition === "is") {
+                const inp = $(`<input type="number" value="${value ?? ""}" placeholder="Value">`);
+                inp.on("input", e => {
                     const p = parseFloat(e.target.value);
                     if (!isNaN(p)) this.tagData.value = p;
                     this.onUpdate?.();
-               });
+                });
                 return inp;
-                //if (this.tagData.unit) this.$el.append($(`<span class="unit-label"> ${this.tagData.unit}</span>`));
-           }else if (mode === "is between"){
-                const inpMin = $(`<input type="number" value="${min ?? ""}" placeholder="Min">`);
-                inpMin.on("input", e =>{
+            } else if (condition === "is between") {
+                // Ensure value is an object for "is between"
+                if (typeof value !== "object") this.tagData.value = { lower: "", upper: "" };
+                const inpLower = $(`<input type="number" value="${value.lower ?? ""}" placeholder="Lower">`);
+                inpLower.on("input", e => {
                     const p = parseFloat(e.target.value);
-                    this.tagData.min = isNaN(p) ? 0 : p;
+                    this.tagData.value.lower = isNaN(p) ? "" : p;
                     this.onUpdate?.();
-               });
-                const inpMax = $(`<input type="number" value="${max ?? ""}" placeholder="Max">`);
-                inpMax.on("input", e =>{
+                });
+                const inpUpper = $(`<input type="number" value="${value.upper ?? ""}" placeholder="Upper">`);
+                inpUpper.on("input", e => {
                     const p = parseFloat(e.target.value);
-                    this.tagData.max = isNaN(p) ? 0 : p;
+                    this.tagData.value.upper = isNaN(p) ? "" : p;
                     this.onUpdate?.();
-               });
-                return [inpMin, " and ", inpMax];
-                //if (this.tagData.unit) this.$el.append($(`<span class="unit-label"> ${this.tagData.unit}</span>`));
-           }else if (mode === "is below"){
-                const inp = $(`<input type="number" value="${max ?? ""}" placeholder="Max">`);
-                inp.on("input", e =>{
+                });
+                return [inpLower, " and ", inpUpper];
+            } else if (condition === "is below") {
+                const inp = $(`<input type="number" value="${value ?? ""}" placeholder="Max">`);
+                inp.on("input", e => {
                     const p = parseFloat(e.target.value);
-                    this.tagData.max = isNaN(p) ? 0 : p;
+                    this.tagData.value = isNaN(p) ? "" : p;
                     this.onUpdate?.();
-               });
+                });
                 return inp;
-                //if (this.tagData.unit) this.$el.append($(`<span class="unit-label"> ${this.tagData.unit}</span>`));
-           }else if (mode === "is above"){
-                const inp = $(`<input type="number" value="${min ?? ""}" placeholder="Min">`);
-                inp.on("input", e =>{
+            } else if (condition === "is above") {
+                const inp = $(`<input type="number" value="${value ?? ""}" placeholder="Min">`);
+                inp.on("input", e => {
                     const p = parseFloat(e.target.value);
-                    this.tagData.min = isNaN(p) ? 0 : p;
+                    this.tagData.value = isNaN(p) ? "" : p;
                     this.onUpdate?.();
-               });
+                });
                 return inp;
-                //if (this.tagData.unit) this.$el.append($(`<span class="unit-label"> ${this.tagData.unit}</span>`));
-           }
-       }else if (type === "time"){
-            // TODO: Implement time input
+            }
+        } else if (type === "time") {
+            // Placeholder for time input
             return document.createTextNode("Time input not implemented");
-       }else if (type === "color"){
-            // TODO: Implement color input
+        } else if (type === "color") {
+            // Placeholder for color input
             return document.createTextNode("Color input not implemented");
-       }else if (type === "list"){
+        } else if (type === "list") {
             const sel = $(`<select></select>`);
             (options || []).forEach(opt => sel.append($(`<option value="${opt}">${opt}</option>`)));
-            sel.val(this.tagData.value);
-            sel.on("change", () =>{
+            sel.val(value);
+            sel.on("change", () => {
                 this.tagData.value = sel.val();
                 this.onUpdate?.();
-           });
+            });
             return sel;
-       }else if (type === "location"){
-            // TODO: Implement location input
+        } else if (type === "location") {
+            // Placeholder for location input
             return document.createTextNode("Location input not implemented");
-       }
+        }
         return document.createTextNode("Unknown input type");
-   }
+    }
 
-    bindEvents(){
-        this.$el.on("change", ".tag-condition", (e) => this.setCondition(e.target.value))
-            .on("click", ".tag-remove", () =>{
+    bindEvents() {
+        this.$el.on("change", ".tag-condition", e => this.setCondition(e.target.value))
+            .on("click", ".tag-remove", () => {
                 this.remove();
                 this.onUpdate?.();
-           });
-   }
+            });
+    }
 
-    setCondition(newCondition){
+    setCondition(newCondition) {
         this.tagData.condition = newCondition;
-        this.tagData.value = (newCondition === "between") ?{lower: "", upper: ""}: '';
+        // Reset value based on condition
+        this.tagData.value = (newCondition === "is between") ? { lower: "", upper: "" } : "";
         this.render();
         this.onUpdate?.();
-   }
-
-    updateValue(){
-        const tagDef = getTagDefinition(this.tagData.name);
-        let newValue;
-        // ... (existing between logic for time and number)
-
-        if (this.tagData.condition === "between" && tagDef.name === "number"){
-            newValue ={
-                lower: this.$el.find(".lower").val(),
-                upper: this.$el.find(".upper").val(),
-           };
-       }else{
-            newValue = this.$el.find(".tag-value").val();
-       }
-
-        if (tagDef.validate(newValue, this.tagData.condition)){
-            this.tagData.value = newValue;
-            this.$el.find(".tag-value").removeClass("invalid-tag"); // Remove error class
-            this.onUpdate?.();
-       }else{
-            this.$el.find(".tag-value").addClass("invalid-tag"); // Add error class
-            // Optionally show an inline error message
-       }
-   }
+    }
 }
 
-export class Edit extends UIComponent{
+export class Edit extends UIComponent {
     #savedSelection = null;
     ontologyBrowser;
     toolbar;
 
-    constructor(toolbar){
-                super("#editor");
-                this.toolbar = toolbar;
-                this.ontologyBrowser = new OntologyBrowser((tag) => this.insertTag(tag));
-                this.setupFormattingButtons();
-                this.bindEvents();
-            }
+    constructor(toolbar) {
+        super("#editor");
+        this.toolbar = $(toolbar);
+        this.ontologyBrowser = new OntologyBrowser(tag => this.insertTag(tag));
+        this.setupFormattingButtons();
+        this.bindEvents();
+    }
 
     bindEvents() {
-        this.$el.on("mouseup keyup", () => this.#savedSelection = window.getSelection()?.rangeCount > 0 ? window.getSelection().getRangeAt(0).cloneRange() : null)
-            .on("keydown", (e) => {
-                if (e.code === "Enter") {
-                    e.preventDefault();
-                    this.insertLineBreak();
-                } else {
-                    this.setupKeyboardShortcuts(e);
-                }
-            })
-            .on("input", () => {
-                this.sanitizeContent();
-                this.#savedSelection && this.restoreSelection();
-            });
+        this.$el.on("mouseup keyup", () => {
+            this.#savedSelection = window.getSelection()?.rangeCount > 0 ? window.getSelection().getRangeAt(0).cloneRange() : null;
+        }).on("keydown", e => {
+            if (e.code === "Enter") {
+                e.preventDefault();
+                this.insertLineBreak();
+            } else {
+                this.setupKeyboardShortcuts(e);
+            }
+        }).on("input", () => {
+            this.sanitizeContent();
+            if (this.#savedSelection) this.restoreSelection();
+        });
     }
 
     setupKeyboardShortcuts(e) {
@@ -191,84 +179,65 @@ export class Edit extends UIComponent{
         }
     }
 
-    setupKeyboardShortcuts(e) {
-        if (e.ctrlKey || e.metaKey) {
-            switch (e.key.toLowerCase()) {
-                case 'b':
-                    e.preventDefault();
-                    document.execCommand('bold', false, null);
-                    break;
-                case 'i':
-                    e.preventDefault();
-                    document.execCommand('italic', false, null);
-                    break;
-                case 'u':
-                    e.preventDefault();
-                    document.execCommand('underline', false, null);
-                    break;
-            }
-        }
-    }
-
-    insertLineBreak(){
+    insertLineBreak() {
         if (!this.#savedSelection) return;
         const br = document.createElement("br");
         this.#savedSelection.insertNode(br);
-        this.isCaretAtEnd() && this.#savedSelection.insertNode(document.createTextNode("\u200B"));
+        if (this.isCaretAtEnd()) this.#savedSelection.insertNode(document.createTextNode("\u200B"));
         this.#savedSelection.setStartAfter(br);
         this.#savedSelection.collapse(true);
         window.getSelection().removeAllRanges();
         window.getSelection().addRange(this.#savedSelection);
         this.#savedSelection = window.getSelection().getRangeAt(0).cloneRange();
-   }
+    }
 
-    sanitizeContent(){
+    sanitizeContent() {
         const current = this.$el.html();
-        const sanitized = DOMPurify.sanitize(current,{
+        const sanitized = DOMPurify.sanitize(current, {
             ALLOWED_TAGS: ["br", "b", "i", "span"],
-            ALLOWED_ATTR: ["class", "contenteditable", "tabindex", "id", "aria-label"]
-       });
-        current !== sanitized && this.$el.html(sanitized);
-   }
+            ALLOWED_ATTR: ["class", "contenteditable", "tabindex", "id"]
+        });
+        if (current !== sanitized) this.$el.html(sanitized);
+    }
 
-    restoreSelection(){
+    restoreSelection() {
         const sel = window.getSelection();
         sel.removeAllRanges();
         sel.addRange(this.#savedSelection);
-   }
+    }
 
-    ensureFocus(){
+    ensureFocus() {
         if (this.$el.is(":focus")) return;
         this.$el.focus();
-        if (!window.getSelection()?.rangeCount){
+        if (!window.getSelection()?.rangeCount) {
             const range = document.createRange();
             range.selectNodeContents(this.$el[0]);
             range.collapse(false);
             window.getSelection().removeAllRanges();
             window.getSelection().addRange(range);
-            this.#savedSelection = window.getSelection().getRangeAt(0).cloneRange();
-       }
-   }
+            this.#savedSelection = range.cloneRange();
+        }
+    }
 
-    isCaretAtEnd(){
+    isCaretAtEnd() {
         if (!window.getSelection()?.rangeCount) return false;
         const range = window.getSelection().getRangeAt(0);
         const endNode = range.endContainer;
         return endNode.nodeType === Node.TEXT_NODE
             ? range.endOffset === endNode.textContent.length
             : range.endOffset === endNode.childNodes.length || (endNode === this.$el[0] && range.endOffset === this.$el[0].childNodes.length);
-   }
+    }
 
-    getContent(){
+    getContent() {
         return this.$el.html();
-   }
+    }
 
-    setContent(html){
+    setContent(html) {
         this.$el.html(html);
         this.sanitizeContent();
-   }
+    }
 
-    insertNodeAtCaret(node){
+    insertNodeAtCaret(node) {
         this.ensureFocus();
         this.restoreSelection();
         const sel = window.getSelection();
@@ -278,134 +247,148 @@ export class Edit extends UIComponent{
         range.deleteContents();
         range.insertNode(node);
         range.setStartAfter(node);
-        this.isCaretAtEnd() ? range.insertNode(document.createTextNode("\u200B")) : null;
+        if (this.isCaretAtEnd()) range.insertNode(document.createTextNode("\u200B"));
         range.collapse(true);
         sel.removeAllRanges();
         sel.addRange(range);
-        this.#savedSelection = window.getSelection().getRangeAt(0).cloneRange();
-   }
+        this.#savedSelection = range.cloneRange();
+    }
 
-    insertTag(tagData){
-            const tagComponent = new InlineTag({ name: tagData.category, condition: tagData.condition }, this.onUpdate);
-            this.insertNodeAtCaret(tagComponent.$el[0]);
-        }
+    insertTag(tagData) {
+        // Use tagData.name instead of tagData.category
+        const tagComponent = new InlineTag(
+            { name: tagData.name, condition: tagData.condition || "is" },
+            () => this.applyAutosuggestUnderlines()
+        );
+        this.insertNodeAtCaret(tagComponent.$el[0]);
+    }
 
-    serialize(){
+    serialize() {
         let content = "";
-        this.$el.contents().each((index, element) =>{
-            if (element.nodeType === Node.TEXT_NODE){
+        this.$el.contents().each((_, element) => {
+            if (element.nodeType === Node.TEXT_NODE) {
                 content += element.textContent;
-           }else if (element.classList?.contains("inline-tag")){
-                const tagData = element.tagData;
-                content += `[TAG:${JSON.stringify(tagData)}]`;
-           }else if (element.tagName === "BR"){
+            } else if (element.classList?.contains("inline-tag")) {
+                const instance = $(element).data('instance');
+                if (instance) {
+                    content += `[TAG:${JSON.stringify(instance.tagData)}]`;
+                } else {
+                    console.warn("Inline tag missing instance:", element);
+                    content += element.outerHTML;
+                }
+            } else if (element.tagName === "BR") {
                 content += "\n";
-           }
-       });
+            } else {
+                content += element.outerHTML;
+            }
+        });
         return content;
-   }
+    }
 
-    deserialize(text){
+    deserialize(text) {
         this.$el.empty();
         const tagRegex = /\[TAG:(.*?)\]/g;
-        let lastIndex = 0, match;
-        while ((match = tagRegex.exec(text)) !== null){
-            if (match.index > lastIndex){
+        let lastIndex = 0;
+        let match;
+        while ((match = tagRegex.exec(text)) !== null) {
+            if (match.index > lastIndex) {
                 this.$el.append(document.createTextNode(text.substring(lastIndex, match.index)));
-           }
-            try{
+            }
+            try {
                 const data = JSON.parse(match[1]);
-                const tag = new InlineTag(data, this.onUpdate);
+                const tag = new InlineTag(data, () => this.applyAutosuggestUnderlines());
                 this.insertNodeAtCaret(tag.$el[0]);
-           }catch (err){
+            } catch (err) {
                 console.error("Failed to parse tag data:", err);
                 this.$el.append(document.createTextNode(match[0]));
-           }
-            lastIndex = tagRegex.lastIndex;
-       }
-        if (lastIndex < text.length){
-            this.$el.append(document.createTextNode(text.substring(lastIndex)));
-       }
-   }
-
-    setupFormattingButtons(){
-                const cmdMap = [
-                    [$("<button title='Bold (Ctrl+B)'><strong style='font-size: 1.2em;'>B</strong></button>"), "bold"],
-                    [$("<button title='Italic (Ctrl+I)'><em style='font-size: 1.2em;'>I</em></button>"), "italic"],
-                    [$("<button title='Underline (Ctrl+U)'><u style='font-size: 1.2em;'>U</u></button>"), "underline"],
-                    [$("<button title='Heading 1'><h1 style='font-size: 1.2em;'>H1</h1></button>"), "formatBlock", "H1"],
-                    [$("<button title='Heading 2'><h2 style='font-size: 1.2em;'>H2</h2></button>"), "formatBlock", "H2"],
-                    [$("<button title='Heading 3'><h3 style='font-size: 1.2em;'>H3</h3></button>"), "formatBlock", "H3"],
-                    [$("<button title='Unordered List'>UL</button>"), "insertUnorderedList"],
-                    [$("<button title='Ordered List'>OL</button>"), "insertOrderedList"],
-                    [$("<button title='Clear Formatting'>Unformat</button>"), "removeFormat"],
-                ];
-                cmdMap.forEach(([btn, cmd, arg]) =>{
-                    btn.on("click", () => document.execCommand(cmd, false, arg || null));
-                    this.toolbar.append(btn);
-                });
             }
+            lastIndex = tagRegex.lastIndex;
+        }
+        if (lastIndex < text.length) {
+            this.$el.append(document.createTextNode(text.substring(lastIndex)));
+        }
+    }
 
+    setupFormattingButtons() {
+        const cmdMap = [
+            [$("<button title='Bold (Ctrl+B)'><strong style='font-size: 1.2em;'>B</strong></button>"), "bold"],
+            [$("<button title='Italic (Ctrl+I)'><em style='font-size: 1.2em;'>I</em></button>"), "italic"],
+            [$("<button title='Underline (Ctrl+U)'><u style='font-size: 1.2em;'>U</u></button>"), "underline"],
+            [$("<button title='Heading 1'><h1 style='font-size: 1.2em;'>H1</h1></button>"), "formatBlock", "H1"],
+            [$("<button title='Heading 2'><h2 style='font-size: 1.2em;'>H2</h2></button>"), "formatBlock", "H2"],
+            [$("<button title='Heading 3'><h3 style='font-size: 1.2em;'>H3</h3></button>"), "formatBlock", "H3"],
+            [$("<button title='Unordered List'>UL</button>"), "insertUnorderedList"],
+            [$("<button title='Ordered List'>OL</button>"), "insertOrderedList"],
+            [$("<button title='Clear Formatting'>Unformat</button>"), "removeFormat"]
+        ];
+        cmdMap.forEach(([btn, cmd, arg]) => {
+            btn.on("click", () => document.execCommand(cmd, false, arg || null));
+            this.toolbar.append(btn);
+        });
+    }
 
-    async applyAutosuggestUnderlines(){
-        const walker = document.createTreeWalker(this.$el[0], NodeFilter.SHOW_TEXT,{
+    async applyAutosuggestUnderlines() {
+        const walker = document.createTreeWalker(this.$el[0], NodeFilter.SHOW_TEXT, {
             acceptNode: node => (node.parentNode.closest(".inline-tag, .autosuggest") ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT)
-       });
+        });
         const wordRegex = /\b([a-zA-Z]{3,})\b/g;
         let node;
-        while ((node = walker.nextNode())){
+        while ((node = walker.nextNode())) {
             if (!node.nodeValue.trim()) continue;
             wordRegex.lastIndex = 0;
-            let match, wrap = false;
-            while ((match = wordRegex.exec(node.nodeValue)) !== null){
-                if (await this.matchesOntology(match[1])){
+            let match;
+            let wrap = false;
+            while ((match = wordRegex.exec(node.nodeValue)) !== null) {
+                if (await this.matchesOntology(match[1])) {
                     wrap = true;
                     break;
-               }
-           }
+                }
+            }
             if (wrap) this.wrapMatches(node, wordRegex);
-       }
-   }
+        }
+    }
 
-    async matchesOntology(word){
-            const lower = word.toLowerCase();
-            for (const cat in LowerCaseTagOntology){
-                for (const t of LowerCaseTagOntology[cat]){
-                    if (t.nameLower.startsWith(lower)) return true;
-               }
-           }
-            return false;
-       }
+    async matchesOntology(word) {
+        const lower = word.toLowerCase();
+        for (const cat in LowerCaseTagOntology) {
+            for (const t of LowerCaseTagOntology[cat]) {
+                if (t.nameLower.startsWith(lower)) return true;
+            }
+        }
+        return false;
+    }
 
-    wrapMatches(textNode, regex){
+    wrapMatches(textNode, regex) {
         const text = textNode.nodeValue;
         const frag = document.createDocumentFragment();
-        let lastIndex = 0, match;
+        let lastIndex = 0;
         regex.lastIndex = 0;
-        while ((match = regex.exec(text)) !== null){
-            const start = match.index, end = regex.lastIndex;
+        let match;
+        while ((match = regex.exec(text)) !== null) {
+            const start = match.index;
+            const end = regex.lastIndex;
             if (start > lastIndex) frag.appendChild(document.createTextNode(text.slice(lastIndex, start)));
-            const span = $("<span></span>").addClass("autosuggest").text(match[1]);
+            const span = $("<span>").addClass("autosuggest").text(match[1]);
             frag.appendChild(span[0]);
             lastIndex = end;
-       }
+        }
         if (lastIndex < text.length) frag.appendChild(document.createTextNode(text.slice(lastIndex)));
         textNode.parentNode.replaceChild(frag, textNode);
-   }
+    }
 
-    showSuggestionsForSpan(span){
+    showSuggestionsForSpan(span) {
         const word = span.textContent;
         const suggestions = [];
-        Object.keys(TagOntology).forEach(cat =>{
-            TagOntology[cat].forEach(tag =>{
-                if (tag.name.toLowerCase().startsWith(word.toLowerCase())){
-                    suggestions.push({displayText: tag.name, tagData: tag, span});
-               }
-           });
-       });
+        Object.keys(TagOntology).forEach(cat => {
+            TagOntology[cat].forEach(tag => {
+                if (tag.name.toLowerCase().startsWith(word.toLowerCase())) {
+                    suggestions.push({ displayText: tag.name, tagData: tag, span });
+                }
+            });
+        });
         if (!suggestions.length) return;
         const rect = span.getBoundingClientRect();
-        //this.suggestionDropdown.show(suggestions, rect.left + window.scrollX, rect.bottom + window.scrollY,
-        // choice => this.insertTagFromSuggestion(choice));
-   }
+        // Placeholder for suggestion dropdown (not implemented in snippet)
+        console.log("Suggestions:", suggestions, "at", rect.left, rect.bottom);
+    }
 }
