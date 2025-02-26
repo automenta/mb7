@@ -46,7 +46,7 @@ export class FriendsView extends View {
             await this.app.db.addFriend(friend);
             this.app.showNotification(`Added friend: ${NostrTools.nip19.npubEncode(pubkey)}`, "success");
             this.app.nostrClient.subscribe([{kinds: [0], authors: [pubkey]}], {id: `friend-profile-${pubkey}`});
-            this.loadFriends();
+            await this.loadFriends();
             this.app.nostrClient.connectToPeer(pubkey); // Connect immediately
 
         } catch (error) {
@@ -84,7 +84,7 @@ export class FriendsView extends View {
         try {
             await this.app.db.removeFriend(pubkey);
             this.app.nostrClient.unsubscribe(`friend-profile-${pubkey}`);
-            this.loadFriends(); // Refresh list after removing.
+            await this.loadFriends(); // Refresh list after removing.
         } catch (error) {
             this.app.showNotification("Failed to remove friend.", "error");
         }

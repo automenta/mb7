@@ -1,6 +1,8 @@
-import {format, isValid as isValidDate, parseISO} from "https://cdn.jsdelivr.net/npm/date-fns@2.29.3/esm/view.app.js";
+import $ from 'jquery';
+import _ from 'lodash';
+import {format, isValid as isValidDate, parseISO} from "date-fns";
 import {UIComponent, View} from "./view.js";
-import {Tagger} from './edit.js';
+import {Edit} from './edit.js';
 
 export const formatDate = (timestamp) =>
     timestamp && isValidDate(typeof timestamp === "string" ? parseISO(timestamp) : new Date(timestamp))
@@ -31,7 +33,7 @@ export class ContentView extends View {
             <button id="delete-object-btn">Delete Object</button>
         </div>`
         );
-        this.tagger = new Tagger(this.app.editor, () => this.app.updateCurrentObject());
+        this.editor = new Edit();
     }
 
     bindEvents() {
@@ -59,7 +61,6 @@ export class DashboardView extends View {
             <h3>Recent Activity</h3><div id="recent-activity"></div>
             <h3>Tag Cloud</h3><div id="tag-cloud"></div>`
         );
-        //this.app.displayPubkeyOnDashboard(); //display pubkey on load
     }
 
     async render() {
@@ -68,8 +69,9 @@ export class DashboardView extends View {
         const recent = await this.app.db.getRecent(5);
         this.$el.find("#recent-activity").html(recent.map(obj => `<p><strong>${obj.name}</strong> - Updated: ${formatDate(obj.updatedAt)}</p>`).join(''));
         this.renderTagCloud();
-                this.displayPubkeyOnDashboard();
+        this.displayPubkeyOnDashboard();
     }
+
     displayPubkeyOnDashboard() {
         if (window.keys?.pub && !$("#dashboard-view #pubkey-display").length) {
             $("#dashboard-view").append(`<p id="pubkey-display">Your Public Key: ${NostrTools.nip19.npubEncode(window.keys.pub)}</p>`);
@@ -100,8 +102,11 @@ export class Sidebar extends View {
                 view: "content"
             }, {label: "Settings", view: "settings"}, {label: "Friends", view: "friends"}]),
             this.buildSection("Links", [{label: "Recent Items", list: "recent"}]),
-            $("<h3>Network</h3>", `<div id="network-status">Connecting...</div><hr>`),
-            $("<div id='nostr-feed'></div>")
+            this.buildSection("Network", [{
+                label: `<div id="network-status">Connecting...</div><hr>`,
+                list: "network"
+            }]),
+            $(`<div id='nostr-feed'></div>`)
         );
     }
 
@@ -129,4 +134,3 @@ export class MainContent extends UIComponent {
         this.$el.find(".content").empty().append(view.$el);
     }
 }
-

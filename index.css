@@ -1,18 +1,19 @@
 /* styles.css */
-body {
-    font-family: Arial, sans-serif;
-    margin: 0;
+/* Combined body styles */
+body{
+    font-family: sans-serif; /* Overriding Arial, sans-serif */
+    margin: 1em; /* Overriding 0 */
     background-color: #f8f9fa;
     color: #333;
 }
 
-.container {
+.container{
     display: flex;
     height: 100vh;
 }
 
 /* Sidebar */
-.sidebar-left {
+.sidebar-left{
     background-color: #343a40;
     color: #fff;
     width: 250px;
@@ -20,38 +21,40 @@ body {
     overflow-y: auto;
 }
 
-.sidebar-left a {
+.sidebar-left a{
     color: #adb5bd;
     text-decoration: none;
 }
 
 .sidebar-left a:hover,
-.sidebar-left a:focus {
+.sidebar-left a:focus{
     color: #fff;
 }
 
 /* Main Content */
-.main-content {
+.main-content{
     flex: 1;
     padding: 1em;
     overflow-y: auto;
 }
 
 /* Toolbar & Edit */
-.toolbar button {
+.toolbar button{
     margin-right: 0.5em;
     padding: 0.5em;
 }
 
-#editor {
-    border: 1px solid #ced4da;
-    padding: 1em;
-    min-height: 150px;
+/* Combined editor styles */
+#editor{
+    border: 1px solid #ccc; /* Overriding #ced4da */
+    padding: 0.5em; /* Overriding 1em */
+    min-height: 100px; /* Overriding 150px */
     background: #fff;
+    cursor: text;
 }
 
 /* Inline Tag Widget */
-.inline-tag {
+.inline-tag{
     background-color: #e9ecef;
     border: 1px solid #adb5bd;
     padding: 0.2em 0.5em;
@@ -62,7 +65,7 @@ body {
 }
 
 /* Popup Menu */
-.popup-menu {
+.popup-menu{
     position: absolute;
     background: #fff;
     border: 1px solid #ced4da;
@@ -71,34 +74,24 @@ body {
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
 }
 
-.popup-menu input {
+.popup-menu input{
     width: 100%;
     margin-bottom: 0.5em;
 }
 
-.popup-menu li {
+.popup-menu li{
     padding: 0.3em;
     cursor: pointer;
 }
 
 .popup-menu li:hover,
-.popup-menu li:focus {
+.popup-menu li:focus{
     background-color: #f1f3f5;
 }
 
-body {
-    font-family: sans-serif;
-    margin: 1em;
-}
 
-#editor {
-    border: 1px solid #ccc;
-    padding: 0.5em;
-    cursor: text;
-    min-height: 100px;
-}
 
-.tag {
+.tag{
     background: #e0f7fa;
     border: 1px solid #80deea;
     border-radius: 4px;
@@ -108,12 +101,12 @@ body {
     align-items: center;
 }
 
-.tag.conditional {
+.tag.conditional{
     background: #fff3e0;
     border-color: #ffcc80;
 }
 
-.tag select, .tag input {
+.tag select, .tag input{
     border: none;
     background: transparent;
     font-size: inherit;
@@ -122,7 +115,7 @@ body {
     outline: none;
 }
 
-.tag select {
+.tag select{
     appearance: none;
     -webkit-appearance: none;
     -moz-appearance: none;
@@ -130,14 +123,14 @@ body {
     cursor: pointer;
 }
 
-.tag .remove-tag {
+.tag .remove-tag{
     margin-left: 5px;
     cursor: pointer;
     color: #888;
     font-size: smaller;
 }
 
-.color-preview {
+.color-preview{
     width: 1em;
     height: 1em;
     display: inline-block;
@@ -146,12 +139,12 @@ body {
     vertical-align: middle;
 }
 
-.unit-label {
+.unit-label{
     font-style: italic;
     margin-left: 2px;
 }
 
-#suggestion-dropdown {
+#suggestion-dropdown{
     position: absolute;
     display: none;
     background: #fff;
@@ -162,26 +155,26 @@ body {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
-#suggestion-dropdown div {
+#suggestion-dropdown div{
     cursor: pointer;
     padding: 2px 5px;
 }
 
-#suggestion-dropdown div:hover {
+#suggestion-dropdown div:hover{
     background: #eee;
 }
 
-.autosuggest {
+.autosuggest{
     text-decoration: underline dotted;
     cursor: pointer;
     position: relative;
 }
 
-.autosuggest:hover {
+.autosuggest:hover{
     background: rgba(255, 255, 0, 0.2);
 }
 
-#toolbar {
+#toolbar{
     margin-bottom: 10px;
     display: flex;
     flex-wrap: wrap;
@@ -189,24 +182,24 @@ body {
     gap: 10px;
 }
 
-#toolbar .group {
+#toolbar .group{
     display: flex;
     align-items: center;
     gap: 5px;
 }
 
-#ontology-browser {
+#ontology-browser{
     margin-top: 10px;
     border: 1px solid #ccc;
     padding: 0.5em;
 }
 
-.category {
+.category{
     margin-bottom: 0.5em;
     font-weight: bold;
 }
 
-.tag-item {
+.tag-item{
     cursor: pointer;
     padding: 2px 5px;
     display: inline-block;
@@ -216,6 +209,6 @@ body {
     background: #f8f8f8;
 }
 
-.tag-item:hover {
+.tag-item:hover{
     background: #eee;
 }

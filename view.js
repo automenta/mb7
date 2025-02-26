@@ -1,3 +1,4 @@
+import $ from 'jquery';
 export class UIComponent {
     constructor(selectorOrTemplate = "<div></div>") {
         this.$el = $(selectorOrTemplate);

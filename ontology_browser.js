@@ -14,13 +14,13 @@ class OntologyBrowser extends UIComponent {
             const catDiv = document.createElement("div");
             catDiv.className = "category";
             catDiv.textContent = cat;
-            TagOntology[cat].forEach(tagData => {
-                const label = (tagData.emoji ? tagData.emoji + " " : "") + tagData.name;
+            TagOntology[cat].conditions.forEach(condition => {
+                const label = condition;
                 const tagItem = document.createElement("div");
                 tagItem.className = "tag-item";
                 tagItem.textContent = label;
                 tagItem.onclick = () => {
-                    this.onTagSelect(tagData);
+                    this.onTagSelect(condition);
                     this.hide();
                 };
                 catDiv.appendChild(tagItem);

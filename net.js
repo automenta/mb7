@@ -6,7 +6,6 @@ import {
     verifyEvent
 } from 'https://cdn.jsdelivr.net/npm/nostr-tools@latest/+esm';
 
-//import { Relay } from 'nostr-tools/relay'
 import {nanoid} from "https://cdn.jsdelivr.net/npm/nanoid@5.0.9/nanoid.js";
 
 export class Nostr {
@@ -66,7 +65,7 @@ export class Nostr {
 
         console.trace(`Connecting to relay: ${relayUrl}`);
         this.relayStatuses[relayUrl] = {status: "connecting"};
-        this.app.updateNetworkStatus("Connecting to " + relayUrl + "...");
+        this.app.updateNetworkStatus(`Connecting to ${relayUrl}...`);
 
         try {
             const relay = await Relay.connect(relayUrl);
@@ -89,7 +88,7 @@ export class Nostr {
     onOpen(relay) {
         console.log("Connected to relay:", relay.url);
         this.relayStatuses[relay.url] = {status: "connected"};
-        this.app.updateNetworkStatus("Connected to " + relay.url);
+        this.app.updateNetworkStatus(`Connected to ${relay.url}`);
         this.relayConnected(relay);
     }
 
@@ -170,7 +169,7 @@ export class Nostr {
 
         switch (event.kind) {
             case 1:
-                this.app.matcher.matchEvent(event); // Existing content matching
+                await this.app.matcher.matchEvent(event); // Existing content matching
                 const timeStr = new Date(event.created_at * 1000).toLocaleTimeString();
                 $("#nostr-feed") // Assuming an element with this ID exists
                     .prepend(`<div>[${timeStr}] ${nip19.npubEncode(event.pubkey)}: ${DOMPurify.sanitize(event.content)}</div>`)
@@ -178,16 +177,16 @@ export class Nostr {
                     .remove();
                 break;
             case 0:
-                this.handleKind0(event);
+                await this.handleKind0(event);
                 break;
             case 3:
-                this.handleKind3(event);
+                await this.handleKind3(event);
                 break;
             case 5:
-                this.handleKind5(event);
+                await this.handleKind5(event);
                 break;
             case 30000:
-                this.handleObjectEvent(event); //handle custom object
+                await this.handleObjectEvent(event); //handle custom object
                 break;
         }
     }
@@ -203,7 +202,7 @@ export class Nostr {
                 await this.app.db.updateFriendProfile(event.pubkey, profileData.name, profileData.picture);
                 // Refresh friends list only if FriendsView is active *AND* this friend is in the list
                 if (this.app.mainContent.currentView instanceof this.app.FriendsView && (await this.app.db.getFriend(event.pubkey))) {
-                    this.app.friendsView.loadFriends(); // Refresh the entire list
+                    await this.app.friendsView.loadFriends(); // Refresh the entire list
                 }
             }
         } catch (error) {
@@ -242,7 +241,7 @@ export class Nostr {
             }
             // Refresh friends list if the current user sent the event
             if (event.pubkey === window.keys.pub) {
-                this.app.friendsView?.loadFriends();
+                await this.app.friendsView?.loadFriends();
             }
         } catch (error) {
             console.error("Error processing kind 3 event:", error);
@@ -255,13 +254,13 @@ export class Nostr {
             try {
                 await this.app.db.delete(eventId);
             } catch (error) {
-                console.error("Failed to delete object with id " + eventId + ": ", error)
+                console.error(`Failed to delete object with id ${eventId}: `, error)
             }
         }
 
         // Refresh the content list if it's the current view
         if (this.app.mainContent.currentView instanceof this.app.ContentView) {
-            this.app.renderList();
+            await this.app.renderList();
         }
     }
 
@@ -342,7 +341,7 @@ export class Nostr {
             return event;
         } catch (error) {
             console.error("Failed to publish event", error);
-            this.app.showNotification("Failed to publish event: " + error.message, "error");
+            this.app.showNotification(`Failed to publish event: ${error.message}`, "error");
             throw error; // Re-throw for caller handling
         }
     }

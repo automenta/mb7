@@ -72,4 +72,4 @@ export const TagOntology = {
     }
 };
 
-const getTagDefinition = (name) => TagOntology[name] || TagOntology.string;
+export const getTagDefinition = (name) => TagOntology[name] || TagOntology.string;

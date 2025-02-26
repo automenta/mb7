@@ -1,3 +1,6 @@
+import Fuse from 'fuse.js';
+import { formatDate } from './view.app.js';
+import { nip19 } from 'https://cdn.jsdelivr.net/npm/nostr-tools@latest/+esm';
 export class Matcher {
     constructor(app) {
         this.app = app;
@@ -29,7 +32,7 @@ export class Matcher {
             const uniqueMatches = [...new Set(matches.map(m => m.id))].map(id => matches.find(m => m.id === id));
 
             this.app.showNotification(
-                `Match in ${uniqueMatches.length} object(s) for event from ${NostrTools.nip19.npubEncode(event.pubkey)}:<br>${uniqueMatches.map(m => `<em>${m.name}</em> (updated ${formatDate(m.updatedAt)})`).join("<br>")}`
+                `Match in ${uniqueMatches.length} object(s) for event from ${nip19.npubEncode(event.pubkey)}:<br>${uniqueMatches.map(m => `<em>${m.name}</em> (updated ${formatDate(m.updatedAt)})`).join("<br>")}`
             );
         }
     }
@@ -83,4 +86,3 @@ export class Matcher {
         return false;
     }
 }
-
