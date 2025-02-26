@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Semantic Editor (Always Editable)</title>
+    <title>Semantic Edit (Always Editable)</title>
     <style>
         body { font-family: sans-serif; margin: 1em; }
         #editor { border: 1px solid #ccc; padding: 0.5em; cursor: text; min-height: 100px; }
@@ -271,7 +271,7 @@
         }
     }
 
-    class Editor {
+    class Edit {
         constructor(ontology) {
             this.ontology = ontology;
             this.createUI();
@@ -313,7 +313,7 @@
             this.toolbarTagContainer = createElement("div", { class: "group", id: "tag-dropdowns" });
             // Assemble toolbar
             this.toolbar.append(loadSaveGroup, formattingGroup, undoRedoGroup, this.toolbarTagContainer);
-            // Editor area
+            // Edit area
             this.editorArea = createElement("div", { id: "editor", contenteditable: "true" },
                 "Type your free‑form text here. As you type, eligible words are underlined. Click an underlined word to see ontology suggestions."
             );

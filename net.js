@@ -49,7 +49,6 @@ export class Nostr {
         this.connectToRelays(); // Connect to all relays
     }
 
-
     connectToRelays() {
         if (this.relays.length === 0) {
             this.app.showNotification("No relays configured.", "warning");
@@ -66,7 +65,7 @@ export class Nostr {
             return; // Already connecting or connected
         }
 
-        console.log(`Connecting to relay: ${relayUrl}`);
+        console.trace(`Connecting to relay: ${relayUrl}`);
         this.relayStatuses[relayUrl] = { status: "connecting" };
         this.app.updateNetworkStatus("Connecting to " + relayUrl + "...");
 

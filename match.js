@@ -1,4 +1,5 @@
-class Matcher {
+
+export class Matcher {
     constructor(app) {
         this.app = app;
         this.fuse = new Fuse([], { keys: ["name", "content", "tags.value"], threshold: 0.4, includeScore: true, ignoreLocation: true });

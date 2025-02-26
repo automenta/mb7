@@ -55,7 +55,7 @@
        }
      ];
      ```
-   - **Editor Behavior:** If mode = "is", the tag can show a checkbox next to it.
+   - **Edit Behavior:** If mode = "is", the tag can show a checkbox next to it.
 
 2. **URL / Link**
    - **Definition:** A property that holds a hyperlink (e.g., “Website URL”).
@@ -71,7 +71,7 @@
        }
      ];
      ```
-   - **Editor Behavior:** Could automatically turn the text into a clickable link.
+   - **Edit Behavior:** Could automatically turn the text into a clickable link.
 
 3. **Email / Phone**
    - **Definition:** Specialized string properties for email addresses or phone numbers.
@@ -93,7 +93,7 @@
        }
      ];
      ```
-   - **Editor Behavior:** Real-time validation or formatting (e.g., `(123) 456-7890`).
+   - **Edit Behavior:** Real-time validation or formatting (e.g., `(123) 456-7890`).
 
 4. **Rich Text / Markdown**
    - **Definition:** A property that allows longer text with basic formatting (like a short description or comment).
@@ -109,7 +109,7 @@
        }
      ];
      ```
-   - **Editor Behavior:** You could embed a small, in-place editing area for the property.
+   - **Edit Behavior:** You could embed a small, in-place editing area for the property.
 
 5. **File / Media**
    - **Definition:** A property that references a file (image, video, document) by URL or local path.
@@ -125,7 +125,7 @@
        }
      ];
      ```
-   - **Editor Behavior:** Clicking on the tag might allow user to select a file and store the reference.
+   - **Edit Behavior:** Clicking on the tag might allow user to select a file and store the reference.
 
 ### B. Hierarchical / Nested Ontologies
 - You could allow sub-properties or nested categories. For instance, “Physical” -> “Dimensions” -> “Width”, “Height”, “Depth.”
@@ -141,7 +141,7 @@
 
 ---
 
-## 2. UI / Editor Extensions
+## 2. UI / Edit Extensions
 
 ### A. Improved Autosuggestions
 1. **Multiple Suggestions for the Same Word**
@@ -257,7 +257,7 @@
    - Write new classes like `BooleanTagInputControl`, `UrlTagInputControl`, etc.
    - For each new `type`, create a corresponding component that includes validation, pickers, or specialized UI.
 
-3. **Enhance the Editor**
+3. **Enhance the Edit**
    - Modify `applyAutosuggestUnderlines()` and `matchesOntology()` to handle synonyms.
    - Allow “convert selection to tag” workflow with a context menu or a dedicated button.
    - Color-code tags by category for quick scanning.
@@ -276,7 +276,7 @@
 
 ## Conclusion
 
-By incorporating these extensions, you can transform the existing **Semantic Editor** into a more **powerful, domain-agnostic** tool. It can handle everything from simple numeric conditions to sophisticated compound tags with specialized UI controls (map pickers, date pickers, media uploads, etc.). You’ll also enable a smoother user experience, better data validation, and more meaningful semantic structure in the authored content—paving the way for advanced use cases like knowledge graphs, data analytics, and domain-specific automation.
+By incorporating these extensions, you can transform the existing **Semantic Edit** into a more **powerful, domain-agnostic** tool. It can handle everything from simple numeric conditions to sophisticated compound tags with specialized UI controls (map pickers, date pickers, media uploads, etc.). You’ll also enable a smoother user experience, better data validation, and more meaningful semantic structure in the authored content—paving the way for advanced use cases like knowledge graphs, data analytics, and domain-specific automation.
 
 ----
 Imagine a writing environment that not only lets you compose beautiful text but also breathes life into your words by understanding their meaning—a dynamic, interactive, and intelligent canvas for your ideas. Let’s call it **Semantic Masterpiece**. This isn’t just another text editor; it’s a next‑generation creative workspace that transforms plain text into a rich, interactive tapestry of semantic data.

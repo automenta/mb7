@@ -10,7 +10,7 @@
   - **Mobile Optimization:** Adjust layouts and font sizes for smaller screens. Consider using CSS media queries or a responsive grid system so that the sidebar and editor adapt to different devices.
   - **Dark Mode:** Add a dark mode toggle that switches themes for low-light environments.
 
-- **Enhanced Editor Features:**
+- **Enhanced Edit Features:**
   - **Rich Text Formatting:** Beyond bold and italic, consider adding underline, lists, headings, block quotes, and link insertion.
   - **Undo/Redo Support:** Implement undo/redo functionality for text changes, either by leveraging the browser’s built-in commands or by integrating a rich text library.
   - **Drag-and-Drop Tag Positioning:** Allow users to drag and reposition inline tags within the editor for improved flexibility.
