@@ -1,14 +1,11 @@
-
-import { format, formatISO, isValid as isValidDate, parseISO } from "https://cdn.jsdelivr.net/npm/date-fns@2.29.3/esm/index.js";
-import { nanoid } from "https://cdn.jsdelivr.net/npm/nanoid@5.0.9/nanoid.js";
-import { UIComponent, View } from "./view.js";
-import { Tagger } from './edit.js';
+import {format, isValid as isValidDate, parseISO} from "https://cdn.jsdelivr.net/npm/date-fns@2.29.3/esm/view.app.js";
+import {UIComponent, View} from "./view.js";
+import {Tagger} from './edit.js';
 
 export const formatDate = (timestamp) =>
     timestamp && isValidDate(typeof timestamp === "string" ? parseISO(timestamp) : new Date(timestamp))
         ? format(typeof timestamp === "string" ? parseISO(timestamp) : new Date(timestamp), localStorage.getItem("dateFormat") || "Pp")
         : "";
-
 
 
 export class ContentView extends View {
@@ -50,8 +47,11 @@ export class ContentView extends View {
         this.$el.find("#object-list").on("click", ".object-item", (e) => this.app.editOrViewObject($(e.currentTarget).data("id")));
     }
 }
+
 export class DashboardView extends View {
-    constructor(app) { super(app, `<div id="dashboard-view" class="view"><h2>Dashboard</h2></div>`); }
+    constructor(app) {
+        super(app, `<div id="dashboard-view" class="view"><h2>Dashboard</h2></div>`);
+    }
 
     build() {
         this.$el.append(
@@ -59,7 +59,7 @@ export class DashboardView extends View {
             <h3>Recent Activity</h3><div id="recent-activity"></div>
             <h3>Tag Cloud</h3><div id="tag-cloud"></div>`
         );
-        this.app.displayPubkeyOnDashboard(); //display pubkey on load
+        //this.app.displayPubkeyOnDashboard(); //display pubkey on load
     }
 
     async render() {
@@ -68,7 +68,14 @@ export class DashboardView extends View {
         const recent = await this.app.db.getRecent(5);
         this.$el.find("#recent-activity").html(recent.map(obj => `<p><strong>${obj.name}</strong> - Updated: ${formatDate(obj.updatedAt)}</p>`).join(''));
         this.renderTagCloud();
+                this.displayPubkeyOnDashboard();
     }
+    displayPubkeyOnDashboard() {
+        if (window.keys?.pub && !$("#dashboard-view #pubkey-display").length) {
+            $("#dashboard-view").append(`<p id="pubkey-display">Your Public Key: ${NostrTools.nip19.npubEncode(window.keys.pub)}</p>`);
+        }
+    }
+
 
     renderTagCloud() {
         this.app.db.getAll().then(objects => {
@@ -82,12 +89,17 @@ export class DashboardView extends View {
 }
 
 export class Sidebar extends View {
-    constructor(app) { super(app, `<div class="sidebar-left"></div>`); }
+    constructor(app) {
+        super(app, `<div class="sidebar-left"></div>`);
+    }
 
     build() {
         this.$el.append(
-            this.buildSection("Menu", [{ label: "Dashboard", view: "dashboard" }, { label: "Content", view: "content" }, { label: "Settings", view: "settings" }, { label: "Friends", view: "friends" }]),
-            this.buildSection("Links", [{ label: "Recent Items", list: "recent" }]),
+            this.buildSection("Menu", [{label: "Dashboard", view: "dashboard"}, {
+                label: "Content",
+                view: "content"
+            }, {label: "Settings", view: "settings"}, {label: "Friends", view: "friends"}]),
+            this.buildSection("Links", [{label: "Recent Items", list: "recent"}]),
             $("<h3>Network</h3>", `<div id="network-status">Connecting...</div><hr>`),
             $("<div id='nostr-feed'></div>")
         );
@@ -109,7 +121,12 @@ export class Sidebar extends View {
 }
 
 export class MainContent extends UIComponent {
-    constructor() { super(`<div class="main-content"><div class="content"></div></div>`); }
-    showView(view) { this.$el.find(".content").empty().append(view.$el); }
+    constructor() {
+        super(`<div class="main-content"><div class="content"></div></div>`);
+    }
+
+    showView(view) {
+        this.$el.find(".content").empty().append(view.$el);
+    }
 }
 

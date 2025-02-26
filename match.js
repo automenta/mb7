@@ -1,8 +1,12 @@
-
 export class Matcher {
     constructor(app) {
         this.app = app;
-        this.fuse = new Fuse([], { keys: ["name", "content", "tags.value"], threshold: 0.4, includeScore: true, ignoreLocation: true });
+        this.fuse = new Fuse([], {
+            keys: ["name", "content", "tags.value"],
+            threshold: 0.4,
+            includeScore: true,
+            ignoreLocation: true
+        });
     }
 
     async matchEvent(event) {
@@ -20,7 +24,7 @@ export class Matcher {
             matches.push(...this.fuse.search(text).filter(r => r.score <= this.fuse.options.threshold).map(r => r.item));
         }
 
-        if(matches.length) {
+        if (matches.length) {
             //dedupe matches
             const uniqueMatches = [...new Set(matches.map(m => m.id))].map(id => matches.find(m => m.id === id));
 
@@ -31,7 +35,7 @@ export class Matcher {
     }
 
     matchTagData(tagData, text, event) {
-        const { name, condition, value } = tagData;
+        const {name, condition, value} = tagData;
         const tagDef = this.app.getTagDefinition(name);
 
         if (!tagDef.validate(value, condition)) return false;
@@ -45,7 +49,8 @@ export class Matcher {
                 if (condition === "is") return eventDate.getTime() === parsedValue.getTime();
                 if (condition === "before") return eventDate < parsedValue;
                 if (condition === "after") return eventDate > parsedValue;
-            } catch {  }
+            } catch {
+            }
             return false;
         };
 
@@ -56,16 +61,25 @@ export class Matcher {
                 const eventDate = new Date(event.created_at * 1000);
                 return isValidDate(startDate) && isValidDate(endDate) && eventDate >= startDate && eventDate <= endDate;
 
-            } catch { return false; }
+            } catch {
+                return false;
+            }
         } else if (condition === "between" && tagDef.name === "number") {
             const lower = parseFloat(value.lower);
             const upper = parseFloat(value.upper);
             const numValue = parseFloat(text); //Try to get a numeric value
             return !isNaN(lower) && !isNaN(upper) && !isNaN(numValue) && numValue >= lower && numValue <= upper;
+        } else if (condition === "matches regex") {
+            try {
+                return new RegExp(value, "i").test(text);
+            } catch {
+                return false;
+            }
+        } else if (["is", "contains"].includes(condition)) {
+            return text.includes(value.toLowerCase());
+        } else if (["before", "after"].includes(condition)) {
+            return checkTime(value);
         }
-        else if (condition === "matches regex") { try { return new RegExp(value, "i").test(text); } catch { return false; } }
-        else if (["is", "contains"].includes(condition)) { return text.includes(value.toLowerCase()); }
-        else if (["before", "after"].includes(condition)) { return checkTime(value); }
         return false;
     }
 }

@@ -1,5 +1,6 @@
 import * as NostrTools from 'https://cdn.jsdelivr.net/npm/nostr-tools@latest/+esm'
-import { View } from "./view.js";
+import {View} from "./view.js";
+import {getTagDefinition} from "./ontology.js";
 
 export class FriendsView extends View {
     constructor(app) {
@@ -41,39 +42,50 @@ export class FriendsView extends View {
         }
 
         try {
-            await this.app.db.addFriend(pubkey);
+            const friend = { pubkey: pubkey };
+            await this.app.db.addFriend(friend);
             this.app.showNotification(`Added friend: ${NostrTools.nip19.npubEncode(pubkey)}`, "success");
-            // Subscribe to the friend's profile (Kind 0)
-            this.app.nostrClient.subscribe([{ kinds: [0], authors: [pubkey] }], { id: `friend-profile-${pubkey}` });
-
+            this.app.nostrClient.subscribe([{kinds: [0], authors: [pubkey]}], {id: `friend-profile-${pubkey}`});
             this.loadFriends();
             this.app.nostrClient.connectToPeer(pubkey); // Connect immediately
 
-        } catch(error) {
+        } catch (error) {
             this.app.showNotification("Failed to add friend.", "error")
         }
     }
 
-
     async loadFriends() {
-        const friends = await this.app.db.getFriends();
-        // Display friend's name and picture if available
-        this.$el.find("#friends-list").html(friends.map(friend => {
-            const npub = NostrTools.nip19.npubEncode(friend.pubkey);
-            const displayName = friend.name ? `${friend.name} (${npub})` : npub;
-            const profilePicture = friend.picture ? `<img src="${friend.picture}" alt="Profile Picture" style="width: 24px; height: 24px; border-radius: 50%; margin-right: 8px;">` : '';
-            return `<li>${profilePicture}${displayName} <button class="remove-friend" data-pubkey="${friend.pubkey}">Remove</button></li>`;
+        const friendsObjectId = await this.app.db.getFriendsObjectId();
+        const friendsObject = await this.app.db.get(friendsObjectId);
+
+        if (!friendsObject || !friendsObject.tags) {
+            this.$el.find("#friends-list").html("<p>No friends found.</p>");
+            return;
+        }
+
+        const peopleTagDefinition = getTagDefinition("People");
+
+        this.$el.find("#friends-list").html(friendsObject.tags.map(tag => {
+            if (tag[0] === "People") {
+                const pubkey = tag[1];
+                const name = tag[2] || "";
+                const picture = tag[3] || "";
+
+                const npub = NostrTools.nip19.npubEncode(pubkey);
+                const displayName = name ? `${name} (${npub})` : npub;
+                const profilePicture = picture ? `<img src="${picture}" alt="Profile Picture" style="width: 24px; height: 24px; border-radius: 50%; margin-right: 8px;">` : '';
+                return `<li>${profilePicture}${displayName} <button class="remove-friend" data-pubkey="${pubkey}">Remove</button></li>`;
+            }
         }).join(''));
         this.$el.find(".remove-friend").on("click", (e) => this.removeFriend($(e.target).data("pubkey")));
     }
-
 
     async removeFriend(pubkey) {
         try {
             await this.app.db.removeFriend(pubkey);
             this.app.nostrClient.unsubscribe(`friend-profile-${pubkey}`);
             this.loadFriends(); // Refresh list after removing.
-        } catch(error) {
+        } catch (error) {
             this.app.showNotification("Failed to remove friend.", "error");
         }
     }

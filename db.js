@@ -1,12 +1,13 @@
 // db.js
-import { openDB } from 'https://cdn.jsdelivr.net/npm/idb@7/+esm';
+import {openDB} from 'https://cdn.jsdelivr.net/npm/idb@7/+esm';
 import * as NostrTools from 'https://cdn.jsdelivr.net/npm/nostr-tools@latest/+esm';
 
 const DB_NAME = 'nostr-app-db';
 const DB_VERSION = 2;
 const OBJECTS_STORE = 'objects';
-const FRIENDS_STORE = 'friends';
 const KEY_STORAGE = 'nostr_keys';
+const FRIENDS_OBJECT_ID = 'friends';
+const SETTINGS_OBJECT_ID = 'settings';
 
 /**
  * The main database class for your app.
@@ -15,6 +16,10 @@ const KEY_STORAGE = 'nostr_keys';
  */
 export class DB {
     static db = null;
+
+    constructor() {
+        // The constructor doesn't need to open DB; use DB.initDB() instead.
+    }
 
     /**
      * Initialize (or upgrade) the IndexedDB database using `idb`.
@@ -30,14 +35,7 @@ export class DB {
                 console.log('onupgradeneeded triggered');
                 // Create 'objects' store if not present
                 if (!db.objectStoreNames.contains(OBJECTS_STORE)) {
-                    db.createObjectStore(OBJECTS_STORE, { keyPath: 'id' });
-                }
-
-                // Create 'friends' store + indexes if not present
-                if (!db.objectStoreNames.contains(FRIENDS_STORE)) {
-                    const friendsStore = db.createObjectStore(FRIENDS_STORE, { keyPath: 'pubkey' });
-                    friendsStore.createIndex('last_updated', 'last_updated');
-                    friendsStore.createIndex('name', 'name');
+                    db.createObjectStore(OBJECTS_STORE, {keyPath: 'id'});
                 }
 
                 // Create 'nostr_keys' store if not present
@@ -48,10 +46,6 @@ export class DB {
         });
 
         return this.db;
-    }
-
-    constructor() {
-        // The constructor doesn't need to open DB; use DB.initDB() instead.
     }
 
     /**
@@ -111,83 +105,124 @@ export class DB {
         };
     }
 
-    /**
-     * Add a friend record if it does not exist.
-     */
-    async addFriend(pubkey) {
-        const db = await DB.initDB();
-        const existing = await db.get(FRIENDS_STORE, pubkey);
-        if (!existing) {
-            await db.put(FRIENDS_STORE, {
-                pubkey,
-                last_updated: Date.now(),
-            });
-        }
+    async getFriendsObjectId() {
+        return FRIENDS_OBJECT_ID;
     }
 
-    /**
-     * Get a friend's info by pubkey.
-     */
-    async getFriend(pubkey) {
-        const db = await DB.initDB();
-        return db.get(FRIENDS_STORE, pubkey);
-    }
-
-    /**
-     * Get all friends.
-     */
     async getFriends() {
         const db = await DB.initDB();
-        return db.getAll(FRIENDS_STORE);
+        let friendsObject = await db.get(OBJECTS_STORE, FRIENDS_OBJECT_ID);
+
+        if (!friendsObject) {
+            // If the friends object doesn't exist, create it
+            friendsObject = {
+                id: FRIENDS_OBJECT_ID,
+                kind: 30000,
+                content: "",
+                tags: [],
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+            };
+            await db.put(OBJECTS_STORE, friendsObject);
+        }
+
+        return friendsObject;
     }
 
-    /**
-     * Remove a friend record by pubkey.
-     */
-    async removeFriend(pubkey) {
+    async addFriend(friend) {
         const db = await DB.initDB();
-        await db.delete(FRIENDS_STORE, pubkey);
-    }
+        const friendsObject = await this.getFriends();
 
-    /**
-     * Set or update a friend's name/picture fields.
-     */
-    async updateFriendProfile(pubkey, name, picture) {
-        const db = await DB.initDB();
-        const friend = await db.get(FRIENDS_STORE, pubkey);
-        if (friend) {
-            friend.name = name;
-            friend.picture = picture;
-            friend.last_updated = Date.now();
-            await db.put(FRIENDS_STORE, friend);
-        } else {
-            await db.put(FRIENDS_STORE, {
-                pubkey,
-                name,
-                picture,
-                last_updated: Date.now(),
-            });
+        const existingFriendIndex = friendsObject.tags.findIndex(
+            (tag) => tag[0] === "People" && tag[1] === friend.pubkey
+        );
+
+        if (existingFriendIndex === -1) {
+            // Friend doesn't exist, add them
+            friendsObject.tags.push(["People", friend.pubkey, friend.name, friend.picture]);
+            friendsObject.updatedAt = new Date().toISOString();
+            await db.put(OBJECTS_STORE, friendsObject);
         }
     }
 
-    /**
-     * Clears all data in the DB (objects, friends, and keys).
-     */
-    async clearAllData() {
+    async removeFriend(pubkey) {
         const db = await DB.initDB();
-        await db.clear(OBJECTS_STORE);
-        await db.clear(FRIENDS_STORE);
-        await db.clear(KEY_STORAGE);
-        console.log('All data cleared from IndexedDB.');
+        const friendsObject = await this.getFriends();
+
+        const friendIndex = friendsObject.tags.findIndex(
+            (tag) => tag[0] === "People" && tag[1] === pubkey
+        );
+
+        if (friendIndex !== -1) {
+            friendsObject.tags.splice(friendIndex, 1);
+            friendsObject.updatedAt = new Date().toISOString();
+            await db.put(OBJECTS_STORE, friendsObject);
+        }
     }
 
-    /**
-     * Save Nostr key data into the keys store.
-     */
-    async saveKeys(keys) {
+    async updateFriendProfile(pubkey, name, picture) {
         const db = await DB.initDB();
-        // store the entire keys object under the fixed key "nostr_keys"
-        await db.put(KEY_STORAGE, keys, KEY_STORAGE);
+        const friendsObject = await this.getFriends();
+
+        const friendIndex = friendsObject.tags.findIndex(
+            (tag) => tag[0] === "People" && tag[1] === pubkey
+        );
+
+        if (friendIndex !== -1) {
+            friendsObject.tags[friendIndex][2] = name;
+            friendsObject.tags[friendIndex][3] = picture;
+            friendsObject.updatedAt = new Date().toISOString();
+            await db.put(OBJECTS_STORE, friendsObject);
+        }
+    }
+
+    async getSettingsObjectId() {
+        return SETTINGS_OBJECT_ID;
+    }
+
+    async getSettings() {
+        const db = await DB.initDB();
+        let settingsObject = await db.get(OBJECTS_STORE, SETTINGS_OBJECT_ID);
+
+        if (!settingsObject) {
+            // If the settings object doesn't exist, create it
+            settingsObject = {
+                id: SETTINGS_OBJECT_ID,
+                kind: 30000,
+                content: "",
+                tags: [],
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+            };
+            await db.put(OBJECTS_STORE, settingsObject);
+        }
+
+        return settingsObject;
+    }
+
+   async saveSettings(settings) {
+        const db = await DB.initDB();
+        let settingsObject = await this.getSettings();
+
+        settingsObject.tags = [];
+
+        // Add settings to the settings object
+        if (settings.relays) {
+            settingsObject.tags.push(["relays", settings.relays]);
+        }
+        if (settings.dateFormat) {
+            settingsObject.tags.push(["dateFormat", settings.dateFormat]);
+        }
+  
+        if (settings.profileName) {
+            settingsObject.tags.push(["profileName", settings.profileName]);
+        }
+        if (settings.profilePicture) {
+            settingsObject.tags.push(["profilePicture", settings.profilePicture]);
+        }
+
+        settingsObject.updatedAt = new Date().toISOString();
+        await db.put(OBJECTS_STORE, settingsObject);
     }
 }
 
@@ -207,7 +242,7 @@ export async function generateKeys() {
     const priv = generatePrivateKey();
     const pub = NostrTools.getPublicKey(priv);
 
-    const newKeys = { priv, pub };
+    const newKeys = {priv, pub};
     // store under the key "nostr_keys"
     await db.put(KEY_STORAGE, newKeys, KEY_STORAGE);
     return newKeys;

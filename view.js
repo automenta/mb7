@@ -2,7 +2,10 @@ export class UIComponent {
     constructor(selectorOrTemplate = "<div></div>") {
         this.$el = $(selectorOrTemplate);
     }
-    remove() { this.$el.remove(); }
+
+    remove() {
+        this.$el.remove();
+    }
 }
 
 /** Abstract View class for common view functionality */
@@ -14,6 +17,9 @@ export class View extends UIComponent {
         this.bindEvents();
     }
 
-    build() { }
-    bindEvents() { }
+    build() {
+    }
+
+    bindEvents() {
+    }
 }

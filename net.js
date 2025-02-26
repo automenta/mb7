@@ -1,14 +1,13 @@
 import {
-    validateEvent,
-    verifyEvent,
     getEventHash,
     nip19,
-    Relay
+    Relay,
+    validateEvent,
+    verifyEvent
 } from 'https://cdn.jsdelivr.net/npm/nostr-tools@latest/+esm';
 
 //import { Relay } from 'nostr-tools/relay'
-
-import { nanoid } from "https://cdn.jsdelivr.net/npm/nanoid@5.0.9/nanoid.js";
+import {nanoid} from "https://cdn.jsdelivr.net/npm/nanoid@5.0.9/nanoid.js";
 
 export class Nostr {
     constructor(app) {
@@ -66,7 +65,7 @@ export class Nostr {
         }
 
         console.trace(`Connecting to relay: ${relayUrl}`);
-        this.relayStatuses[relayUrl] = { status: "connecting" };
+        this.relayStatuses[relayUrl] = {status: "connecting"};
         this.app.updateNetworkStatus("Connecting to " + relayUrl + "...");
 
         try {
@@ -82,14 +81,14 @@ export class Nostr {
 
         } catch (error) {
             console.error("WebSocket connection error:", error);
-            this.relayStatuses[relayUrl] = { status: "error" };
+            this.relayStatuses[relayUrl] = {status: "error"};
             this.app.updateNetworkStatus(`Error connecting to ${relayUrl}`);
         }
     }
 
     onOpen(relay) {
         console.log("Connected to relay:", relay.url);
-        this.relayStatuses[relay.url] = { status: "connected" };
+        this.relayStatuses[relay.url] = {status: "connected"};
         this.app.updateNetworkStatus("Connected to " + relay.url);
         this.relayConnected(relay);
     }
@@ -110,33 +109,34 @@ export class Nostr {
     }
 
 
-
     // Unified subscription method (supports relay objects)
     subscribe(filters, options) {
         const relay = options.relay;
         const subId = options.id || nanoid();
 
         if (relay) {
-            const sub = relay.subscribe(filters, { id: subId,  onevent: options.onEvent || this.onEvent.bind(this), eose: () => {
+            const sub = relay.subscribe(filters, {
+                id: subId, onevent: options.onEvent || this.onEvent.bind(this), eose: () => {
                     console.log(`EOSE from ${relay.url} for subscription ${subId}`);
-                } });
-            this.subscriptions[relay.url] = { ...(this.subscriptions[relay.url] || {}), [subId]: sub };
-            return { relay: relay.url, id: subId };
+                }
+            });
+            this.subscriptions[relay.url] = {...(this.subscriptions[relay.url] || {}), [subId]: sub};
+            return {relay: relay.url, id: subId};
 
         } else {
             //fallback, subscribe to *all* connected relays
             this.relays.forEach(relayUrl => {
                 if (this.relayStatuses[relayUrl]?.status === 'connected') {
                     const relay = this.relayObjects[relayUrl];
-                    const sub = relay.subscribe(filters, { id: subId });
-                    this.subscriptions[relayUrl] = { ...(this.subscriptions[relayUrl] || {}), [subId]: sub };
+                    const sub = relay.subscribe(filters, {id: subId});
+                    this.subscriptions[relayUrl] = {...(this.subscriptions[relayUrl] || {}), [subId]: sub};
                     sub.on('event', options.onEvent || this.onEvent.bind(this));
                     sub.on('eose', () => {
                         console.log(`EOSE from ${relay.url} for subscription ${subId}`);
                     });
                 }
             });
-            return { id: subId };
+            return {id: subId};
         }
     }
 
@@ -163,7 +163,7 @@ export class Nostr {
 
 
     async onEvent(event) {
-        if(!validateEvent(event) || !verifyEvent(event)) {
+        if (!validateEvent(event) || !verifyEvent(event)) {
             console.warn("Invalid event received:", event);
             return;
         }
@@ -210,6 +210,7 @@ export class Nostr {
             console.error("Error processing Kind 0 event:", error);
         }
     }
+
     async handleKind3(event) {
         try {
             let contacts = [];
@@ -236,7 +237,7 @@ export class Nostr {
                 if (/^[0-9a-fA-F]{64}$/.test(pubkey) && pubkey !== window.keys.pub) {
                     await this.app.db.addFriend(pubkey);
                     // Subscribe to the friend's profile (Kind 0) - Use the unified subscribe
-                    this.subscribe([{ kinds: [0], authors: [pubkey] }], { id: `friend-profile-${pubkey}` });
+                    this.subscribe([{kinds: [0], authors: [pubkey]}], {id: `friend-profile-${pubkey}`});
                 }
             }
             // Refresh friends list if the current user sent the event
@@ -263,6 +264,7 @@ export class Nostr {
             this.app.renderList();
         }
     }
+
     async handleObjectEvent(ev) {
         try {
             if (!ev.content || ev.content.trim()[0] !== "{") return;
@@ -285,6 +287,7 @@ export class Nostr {
             console.error("Parsing error", e);
         }
     }
+
     extractTagsFromEvent(event) {
         // Extract and normalize tags, handling both 't' and custom tags
         const tags = [];
@@ -295,7 +298,7 @@ export class Nostr {
 
                 if (tagName === 't') {
                     //keep the "t" tags as they were
-                    tags.push({ name: tagValue, condition: 'is', value: '' }) //Add the standard tag structure
+                    tags.push({name: tagValue, condition: 'is', value: ''}) //Add the standard tag structure
                 } else {
                     //custom tags, like p, e, etc.
                     let condition = 'is'; // Default condition
@@ -305,7 +308,7 @@ export class Nostr {
                     if ((tagName === 'p' || tagName === 'e') && tag.length >= 2) {
                         condition = 'references'; // Or any other suitable condition name
                     }
-                    tags.push({ name: tagName, condition, value });
+                    tags.push({name: tagName, condition, value});
                 }
             }
         }
@@ -343,6 +346,7 @@ export class Nostr {
             throw error; // Re-throw for caller handling
         }
     }
+
     publishRawEvent(event) {
         if (!this.relays || this.relays.length === 0) {
             this.app.showNotification("No relays configured. Cannot publish.", "error");
@@ -369,9 +373,12 @@ export class Nostr {
 
     // Common handler for relay connections, for both initial and friend connections
     relayConnected(relay) {
-        this.subscribe([{ kinds: [30000], authors: [window.keys.pub] }], { relay, onEvent: this.handleObjectEvent.bind(this) }); //custom objects
-        this.subscribe([{ kinds: [1] }], { relay, id: `feed-${relay.url}` }); // General feed
-        this.subscribeToFriends(relay); // Subscribe to friends' updates
+        this.subscribe([{kinds: [30000], authors: [window.keys.pub]}], {
+            relay,
+            onEvent: this.handleObjectEvent.bind(this)
+        }); //custom objects
+        this.subscribe([{kinds: [1]}], {relay, id: `feed-${relay.url}`}); // General feed
+        this.subscribeToFriends(relay);
     }
 
     connectToPeer(pubkey) {
@@ -389,16 +396,20 @@ export class Nostr {
     subscribeToPubkey(relay, pubkey) {
         // Check for and remove existing subscription for this pubkey on this relay
         const subId = `friend_${pubkey}`;
-        this.unsubscribe({ relay: relay.url, id: subId });
+        this.unsubscribe({relay: relay.url, id: subId});
 
-        this.subscribe([{ kinds: [1, 30000], authors: [pubkey] }, { kinds: [1, 30000], '#p': [pubkey] }], { relay, id: subId }); //unified subscribe
+        this.subscribe([{kinds: [1, 30000], authors: [pubkey]}, {kinds: [1, 30000], '#p': [pubkey]}], {
+            relay,
+            id: subId
+        }); //unified subscribe
     }
 
-    subscribeToFriends(relay) {
-        window.app.db.getFriends().then(friends => {
-            friends.forEach(friend => {
-                this.subscribeToPubkey(relay, friend.pubkey);
-            });
+    async subscribeToFriends(relay) {
+        const friendsObjectId = await this.app.db.getFriendsObjectId();
+        this.subscribe([{kinds: [30000], ids: [friendsObjectId]}], {
+            relay,
+            id: `friends-object`,
+            onEvent: this.handleObjectEvent.bind(this)
         });
     }
 }
