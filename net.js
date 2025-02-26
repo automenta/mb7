@@ -1,12 +1,13 @@
+import $ from 'jquery';
+import DOMPurify from 'dompurify';
 import {
     getEventHash,
     nip19,
     Relay,
     validateEvent,
     verifyEvent
-} from 'https://cdn.jsdelivr.net/npm/nostr-tools@latest/+esm';
-
-import {nanoid} from "https://cdn.jsdelivr.net/npm/nanoid@5.0.9/nanoid.js";
+} from 'nostr-tools';
+import {nanoid} from 'nanoid';
 
 export class Nostr {
     constructor(app) {

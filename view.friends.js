@@ -1,4 +1,4 @@
-import * as NostrTools from 'https://cdn.jsdelivr.net/npm/nostr-tools@latest/+esm'
+import * as NostrTools from 'nostr-tools'
 import {View} from "./view.js";
 import {getTagDefinition} from "./ontology.js";
 

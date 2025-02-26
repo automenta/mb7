@@ -154,16 +154,61 @@ export class Edit extends UIComponent{
         this.createUI();
         this.setupFormattingButtons();
         this.bindEvents();
-   }
+    }
 
-    bindEvents(){
+    bindEvents() {
         this.$el.on("mouseup keyup", () => this.#savedSelection = window.getSelection()?.rangeCount > 0 ? window.getSelection().getRangeAt(0).cloneRange() : null)
-            .on("keydown", e => e.code === "Enter" && (e.preventDefault(), this.insertLineBreak()))
-            .on("input", () =>{
+            .on("keydown", (e) => {
+                if (e.code === "Enter") {
+                    e.preventDefault();
+                    this.insertLineBreak();
+                } else {
+                    this.setupKeyboardShortcuts(e);
+                }
+            })
+            .on("input", () => {
                 this.sanitizeContent();
                 this.#savedSelection && this.restoreSelection();
-           });
-   }
+            });
+    }
+
+    setupKeyboardShortcuts(e) {
+        if (e.ctrlKey || e.metaKey) {
+            switch (e.key.toLowerCase()) {
+                case 'b':
+                    e.preventDefault();
+                    document.execCommand('bold', false, null);
+                    break;
+                case 'i':
+                    e.preventDefault();
+                    document.execCommand('italic', false, null);
+                    break;
+                case 'u':
+                    e.preventDefault();
+                    document.execCommand('underline', false, null);
+                    break;
+            }
+        }
+    }
+
+    setupKeyboardShortcuts(e) {
+        if (e.ctrlKey || e.metaKey) {
+            switch (e.key.toLowerCase()) {
+                case 'b':
+                    e.preventDefault();
+                    document.execCommand('bold', false, null);
+                    break;
+                case 'i':
+                    e.preventDefault();
+                    document.execCommand('italic', false, null);
+                    break;
+                case 'u':
+                    e.preventDefault();
+                    document.execCommand('underline', false, null);
+                    break;
+            }
+        }
+    }
 
     insertLineBreak(){
         if (!this.#savedSelection) return;
@@ -285,14 +330,18 @@ export class Edit extends UIComponent{
 
     setupFormattingButtons(){
         const cmdMap = [
-            [$("<button title='Bold (Ctrl+B)'><strong>B</strong></button>"), "bold"],
-            [$("<button title='Italic (Ctrl+I)'><em>I</em></button>"), "italic"],
-            [$("<button title='Underline (Ctrl+U)'><u>U</u></button>"), "underline"],
-            [$("<button title='Strike Through'>S</button>"), "strikeThrough"],
+            [$("<button title='Bold (Ctrl+B)'><strong style='font-size: 1.2em;'>B</strong></button>"), "bold"],
+            [$("<button title='Italic (Ctrl+I)'><em style='font-size: 1.2em;'>I</em></button>"), "italic"],
+            [$("<button title='Underline (Ctrl+U)'><u style='font-size: 1.2em;'>U</u></button>"), "underline"],
+            [$("<button title='Heading 1'><h1 style='font-size: 1.2em;'>H1</h1></button>"), "formatBlock", "H1"],
+            [$("<button title='Heading 2'><h2 style='font-size: 1.2em;'>H2</h2></button>"), "formatBlock", "H2"],
+            [$("<button title='Heading 3'><h3 style='font-size: 1.2em;'>H3</h3></button>"), "formatBlock", "H3"],
+            [$("<button title='Unordered List'>UL</button>"), "insertUnorderedList"],
+            [$("<button title='Ordered List'>OL</button>"), "insertOrderedList"],
             [$("<button title='Clear Formatting'>Unformat</button>"), "removeFormat"],
         ];
-        cmdMap.forEach(([btn, cmd]) =>{
-            btn.on("click", () => document.execCommand(cmd, false, null));
+        cmdMap.forEach(([btn, cmd, arg]) =>{
+            btn.on("click", () => document.execCommand(cmd, false, arg || null));
             this.toolbar.append(btn);
        });
    }

@@ -1,6 +1,6 @@
 import $ from 'jquery';
 import { formatISO } from "date-fns";
-import { ContentView, DashboardView, formatDate, MainContent, Sidebar } from "./view.app.js";
+import { ContentView, formatDate, MainContent, Menubar } from "./view.app.js";
 import { FriendsView } from "./view.friends.js";
 import { SettingsView } from "./view.settings.js";
 import * as Net from "./net.js";
@@ -18,9 +18,12 @@ class App{
         this.selected = null;
         this.notificationQueue = [];
         this.nostrClient = new Net.Nostr(this);  // Initialize Nostr client and make it globally accessible within the app
-        this.sidebar = new Sidebar(this);
+        this.sidebar = new Menubar(this);
         this.mainContent = new MainContent();
         this.editor = new Edit();
+        this.$editorContainer = $("#editor-container");
+        this.$objectName = $("#object-name");
+        this.$createdAt = $("#created-at");
 
         this.init(); // Call the initialization
    }
@@ -42,19 +45,20 @@ class App{
         this.settingsView = new SettingsView(this);
         this.friendsView = new FriendsView(this);
 
-        this.setView("dashboard"); // Set initial view
+        this.setView("content"); // Set initial view
    }
 
-   initSidebar() {};
+   /*initSidebar() {};
    initMainContent() {};
-   initViews() {};
-   loadKeysAndConnect() {};
-
-
+   initViews() {};*/
+   async loadKeysAndConnect() {
+        window.keys = await DB.loadKeys();
+        this.nostrClient.connectToRelays();
+    }
 
     //Add a method to easily update network status:
     updateNetworkStatus(message){
-        $("#network-status").text(message);
+        $("#network-status").html(message);
    }
 
     async deleteCurrentObject(){
@@ -82,20 +86,23 @@ class App{
 
     setView(viewName){
         const views ={
-            "dashboard": () =>{
-                const dashboardView = new DashboardView(this);
-                dashboardView.render();
-                return dashboardView;
-           },
-            "content": () => new ContentView(this),
+            "content": () => {
+                const contentView = new ContentView(this);
+                contentView.render();
+                return contentView;
+            },
             "settings": () => this.settingsView,
             "friends": () => this.friendsView,
-            "default": () =>{
-                const defaultDashboardView = new DashboardView(this);
-                defaultDashboardView.render();
-                return defaultDashboardView;
-           }
+            "default": () => {
+                const contentView = new ContentView(this);
+                contentView.render();
+                return contentView;
+            }
        };
+        views["new_object"] = () => {
+            this.createNewObject();
+            return this.editor;
+        };
 
         const view = (views[viewName] || views["default"])();
         this.mainContent.showView(view);
@@ -115,10 +122,14 @@ class App{
 
         if (filtered.length){
             filtered.forEach(obj =>{
-                const $item = $(`<div class="object-item" data-id="${obj.id}" tabindex="0"></div>`);
-                $item.append($('<strong>').text(obj.name));
-                $item.append($('<div>').html(obj.content));
-                $item.append($(`<small>Updated: ${formatDate(obj.updatedAt)}</small>`));
+                const $item = $(`<div class="object-item" data-id="${obj.id}" tabindex="0">
+                    <div class="object-header">
+                        <strong>${obj.name}</strong>
+                        <small>Updated: ${formatDate(obj.updatedAt)}</small>
+                    </div>
+                    <div class="object-content">${obj.content.substring(0, 100)}...</div>
+                    <div class="object-tags">${obj.tags?.map(tag => `<span class="tag">${tag.name}</span>`).join('')}</div>
+                </div>`);
                 $list.append($item);
            });
        }else{
@@ -144,18 +155,18 @@ class App{
 
     showEditor(object){
         this.selected = object;
-        $("#editor-container").show();
-        $("#object-name").val(object.name || "");
-        $("#created-at").text(object.createdAt ? formatDate(object.createdAt) : "");
+        this.$editorContainer.show();
+        this.$objectName.val(object.name || "");
+        this.$createdAt.text(object.createdAt ? formatDate(object.createdAt) : "");
         this.editor.setContent(object.content || "");
    }
 
     hideEditor(){
-        $("#editor-container").hide();
+        this.$editorContainer.hide();
         this.selected = null;
         // Clear input fields and editor content
-        $("#object-name").val('');
-        $("#created-at").text('');
+        this.$objectName.val('');
+        this.$createdAt.text('');
         this.editor.setContent('');
    }
 
@@ -230,30 +241,41 @@ class App{
                    }catch (e){
             this.showNotification("Object update failed.", "error");
        }
-   }
+             throw e;
+         }
 
-    showNotification(message, type = "info"){
-        this.notificationQueue.push({message, type});
-        if (!this.notificationTimeout){
+    showNotification(message, type = "info") {
+        this.notificationQueue.push({ message, type });
+        if (!this.notificationTimeout) {
             this.showNextNotification();
-       }
-   }
+        }
+    }
 
-    showNextNotification(){
-        if (!this.notificationQueue.length){
+    showNextNotification() {
+        if (!this.notificationQueue.length) {
             this.notificationTimeout = null;
             return;
-       }
-        const{message, type}= this.notificationQueue.shift();
-        const $notification = $(`<div class="notification ${type}">${message}</div>`).appendTo("#notification-area");
-        $notification.fadeIn(300, () =>{
-            this.notificationTimeout = setTimeout(() =>{
-                $notification.fadeOut(300, () =>{
+        }
+        const { message, type } = this.notificationQueue.shift();
+        const icon = type === "success" ? "✅" : type === "warning" ? "⚠️" : type === "error" ? "❌" : "ℹ️";
+        const $notification = $(`<div class="notification ${type}">${icon} ${message}</div>`).appendTo("#notification-area");
+        $notification.css({
+            right: '-300px',
+            opacity: 0
+        }).animate({
+            right: '10px',
+            opacity: 1
+        }, 300, () => {
+            this.notificationTimeout = setTimeout(() => {
+                $notification.animate({
+                    right: '-300px',
+                    opacity: 0
+                }, 300, () => {
                     $notification.remove();
                     this.showNextNotification();
-               });
-           }, NOTIFICATION_DURATION);
-       });
+                });
+            }, NOTIFICATION_DURATION);
+        });
    }
 
 }

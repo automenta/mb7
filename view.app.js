@@ -3,6 +3,7 @@ import _ from 'lodash';
 import {format, isValid as isValidDate, parseISO} from "date-fns";
 import {UIComponent, View} from "./view.js";
 import {Edit} from './edit.js';
+import * as NostrTools from 'nostr-tools';
 
 export const formatDate = (timestamp) =>
     timestamp && isValidDate(typeof timestamp === "string" ? parseISO(timestamp) : new Date(timestamp))
@@ -12,69 +13,50 @@ export const formatDate = (timestamp) =>
 
 export class ContentView extends View {
     constructor(app) {
-        super(app, '<div id="content-view" class="view"><h2>Content</h2></div>');
+        super(app, '<div id="content-view" class="view"><h2>Dashboard</h2><div class="dashboard-container"><div id="recent-feed" class="dashboard-column"><h3>Recent Activity</h3><div id="recent-activity"></div></div><div id="live-feed" class="dashboard-column"><h3>Live Feed</h3><div id="nostr-feed"></div></div></div></div>');
     }
 
     build() {
-        this.$el.append(
-            `<div class="filter-bar"><input type="text" id="search-input" placeholder="Search items..."></div>`,
-            `<div id="object-list"></div>`,
-            `<button id="new-object-btn">New Object</button>`,
-            `<div id="editor-container" style="display:none;">
-            <div class="toolbar"><button id="insert-tag-btn">Insert Tag</button></div>
-            <div id="editor" contenteditable="true"></div>
-            <div class="metadata-panel">
-                <label for="object-name">Name:</label>
-                <input type="text" id="object-name">
-                <p>Created At: <span id="created-at"></span></p>
-            </div>
-            <button id="save-object-btn">Save</button>
-            <button id="cancel-edit-btn">Cancel</button>
-            <button id="delete-object-btn">Delete Object</button>
-        </div>`
-        );
-        this.editor = new Edit();
+        this.renderRecentActivity();
+    }
+
+    async renderRecentActivity() {
+        const recent = await this.app.db.getRecent(5);
+        this.$el.find("#recent-activity").html(recent.map(obj => `<p><strong>${obj.name}</strong> - Updated: ${formatDate(obj.updatedAt)}</p>`).join(''));
     }
 
     bindEvents() {
-        this.$el.find("#search-input").on("input", _.debounce(() => this.app.renderList(this.$el.find("#search-input").val()), 300));
-        this.$el.find("#new-object-btn").on("click", () => this.app.createNewObject());
-        this.$el.find("#save-object-btn").on("click", () => this.app.saveObject());
-        this.$el.find("#cancel-edit-btn").on("click", () => this.app.hideEditor());
-        this.$el.find("#delete-object-btn").on("click", () => this.app.deleteCurrentObject());
-        this.$el.find("#insert-tag-btn").on("click", (e) => {
+        this.$el.on("click", "button[data-view], button[data-list]", (e) => {
             e.preventDefault();
-            this.tagger.show(e)
+            this.app.setView($(e.currentTarget).data("view") || "content");
         });
-        this.$el.find("#object-list").on("click", ".object-item", (e) => this.app.editOrViewObject($(e.currentTarget).data("id")));
-    }
-}
-
-export class DashboardView extends View {
-    constructor(app) {
-        super(app, `<div id="dashboard-view" class="view"><h2>Dashboard</h2></div>`);
-    }
-
-    build() {
-        this.$el.append(
-            `<div id="dashboard-stats"></div>
-            <h3>Recent Activity</h3><div id="recent-activity"></div>
-            <h3>Tag Cloud</h3><div id="tag-cloud"></div>`
-        );
     }
 
     async render() {
-        const stats = await this.app.db.getStats();
-        this.$el.find("#dashboard-stats").html(`<p>Objects: ${stats.objectCount}</p><p>Tags: ${stats.tagCount}</p>`);
-        const recent = await this.app.db.getRecent(5);
-        this.$el.find("#recent-activity").html(recent.map(obj => `<p><strong>${obj.name}</strong> - Updated: ${formatDate(obj.updatedAt)}</p>`).join(''));
-        this.renderTagCloud();
+        // const selectedView = this.$el.find("#content-view-select").val();
+        // this.$el.find("#object-list, #dashboard-stats, #recent-activity, #tag-cloud").hide();
+
+        // if (selectedView === "objects") {
+        //     this.$el.find("#object-list").show();
+        //     this.app.renderList();
+        // } else if(selectedView === "recent") {
+        //     const stats = await this.app.db.getStats();
+        //     this.$el.find("#dashboard-stats").html(`<p>Objects: ${stats.objectCount}</p><p>Tags: ${stats.tagCount}</p>`).show();
+        //     const recent = await this.app.db.getRecent(5);
+        //     this.$el.find("#recent-activity").html(recent.map(obj => `<p><strong>${obj.name}</strong> - Updated: ${formatDate(obj.updatedAt)}</p>`).join('')).show();
+        // } else if (selectedView === "tagcloud") {
+        //     this.renderTagCloud();
+        //     this.$el.find("#tag-cloud").show();
+        // } else if (selectedView === "friends") {
+        //     this.$el.find("#recent-activity").html("<p>Friends activity will be here</p>").show();
+        // }
+        this.renderRecentActivity();
         this.displayPubkeyOnDashboard();
     }
 
     displayPubkeyOnDashboard() {
         if (window.keys?.pub && !$("#dashboard-view #pubkey-display").length) {
-            $("#dashboard-view").append(`<p id="pubkey-display">Your Public Key: ${NostrTools.nip19.npubEncode(window.keys.pub)}</p>`);
+            $("#content-view").append(`<p id="pubkey-display">Your Public Key: ${NostrTools.nip19.npubEncode(window.keys.pub)}</p>`);
         }
     }
 
@@ -90,39 +72,49 @@ export class DashboardView extends View {
     }
 }
 
-export class Sidebar extends View {
+export class Menubar extends View {
     constructor(app) {
-        super(app, `<div class="sidebar-left"></div>`);
+        super(app, `<div class="menubar-top" role="navigation" aria-label="Main menu"></div>`);
     }
 
     build() {
         this.$el.append(
-            this.buildSection("Menu", [{label: "Dashboard", view: "dashboard"}, {
+            this.buildSection("Menu", [ {
                 label: "Content",
                 view: "content"
-            }, {label: "Settings", view: "settings"}, {label: "Friends", view: "friends"}]),
-            this.buildSection("Links", [{label: "Recent Items", list: "recent"}]),
+            }, {label: "New Object", view: "new_object"},
+            {label: "Settings", view: "settings"}, {label: "Friends", view: "friends"}]),
+            //this.buildSection("Links", [{label: "Recent Items", list: "recent"}]),
             this.buildSection("Network", [{
-                label: `<div id="network-status">Connecting...</div><hr>`,
+                label: '<span id="network-status" style="float: right;">Connecting...</span>',
                 list: "network"
             }]),
-            $(`<div id='nostr-feed'></div>`)
+            //$(`<div id='nostr-feed'></div>`)
         );
     }
 
-    buildSection(title, items) {
-        return [
-            `<h3>${title}</h3>`,
-            `<ul>${items.map(item => `<li><a href="#" ${item.view ? `data-view="${item.view}"` : `data-list="${item.list}"`}>${item.label}</a></li>`).join('')}</ul><hr>`
-        ];
-    }
-
     bindEvents() {
-        this.$el.on("click", "a[data-view], a[data-list]", (e) => {
+        this.$el.on("click", "button[data-view], button[data-list]", (e) => {
             e.preventDefault();
             this.app.setView($(e.currentTarget).data("view") || "content");
         });
     }
+
+    buildSection(title, items) {
+        const buttonStyle = "border: none; background: transparent; color: #ddd; padding: 0.5em; cursor: pointer; font-size: 1.5em;";
+        const emojiMap = {
+            "Content": "📄",
+            "New Object": "✨",
+            "Settings": "⚙️",
+            "Friends": "👥",
+            "Network": "🌐"
+        };
+        return [
+            //`<h3>${title}</h3>`,
+            `${items.map(item => `<button tabindex="0" title="${item.label}" style="${buttonStyle}" ${item.view ? `data-view="${item.view}"` : `data-list="${item.list}"`}>${emojiMap[item.label] || ""}</button>`).join('')}<hr>`
+        ];
+    }
+
 }
 
 export class MainContent extends UIComponent {
