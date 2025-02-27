@@ -39,7 +39,7 @@ export class DB {
     static db = null;
 
     constructor() {
-        // The constructor doesn't need to open DB; use DB.initDB() instead.
+        
     }
 
     /**
@@ -47,19 +47,14 @@ export class DB {
      */
     static async initDB() {
         if (this.db) {
-            // Already opened
             return this.db;
         }
-        // Open (or upgrade) the database
         this.db = await openDB(DB_NAME, DB_VERSION, {
             upgrade(db, oldVersion, newVersion, transaction) {
                 console.log('onupgradeneeded triggered');
-                // Create 'objects' store if not present
                 if (!db.objectStoreNames.contains(OBJECTS_STORE)) {
                     db.createObjectStore(OBJECTS_STORE, {keyPath: 'id'});
                 }
-
-                // Create 'nostr_keys' store if not present
                 if (!db.objectStoreNames.contains(KEY_STORAGE)) {
                     db.createObjectStore(KEY_STORAGE);
                 }
@@ -77,7 +72,6 @@ export class DB {
         let object = await DB.db.get(OBJECTS_STORE, id);
 
         if (!object) {
-            // If the object doesn't exist, create it
             object = await createDefaultObject(DB.db, id);
         }
 
@@ -88,56 +82,136 @@ export class DB {
      * Return all objects in the 'objects' store, sorted by createdAt descending.
      */
     async getAll() {
-        const all = await DB.db.getAll(OBJECTS_STORE);
-        return all.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        try {
+            const all = await DB.db.getAll(OBJECTS_STORE);
+            return all.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        } catch (error) {
+            console.error("getAll failure:", error);
+            throw error;
+        }
     }
 
     /**
      * Get a single object by its ID.
      */
     async get(id) {
-        if (!DB.db) {
-            await DB.initDB();
+        try {
+            if (!DB.db) {
+                await DB.initDB();
+            }
+            return DB.db.get(OBJECTS_STORE, id);
+        } catch (error) {
+            console.error("Failed to save settings:", error);
+            console.error("Error updating friend profile:", error);
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            throw error;
         }
-        return DB.db.get(OBJECTS_STORE, id);
     }
 
     /**
      * Create or update an object (must have an `id`).
      */
     async save(o) {
-        if (!o.id) {
-            console.error('Attempted to save an object without an `id`:', o);
-            throw new Error('Missing id property on object');
+        try {
+            if (!o.id) {
+                console.error('Attempted to save an object without an `id`:', o);
+                throw new Error('Missing id property on object');
+            }
+            await DB.db.put(OBJECTS_STORE, o);
+            return o;
+        } catch (error) {
+            console.error("Failed to save settings:", error);
+            console.error("Error updating friend profile:", error);
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            throw error;
         }
-        await DB.db.put(OBJECTS_STORE, o);
-        return o;
     }
 
     /**
      * Delete an object by ID.
      */
     async delete(id) {
-        await DB.db.delete(OBJECTS_STORE, id);
+        try {
+            await DB.db.delete(OBJECTS_STORE, id);
+        } catch (error) {
+            console.error("Failed to save settings:", error);
+            console.error("Error updating friend profile:", error);
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            throw error;
+        }
     }
 
     /**
      * Return the most recent N objects.
      */
     async getRecent(limit = 5) {
-        const all = await this.getAll();
-        return all.slice(0, limit);
+        try {
+            const all = await this.getAll();
+            return all.slice(0, limit);
+        } catch (error) {
+            console.error("Failed to save settings:", error);
+            console.error("Error updating friend profile:", error);
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            throw error;
+        }
     }
 
     /**
      * Return basic stats about all stored objects.
      */
     async getStats() {
-        const all = await this.getAll();
-        return {
-            objectCount: all.length,
-            tagCount: all.reduce((acc, obj) => acc + (obj.tags?.length || 0), 0),
-        };
+        try {
+            const all = await this.getAll();
+            return {
+                objectCount: all.length,
+                tagCount: all.reduce((acc, obj) => acc + (obj.tags?.length || 0), 0),
+            };
+        } catch (error) {
+            console.error("Failed to save settings:", error);
+            console.error("Error updating friend profile:", error);
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            throw error;
+        }
     }
 
     async getFriendsObjectId() {
@@ -149,42 +223,87 @@ export class DB {
     }
 
     async addFriend(friend) {
-        const friendsObject = await this.getFriends();
-        const existingFriendIndex = friendsObject.tags.findIndex(
-            (tag) => tag[0] === 'People' && tag[1] === friend.pubkey
-        );
+        try {
+            const friendsObject = await this.getFriends();
+            const existingFriendIndex = friendsObject.tags.findIndex(
+                (tag) => tag[0] === 'People' && tag[1] === friend.pubkey
+            );
 
-        if (existingFriendIndex === -1) {
-            friendsObject.tags.push(['People', friend.pubkey, friend.name, friend.picture]);
-            friendsObject.updatedAt = new Date().toISOString();
-            await DB.db.put(OBJECTS_STORE, friendsObject);
+            if (existingFriendIndex === -1) {
+                friendsObject.tags.push(['People', friend.pubkey, friend.name, friend.picture]);
+                friendsObject.updatedAt = new Date().toISOString();
+                await DB.db.put(OBJECTS_STORE, friendsObject);
+            }
+        } catch (error) {
+            console.error("Failed to save settings:", error);
+            console.error("Error updating friend profile:", error);
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            throw error;
         }
     }
 
     async removeFriend(pubkey) {
-        const friendsObject = await this.getFriends();
-        const friendIndex = friendsObject.tags.findIndex(
-            (tag) => tag[0] === 'People' && tag[1] === pubkey
-        );
+        try {
+            const friendsObject = await this.getFriends();
+            const friendIndex = friendsObject.tags.findIndex(
+                (tag) => tag[0] === 'People' && tag[1] === pubkey
+            );
 
-        if (friendIndex !== -1) {
-            friendsObject.tags.splice(friendIndex, 1);
-            friendsObject.updatedAt = new Date().toISOString();
-            await DB.db.put(OBJECTS_STORE, friendsObject);
+            if (friendIndex !== -1) {
+                friendsObject.tags.splice(friendIndex, 1);
+                friendsObject.updatedAt = new Date().toISOString();
+                await DB.db.put(OBJECTS_STORE, friendsObject);
+            }
+        } catch (error) {
+            console.error("Failed to save settings:", error);
+            console.error("Error updating friend profile:", error);
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            throw error;
         }
     }
 
     async updateFriendProfile(pubkey, name, picture) {
-        const friendsObject = await this.getFriends();
-        const friendIndex = friendsObject.tags.findIndex(
-            (tag) => tag[0] === 'People' && tag[1] === pubkey
-        );
+        try {
+            const friendsObject = await this.getFriends();
+            const friendIndex = friendsObject.tags.findIndex(
+                (tag) => tag[0] === 'People' && tag[1] === pubkey
+            );
 
-        if (friendIndex !== -1) {
-            friendsObject.tags[friendIndex][2] = name;
-            friendsObject.tags[friendIndex][3] = picture;
-            friendsObject.updatedAt = new Date().toISOString();
-            await DB.db.put(OBJECTS_STORE, friendsObject);
+            if (friendIndex !== -1) {
+                friendsObject.tags[friendIndex][2] = name;
+                friendsObject.tags[friendIndex][3] = picture;
+                friendsObject.updatedAt = new Date().toISOString();
+                await DB.db.put(OBJECTS_STORE, friendsObject);
+            }
+        } catch (error) {
+            console.error("Failed to save settings:", error);
+            console.error("Error updating friend profile:", error);
+            
+            
+            
+            
+            
+            
+            
+            
+            console.error("Error updating friend profile:", error);
+            throw error;
         }
     }
 
@@ -218,6 +337,16 @@ export class DB {
         try {
             await DB.db.put(OBJECTS_STORE, settingsObject);
         } catch (error) {
+            console.error("Failed to save settings:", error);
+            console.error("Error updating friend profile:", error);
+            
+            
+            
+            
+            
+            
+            
+            
             console.error("Failed to save settings:", error);
             throw error;
         }
@@ -256,7 +385,6 @@ export async function generateKeys() {
     const pub = NostrTools.getPublicKey(priv);
 
     const newKeys = {priv, pub};
-    // store under the key "nostr_keys"
     await DB.db.put(KEY_STORAGE, newKeys, KEY_STORAGE);
     return newKeys;
 }
@@ -283,4 +411,3 @@ async function updateNotesIndex(newIndex) {
 }
 
 export { getNotesIndex, updateNotesIndex };
-

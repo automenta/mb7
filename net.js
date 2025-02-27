@@ -9,20 +9,20 @@ export class Nostr {
     constructor(app) {
         this.app = app;
         this.relays = ["wss://relay.damus.io", "wss://relay.snort.social"];
-        this.subscriptions = {}; // Centralized subscription management
-        this.relayStatuses = {}; // Track relay connection status
-        this.relayObjects = {}; //Store the actual relay objects
+        this.subscriptions = {}; 
+        this.relayStatuses = {}; 
+        this.relayObjects = {}; 
     }
 
     setRelays(relays) {
         this.disconnectFromAllRelays();
         this.relays = relays;
-        this.connect(); // Reconnect with new relays
+        this.connect(); 
     }
 
     connect() {
         this.disconnectFromAllRelays();
-        this.connectToRelays(); // Connect to all relays
+        this.connectToRelays(); 
     }
 
     connectToRelays() {
@@ -38,17 +38,16 @@ export class Nostr {
 
     async connectToRelay(relayUrl) {
         if (this.relayStatuses[relayUrl]?.status === "connecting" || this.relayStatuses[relayUrl]?.status === "connected") {
-            return; // Already connecting or connected
+            return; 
         }
 
-        //console.log(`Connecting to relay: ${relayUrl}`);
         this.relayStatuses[relayUrl] = {status: "connecting"};
 
         try {
             const relay = await Relay.connect(relayUrl);
-            this.relayObjects[relayUrl] = relay; //Store the relay object
+            this.relayObjects[relayUrl] = relay; 
 
-            this.onOpen(relay); // Manually call onOpen, since it might have already happened.
+            this.onOpen(relay); 
 
         } catch (error) {
             console.error("WebSocket connection error:", error);
@@ -56,83 +55,93 @@ export class Nostr {
         }
     }
 
-    onOpen(relay) {
-        console.log("Connected to relay:", relay.url);
-        this.relayStatuses[relay.url] = {status: "connected"};
-        this.relayConnected(relay);
+    async onOpen(relay) {
+        try {
+            console.log("Connected to relay:", relay.url);
+            this.relayStatuses[relay.url] = {status: "connected"};
+            await this.relayConnected(relay);
+        } catch (error) {
+            console.error("Error handling onOpen:", error);
+        }
     }
 
-    onNotice(relay, notice) {
-        console.log(`NOTICE from ${relay.url}: ${notice}`);
-        this.app.showNotification(`NOTICE from ${relay.url}: ${notice}`, "warning");
+    async onNotice(relay, notice) {
+        try {
+            console.log(`NOTICE from ${relay.url}: ${notice}`);
+            this.app.showNotification(`NOTICE from ${relay.url}: ${notice}`, "warning");
+        } catch (error) {
+            console.error("Error handling notice:", error);
+        }
     }
 
-    onClose(relay) {
-        console.log("Disconnected from relay:", relay.url);
-        this.relayStatuses[relay.url].status = "disconnected";
-
-        //check if *all* relays are disconnected
-        if (this.relays.every(r => this.relayStatuses[r]?.status === "disconnected" || this.relayStatuses[r] === undefined)) {
+    async onClose(relay) {
+        try {
+            console.log("Disconnected from relay:", relay.url);
+            this.relayStatuses[relay.url].status = "disconnected";
+        } catch (error) {
+            console.error("Error handling close:", error);
         }
     }
 
 
-    // Unified subscription method (supports relay objects)
-    subscribe(filters, options) {
+    async subscribe(filters, options) {
         const relay = options.relay;
         const subId = options.id || nanoid();
-
-        if (relay) {
-            const sub = relay.subscribe(filters, {
-                id: subId, onevent: options.onEvent || this.onEvent.bind(this), eose: () => {
-                    console.log(`EOSE from ${relay.url} for subscription ${subId}`);
+        try {
+            if (relay) {
+                const sub = await relay.subscribe(filters, {
+                    id: subId, onevent: options.onEvent || this.onEvent.bind(this), eose: () => {
+                        console.log(`EOSE from ${relay.url} for subscription ${subId}`);
+                    }
+                });
+                this.subscriptions[relay.url] = {...(this.subscriptions[relay.url] || {}), [subId]: sub};
+                return {relay: relay.url, id: subId};
+            } else {
+                for (const relayUrl of this.relays) {
+                    if (this.relayStatuses[relayUrl]?.status === 'connected') {
+                        const relay = this.relayObjects[relayUrl];
+                        const sub = await relay.subscribe(filters, {
+                            id: subId,
+                            onevent: options.onEvent || this.onEvent.bind(this),
+                            eose: () => {
+                                console.log(`EOSE from ${relay.url} for subscription ${subId}`);
+                            }
+                        });
+                        this.subscriptions[relayUrl] = {...(this.subscriptions[relayUrl] || {}), [subId]: sub};
+                    }
                 }
-            });
-            this.subscriptions[relay.url] = {...(this.subscriptions[relay.url] || {}), [subId]: sub};
-            return {relay: relay.url, id: subId};
-
-        } else {
-            //fallback, subscribe to *all* connected relays
-            this.relays.forEach(relayUrl => {
-                if (this.relayStatuses[relayUrl]?.status === 'connected') {
-                    const relay = this.relayObjects[relayUrl];
-                    const sub = relay.subscribe(filters, {
-                        id: subId,
-                        onevent: options.onEvent || this.onEvent.bind(this),
-                        eose: () => {
-                            console.log(`EOSE from ${relay.url} for subscription ${subId}`);
-                        }
-                    });
-                    this.subscriptions[relayUrl] = {...(this.subscriptions[relayUrl] || {}), [subId]: sub};
-                }
-            });
-            return {id: subId};
+                return {id: subId};
+            }
+        } catch (error) {
+            console.error("Error subscribing:", error);
+            throw error;
         }
     }
 
-    // Unified unsubscription method
-    unsubscribe(subInfo) {
-        if (!subInfo) return;
+    async unsubscribe(subInfo) {
+        try {
+            if (!subInfo) return;
 
-        if (subInfo.relay) {
-            //a specific relay.
-            const r = this.subscriptions[subInfo.relay];
-            if (r && r[subInfo.id]) {
-                r[subInfo.id].close();
-                delete r[subInfo.id];
-            }
-        } else {
-            //unsubscribe from *all* relays
-            for (let relayUrl in this.subscriptions) {
-                const u = this.subscriptions[relayUrl];
-                if (u[subInfo.id]) {
-                    u[subInfo.id].close();
-                    delete u[subInfo.id];
+            if (subInfo.relay) {
+                const r = this.subscriptions[subInfo.relay];
+                if (r && r[subInfo.id]) {
+                    await r[subInfo.id].close();
+                    delete r[subInfo.id];
+                }
+            } else {
+                for (let relayUrl in this.subscriptions) {
+                    const u = this.subscriptions[relayUrl];
+                    if (u[subInfo.id]) {
+                        await u[subInfo.id].close();
+                        delete u[subInfo.id];
+                    }
                 }
             }
+        } catch (error) {
+            console.error("Error unsubscribing:", error);
+            throw error;
         }
     }
-
 
     async onEvent(event) {
         if (!validateEvent(event) || !verifyEvent(event)) {
@@ -142,9 +151,9 @@ export class Nostr {
 
         switch (event.kind) {
             case 1:
-                await this.app.matcher.matchEvent(event); // Existing content matching
+                await this.app.matcher.matchEvent(event); 
                 const timeStr = new Date(event.created_at * 1000).toLocaleTimeString();
-                const nostrFeed = document.getElementById("nostr-feed"); // Assuming an element with this ID exists
+                const nostrFeed = document.getElementById("nostr-feed"); 
                 if (nostrFeed) {
                     nostrFeed.prepend(DOMPurify.sanitize("<div>[" + timeStr + "] " + nip19.npubEncode(event.pubkey) + ": " + event.content + "</div>"));
                     Array.from(nostrFeed.children).slice(20).forEach(child => nostrFeed.removeChild(child));
@@ -160,7 +169,7 @@ export class Nostr {
                 await this.handleKind5(event);
                 break;
             case 30000:
-                await this.handleObjectEvent(event); //handle custom object
+                await this.handleObjectEvent(event); 
                 break;
         }
     }
@@ -169,14 +178,11 @@ export class Nostr {
         try {
             const profileData = JSON.parse(event.content);
             if (event.pubkey === window.keys.pub) {
-                // Update own profile display
                 this.app.settingsView?.displayProfile(profileData);
             } else {
-                // Update friend's profile (if we're subscribed to it)
                 await this.app.db.updateFriendProfile(event.pubkey, profileData.name, profileData.picture);
-                // Refresh friends list only if FriendsView is active *AND* this friend is in the list
                 if (this.app.mainContent.currentView instanceof this.app.FriendsView && (await this.app.db.getFriend(event.pubkey))) {
-                    await this.app.friendsView.loadFriends(); // Refresh the entire list
+                    await this.app.friendsView.loadFriends(); 
                 }
             }
         } catch (error) {
@@ -198,22 +204,17 @@ export class Nostr {
                 console.warn("Error parsing content:", e);
             }
 
-            // Extract p tags
             const pTags = event.tags.filter(tag => tag[0] === 'p').map(tag => tag[1]);
             contacts = contacts.concat(pTags);
 
-            // remove duplicates.
             contacts = [...new Set(contacts)];
 
             for (const pubkey of contacts) {
-                // Check if the pubkey is valid before adding
                 if (pubkeyRegex.test(pubkey) && pubkey !== window.keys.pub) {
                     await this.app.db.addFriend(pubkey);
-                    // Subscribe to the friend's profile (Kind 0) - Use the unified subscribe
                     this.subscribe([{kinds: [0], authors: [pubkey]}], {id: `friend-profile-${pubkey}`});
                 }
             }
-            // Refresh friends list if the current user sent the event
             if (event.pubkey === window.keys.pub) {
                 await this.app.friendsView?.loadFriends();
             }
@@ -223,18 +224,21 @@ export class Nostr {
     }
 
     async handleKind5(event) {
-        const eventIdsToDelete = event.tags.filter(tag => tag[0] === 'e').map(tag => tag[1]);
-        for (const eventId of eventIdsToDelete) {
-            try {
-                await this.app.db.delete(eventId);
-            } catch (error) {
-                console.error(`Failed to delete object with id ${eventId}: `, error);
+        try {
+            const eventIdsToDelete = event.tags.filter(tag => tag[0] === 'e').map(tag => tag[1]);
+            for (const eventId of eventIdsToDelete) {
+                try {
+                    await this.app.db.delete(eventId);
+                } catch (error) {
+                    console.error(`Failed to delete object with id ${eventId}: `, error);
+                }
             }
-        }
 
-        // Refresh the content list if it's the current view
-        if (this.app.mainContent.currentView instanceof this.app.ContentView) {
-            await this.app.renderList();
+            if (this.app.mainContent.currentView instanceof this.app.ContentView) {
+                await this.app.renderList();
+            }
+        } catch (error) {
+            console.error("Error handling kind 5 event:", error);
         }
     }
 
@@ -246,12 +250,12 @@ export class Nostr {
 
             const existingObj = await this.app.db.get(data.id);
             const nobj = {
-                ...existingObj, // Preserve existing data
+                ...existingObj, 
                 id: data.id,
                 name: data.name,
                 content: DOMPurify.sanitize(data.content),
-                tags: this.extractTagsFromEvent(event), // Use a dedicated function to extract and normalize tags
-                createdAt: existingObj?.createdAt || (event.created_at * 1000), // Keep existing, if present
+                tags: this.extractTagsFromEvent(event), 
+                createdAt: existingObj?.createdAt || (event.created_at * 1000), 
                 updatedAt: event.created_at * 1000,
             };
             await this.app.db.save(nobj);
@@ -262,7 +266,6 @@ export class Nostr {
     }
 
     extractTagsFromEvent(event) {
-        // Extract and normalize tags, handling both 't' and custom tags
         const tags = [];
         for (const tag of event.tags) {
             if (tag.length >= 2) {
@@ -270,16 +273,13 @@ export class Nostr {
                 const tagValue = tag[1];
 
                 if (tagName === 't') {
-                    //keep the "t" tags as they were
-                    tags.push({name: tagValue, condition: 'is', value: ''}) //Add the standard tag structure
+                    tags.push({name: tagValue, condition: 'is', value: ''}) 
                 } else {
-                    //custom tags, like p, e, etc.
-                    let condition = 'is'; // Default condition
+                    let condition = 'is'; 
                     let value = tagValue;
 
-                    //Check the special condition for "p" and "e" tags, following Nostr convention.
                     if ((tagName === 'p' || tagName === 'e') && tag.length >= 2) {
-                        condition = 'references'; // Or any other suitable condition name
+                        condition = 'references'; 
                     }
                     tags.push({name: tagName, condition, value});
                 }
@@ -288,110 +288,130 @@ export class Nostr {
         return tags;
     }
 
-    publish(object) {
-        const event = {
-            kind: 1, //or 30000 for custom objects.  Using 1 for now.
-            created_at: Math.floor(Date.now() / 1000),
-            tags: object.tags.map(tag => {
-                // Serialize the tag value based on its type
-                const tagDef = getTagDefinition(tag.name);
-                const serializedValue = tagDef.serialize(tag.value);
-
-                // Construct the tag array as expected by Nostr
-                return [tag.name, ...(Array.isArray(serializedValue) ? serializedValue : [String(serializedValue)])];
-            }),
-            content: object.content,
-            pubkey: window.keys.pub,
-        };
-        this.publishEvent(event);
+    async publish(object) {
+        try {
+            const event = {
+                kind: 1, 
+                created_at: Math.floor(Date.now() / 1000),
+                tags: object.tags.map(tag => {
+                    const tagDef = getTagDefinition(tag.name);
+                    const serializedValue = tagDef.serialize(tag.value);
+                    return [tag.name, ...(Array.isArray(serializedValue) ? serializedValue : [String(serializedValue)])];
+                }),
+                content: object.content,
+                pubkey: window.keys.pub,
+            };
+            return await this.publishEvent(event);
+        } catch (error) {
+            console.error("Error publishing object:", error);
+            throw error;
+        }
     }
-
 
     async publishEvent(event) {
         try {
             event.id = getEventHash(event);
             event.sig = await signEvent(event, window.keys.priv);
-            this.publishRawEvent(event)
+            await this.publishRawEvent(event)
             return event;
         } catch (error) {
             console.error("Failed to publish event", error);
             this.app.showNotification(`Failed to publish event: ${error.message}`, "error");
-            throw error; // Re-throw for caller handling
+            throw error; 
         }
     }
 
-    publishRawEvent(event) {
-        if (!this.relays || this.relays.length === 0) {
-            this.app.showNotification("No relays configured. Cannot publish.", "error");
-            return
+    async publishRawEvent(event) {
+        try {
+            if (!this.relays || this.relays.length === 0) {
+                this.app.showNotification("No relays configured. Cannot publish.", "error");
+                return
+            }
+            for (const relayUrl of this.relays) {
+                const relayStatus = this.relayStatuses[relayUrl]?.status;
+                if (relayStatus === 'connected') {
+                    const relay = this.relayObjects[relayUrl];
+                    const pub = relay.publish(event);
+                    pub.on('ok', () => {
+                        console.log(`${relay.url} has accepted our event`);
+                    });
+                    pub.on('failed', reason => {
+                        console.log(`failed to publish to ${relay.url}: ${reason}`);
+                        this.app.showNotification(`Failed to publish to ${relayUrl}: ${reason}.`, "warning");
+                    });
+                } else {
+                    console.warn(`Trying to publish to a disconnected relay ${relay.url}`);
+                }
+            }
+        } catch (error) {
+            console.error("Error publishing raw event:", error);
+            throw error;
         }
-        this.relays.forEach(relayUrl => {
-            const relayStatus = this.relayStatuses[relayUrl]?.status;
-            if (relayStatus === 'connected') {
-                const relay = this.relayObjects[relayUrl];
-                const pub = relay.publish(event);
-                pub.on('ok', () => {
-                    console.log(`${relay.url} has accepted our event`);
-                });
-                pub.on('failed', reason => {
-                    console.log(`failed to publish to ${relay.url}: ${reason}`);
-                    this.app.showNotification(`Failed to publish to ${relayUrl}: ${reason}.`, "warning");
-                });
-            } else {
-                console.warn(`Trying to publish to a disconnected relay ${relay.url}`);
-                //optionally, queue the event for later.
+    }
+
+
+    async relayConnected(relay) {
+        try {
+            await this.subscribe([{kinds: [30000], authors: [window.keys.pub]}], {
+                relay,
+                onEvent: this.handleObjectEvent.bind(this)
+            }); 
+            await this.subscribe([{kinds: [1]}], {relay, id: `feed-${relay.url}`}); 
+            await this.subscribeToFriends(relay);
+        } catch (error) {
+            console.error("Error in relayConnected:", error);
+        }
+    }
+
+    async connectToPeer(pubkey) {
+        try {
+            for (const relayUrl of this.relays) {
+                if (this.relayStatuses[relayUrl]?.status === 'connected') {
+                    await this.subscribeToPubkey(this.relayObjects[relayUrl], pubkey);
+                }
             }
-        });
+        } catch (error) {
+            console.error("Error connecting to peer:", error);
+        }
     }
 
+    async subscribeToPubkey(relay, pubkey) {
+        try {
+            const subId = `friend_${pubkey}`;
+            await this.unsubscribe({relay: relay.url, id: subId});
 
-    // Common handler for relay connections, for both initial and friend connections
-    relayConnected(relay) {
-        this.subscribe([{kinds: [30000], authors: [window.keys.pub]}], {
-            relay,
-            onEvent: this.handleObjectEvent.bind(this)
-        }); //custom objects
-        this.subscribe([{kinds: [1]}], {relay, id: `feed-${relay.url}`}); // General feed
-        this.subscribeToFriends(relay);
-    }
-
-    connectToPeer(pubkey) {
-        // We'll subscribe to events tagged with this pubkey.
-        this.relays.forEach(relayUrl => {
-            if (this.relayStatuses[relayUrl]?.status === 'connected') {
-                this.subscribeToPubkey(this.relayObjects[relayUrl], pubkey);
-            } else {
-                //If not connected, we rely on the 'connect' event listener already set up in connectToRelay.
-            }
-        });
-    }
-
-    subscribeToPubkey(relay, pubkey) {
-        // Check for and remove existing subscription for this pubkey on this relay
-        const subId = `friend_${pubkey}`;
-        this.unsubscribe({relay: relay.url, id: subId});
-
-        this.subscribe([{kinds: [1, 30000], authors: [pubkey]}, {kinds: [1, 30000], '#p': [pubkey]}], {
-            relay,
-            id: subId
-        }); //unified subscribe
+            await this.subscribe([{kinds: [1, 30000], authors: [pubkey]}, {kinds: [1, 30000], '#p': [pubkey]}], {
+                relay,
+                id: subId
+            }); 
+        } catch (error) {
+            console.error("Error subscribing to pubkey:", error);
+        }
     }
 
     async subscribeToFriends(relay) {
-        const friendsObjectId = await this.app.db.getFriendsObjectId();
-        this.subscribe([{kinds: [30000], ids: [friendsObjectId]}], {
-            relay,
-            id: `friends-object`,
-            onEvent: this.handleObjectEvent.bind(this)
-        });
+        try {
+            const friendsObjectId = await this.app.db.getFriendsObjectId();
+            await this.subscribe([{kinds: [30000], ids: [friendsObjectId]}], {
+                relay,
+                id: `friends-object`,
+                onEvent: this.handleObjectEvent.bind(this)
+            });
+        } catch (error) {
+            console.error("Error subscribing to friends:", error);
+        }
     }
 
-    disconnectFromAllRelays() {
-        for (const relayUrl in this.relayObjects) {
-            this.relayObjects[relayUrl].close();
+    async disconnectFromAllRelays() {
+        try {
+            for (const relayUrl in this.relayObjects) {
+                await this.relayObjects[relayUrl].close();
+            }
+            this.relayStatuses = {}; 
+            this.relayObjects = {};
+            this.subscriptions = {}; 
+        } catch (error) {
+            console.error("Error disconnecting from relays:", error);
         }
-        this.relayStatuses = {}; // Reset relay statuses
-        this.relayObjects = {};
-        this.subscriptions = {}; // Clear subscriptions
     }
 }

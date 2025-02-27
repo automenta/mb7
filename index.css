@@ -1,3 +1,13 @@
+.saved {
+    background-color: lightgreen;
+    transition: background-color 0.5s;
+}
+
+.editable {
+    border: 1px solid #ccc;
+    padding: 2px;
+}
+
 /* General Styles */
 body {
     font-family: sans-serif;

@@ -1,20 +1,22 @@
 import $ from 'jquery';
-import {formatISO} from "date-fns";
-import {formatDate} from './content-view-renderer.js';
-import {ContentView, MainContent, Menubar} from "./view.app.js";
-import {FriendsView} from "./view.friends.js";
-import {SettingsView} from "./view.settings.js";
-import {EditView} from "./view.edit.js";
+import { formatISO } from "date-fns";
+import { formatDate } from './content-view-renderer.js';
+import { ContentView, MainContent, Menubar } from "./view.app.js";
+import { FriendsView } from "./view.friends.js";
+import { SettingsView } from "./view.settings.js";
 import * as Net from "./net.js";
 import * as DB from "./db.js";
-import {Matcher} from "./match.js";
-import {nanoid} from 'nanoid';
-import {extractTags} from "./tag-utils.js";
-import {NotificationManager} from "./notification-manager.js";
-import {NotesView} from './view.notes.js';
+import { Matcher } from "./match.js";
+import { nanoid } from 'nanoid';
+import { extractTags } from "./tag-utils.js";
+import { NotificationManager } from "./notification-manager.js";
+import { NotesView } from './view.notes.js';
+import DOMPurify from 'dompurify';
+import { ErrorHandler } from './error-handler.js';
+
 
 const DOMPURIFY_CONFIG = {
-    ALLOWED_TAGS: ["br", "b", "i", "span"],
+    ALLOWED_TAGS: ["br", "b", "i", "span", "p", "strong", "em", "ul", "ol", "li", "a"],
     ALLOWED_ATTR: ["class", "contenteditable", "tabindex", "id", "aria-label"]
 };
 
@@ -32,16 +34,16 @@ class App {
         this.$createdAt = $("#created-at");
         this.elements = {};
         this.notificationManager = new NotificationManager(this);
+        this.errorHandler = new ErrorHandler(this);
     }
 
     async init() {
-        await DB.DB.initDB(); // Initialize the database *first*
-        await this.loadKeysAndConnect();
-        await this.initUI();      // *Then* initialize the UI
+        await DB.DB.initDB();
+        await this.loadKeysAndConnect();                
+        await this.initUI();
     }
 
     async initUI() {
-
         this.$container = document.createElement('div');
         this.$container.className = 'container';
         this.menubar = new Menubar(this);
@@ -55,9 +57,8 @@ class App {
         document.body.append(notificationArea);
         this.elements.notificationArea = notificationArea;
 
-        // initial view
         this.setView(
-            "new_object"
+            "notes"
         );
     }
 
@@ -67,26 +68,16 @@ class App {
     }
 
 
-    async deleteCurrentObject() {
-        if (this.selected && confirm(`Delete "${this.selected.name}"?`)) {
-            const event = {
-                kind: 5,
-                created_at: Math.floor(Date.now() / 1000),
-                tags: [["e", this.selected.id]],
-                content: "",
-                pubkey: window.keys.pub,
-            };
+    async deleteCurrentObject(note) {
+        if (note && note.id) {
             try {
-                await this.nostrClient.publishEvent(event);
-            } catch (e) {
-                console.error("Failed to publish event:", e);
-                throw e; // Re-throw the error to allow Vite to catch it
+                await this.db.delete(note.id);
+                await this.renderList();
+                this.notificationManager.showNotification(`"${note.name}" deleted.`, "success");
+            } catch (dbError) {
+                console.error("Error deleting object:", dbError);
+                this.errorHandler.handleError(dbError, `Error deleting object from database: ${dbError.message}`);
             }
-
-            await this.db.delete(this.selected.id);
-            this.hideEditor();
-            await this.renderList();
-            this.notificationManager.showNotification(`"${this.selected.name}" deleted.`, "success");
         }
     }
 
@@ -99,22 +90,12 @@ class App {
             },
             settings: () => this.settingsView,
             friends: () => this.friendsView,
-            new_object: () => {
-                const editView = new EditView(this);
-                this.mainContent.currentView = editView;
-                this.mainContent.showView(editView);
-                this.createNewObject(editView);
-                return editView;
-            }
-            ,
             notes: () => {
                 const notesView = new NotesView(this);
-                this.mainContent.currentView = notesView;
                 this.mainContent.showView(notesView);
                 return notesView;
             }
         };
-
         const view = views[viewName]();
         this.mainContent.showView(view);
         this.mainContent.currentView = view;
@@ -128,24 +109,41 @@ class App {
         const listEl = this.mainContent.currentView.elements.objectList;
         listEl.innerHTML = "";
         const objects = await this.db.getAll();
-        const filtered = filter
-            ? objects.filter(o => Object.values(o).some(val => typeof val === 'string' && val.toLowerCase().includes(filter.toLowerCase())))
-            : objects;
-
+        const filtered = filter ? objects.filter(o => Object.values(o).some(val => typeof val === 'string' && val.toLowerCase().includes(filter.toLowerCase()))) : objects;
         if (filtered.length) {
             filtered.forEach(obj => {
                 const itemEl = document.createElement('div');
                 itemEl.className = "object-item";
                 itemEl.dataset.id = obj.id;
                 itemEl.tabIndex = 0;
-                itemEl.innerHTML = `
-                    <div class="object-header">
-                        <strong>${obj.name}</strong>
-                        <small>Updated: ${formatDate(obj.updatedAt)}</small>
-                    </div>
-                    <div class="object-content">${obj.content?.substring(0, 100)}...</div>
-                    <div class="object-tags">${obj.tags?.map(tag => `<span class="tag">${tag.name}</span>`).join('')}</div>
-                `;
+
+                const headerEl = document.createElement('div');
+                headerEl.className = "object-header";
+
+                const nameEl = document.createElement('strong');
+                nameEl.textContent = obj.name;
+
+                const updatedEl = document.createElement('small');
+                updatedEl.textContent = `Updated: ${formatDate(obj.updatedAt)}`;
+
+                headerEl.append(nameEl, updatedEl);
+
+                const contentEl = document.createElement('div');
+                contentEl.className = "object-content";
+                contentEl.textContent = obj.content ? `${obj.content.substring(0, 100)}...` : "";
+
+                const tagsEl = document.createElement('div');
+                tagsEl.className = "object-tags";
+                if (obj.tags) {
+                    obj.tags.forEach(tag => {
+                        const tagEl = document.createElement('span');
+                        tagEl.className = "tag";
+                        tagEl.textContent = tag.name;
+                        tagsEl.append(tagEl);
+                    });
+                }
+
+                itemEl.append(headerEl, contentEl, tagsEl);
                 listEl.append(itemEl);
             });
         } else {
@@ -153,24 +151,76 @@ class App {
         }
     }
 
-    createNewObject(editView) {
-        editView.setContent(""); // Clear the editor content
-        const object = {
+    async saveOrUpdateObject(object) {
+        try {
+            const updatedObject = this.prepareObjectForSaving(object);
+            const savedObject = await this.db.save(updatedObject);
+            this.hideEditor();
+            await this.renderList();
+            this.notificationManager.showNotification("Object saved.", "success");
+            this.selected = savedObject;
+        } catch (error) {
+            console.error("Error saving object:", error);
+            this.errorHandler.handleError(error, `Error saving object: ${error.message}`);
+        }
+    }
+
+    prepareObjectForSaving(object) {
+        if (!object.name) {
+            throw new Error('Object name is required.');
+        }
+        if (object.name.length > 100) {
+            throw new Error('Object name is too long (max 100 characters).');
+        }
+        if (object.content && object.content.length > 10000) {
+            throw new Error('Object content is too long (max 10000 characters).');
+        }
+        if (object.tags) {
+            object.tags.forEach(tag => {
+                if (!tag.name)
+                    throw new Error('Tag name is required.');
+                if (tag.name.length > 50)
+                    throw new Error('Tag name is too long (max 50 characters).');
+            });
+        }
+        const sanitizedContent = DOMPurify.sanitize(object.content, DOMPURIFY_CONFIG);
+        const now = formatISO(new Date());
+        let updatedObject = {
+            ...object,
+            name: object.name,
+            content: sanitizedContent,
+            tags: extractTags(sanitizedContent),
+            updatedAt: now
+        };
+        if (!updatedObject.id) {
+            updatedObject.id = nanoid();
+        }
+        // Validate id, createdAt, and updatedAt
+        if (!updatedObject.id || typeof updatedObject.id !== 'string')
+            throw new Error('Invalid object ID.');
+
+        if (!updatedObject.createdAt || isNaN(Date.parse(updatedObject.createdAt)))
+            throw new Error('Invalid createdAt date.');
+
+        if (!updatedObject.updatedAt || isNaN(Date.parse(updatedObject.updatedAt)))
+            throw new Error('Invalid updatedAt date.');
+
+        return updatedObject;
+    }
+
+    createNewObject(editView, newNote) {
+        if (editView && editView.edit)
+            editView.edit.setContent('');
+
+        return this.selected = {
             id: nanoid(),
             editView: editView,
             name: "",
             content: "",
             tags: [],
-            createdAt: (() => {
-                const now = new Date();
-                return formatISO(now);
-            })(),
-            updatedAt: (() => {
-                const now = new Date();
-                return formatISO(now);
-            })()
+            createdAt: formatISO(new Date()),
+            updatedAt: formatISO(new Date())
         };
-        this.showEditor(object);
     }
 
     async editOrViewObject(id) {
@@ -181,68 +231,17 @@ class App {
     showEditor(object) {
         this.selected = object;
         this.mainContent.showView(object.editView);
-        const objectNameEl = this.mainContent.currentView.elements.objectName;
-        const createdAtEl = this.mainContent.currentView.elements.createdAt;
-
-        if (objectNameEl) {
-            objectNameEl.value = object.name || "";
-        }
-        if (createdAtEl) {
-            createdAtEl.textContent = object.createdAt ? formatDate(object.createdAt) : "";
-        }
-        object.editView.setContent(object.content || "");
+        this.$objectName.val(object.name);
+        this.$createdAt.text(object.createdAt);
     }
 
     hideEditor() {
-        //this.$editorContainer.hide();
         this.selected = null;
-        // Clear input fields and editor content
-        this.mainContent.currentView.elements.objectName.value = '';
-        this.mainContent.currentView.elements.createdAt.textContent = '';
-        this.selected?.editView?.edit.setContent('');
-    }
-
-    async saveObject() {
-        if (!this.selected) return;
-        const name = $("#object-name").val().trim();
-        if (!name) {
-            this.notificationManager.showNotification("Object name is required.", "warning");
-            return;
-        }
-
-        const sanitizedContent = DOMPurify.sanitize(this.selected?.editView?.edit.getContent(), DOMPURIFY_CONFIG);
-
-        this.selected = {
-            ...this.selected,
-            name,
-            content: sanitizedContent,
-            tags: extractTags(sanitizedContent),
-            updatedAt: (() => {
-                const now = new Date();
-                return formatISO(now);
-            })()
-        };
-        await this.db.save(this.selected);
-
-        this.hideEditor();
-        await this.renderList();
-        this.notificationManager.showNotification("Object saved.", "success");
-    }
-
-    async updateCurrentObject() {
-        if (!this.selected) return;
-        const sanitizedContent = DOMPurify.sanitize(this.selected?.editView?.edit.getContent(), DOMPURIFY_CONFIG);
-        this.selected.content = sanitizedContent;
-        this.selected.tags = extractTags(sanitizedContent);
-        try {
-            await this.db.save(this.selected);
-        } catch (e) {
-            this.notificationManager.showNotification("Object update failed.", "error");
-        }
+        this.$objectName.val('');
+        this.$createdAt.text('');
+        //this.selected?.editView?.edit.setContent('');
     }
 }
 
-document.addEventListener("DOMContentLoaded", async () => {
-    window.app = new App();
-    await window.app.init();
-});
+
+document.addEventListener("DOMContentLoaded", async () => { await (window.app = new App()).init(); });

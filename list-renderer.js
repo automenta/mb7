@@ -1,35 +1,66 @@
-// list-renderer.js
+import * as Y from 'yjs';
 
-function createListItem(item) {
+function createListItem(item, updateNote, yMap) {
     const li = document.createElement('li');
-    li.textContent = item.content?.substring(0, 20) + "..."; // Adjust as needed
     li.dataset.id = item.id;
-    li.addEventListener('click', () => {
-        // Add event handling logic here
-        console.log('List item clicked:', item);
-    });
-    return li;
-}
 
-function renderList(items, container) {
-    if (!items) {
-        container.textContent = 'No notes yet.';
-        return;
-    }
-
-    if (!items || items.length === 0) {
-    items.forEach(item => {
-        if(item) {
-            container.appendChild(createListItem(item));
+    // Name editor
+    const nameSpan = document.createElement('span');
+    nameSpan.className = 'note-name';
+    nameSpan.contentEditable = true;
+    nameSpan.textContent = item.name;
+    
+    // Sync name changes with Yjs
+    const yName = yMap.get(item.id).get('name');
+    yName.observe(event => {
+        if (!nameSpan.isSameNode(document.activeElement)) {
+            nameSpan.textContent = yName.toString();
         }
     });
 
+    nameSpan.addEventListener('input', () => {
+        yName.delete(0, yName.length);
+        yName.insert(0, nameSpan.textContent);
+    });
+
+    nameSpan.addEventListener('blur', async () => {
+        await updateNote(item.id, {name: nameSpan.textContent});
+    });
+
+    // Content preview
+    const contentPreview = document.createElement('span');
+    contentPreview.className = 'content-preview';
+    
+    // Sync content changes with Yjs
+    const yContent = yMap.get(item.id).get('content');
+    yContent.observe(event => {
+        contentPreview.textContent = yContent.toString().substring(0, 50) + '...';
+    });
+    contentPreview.textContent = yContent.toString().substring(0, 50) + '...';
+
+    // Delete button
+    const deleteButton = document.createElement('button');
+    deleteButton.textContent = 'Delete';
+    deleteButton.addEventListener('click', async () => {
+        await updateNote(item.id, null);
+    });
+
+    li.append(nameSpan, contentPreview, deleteButton);
+    return li;
+}
+
+function renderList(items, container, updateNote, yMap) {
+    if (!items || items.length === 0) {
         container.textContent = 'No notes yet.';
         return;
     }
 
-    container.innerHTML = ''; // Clear existing content
-    items.forEach(item => container.appendChild(createListItem(item)));
+    container.innerHTML = '';
+    items.forEach(item => {
+        if (item) {
+            container.appendChild(createListItem(item, updateNote, yMap));
+        }
+    });
 }
 
 export { renderList };

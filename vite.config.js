@@ -1,12 +1,12 @@
 import {defineConfig} from 'vite';
-import basicSSL from '@vitejs/plugin-basic-ssl';
+//import basicSSL from '@vitejs/plugin-basic-ssl';
 
 export default defineConfig({
     plugins: [
-        basicSSL()
+        //basicSSL()
     ],
     server: {
-        https: true,
+        https: false,
         open: true
     }
 });

@@ -51,17 +51,13 @@ export class Menubar extends View {
     build() {
         this.el.innerHTML = '';
         this.el.className = 'menubar-top';
-        this.buildSection("Menu", [{
-            label: "Content",
-            view: "content"
-        }, {label: "New Object", view: "new_object"},
-            {label: "Settings", view: "settings"}, {
-                label: "Friends", view: "friends"
-            },
-            {
-                label: "Notes",
-                view: "notes"
-            }]).forEach(button => this.el.append(button));
+        this.buildSection("Menu", [
+            {label: "Content", view: "content"},
+            //{label: "Network", view: "network"},
+            {label: "Settings", view: "settings"}, 
+            {label: "Friends", view: "friends"},
+            {label: "Notes",  view: "notes"}
+        ]).forEach(button => this.el.append(button));
     }
 
     bindEvents() {
@@ -83,7 +79,6 @@ export class Menubar extends View {
             } else if (item.list) {
                 button.dataset.list = item.list;
             }
-            console.log(button);
             button.textContent = emojiMap[item.label] || "";
             return button;
         });
