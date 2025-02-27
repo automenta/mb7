@@ -1,6 +1,6 @@
 /* General Styles */
 body {
-  font-family: 'Roboto', sans-serif;
+  font-family: sans-serif;
   background-color: #121212; /* Dark background */
   color: #ddd; /* White text */
   margin: 0;
@@ -295,16 +295,3 @@ a:hover {
     font-weight: bold;
 }
 
-.tag-item{
-    cursor: pointer;
-    padding: 2px 5px;
-    display: inline-block;
-    margin-right: 5px;
-    border: 1px solid #eee;
-    border-radius: 4px;
-    background: #f8f8f8;
-}
-
-.tag-item:hover{
-    background: #eee;
-}

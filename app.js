@@ -45,7 +45,11 @@ class App{
         this.settingsView = new SettingsView(this);
         this.friendsView = new FriendsView(this);
 
-        this.setView("content"); // Set initial view
+        // initial view
+        this.setView(
+            "new_object"
+            //"content"
+        ); 
    }
 
    /*initSidebar() {};
@@ -93,19 +97,14 @@ class App{
             },
             "settings": () => this.settingsView,
             "friends": () => this.friendsView,
-            "default": () => {
-                const contentView = new ContentView(this);
-                contentView.render();
-                return contentView;
-            }
-       };
-        views["new_object"] = () => {
-            const editView = new EditView(this);
-            this.createNewObject(editView);
-            return editView;
+            "new_object": () => {
+                const editView = new EditView(this);
+                this.createNewObject(editView);
+                return editView;    
+            }        
         };
 
-        const view = (views[viewName] || views["default"])();
+        const view = views[viewName]();
         this.mainContent.showView(view);
         this.mainContent.currentView = view;
         if (viewName === "content") {
