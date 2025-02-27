@@ -1,5 +1,3 @@
-import * as Y from 'yjs';
-
 function createListItem(item, updateNote, yMap) {
     const li = document.createElement('li');
     li.dataset.id = item.id;
@@ -9,7 +7,7 @@ function createListItem(item, updateNote, yMap) {
     nameSpan.className = 'note-name';
     nameSpan.contentEditable = true;
     nameSpan.textContent = item.name;
-    
+
     // Sync name changes with Yjs
     const yName = yMap.get(item.id).get('name');
     yName.observe(event => {
@@ -30,7 +28,7 @@ function createListItem(item, updateNote, yMap) {
     // Content preview
     const contentPreview = document.createElement('span');
     contentPreview.className = 'content-preview';
-    
+
     // Sync content changes with Yjs
     const yContent = yMap.get(item.id).get('content');
     yContent.observe(event => {
@@ -63,4 +61,4 @@ function renderList(items, container, updateNote, yMap) {
     });
 }
 
-export { renderList };
+export {renderList};

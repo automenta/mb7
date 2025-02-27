@@ -1,4 +1,4 @@
-import { createElement } from './utils.js';
+import {createElement} from './utils.js';
 
 class EditorContentHandler {
     constructor(editor) {
@@ -117,7 +117,7 @@ class EditorContentHandler {
 
 const tagDataMap = new WeakMap();
 
-class InlineTag {
+export class InlineTag {
     constructor(tagData, onUpdate) {
         this.data = this.normalizeTagData(tagData);
         this.onUpdate = onUpdate;
@@ -195,12 +195,27 @@ class TagConditionRenderer extends TagRenderer {
         select.value = condition;
         this.el.append(select);
     }
+
+    numberInput(ph, inputValue, onValueChange) {
+        this.el.append(createElement("input", {
+            type: "number",
+            placeholder: ph,
+            value: inputValue,
+            oninput: (e) => onValueChange(parseFloat(e.target.value) || "")
+        }));
+        this.numberInput("Value", this.tag.data.value, v => this.tag.data.value = v);
+    }
 }
 
 class NumberInputRenderer extends TagRenderer {
     append() {
         const {unit, value, min, max} = this.tag.data;
-        const numberInput = (ph, val, onValueChange) => this.el.append(createElement("input", {type: "number", placeholder: ph, value: val, oninput: (e) => onValueChange(parseFloat(e.target.value) || "")}));
+        const numberInput = (ph, val, onValueChange) => this.el.append(createElement("input", {
+            type: "number",
+            placeholder: ph,
+            value: val,
+            oninput: (e) => onValueChange(parseFloat(e.target.value) || "")
+        }));
 
         switch (this.tag.data.condition) {
             case "is":
@@ -225,7 +240,12 @@ class NumberInputRenderer extends TagRenderer {
 class TimeInputRenderer extends TagRenderer {
     append() {
         const {value, min, max} = this.tag.data;
-        const timeInput = (ph, val, onValueChange) => this.el.append(createElement("input", {type: "text", placeholder: ph, value: val, oninput: (e) => onValueChange(e.target.value)}));
+        const timeInput = (ph, val, onValueChange) => this.el.append(createElement("input", {
+            type: "text",
+            placeholder: ph,
+            value: val,
+            oninput: (e) => onValueChange(e.target.value)
+        }));
 
         switch (this.tag.data.condition) {
             case "is at":
@@ -269,18 +289,23 @@ class TagValueRenderer extends TagRenderer {
                 break;
 
             case "color":
-                const colorInput = createElement("input", {type: "color", value: value, oninput: (e) => {
-                    this.tag.data.value = e.target.value;
-                    preview.style.backgroundColor = e.target.value;
-                    this.tag.onUpdate?.();
-                }});
+                const colorInput = createElement("input", {
+                    type: "color", value: value, oninput: (e) => {
+                        this.tag.data.value = e.target.value;
+                        preview.style.backgroundColor = e.target.value;
+                        this.tag.onUpdate?.();
+                    }
+                });
                 const preview = createElement("span", {class: "color-preview"});
                 preview.style.backgroundColor = value;
                 this.el.append(colorInput, preview);
                 break;
 
             case "location":
-                this.el.append(createElement("input", {type: "text", placeholder: "Lat, Lng", value: this.tag.data.value ? `${this.tag.data.value.lat}, ${this.tag.data.value.lng}` : "",
+                this.el.append(createElement("input", {
+                    type: "text",
+                    placeholder: "Lat, Lng",
+                    value: this.tag.data.value ? `${this.tag.data.value.lat}, ${this.tag.data.value.lng}` : "",
                     oninput: (e) => {
                         const [latStr, lngStr] = e.target.value.split(",").map(s => s.trim());
                         const [lat, lng] = [parseFloat(latStr), parseFloat(lngStr)];

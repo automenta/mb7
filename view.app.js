@@ -54,9 +54,9 @@ export class Menubar extends View {
         this.buildSection("Menu", [
             {label: "Content", view: "content"},
             //{label: "Network", view: "network"},
-            {label: "Settings", view: "settings"}, 
+            {label: "Settings", view: "settings"},
             {label: "Friends", view: "friends"},
-            {label: "Notes",  view: "notes"}
+            {label: "Notes", view: "notes"}
         ]).forEach(button => this.el.append(button));
     }
 

@@ -1,7 +1,7 @@
 import Fuse from 'fuse.js';
 import {formatDate} from './content-view-renderer.js';
 import {nip19} from 'nostr-tools';
-import { getTagDefinition } from './ontology';
+import {getTagDefinition} from './ontology';
 
 export class Matcher {
     constructor(app) {

@@ -56,6 +56,6 @@ class SuggestionDropdown {
     }
 }
 
-import { createElement } from './utils.js';
+import {createElement} from './utils.js';
 
 export {SuggestionDropdown};

@@ -3,8 +3,6 @@ import * as NostrTools from 'nostr-tools';
 import {openDB} from 'idb';
 import * as Y from 'yjs'
 
-const NOW = () => new Date().toISOString();
-
 /**
  * Creates a default object with the given ID and kind.
  */
@@ -39,16 +37,16 @@ export class DB {
     static db = null;
 
     constructor() {
-        
+
     }
 
     /**
      * Initialize (or upgrade) the IndexedDB database using `idb`.
      */
-    static async initDB() {
-        if (this.db) {
+    static async the() {
+        if (this.db)
             return this.db;
-        }
+
         this.db = await openDB(DB_NAME, DB_VERSION, {
             upgrade(db, oldVersion, newVersion, transaction) {
                 console.log('onupgradeneeded triggered');
@@ -67,7 +65,7 @@ export class DB {
 
     static async getDefaultObject(id) {
         if (!DB.db) {
-            await DB.initDB();
+            await DB.the();
         }
         let object = await DB.db.get(OBJECTS_STORE, id);
 
@@ -97,21 +95,14 @@ export class DB {
     async get(id) {
         try {
             if (!DB.db) {
-                await DB.initDB();
+                await DB.the();
             }
             return DB.db.get(OBJECTS_STORE, id);
         } catch (error) {
             console.error("Failed to save settings:", error);
             console.error("Error updating friend profile:", error);
-            
-            
-            
-            
-            
-            
-            
-            
-            
+
+
             throw error;
         }
     }
@@ -130,15 +121,8 @@ export class DB {
         } catch (error) {
             console.error("Failed to save settings:", error);
             console.error("Error updating friend profile:", error);
-            
-            
-            
-            
-            
-            
-            
-            
-            
+
+
             throw error;
         }
     }
@@ -152,15 +136,8 @@ export class DB {
         } catch (error) {
             console.error("Failed to save settings:", error);
             console.error("Error updating friend profile:", error);
-            
-            
-            
-            
-            
-            
-            
-            
-            
+
+
             throw error;
         }
     }
@@ -175,15 +152,8 @@ export class DB {
         } catch (error) {
             console.error("Failed to save settings:", error);
             console.error("Error updating friend profile:", error);
-            
-            
-            
-            
-            
-            
-            
-            
-            
+
+
             throw error;
         }
     }
@@ -201,15 +171,8 @@ export class DB {
         } catch (error) {
             console.error("Failed to save settings:", error);
             console.error("Error updating friend profile:", error);
-            
-            
-            
-            
-            
-            
-            
-            
-            
+
+
             throw error;
         }
     }
@@ -237,15 +200,8 @@ export class DB {
         } catch (error) {
             console.error("Failed to save settings:", error);
             console.error("Error updating friend profile:", error);
-            
-            
-            
-            
-            
-            
-            
-            
-            
+
+
             throw error;
         }
     }
@@ -265,15 +221,8 @@ export class DB {
         } catch (error) {
             console.error("Failed to save settings:", error);
             console.error("Error updating friend profile:", error);
-            
-            
-            
-            
-            
-            
-            
-            
-            
+
+
             throw error;
         }
     }
@@ -294,14 +243,8 @@ export class DB {
         } catch (error) {
             console.error("Failed to save settings:", error);
             console.error("Error updating friend profile:", error);
-            
-            
-            
-            
-            
-            
-            
-            
+
+
             console.error("Error updating friend profile:", error);
             throw error;
         }
@@ -339,14 +282,8 @@ export class DB {
         } catch (error) {
             console.error("Failed to save settings:", error);
             console.error("Error updating friend profile:", error);
-            
-            
-            
-            
-            
-            
-            
-            
+
+
             console.error("Failed to save settings:", error);
             throw error;
         }
@@ -354,7 +291,7 @@ export class DB {
 
     async saveYDoc(id, yDoc) {
         const yDocData = Y.encodeStateAsUpdate(yDoc);
-        await DB.db.put(OBJECTS_STORE, { id: `${id}-ydoc`, yDocData: yDocData });
+        await DB.db.put(OBJECTS_STORE, {id: `${id}-ydoc`, yDocData: yDocData});
     }
 
     async getYDoc(id) {
@@ -410,4 +347,4 @@ async function updateNotesIndex(newIndex) {
     await DB.db.put(OBJECTS_STORE, {id: NOTES_INDEX_ID, tags: newIndex});
 }
 
-export { getNotesIndex, updateNotesIndex };
+export {getNotesIndex, updateNotesIndex};

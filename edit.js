@@ -2,15 +2,14 @@ import {UnifiedOntology} from './ontology.js';
 import DOMPurify from 'dompurify';
 import * as Y from 'yjs';
 import {IndexeddbPersistence} from 'y-indexeddb';
-import {getNotesIndex, updateNotesIndex} from './db';
-import {DB} from './db';
+import {DB, getNotesIndex, updateNotesIndex} from './db';
 import {Autosuggest} from './autosuggest.js';
 import {Toolbar} from './toolbar.js';
 import {OntologyBrowser} from './ontology-browser.js';
 import {SuggestionDropdown} from './suggestion-dropdown.js';
 import {EditorContentHandler} from './editor-content-handler.js';
 
-import { createElement } from './utils.js';
+import {createElement} from './utils.js';
 
 const debounce = (fn, delay) => {
     let timeoutId;
@@ -23,12 +22,13 @@ const debounce = (fn, delay) => {
 const tagDataMap = new WeakMap();
 
 class Edit {
-    constructor() {
+    async constructor() {
         this.ontology = UnifiedOntology;
         this.db = new DB();
         this.yDoc = new Y.Doc();
-        this.indexeddbPersistence = new IndexeddbPersistence('yjs-indexeddb-provider', this.yDoc);
+        this.indexeddbPersistence = new IndexeddbPersistence('yjs-indexeddb-provider', this.yDoc); //TODO move this to DB or Net?
         this.yText = this.yDoc.getText('content');
+
         this.editorArea = createElement("div", {contenteditable: "true", id: "editor-area"});
         const menu = createElement('div');
         this.el = createElement('div');
@@ -44,7 +44,7 @@ class Edit {
 
         this.setupEditorEvents();
         this.editorArea.focus();
-        this.loadYDoc();
+        await this.loadYDoc();
     }
 
     async loadYDoc() {

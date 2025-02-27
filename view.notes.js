@@ -1,6 +1,4 @@
-import { renderList } from './list-renderer.js';
-import { EditView } from './view.edit.js';
-import { DB, getNotesIndex } from './db';
+import {EditView} from './view.edit.js';
 import * as Y from 'yjs';
 
 export class NotesView extends HTMLElement {
@@ -26,7 +24,7 @@ export class NotesView extends HTMLElement {
         const addButton = document.createElement('button');
         addButton.textContent = 'Add';
         addButton.addEventListener('click', () => {
-            this.createNote({ name: '', content: '' }, this.elements.editView);
+            this.createNote({name: '', content: ''}, this.elements.editView);
         });
         sidebar.appendChild(addButton);
 
@@ -44,9 +42,9 @@ export class NotesView extends HTMLElement {
         this.el.appendChild(sidebar);
         this.el.appendChild(mainArea);
 
-        this.elements = { notesList: notesList, mainArea };
+        this.elements = {notesList: notesList, mainArea};
         this.elements.editView = new EditView(this.app);
-        
+
         mainArea.appendChild(this.elements.editView.render());
 
         this.loadNotes();
@@ -74,34 +72,34 @@ export class NotesView extends HTMLElement {
 
     async createNote(newNote, editView) {
         try {
-            const newObject = await this.app.createNewObject(editView, newNote);
+            const newObject = this.app.createNewObject(editView, newNote);
             this.app.showEditor(newObject);
-            if (newObject) {
+            if (newObject)
                 await this.addNoteToList(newObject.id);
-            }
-            this.loadNotes();
+
+            await this.loadNotes();
         } catch (error) {
             console.error('Error creating note:', error);
         }
     }
 
-    async updateNote({ id, content, completed }) {
-        try {
-            const note = await this.app.db.get(id);
-            if (note) {
-                await this.app.saveOrUpdateObject({ ...note, content, completed });
-                this.loadNotes();
-            }
-        } catch (error) {
-            console.error('Error updating note:', error);
-        }
-    }
+    // async updateNote({ id, content, completed }) {
+    //     try {
+    //         const note = await this.app.db.get(id);
+    //         if (note) {
+    //             await this.app.saveOrUpdateObject({ ...note, content, completed });
+    //             await this.loadNotes();
+    //         }
+    //     } catch (error) {
+    //         console.error('Error updating note:', error);
+    //     }
+    // }
 
     async deleteNote(note) {
         try {
             if (note) {
                 await this.app.deleteCurrentObject(note);
-                this.loadNotes();
+                await this.loadNotes();
             }
         } catch (error) {
             console.error('Error deleting note:', error);
@@ -147,4 +145,5 @@ export class NotesView extends HTMLElement {
         return li;
     }
 }
+
 customElements.define('notes-view', NotesView);

@@ -1,7 +1,7 @@
 import DOMPurify from 'dompurify';
 import {getEventHash, nip19, Relay, validateEvent, verifyEvent} from 'nostr-tools';
 import {nanoid} from 'nanoid';
-import { getTagDefinition } from './ontology';
+import {getTagDefinition} from './ontology';
 
 const pubkeyRegex = /^[0-9a-fA-F]{64}$/;
 
@@ -9,20 +9,20 @@ export class Nostr {
     constructor(app) {
         this.app = app;
         this.relays = ["wss://relay.damus.io", "wss://relay.snort.social"];
-        this.subscriptions = {}; 
-        this.relayStatuses = {}; 
-        this.relayObjects = {}; 
+        this.subscriptions = {};
+        this.relayStatuses = {};
+        this.relayObjects = {};
     }
 
     setRelays(relays) {
         this.disconnectFromAllRelays();
         this.relays = relays;
-        this.connect(); 
+        this.connect();
     }
 
     connect() {
         this.disconnectFromAllRelays();
-        this.connectToRelays(); 
+        this.connectToRelays();
     }
 
     connectToRelays() {
@@ -38,16 +38,16 @@ export class Nostr {
 
     async connectToRelay(relayUrl) {
         if (this.relayStatuses[relayUrl]?.status === "connecting" || this.relayStatuses[relayUrl]?.status === "connected") {
-            return; 
+            return;
         }
 
         this.relayStatuses[relayUrl] = {status: "connecting"};
 
         try {
             const relay = await Relay.connect(relayUrl);
-            this.relayObjects[relayUrl] = relay; 
+            this.relayObjects[relayUrl] = relay;
 
-            this.onOpen(relay); 
+            await this.onOpen(relay);
 
         } catch (error) {
             console.error("WebSocket connection error:", error);
@@ -151,9 +151,9 @@ export class Nostr {
 
         switch (event.kind) {
             case 1:
-                await this.app.matcher.matchEvent(event); 
+                await this.app.matcher.matchEvent(event);
                 const timeStr = new Date(event.created_at * 1000).toLocaleTimeString();
-                const nostrFeed = document.getElementById("nostr-feed"); 
+                const nostrFeed = document.getElementById("nostr-feed");
                 if (nostrFeed) {
                     nostrFeed.prepend(DOMPurify.sanitize("<div>[" + timeStr + "] " + nip19.npubEncode(event.pubkey) + ": " + event.content + "</div>"));
                     Array.from(nostrFeed.children).slice(20).forEach(child => nostrFeed.removeChild(child));
@@ -169,7 +169,7 @@ export class Nostr {
                 await this.handleKind5(event);
                 break;
             case 30000:
-                await this.handleObjectEvent(event); 
+                await this.handleObjectEvent(event);
                 break;
         }
     }
@@ -182,7 +182,7 @@ export class Nostr {
             } else {
                 await this.app.db.updateFriendProfile(event.pubkey, profileData.name, profileData.picture);
                 if (this.app.mainContent.currentView instanceof this.app.FriendsView && (await this.app.db.getFriend(event.pubkey))) {
-                    await this.app.friendsView.loadFriends(); 
+                    await this.app.friendsView.loadFriends();
                 }
             }
         } catch (error) {
@@ -212,7 +212,7 @@ export class Nostr {
             for (const pubkey of contacts) {
                 if (pubkeyRegex.test(pubkey) && pubkey !== window.keys.pub) {
                     await this.app.db.addFriend(pubkey);
-                    this.subscribe([{kinds: [0], authors: [pubkey]}], {id: `friend-profile-${pubkey}`});
+                    await this.subscribe([{kinds: [0], authors: [pubkey]}], {id: `friend-profile-${pubkey}`});
                 }
             }
             if (event.pubkey === window.keys.pub) {
@@ -250,12 +250,12 @@ export class Nostr {
 
             const existingObj = await this.app.db.get(data.id);
             const nobj = {
-                ...existingObj, 
+                ...existingObj,
                 id: data.id,
                 name: data.name,
                 content: DOMPurify.sanitize(data.content),
-                tags: this.extractTagsFromEvent(event), 
-                createdAt: existingObj?.createdAt || (event.created_at * 1000), 
+                tags: this.extractTagsFromEvent(event),
+                createdAt: existingObj?.createdAt || (event.created_at * 1000),
                 updatedAt: event.created_at * 1000,
             };
             await this.app.db.save(nobj);
@@ -273,13 +273,13 @@ export class Nostr {
                 const tagValue = tag[1];
 
                 if (tagName === 't') {
-                    tags.push({name: tagValue, condition: 'is', value: ''}) 
+                    tags.push({name: tagValue, condition: 'is', value: ''})
                 } else {
-                    let condition = 'is'; 
+                    let condition = 'is';
                     let value = tagValue;
 
                     if ((tagName === 'p' || tagName === 'e') && tag.length >= 2) {
-                        condition = 'references'; 
+                        condition = 'references';
                     }
                     tags.push({name: tagName, condition, value});
                 }
@@ -291,7 +291,7 @@ export class Nostr {
     async publish(object) {
         try {
             const event = {
-                kind: 1, 
+                kind: 1,
                 created_at: Math.floor(Date.now() / 1000),
                 tags: object.tags.map(tag => {
                     const tagDef = getTagDefinition(tag.name);
@@ -317,7 +317,7 @@ export class Nostr {
         } catch (error) {
             console.error("Failed to publish event", error);
             this.app.showNotification(`Failed to publish event: ${error.message}`, "error");
-            throw error; 
+            throw error;
         }
     }
 
@@ -355,8 +355,8 @@ export class Nostr {
             await this.subscribe([{kinds: [30000], authors: [window.keys.pub]}], {
                 relay,
                 onEvent: this.handleObjectEvent.bind(this)
-            }); 
-            await this.subscribe([{kinds: [1]}], {relay, id: `feed-${relay.url}`}); 
+            });
+            await this.subscribe([{kinds: [1]}], {relay, id: `feed-${relay.url}`});
             await this.subscribeToFriends(relay);
         } catch (error) {
             console.error("Error in relayConnected:", error);
@@ -383,7 +383,7 @@ export class Nostr {
             await this.subscribe([{kinds: [1, 30000], authors: [pubkey]}, {kinds: [1, 30000], '#p': [pubkey]}], {
                 relay,
                 id: subId
-            }); 
+            });
         } catch (error) {
             console.error("Error subscribing to pubkey:", error);
         }
@@ -407,9 +407,9 @@ export class Nostr {
             for (const relayUrl in this.relayObjects) {
                 await this.relayObjects[relayUrl].close();
             }
-            this.relayStatuses = {}; 
+            this.relayStatuses = {};
             this.relayObjects = {};
-            this.subscriptions = {}; 
+            this.subscriptions = {};
         } catch (error) {
             console.error("Error disconnecting from relays:", error);
         }

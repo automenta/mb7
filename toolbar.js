@@ -33,6 +33,6 @@ class Toolbar {
     }
 }
 
-import { createElement } from './utils.js';
+import {createElement} from './utils.js';
 
 export {Toolbar};

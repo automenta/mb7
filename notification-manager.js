@@ -36,6 +36,6 @@ export class NotificationManager {
     async animateAndRemoveNotification(notification) {
         await notification.animateOut();
         notification.remove();
-        this.showNextNotification();
+        await this.showNextNotification();
     }
 }

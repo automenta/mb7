@@ -1,45 +1,47 @@
 import $ from 'jquery';
-import { formatISO } from "date-fns";
-import { formatDate } from './content-view-renderer.js';
-import { ContentView, MainContent, Menubar } from "./view.app.js";
-import { FriendsView } from "./view.friends.js";
-import { SettingsView } from "./view.settings.js";
+import {dateISO, formatDate} from './content-view-renderer.js';
+import {ContentView, MainContent, Menubar} from "./view.app.js";
+import {FriendsView} from "./view.friends.js";
+import {SettingsView} from "./view.settings.js";
 import * as Net from "./net.js";
 import * as DB from "./db.js";
-import { Matcher } from "./match.js";
-import { nanoid } from 'nanoid';
-import { extractTags } from "./tag-utils.js";
-import { NotificationManager } from "./notification-manager.js";
-import { NotesView } from './view.notes.js';
+import {Matcher} from "./match.js";
+import {nanoid} from 'nanoid';
+import {extractTags} from "./tag-utils.js";
+import {NotificationManager} from "./notification-manager.js";
+import {NotesView} from './view.notes.js';
 import DOMPurify from 'dompurify';
-import { ErrorHandler } from './error-handler.js';
-
+import {ErrorHandler} from './error-handler.js';
 
 const DOMPURIFY_CONFIG = {
     ALLOWED_TAGS: ["br", "b", "i", "span", "p", "strong", "em", "ul", "ol", "li", "a"],
     ALLOWED_ATTR: ["class", "contenteditable", "tabindex", "id", "aria-label"]
 };
 
+
 class App {
+    private elements = {};
 
     constructor() {
+        this.notificationManager = new NotificationManager(this);
+        this.errorHandler = new ErrorHandler(this);
+
         this.db = new DB.DB();
-        this.matcher = new Matcher(this);
-        this.selected = null;
         this.nostrClient = new Net.Nostr(this);
+        this.matcher = new Matcher(this);
+
         this.mainContent = new MainContent();
         this.settingsView = new SettingsView(this);
         this.friendsView = new FriendsView(this);
-        this.$objectName = $("#object-name");
-        this.$createdAt = $("#created-at");
-        this.elements = {};
-        this.notificationManager = new NotificationManager(this);
-        this.errorHandler = new ErrorHandler(this);
+
+        this.selected = null;  //TODO this is an Editor concern
+        this.$objectName = $("#object-name"); //DEPRECATED App should not be associated with any single or current object.  That's Edit's responsibility
+        this.$createdAt = $("#created-at"); //DEPRECATED App should not be associated with any single or current object.  That's Edit's responsibility
     }
 
     async init() {
-        await DB.DB.initDB();
-        await this.loadKeysAndConnect();                
+        await DB.DB.the();
+        await this.loadKeysAndConnect();
         await this.initUI();
     }
 
@@ -47,8 +49,7 @@ class App {
         this.$container = document.createElement('div');
         this.$container.className = 'container';
         this.menubar = new Menubar(this);
-        this.$container.append(this.menubar.el);
-        this.$container.append(this.mainContent.el);
+        this.$container.append(this.menubar.el, this.mainContent.el);
 
         const appDiv = document.getElementById('app');
         appDiv.append(this.$container);
@@ -68,6 +69,7 @@ class App {
     }
 
 
+    /** DEPRECATED there should not be any 'current' object; move this and related functionality to DB, which is responsible for storing NObjects, disentangle from App UI */
     async deleteCurrentObject(note) {
         if (note && note.id) {
             try {
@@ -105,6 +107,7 @@ class App {
         }
     }
 
+    /** DEPRECATED: Render NObjects, such as those containing List tag's, through the Ontology */
     async renderList(filter = "") {
         const listEl = this.mainContent.currentView.elements.objectList;
         listEl.innerHTML = "";
@@ -151,51 +154,33 @@ class App {
         }
     }
 
-    async saveOrUpdateObject(object) {
-        try {
-            const updatedObject = this.prepareObjectForSaving(object);
-            const savedObject = await this.db.save(updatedObject);
-            this.hideEditor();
-            await this.renderList();
-            this.notificationManager.showNotification("Object saved.", "success");
-            this.selected = savedObject;
-        } catch (error) {
-            console.error("Error saving object:", error);
-            this.errorHandler.handleError(error, `Error saving object: ${error.message}`);
-        }
-    }
-
+    /** TODO move to DB? */
     prepareObjectForSaving(object) {
-        if (!object.name) {
+        if (!object.name)
             throw new Error('Object name is required.');
-        }
-        if (object.name.length > 100) {
+        if (object.name.length > 100)
             throw new Error('Object name is too long (max 100 characters).');
-        }
-        if (object.content && object.content.length > 10000) {
+        if (object.content && object.content.length > 10000)
             throw new Error('Object content is too long (max 10000 characters).');
-        }
         if (object.tags) {
             object.tags.forEach(tag => {
-                if (!tag.name)
-                    throw new Error('Tag name is required.');
-                if (tag.name.length > 50)
-                    throw new Error('Tag name is too long (max 50 characters).');
+                if (!tag.name) throw new Error('Tag name is required.');
+                if (tag.name.length > 50) throw new Error('Tag name is too long (max 50 characters).');
             });
         }
-        const sanitizedContent = DOMPurify.sanitize(object.content, DOMPURIFY_CONFIG);
-        const now = formatISO(new Date());
+        const contentSane = DOMPurify.sanitize(object.content, DOMPURIFY_CONFIG);
+        const now = dateISO();
         let updatedObject = {
             ...object,
             name: object.name,
-            content: sanitizedContent,
-            tags: extractTags(sanitizedContent),
+            content: contentSane,
+            tags: extractTags(contentSane),
             updatedAt: now
         };
-        if (!updatedObject.id) {
+
+        if (!updatedObject.id)
             updatedObject.id = nanoid();
-        }
-        // Validate id, createdAt, and updatedAt
+
         if (!updatedObject.id || typeof updatedObject.id !== 'string')
             throw new Error('Invalid object ID.');
 
@@ -208,26 +193,36 @@ class App {
         return updatedObject;
     }
 
-    createNewObject(editView, newNote) {
+    createNewObject(/* DEPRECATED parameter: creating a new object should not involve a particular view */ editView, newNote) {
         if (editView && editView.edit)
             editView.edit.setContent('');
 
         return this.selected = {
             id: nanoid(),
             editView: editView,
-            name: "",
-            content: "",
+            name: newNote?.name,
+            content: newNote?.content,
             tags: [],
-            createdAt: formatISO(new Date()),
-            updatedAt: formatISO(new Date())
+            createdAt: dateISO(),
+            updatedAt: dateISO()
         };
     }
 
-    async editOrViewObject(id) {
-        const obj = await this.db.get(id);
-        obj && this.showEditor(obj);
+    async saveOrUpdateObject(object) {
+        try {
+            const updatedObject = this.prepareObjectForSaving(object);
+            const savedObject = await this.db.save(updatedObject);
+            this.hideEditor(); //???
+            await this.renderList();
+            this.notificationManager.showNotification("Object saved.", "success");
+            this.selected = savedObject;
+        } catch (error) {
+            console.error("Error saving object:", error);
+            this.errorHandler.handleError(error, `Error saving object: ${error.message}`);
+        }
     }
 
+    /** DEPRECATED: Editor instances should be dynamically created and destroyed, and be self-contained.  Not coupled to App or any other UI class */
     showEditor(object) {
         this.selected = object;
         this.mainContent.showView(object.editView);
@@ -235,13 +230,15 @@ class App {
         this.$createdAt.text(object.createdAt);
     }
 
+    /** DEPRECATED: Editor instances should be dynamically created and destroyed, and be self-contained.  Not coupled to App or any other UI class */
     hideEditor() {
         this.selected = null;
         this.$objectName.val('');
         this.$createdAt.text('');
-        //this.selected?.editView?.edit.setContent('');
     }
 }
 
 
-document.addEventListener("DOMContentLoaded", async () => { await (window.app = new App()).init(); });
+document.addEventListener("DOMContentLoaded", async () => {
+    await (window.app = new App()).init();
+});

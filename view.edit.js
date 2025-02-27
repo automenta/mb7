@@ -29,10 +29,11 @@ export class EditView extends View {
             this.app.deleteCurrentObject(this.app.selected);
         });
     }
+
     /*
         delete button
     */
-    
+
 
     setContent(html) {
         this.edit.setContent(html);
