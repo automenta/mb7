@@ -44,9 +44,9 @@ export const TagOntology = {
         conditions: ["is"],
         type: "object",
         properties: {
-            pubkey: { type: "string", required: true },
-            name: { type: "string" },
-            picture: { type: "string" }
+            pubkey: {type: "string", required: true},
+            name: {type: "string"},
+            picture: {type: "string"}
         },
         validate: (value, condition) => {
             return typeof value === 'object' &&
@@ -59,10 +59,10 @@ export const TagOntology = {
         conditions: ["is"],
         type: "object",
         properties: {
-            relays: { type: "string", required: false },
-            dateFormat: { type: "string", required: false },
-            profileName: { type: "string", required: false },
-            profilePicture: { type: "string", required: false }
+            relays: {type: "string", required: false},
+            dateFormat: {type: "string", required: false},
+            profileName: {type: "string", required: false},
+            profilePicture: {type: "string", required: false}
         },
         validate: (value, condition) => {
             return typeof value === 'object';

@@ -1,6 +1,6 @@
 import Fuse from 'fuse.js';
-import { formatDate } from './view.app.js';
-import { nip19 } from 'nostr-tools';
+import {formatDate} from './view.app.js';
+import {nip19} from 'nostr-tools';
 
 export class Matcher {
     constructor(app) {

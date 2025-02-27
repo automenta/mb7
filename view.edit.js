@@ -1,5 +1,5 @@
-import { View } from "./view.js";
-import { Edit } from './edit.js';
+import {View} from "./view.js";
+import {Edit} from './edit.js';
 
 export class EditView extends View {
     constructor(app) {

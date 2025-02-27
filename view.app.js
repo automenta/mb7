@@ -1,5 +1,3 @@
-import $ from 'jquery';
-import _ from 'lodash';
 import {format, isValid as isValidDate, parseISO} from "date-fns";
 import {UIComponent, View} from "./view.js";
 import * as NostrTools from 'nostr-tools';
@@ -35,7 +33,7 @@ export class ContentView extends View {
     }
 
     async render() {
-        this.renderRecentActivity();
+        await this.renderRecentActivity();
         this.displayPubkeyOnDashboard();
     }
 
@@ -67,20 +65,23 @@ export class Menubar extends View {
     build() {
         this.el.innerHTML = '';
         this.el.className = 'menubar-top';
-        this.buildSection("Menu", [ {
-                label: "Content",
-                view: "content"
-            }, {label: "New Object", view: "new_object"},
-            {label: "Settings", view: "settings"}, {label: "Friends", view: "friends"}]).forEach(htmlString => this.el.append(document.createRange().createContextualFragment(htmlString)));
-            //this.buildSection("Links", [{label: "Recent Items", list: "recent"}]),
+        this.buildSection("Menu", [{
+            label: "Content",
+            view: "content"
+        }, {label: "New Object", view: "new_object"},
+            {label: "Settings", view: "settings"}, {
+                label: "Friends",
+                view: "friends"
+            }]).forEach(htmlString => this.el.append(document.createRange().createContextualFragment(htmlString)));
+        //this.buildSection("Links", [{label: "Recent Items", list: "recent"}]),
         this.buildSection("Network", [{
             label: '<span id="network-status" style="float: right;" id="network-status">Connecting...</span>',
             list: "network"
         }]).forEach(htmlString => {
-          const networkElement = document.createRange().createContextualFragment(htmlString).firstElementChild;
-          this.el.append(networkElement);
+            const networkElement = document.createRange().createContextualFragment(htmlString).firstElementChild;
+            this.el.append(networkElement);
         });
-            //this.el.append($(`<div id='nostr-feed'></div>`))
+        //this.el.append($(`<div id='nostr-feed'></div>`))
     }
 
     bindEvents() {

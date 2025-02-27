@@ -68,7 +68,7 @@ export class SettingsView extends View {
 
     async saveSettings() {
         const relays = this.el.querySelector("#relay-list").value;
-        const dateFormat =  this.el.querySelector("#date-format-select").value;
+        const dateFormat = this.el.querySelector("#date-format-select").value;
         const profileName = this.el.querySelector("#profile-name").value;
         const profilePicture = this.el.querySelector("#profile-picture").value;
 

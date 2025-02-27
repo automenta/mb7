@@ -42,7 +42,7 @@ export class FriendsView extends View {
         }
 
         try {
-            const friend = { pubkey: pubkey };
+            const friend = {pubkey: pubkey};
             await this.app.db.addFriend(friend);
             this.app.showNotification(`Added friend: ${NostrTools.nip19.npubEncode(pubkey)}`, "success");
             this.app.nostrClient.subscribe([{kinds: [0], authors: [pubkey]}], {id: `friend-profile-${pubkey}`});

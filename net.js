@@ -1,12 +1,5 @@
-import $ from 'jquery';
 import DOMPurify from 'dompurify';
-import {
-    getEventHash,
-    nip19,
-    Relay,
-    validateEvent,
-    verifyEvent
-} from 'nostr-tools';
+import {getEventHash, nip19, Relay, validateEvent, verifyEvent} from 'nostr-tools';
 import {nanoid} from 'nanoid';
 
 export class Nostr {
