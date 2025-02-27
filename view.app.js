@@ -8,11 +8,14 @@ export const formatDate = (timestamp) =>
         : "";
 
 
+
 export class ContentView extends View {
     constructor(app) {
         super(app, '<div id="content-view" class="view"><h2>Dashboard</h2><div class="dashboard-container"><div id="recent-feed" class="dashboard-column"><h3>Recent Activity</h3><div id="recent-activity"></div></div><div id="live-feed" class="dashboard-column"><h3>Live Feed</h3><div id="nostr-feed"></div></div></div><div id="object-list"></div></div>');
+        this.elements = {
+            objectList: this.el.querySelector("#object-list")
+        };
     }
-
     build() {
         this.renderRecentActivity();
     }
@@ -74,13 +77,13 @@ export class Menubar extends View {
                 view: "friends"
             }]).forEach(htmlString => this.el.append(document.createRange().createContextualFragment(htmlString)));
         //this.buildSection("Links", [{label: "Recent Items", list: "recent"}]),
-        this.buildSection("Network", [{
-            label: '<span id="network-status" style="float: right;" id="network-status">Connecting...</span>',
-            list: "network"
-        }]).forEach(htmlString => {
-            const networkElement = document.createRange().createContextualFragment(htmlString).firstElementChild;
-            this.el.append(networkElement);
-        });
+        //this.buildSection("Network", [{
+        //    label: '<span id="network-status" style="float: right;" id="network-status">Connecting...</span>',
+        //    list: "network"
+        //}]).forEach(htmlString => {
+        //    const networkElement = document.createRange().createContextualFragment(htmlString).firstElementChild;
+        //    this.el.append(networkElement);
+        //});
         //this.el.append($(`<div id='nostr-feed'></div>`))
     }
 
@@ -94,7 +97,7 @@ export class Menubar extends View {
     }
 
     buildSection(title, items) {
-        const buttonStyle = "border: none; background: transparent; color: #ddd; padding: 0.5em; cursor: pointer; font-size: 1.5em;";
+        
         const emojiMap = {
             "Content": "📄",
             "New Object": "✨",
@@ -104,7 +107,7 @@ export class Menubar extends View {
         };
         return [
             //`<h3>${title}</h3>`,
-            `${items.map(item => `<button tabindex="0" title="${item.label}" style="${buttonStyle}" ${item.view ? `data-view="${item.view}"` : `data-list="${item.list}"`}>${emojiMap[item.label] || ""}</button>`).join('')}<hr>`
+            `${items.map(item => `<button tabindex="0" title="${item.label}" ${item.view ? `data-view="${item.view}"` : `data-list="${item.list}"`}>${emojiMap[item.label] || ""}</button>`).join('')}`
         ];
     }
 

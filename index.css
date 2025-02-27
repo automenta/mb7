@@ -12,13 +12,16 @@ body {
     padding: 0.25em;
 }
 
-/* Sidebar Styles */
 .menubar-top {
     background-color: #111;
     color: #ddd;
     width: 100%;
     overflow-y: auto;
     display: flex;
+}
+
+.menubar-top button {
+    border: none; background: transparent; color: #ddd; cursor: pointer; font-size: 125%
 }
 
 .menubar-top button:hover {

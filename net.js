@@ -59,7 +59,6 @@ export class Nostr {
 
         console.trace(`Connecting to relay: ${relayUrl}`);
         this.relayStatuses[relayUrl] = {status: "connecting"};
-        this.app.updateNetworkStatus(`Connecting to ${relayUrl}...`);
 
         try {
             const relay = await Relay.connect(relayUrl);
@@ -75,14 +74,12 @@ export class Nostr {
         } catch (error) {
             console.error("WebSocket connection error:", error);
             this.relayStatuses[relayUrl] = {status: "error"};
-            this.app.updateNetworkStatus(`Error connecting to ${relayUrl}`);
         }
     }
 
     onOpen(relay) {
         console.log("Connected to relay:", relay.url);
         this.relayStatuses[relay.url] = {status: "connected"};
-        this.app.updateNetworkStatus(`Connected to ${relay.url}`);
         this.relayConnected(relay);
     }
 
@@ -97,7 +94,6 @@ export class Nostr {
 
         //check if *all* relays are disconnected
         if (this.relays.every(r => this.relayStatuses[r]?.status === "disconnected" || this.relayStatuses[r] === undefined)) {
-            this.app.updateNetworkStatus("Disconnected from all relays.");
         }
     }
 

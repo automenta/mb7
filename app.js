@@ -8,6 +8,7 @@ import * as Net from "./net.js";
 import * as DB from "./db.js";
 import {Matcher} from "./match.js";
 import {nanoid} from 'nanoid';
+import Notification from './notification.js';
 
 const NOTIFICATION_DURATION = 4000;
 
@@ -25,7 +26,7 @@ class App {
         //this.$editorContainer = $("#editor-container");
         this.$objectName = $("#object-name");
         this.$createdAt = $("#created-at");
-
+        this.elements = {};
     }
 
     async init() {
@@ -38,20 +39,20 @@ class App {
 
         this.$container = document.createElement('div');
         this.$container.className = 'container';
-        this.sidebar = new Menubar(this);
-        this.sidebar.build();
-        this.$container.append(this.sidebar.el);
+        this.menubar = new Menubar(this);
+        this.$container.append(this.menubar.el);
         this.$container.append(this.mainContent.el);
+
         const appDiv = document.getElementById('app');
         appDiv.append(this.$container);
         const notificationArea = document.createElement('div');
         notificationArea.setAttribute("id", "notification-area");
         document.body.append(notificationArea);
+        this.elements.notificationArea = notificationArea;
 
         // initial view
         this.setView(
             "new_object"
-            //"content"
         );
     }
 
@@ -63,13 +64,6 @@ class App {
         this.nostrClient.connectToRelays();
     }
 
-    //Add a method to easily update network status:
-    updateNetworkStatus(message) {
-        const networkStatusEl = document.querySelector("#network-status");
-        if (networkStatusEl) {
-            networkStatusEl.innerHTML = message;
-        }
-    }
 
     async deleteCurrentObject() {
         if (this.selected && confirm(`Delete "${this.selected.name}"?`)) {
@@ -96,17 +90,18 @@ class App {
 
     setView(viewName) {
         const views = {
-            "content": () => {
+            content: () => {
                 const contentView = new ContentView(this);
                 contentView.render();
                 return contentView;
             },
-            "settings": () => this.settingsView,
-            "friends": () => this.friendsView,
-            "new_object": () => {
+            settings: () => this.settingsView,
+            friends: () => this.friendsView,
+            new_object: () => {
                 const editView = new EditView(this);
-                this.createNewObject(editView);
+                this.mainContent.currentView = editView;
                 this.mainContent.showView(editView);
+                this.createNewObject(editView);
                 return editView;
             }
         };
@@ -121,7 +116,7 @@ class App {
     }
 
     async renderList(filter = "") {
-        const listEl = document.querySelector("#object-list");
+        const listEl = this.mainContent.currentView.elements.objectList;
         listEl.innerHTML = "";
         const objects = await this.db.getAll();
         const filtered = filter
@@ -151,7 +146,7 @@ class App {
 
     createNewObject(editView) {
         editView.setContent(""); // Clear the editor content
-        this.showEditor({
+        const object = {
             id: nanoid(),
             editView: editView,
             name: "",
@@ -159,7 +154,8 @@ class App {
             tags: [],
             createdAt: formatISO(new Date()),
             updatedAt: formatISO(new Date())
-        });
+        };
+        this.showEditor(object);
     }
 
     async editOrViewObject(id) {
@@ -170,8 +166,8 @@ class App {
     showEditor(object) {
         this.selected = object;
         this.mainContent.showView(object.editView);
-        const objectNameEl = document.querySelector("#object-name");
-        const createdAtEl = document.querySelector("#created-at");
+        const objectNameEl = this.mainContent.currentView.elements.objectName;
+        const createdAtEl = this.mainContent.currentView.elements.createdAt;
 
         if (objectNameEl) {
             objectNameEl.value = object.name || "";
@@ -186,8 +182,8 @@ class App {
         //this.$editorContainer.hide();
         this.selected = null;
         // Clear input fields and editor content
-        document.querySelector("#object-name").value = '';
-        document.querySelector("#created-at").textContent = '';
+        this.mainContent.currentView.elements.objectName.value = '';
+        this.mainContent.currentView.elements.createdAt.textContent = '';
         this.selected?.editView?.edit.setContent('');
     }
 
@@ -221,28 +217,30 @@ class App {
 
     extractTags(html) {
         const doc = new DOMParser().parseFromString(html, "text/html");
-        return Array.from(doc.querySelectorAll(".inline-tag")).map(el => {
+        const tagElements = Array.from(doc.querySelectorAll(".inline-tag"));
+
+        return tagElements.map(el => {
             const name = el.querySelector(".tag-name").textContent.trim();
             const condition = el.querySelector(".tag-condition").value;
             const tagDef = getTagDefinition(name);
-            const v = el.querySelectorAll(".tag-value");
+            const valueElements = el.querySelectorAll(".tag-value");
 
             let value;
             switch (true) {
                 case condition === "between" && tagDef.name === "time":
                     value = {
-                        start: v[0]?.value ?? undefined,
-                        end: v[1]?.value ?? undefined
+                        start: valueElements[0]?.value ?? undefined,
+                        end: valueElements[1]?.value ?? undefined
                     };
                     break;
                 case condition === "between" && tagDef.name === "number":
                     value = {
-                        lower: v[0]?.value ?? undefined,
-                        upper: v[1]?.value ?? undefined
+                        lower: valueElements[0]?.value ?? undefined,
+                        upper: valueElements[1]?.value ?? undefined
                     };
                     break;
                 default:
-                    value = v[0]?.value ?? undefined;
+                    value = valueElements[0]?.value ?? undefined;
             }
             return {name, condition, value};
         });
@@ -272,35 +270,24 @@ class App {
         }
     }
 
-    showNextNotification() {
+    async showNextNotification() {
         if (!this.notificationQueue.length) {
             this.notificationTimeout = null;
             return;
         }
         const {message, type} = this.notificationQueue.shift();
-        const icon = type === "success" ? "✅" : type === "warning" ? "⚠️" : type === "error" ? "❌" : "ℹ️";
-        const notificationArea = document.querySelector("#notification-area");
-        const notificationEl = document.createElement('div');
-        notificationEl.className = `notification ${type}`;
-        notificationEl.innerHTML = `${icon} ${message}`;
-        notificationArea.append(notificationEl);
-        notificationEl.style.right = '-300px';
-        notificationEl.style.opacity = 0;
+        const notification = new Notification(message, type);
+        const notificationArea = this.elements.notificationArea;
+        notification.appendTo(notificationArea);
 
-        notificationEl.animate({
-            right: '10px',
-            opacity: 1
-        }, {duration: 300, fill: 'forwards'});
+        await notification.animateIn();
 
-        this.notificationTimeout = setTimeout(() => {
-            notificationEl.animate({
-                right: '-300px',
-                opacity: 0
-            }, {duration: 300, fill: 'forwards'}).finished.then(() => {
-                notificationEl.remove();
-                this.showNextNotification();
-            });
+        this.notificationTimeout = setTimeout(async () => {
+            await notification.animateOut();
+            notification.remove();
+            this.showNextNotification();
         }, NOTIFICATION_DURATION);
+
     }
 
 }
