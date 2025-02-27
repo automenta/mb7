@@ -1,5 +1,7 @@
+import { createElement } from "./utils.js";
 import * as NostrTools from 'nostr-tools'
 import {View} from "./view.js";
+import * as DB from "../core/db.js";
 
 export class SettingsView extends View {
     constructor(app) {
@@ -7,23 +9,46 @@ export class SettingsView extends View {
     }
 
     build() {
-        this.el.innerHTML = `
-            <h3>Nostr Keys</h3>
-            <button id="generate-key-btn">Generate Key Pair</button>
-            <button id="import-key-btn">Import Key</button>
-            <button id="export-key-btn">Export Key</button>
-            <div id="key-display"></div>
-            <h3>Relays</h3>
-            <textarea id="relay-list" placeholder="Relays (one per line)"></textarea>
-            <h3>Preferences</h3>
-            <label>Date/Time Format: <select id="date-format-select"><option value="Pp">Pp</option><option value="MM/dd/yyyy"></option></select></label>
-            <h3>User Profile (Nostr)</h3>
-            <label for="profile-name">Name:</label><input type="text" id="profile-name">
-            <label for="profile-picture">Picture:</label><input type="text" id="profile-picture">
-            <div id="profile-display"></div>
-            <button id="save-settings-btn">Save Settings</button>
-            <button id="clear-all-data-btn">Clear All Data</button>
-        `;
+        this.el.innerHTML = "";
+        const h3Keys = createElement("h3", {}, "Nostr Keys");
+        const generateKeyBtn = createElement("button", { id: "generate-key-btn" }, "Generate Key Pair");
+        const importKeyBtn = createElement("button", { id: "import-key-btn" }, "Import Key");
+        const exportKeyBtn = createElement("button", { id: "export-key-btn" }, "Export Key");
+        const keyDisplay = createElement("div", { id: "key-display" });
+        const h3Relays = createElement("h3", {}, "Relays");
+        const relayList = createElement("textarea", { id: "relay-list", placeholder: "Relays (one per line)" });
+        const h3Preferences = createElement("h3", {}, "Preferences");
+        const dateFormatLabel = createElement("label", {}, `Date/Time Format: `);
+        const dateFormatSelect = createElement("select", { id: "date-format-select" }, `<option value="Pp">Pp</option><option value="MM/dd/yyyy"></option>`);
+        dateFormatLabel.append(dateFormatSelect);
+        const h3UserProfile = createElement("h3", {}, "User Profile (Nostr)");
+        const profileNameLabel = createElement("label", { htmlFor: "profile-name" }, "Name:");
+        const profileNameInput = createElement("input", { type: "text", id: "profile-name" });
+        const profilePictureLabel = createElement("label", { htmlFor: "profile-picture" }, "Picture:");
+        const profilePictureInput = createElement("input", { type: "text", id: "profile-picture" });
+        const profileDisplay = createElement("div", { id: "profile-display" });
+        const saveSettingsBtn = createElement("button", { id: "save-settings-btn" }, "Save Settings");
+         const clearAllDataBtn = createElement("button", { id: "clear-all-data-btn" }, "Clear All Data");
+
+        this.el.append(
+            h3Keys,
+            generateKeyBtn,
+            importKeyBtn,
+            exportKeyBtn,
+            keyDisplay,
+            h3Relays,
+            relayList,
+            h3Preferences,
+            dateFormatLabel,
+            h3UserProfile,
+            profileNameLabel,
+            profileNameInput,
+            profilePictureLabel,
+            profilePictureInput,
+            profileDisplay,
+            saveSettingsBtn,
+            clearAllDataBtn
+        );
     }
 
     bindEvents() {
@@ -33,7 +58,7 @@ export class SettingsView extends View {
         this.el.querySelector("#save-settings-btn").addEventListener("click", this.saveSettings.bind(this));
         this.el.querySelector("#clear-all-data-btn").addEventListener("click", () => {
             if (confirm("Are you sure you want to clear all data? This cannot be undone.")) {
-                this.app.db.clearAllData().then(() => {
+                DB.DB.prototype.deleteCurrentObject(this.app.db).then(() => {
                     this.app.showNotification("All data cleared.", "success");
                     window.location.reload();
                 });
@@ -43,7 +68,7 @@ export class SettingsView extends View {
     }
 
     async loadSettings() {
-        const settingsObject = await this.app.db.getSettings();
+        const settingsObject = await DB.DB.prototype.getSettings();
         if (settingsObject && settingsObject.tags) {
             let settings = {};
             settingsObject.tags.forEach(tag => {
@@ -79,7 +104,7 @@ export class SettingsView extends View {
             profilePicture: profilePicture
         };
 
-        await this.app.db.saveSettings(settings);
+        await DB.DB.prototype.saveSettings(settings);
         this.app.nostrClient?.setRelays(relays.split("\n").map(l => l.trim()).filter(Boolean));
         this.updateProfileDisplay({name: profileName, picture: profilePicture});
         localStorage.setItem("dateFormat", dateFormat);
@@ -89,7 +114,7 @@ export class SettingsView extends View {
     async generateKeyPair() {
         try {
             let keys = await DB.generateKeys();
-            await this.app.db.saveKeys(window.keys = keys);
+            await DB.DB.prototype.saveKeys(window.keys = keys);
             this.displayKeys();
             this.app.showNotification("Keys generated.", "success");
         } catch {
@@ -104,7 +129,7 @@ export class SettingsView extends View {
             if (!/^[0-9a-fA-F]{64}$/.test(privKey)) throw new Error("Invalid key format.");
             window.keys = {priv: privKey, pub: await NostrTools.getPublicKey(privKey)};
             this.displayKeys();
-            await this.app.db.saveKeys(window.keys);
+            await DB.DB.prototype.saveKeys(window.keys);
             this.app.showNotification("Key imported.", "success");
         } catch (err) {
             this.app.showNotification(`Error importing key: ${err.message}`, "error");

@@ -23,3 +23,53 @@ export const renderTagCloud = (app, el) => {
             .map(([tagName, count]) => `<span style="font-size:${10 + count * 2}px; margin-right:5px;">${tagName}</span>`).join('');
     });
 };
+
+
+export const renderNostrFeed = async (app, el) => {
+    const feedEl = el.querySelector('#nostr-feed');
+    try {
+        // Replace with actual relay URL
+        const relayUrl = 'wss://relay.damus.io';
+        const sub = [
+            "REQ",
+            "my-sub",
+            {
+                limit: 10,
+                kinds: [1] // Text notes
+            }
+        ];
+        const connection = new WebSocket(relayUrl);
+
+        connection.onopen = () => {
+            console.log("WebSocket connection opened");
+            connection.send(JSON.stringify(sub));
+        };
+
+        
+                connection.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+                    console.log("Received message:", data);
+                    if (data[0] === "EVENT") {
+                        const subId = data[1];
+                        const eventContent = data[2].content;
+                        feedEl.innerHTML += `<p>[${subId}] ${eventContent}</p>`;
+                    } else if (data[0] === "NOTICE") {
+                        console.log("NOTICE:", data[1]);
+                    } else {
+                        console.log("Unknown message type:", data);
+                    }
+                };
+        connection.onerror = (error) => {
+            console.error('WebSocket error:', error);
+            feedEl.innerHTML = '<p>Error fetching Nostr feed.</p>';
+        };
+    } catch (error) {
+        console.error('Error fetching Nostr feed:', error);
+        feedEl.innerHTML = '<p>Error fetching Nostr feed.</p>';
+    }
+};
+
+export const renderNetworkStatus = (app, el) => {
+    const statusEl = el.querySelector('#network-status');
+    statusEl.innerHTML = `<p>Network Status: ${navigator.onLine ? 'Online' : 'Offline'}</p>`;
+};

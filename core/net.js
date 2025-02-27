@@ -167,7 +167,6 @@ export class Nostr {
                 break;
             case 5:
                 await this.handleKind5(event);
-                break;
             case 30000:
                 await this.handleObjectEvent(event);
                 break;

@@ -1,7 +1,12 @@
 // db.js
+const DOMPURIFY_CONFIG = {
+    ALLOWED_TAGS: ["br", "b", "i", "span", "p", "strong", "em", "ul", "ol", "li", "a"],
+    ALLOWED_ATTR: ["class", "contenteditable", "tabindex", "id", "aria-label"]
+};
 import * as NostrTools from 'nostr-tools';
 import { openDB } from 'idb';
 import * as Y from 'yjs'
+import DOMPurify from 'dompurify';
 
 /**
  * Creates a default object with the given ID and kind.
@@ -56,6 +61,10 @@ export class DB {
                 if (!db.objectStoreNames.contains(KEY_STORAGE)) {
                     db.createObjectStore(KEY_STORAGE);
                 }
+                const objectStore = transaction.objectStore(OBJECTS_STORE);
+                if (!objectStore.indexNames.contains('content')) {
+                    objectStore.createIndex('content', 'content', { unique: false });
+                }
             },
         });
         await DB.getDefaultObject(FRIENDS_OBJECT_ID);
@@ -79,9 +88,19 @@ export class DB {
     /**
      * Return all objects in the 'objects' store, sorted by createdAt descending.
      */
-    async getAll() {
+    async getAll(filter = "") {
         try {
-            const all = await DB.db.getAll(OBJECTS_STORE);
+            let all = [];
+            if (filter) {
+                const index = DB.db.transaction(OBJECTS_STORE).objectStore(OBJECTS_STORE).index('content');
+                let cursor = await index.openCursor(filter.toLowerCase());
+                while (cursor) {
+                    all.push(cursor.value);
+                    cursor = await cursor.continue();
+                }
+            } else {
+                all = await DB.db.getAll(OBJECTS_STORE);
+            }
             return all.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         } catch (error) {
             console.error("getAll failure:", error);
@@ -295,6 +314,7 @@ export class DB {
     }
 
     async getYDoc(id) {
+        await DB.the();
         const yDocObject = await DB.db.get(OBJECTS_STORE, `${id}-ydoc`);
         if (yDocObject) {
             const yDoc = new Y.Doc();
@@ -312,7 +332,25 @@ export class DB {
             throw error;
         }
     }
+    async getAllObjects(filter = "") {
+        return await this.getAll(filter);
+    }
 
+    async saveObject(object) {
+        return await this.save(object);
+    }
+
+    async removeObject(id) {
+        return await this.delete(id);
+    }
+
+    async getKeys() {
+        return await loadKeys();
+    }
+
+    async saveKeys(keys) {
+        return await DB.db.put(KEY_STORAGE, keys, KEY_STORAGE);
+    }
 }
 
 const generatePrivateKey = () => {
