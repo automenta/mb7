@@ -1,6 +1,6 @@
 // db.js
 import * as NostrTools from 'nostr-tools';
-import {openDB} from 'idb';
+import { openDB } from 'idb';
 import * as Y from 'yjs'
 
 /**
@@ -51,7 +51,7 @@ export class DB {
             upgrade(db, oldVersion, newVersion, transaction) {
                 console.log('onupgradeneeded triggered');
                 if (!db.objectStoreNames.contains(OBJECTS_STORE)) {
-                    db.createObjectStore(OBJECTS_STORE, {keyPath: 'id'});
+                    db.createObjectStore(OBJECTS_STORE, { keyPath: 'id' });
                 }
                 if (!db.objectStoreNames.contains(KEY_STORAGE)) {
                     db.createObjectStore(KEY_STORAGE);
@@ -291,7 +291,7 @@ export class DB {
 
     async saveYDoc(id, yDoc) {
         const yDocData = Y.encodeStateAsUpdate(yDoc);
-        await DB.db.put(OBJECTS_STORE, {id: `${id}-ydoc`, yDocData: yDocData});
+        await DB.db.put(OBJECTS_STORE, { id: `${id}-ydoc`, yDocData: yDocData });
     }
 
     async getYDoc(id) {
@@ -304,6 +304,15 @@ export class DB {
             return null;
         }
     }
+    async deleteCurrentObject(note) {
+        try {
+            await DB.db.delete(OBJECTS_STORE, note.id);
+        } catch (error) {
+            console.error("Failed to delete object:", error);
+            throw error;
+        }
+    }
+
 }
 
 const generatePrivateKey = () => {
@@ -321,7 +330,7 @@ export async function generateKeys() {
     const priv = generatePrivateKey();
     const pub = NostrTools.getPublicKey(priv);
 
-    const newKeys = {priv, pub};
+    const newKeys = { priv, pub };
     await DB.db.put(KEY_STORAGE, newKeys, KEY_STORAGE);
     return newKeys;
 }
@@ -344,7 +353,7 @@ async function getNotesIndex() {
 }
 
 async function updateNotesIndex(newIndex) {
-    await DB.db.put(OBJECTS_STORE, {id: NOTES_INDEX_ID, tags: newIndex});
+    await DB.db.put(OBJECTS_STORE, { id: NOTES_INDEX_ID, tags: newIndex });
 }
 
-export {getNotesIndex, updateNotesIndex};
+export { getNotesIndex, updateNotesIndex };

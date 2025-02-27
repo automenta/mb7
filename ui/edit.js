@@ -1,15 +1,15 @@
-import {UnifiedOntology} from './ontology.js';
+import { UnifiedOntology } from '../core/ontology.js';
 import DOMPurify from 'dompurify';
 import * as Y from 'yjs';
-import {IndexeddbPersistence} from 'y-indexeddb';
-import {DB, getNotesIndex, updateNotesIndex} from './db';
-import {Autosuggest} from './autosuggest.js';
-import {Toolbar} from './toolbar.js';
-import {OntologyBrowser} from './ontology-browser.js';
-import {SuggestionDropdown} from './suggestion-dropdown.js';
-import {EditorContentHandler} from './editor-content-handler.js';
+import { IndexeddbPersistence } from 'y-indexeddb';
+import { DB, getNotesIndex, updateNotesIndex } from '../core/db';
+import { Autosuggest } from './autosuggest.js';
+import { Toolbar } from './toolbar.js';
+import { OntologyBrowser } from './ontology-browser.js';
+import { SuggestionDropdown } from './suggestion-dropdown.js';
+import { EditorContentHandler } from './editor-content-handler.js';
 
-import {createElement} from './utils.js';
+import { createElement } from './utils.js';
 
 const debounce = (fn, delay) => {
     let timeoutId;
@@ -22,14 +22,14 @@ const debounce = (fn, delay) => {
 const tagDataMap = new WeakMap();
 
 class Edit {
-    async constructor() {
+    constructor() {
         this.ontology = UnifiedOntology;
         this.db = new DB();
         this.yDoc = new Y.Doc();
-        this.indexeddbPersistence = new IndexeddbPersistence('yjs-indexeddb-provider', this.yDoc); //TODO move this to DB or Net?
+        //this.indexeddbPersistence = new IndexeddbPersistence('yjs-indexeddb-provider', this.yDoc); //TODO move this to DB or Net?
         this.yText = this.yDoc.getText('content');
 
-        this.editorArea = createElement("div", {contenteditable: "true", id: "editor-area"});
+        this.editorArea = createElement("div", { contenteditable: "true", class: "editor-area" });
         const menu = createElement('div');
         this.el = createElement('div');
         this.el.append(menu, this.editorArea);
@@ -44,7 +44,7 @@ class Edit {
 
         this.setupEditorEvents();
         this.editorArea.focus();
-        await this.loadYDoc();
+        this.loadYDoc();
     }
 
     async loadYDoc() {
@@ -128,7 +128,7 @@ class Edit {
         for (const category in this.ontology) {
             for (const tag of this.ontology[category]) {
                 if (tag.name.toLowerCase().startsWith(word)) {
-                    suggestions.push({displayText: tag.name, tagData: tag, span});
+                    suggestions.push({ displayText: tag.name, tagData: tag, span });
                 }
             }
         }
@@ -168,11 +168,11 @@ class Edit {
     findSuggestion(name) {
         for (const cat in this.ontology) {
             for (const t of this.ontology[cat]) {
-                if (t.name === name) return {displayText: t.name, tagData: t};
+                if (t.name === name) return { displayText: t.name, tagData: t };
             }
         }
         return null;
     }
 }
 
-export {Edit};
+export { Edit };

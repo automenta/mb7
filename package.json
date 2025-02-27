@@ -2,7 +2,7 @@
   "name": "mb7",
   "version": "1.0.0",
   "description": "Organize, prioritize, and grow thoughts into actionable results with real-time communication, matching, and analysis.",
-  "main": "app.js",
+  "main": "ui/app.js",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

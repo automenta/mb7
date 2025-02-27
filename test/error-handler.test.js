@@ -1,4 +1,4 @@
-import {ErrorHandler} from './error-handler.js';
+import {ErrorHandler} from '../core/error-handler.js';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 
 describe('ErrorHandler', () => {

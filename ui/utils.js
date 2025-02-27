@@ -1,6 +1,6 @@
 export const createElement = (tag, attrs = {}, text = "") => {
     const el = document.createElement(tag);
-    for (let key in attrs) {
+    for (const key in attrs) {
         if (key.startsWith("on") && typeof attrs[key] === "function") {
             el.addEventListener(key.substring(2).toLowerCase(), attrs[key]);
         } else {

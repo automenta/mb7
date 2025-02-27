@@ -1,3 +1,11 @@
+body.dark-mode {
+  background-color: #333;
+  color: #fff;
+}
+
+body.dark-mode .group {
+    border-color: #555;
+}
 .saved {
     background-color: lightgreen;
     transition: background-color 0.5s;
@@ -106,20 +114,14 @@ body {
     border-radius: 3px;
 }
 
-/* Editor Styles */
-#editor-container {
-    background-color: #333;
-    padding: 10px;
+.editor-area {
+    border:2px solid orange;
+    margin: 0.25em;
+    padding: 0.25em;
+    min-height: 12em;
 }
 
-#editor {
-    border: 1px solid #ccc;
-    padding: 0.5em;
-    min-height: 100px;
-    cursor: text;
-}
-
-#object-name {
+.object-name {
     background-color: #303030;
     color: #e0e0e0;
     border: none;
@@ -295,7 +297,7 @@ a:hover {
     gap: 5px;
 }
 
-#ontology-browser {
+.ontology-browser {
     display: flex;
     margin-top: 10px;
     border: 1px solid #ccc;

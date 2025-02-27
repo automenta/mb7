@@ -1,5 +1,5 @@
 import Fuse from 'fuse.js';
-import {formatDate} from './content-view-renderer.js';
+import {formatDate} from '../ui/content-view-renderer.js';
 import {nip19} from 'nostr-tools';
 import {getTagDefinition} from './ontology';
 

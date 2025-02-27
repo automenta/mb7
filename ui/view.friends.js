@@ -1,6 +1,6 @@
 import * as NostrTools from 'nostr-tools'
 import {View} from "./view.js";
-import {getTagDefinition} from "./ontology.js";
+import {getTagDefinition} from "../core/ontology.js";
 
 export class FriendsView extends View {
     constructor(app) {

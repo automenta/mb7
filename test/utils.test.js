@@ -1,4 +1,4 @@
-import {createElement} from './utils.js';
+import {createElement} from '../ui/utils.js';
 import {describe, expect, it, vi} from 'vitest';
 
 describe('createElement', () => {

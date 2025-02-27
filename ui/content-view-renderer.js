@@ -1,4 +1,4 @@
-import {format, formatISO, isValid as isValidDate, parseISO} from "date-fns";
+import { format, formatISO, isValid as isValidDate, parseISO } from "date-fns";
 
 export const formatDate = (timestamp) =>
     timestamp && isValidDate(typeof timestamp === "string" ? parseISO(timestamp) : new Date(timestamp))

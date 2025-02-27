@@ -1,7 +1,7 @@
 import DOMPurify from 'dompurify';
-import {getEventHash, nip19, Relay, validateEvent, verifyEvent} from 'nostr-tools';
-import {nanoid} from 'nanoid';
-import {getTagDefinition} from './ontology';
+import { getEventHash, nip19, Relay, validateEvent, verifyEvent } from 'nostr-tools';
+import { nanoid } from 'nanoid';
+import { getTagDefinition } from './ontology';
 
 const pubkeyRegex = /^[0-9a-fA-F]{64}$/;
 
@@ -41,7 +41,7 @@ export class Nostr {
             return;
         }
 
-        this.relayStatuses[relayUrl] = {status: "connecting"};
+        this.relayStatuses[relayUrl] = { status: "connecting" };
 
         try {
             const relay = await Relay.connect(relayUrl);
@@ -51,14 +51,14 @@ export class Nostr {
 
         } catch (error) {
             console.error("WebSocket connection error:", error);
-            this.relayStatuses[relayUrl] = {status: "error"};
+            this.relayStatuses[relayUrl] = { status: "error" };
         }
     }
 
     async onOpen(relay) {
         try {
             console.log("Connected to relay:", relay.url);
-            this.relayStatuses[relay.url] = {status: "connected"};
+            this.relayStatuses[relay.url] = { status: "connected" };
             await this.relayConnected(relay);
         } catch (error) {
             console.error("Error handling onOpen:", error);
@@ -94,8 +94,8 @@ export class Nostr {
                         console.log(`EOSE from ${relay.url} for subscription ${subId}`);
                     }
                 });
-                this.subscriptions[relay.url] = {...(this.subscriptions[relay.url] || {}), [subId]: sub};
-                return {relay: relay.url, id: subId};
+                this.subscriptions[relay.url] = { ...(this.subscriptions[relay.url] || {}), [subId]: sub };
+                return { relay: relay.url, id: subId };
             } else {
                 for (const relayUrl of this.relays) {
                     if (this.relayStatuses[relayUrl]?.status === 'connected') {
@@ -107,10 +107,10 @@ export class Nostr {
                                 console.log(`EOSE from ${relay.url} for subscription ${subId}`);
                             }
                         });
-                        this.subscriptions[relayUrl] = {...(this.subscriptions[relayUrl] || {}), [subId]: sub};
+                        this.subscriptions[relayUrl] = { ...(this.subscriptions[relayUrl] || {}), [subId]: sub };
                     }
                 }
-                return {id: subId};
+                return { id: subId };
             }
         } catch (error) {
             console.error("Error subscribing:", error);
@@ -212,7 +212,7 @@ export class Nostr {
             for (const pubkey of contacts) {
                 if (pubkeyRegex.test(pubkey) && pubkey !== window.keys.pub) {
                     await this.app.db.addFriend(pubkey);
-                    await this.subscribe([{kinds: [0], authors: [pubkey]}], {id: `friend-profile-${pubkey}`});
+                    await this.subscribe([{ kinds: [0], authors: [pubkey] }], { id: `friend-profile-${pubkey}` });
                 }
             }
             if (event.pubkey === window.keys.pub) {
@@ -273,7 +273,7 @@ export class Nostr {
                 const tagValue = tag[1];
 
                 if (tagName === 't') {
-                    tags.push({name: tagValue, condition: 'is', value: ''})
+                    tags.push({ name: tagValue, condition: 'is', value: '' })
                 } else {
                     let condition = 'is';
                     let value = tagValue;
@@ -281,7 +281,7 @@ export class Nostr {
                     if ((tagName === 'p' || tagName === 'e') && tag.length >= 2) {
                         condition = 'references';
                     }
-                    tags.push({name: tagName, condition, value});
+                    tags.push({ name: tagName, condition, value });
                 }
             }
         }
@@ -352,11 +352,11 @@ export class Nostr {
 
     async relayConnected(relay) {
         try {
-            await this.subscribe([{kinds: [30000], authors: [window.keys.pub]}], {
+            await this.subscribe([{ kinds: [30000], authors: [window.keys.pub] }], {
                 relay,
                 onEvent: this.handleObjectEvent.bind(this)
             });
-            await this.subscribe([{kinds: [1]}], {relay, id: `feed-${relay.url}`});
+            await this.subscribe([{ kinds: [1] }], { relay, id: `feed-${relay.url}` });
             await this.subscribeToFriends(relay);
         } catch (error) {
             console.error("Error in relayConnected:", error);
@@ -378,9 +378,9 @@ export class Nostr {
     async subscribeToPubkey(relay, pubkey) {
         try {
             const subId = `friend_${pubkey}`;
-            await this.unsubscribe({relay: relay.url, id: subId});
+            await this.unsubscribe({ relay: relay.url, id: subId });
 
-            await this.subscribe([{kinds: [1, 30000], authors: [pubkey]}, {kinds: [1, 30000], '#p': [pubkey]}], {
+            await this.subscribe([{ kinds: [1, 30000], authors: [pubkey] }, { kinds: [1, 30000], '#p': [pubkey] }], {
                 relay,
                 id: subId
             });
@@ -392,7 +392,7 @@ export class Nostr {
     async subscribeToFriends(relay) {
         try {
             const friendsObjectId = await this.app.db.getFriendsObjectId();
-            await this.subscribe([{kinds: [30000], ids: [friendsObjectId]}], {
+            await this.subscribe([{ kinds: [30000], ids: [friendsObjectId] }], {
                 relay,
                 id: `friends-object`,
                 onEvent: this.handleObjectEvent.bind(this)

@@ -1,5 +1,5 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest';
-import App from './app.js';
+import App from '../ui/app.js';
 
 describe('App', () => {
     let app;

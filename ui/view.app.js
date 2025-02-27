@@ -1,7 +1,7 @@
-import {UIComponent, View} from "./view.js";
+import { UIComponent, View } from "./view.js";
 import * as NostrTools from 'nostr-tools';
-import {emojiMap} from "./menu-config.js";
-import {renderRecentActivity, renderTagCloud} from "./content-view-renderer.js";
+import { emojiMap } from "./menu-config.js";
+import { renderRecentActivity, renderTagCloud } from "./content-view-renderer.js";
 
 
 export class ContentView extends View {
@@ -52,12 +52,19 @@ export class Menubar extends View {
         this.el.innerHTML = '';
         this.el.className = 'menubar-top';
         this.buildSection("Menu", [
-            {label: "Content", view: "content"},
+            { label: "Content", view: "content" },
             //{label: "Network", view: "network"},
-            {label: "Settings", view: "settings"},
-            {label: "Friends", view: "friends"},
-            {label: "Notes", view: "notes"}
+            { label: "Settings", view: "settings" },
+            { label: "Friends", view: "friends" },
+            { label: "Notes", view: "notes" }
         ]).forEach(button => this.el.append(button));
+        const group = document.createElement("div", { class: "group" });
+        const darkModeToggle = document.createElement("button", { class: "dark-mode-toggle" }, "Dark Mode");
+        darkModeToggle.addEventListener("click", () => {
+            document.body.classList.toggle("dark-mode");
+        });
+        group.append(darkModeToggle);
+        this.el.append(group);
     }
 
     bindEvents() {
