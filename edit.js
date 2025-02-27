@@ -257,7 +257,6 @@ class OntologyBrowser {
         this.onTagSelect = onTagSelect;
         this.el = createElement("div", { id: "ontology-browser", class: "ontology-browser" });
         this.build();
-        //this.hide();
     }
 
     build() {
@@ -270,7 +269,6 @@ class OntologyBrowser {
                         class: "tag-item",
                         onclick: () => {
                             this.onTagSelect(new InlineTag(tagData));
-                            //this.hide();
                         },
                     }, (tagData.emoji ? tagData.emoji + " " : "") + tagData.name)
                 )
@@ -283,8 +281,6 @@ class OntologyBrowser {
     hide() { this.el.style.display = "none"; }
     getElement() { return this.el; }
 }
-
-// --- SuggestionDropdown Class ---
 
 class SuggestionDropdown {
     constructor() {
@@ -388,7 +384,7 @@ class Autosuggest {
     }
 
     async apply() {
-        const editorContent = this.editor.editorArea;
+        const editorContent = this.editor.editorArea[0];
 
         // Efficiently remove existing .autosuggest spans
         editorContent.querySelectorAll('.autosuggest').forEach(span =>
@@ -535,6 +531,8 @@ class Edit {
     constructor() {
         this.ontology = ontologyData;
         this.editorArea = $(createElement("div", { contenteditable: "true" }));
+        const menu = document.createElement('div');
+        this.$el = $('<div>').append(menu, this.editorArea);
 
         this.suggestionDropdown = new SuggestionDropdown();
         this.ontologyBrowser = new OntologyBrowser(this.ontology, 
@@ -543,10 +541,8 @@ class Edit {
         this.autosuggest = new Autosuggest(this);
         this.contentHandler = new EditorContentHandler(this);
 
-        const toolbar = document.createElement('div');
-        toolbar.append(this.toolbar.getElement(), this.ontologyBrowser.getElement());
+        menu.append(this.toolbar.getElement(), this.ontologyBrowser.getElement());
 
-        this.$el = $('<div>').append(this.editorArea, toolbar);
         this.setupEditorEvents();
         this.editorArea.focus();
     }
@@ -611,13 +607,14 @@ class Edit {
     }
     
     setContent(html) {
+        console.log('set', html);
         //TODO sanitize before .html()
         this.editorArea.html(html);
         this.sanitizeContent();
     }
 
     sanitizeContent() {
-        const current = this.$el.html();
+        const current = this.editorArea.html();
         const sanitized = DOMPurify.sanitize(current, {
             ALLOWED_TAGS: ["br", "b", "i", "span", "u"],
             ALLOWED_ATTR: ["class", "contenteditable", "tabindex", "id"]
