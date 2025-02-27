@@ -172,10 +172,11 @@ export class Nostr {
             case 1:
                 await this.app.matcher.matchEvent(event); // Existing content matching
                 const timeStr = new Date(event.created_at * 1000).toLocaleTimeString();
-                $("#nostr-feed") // Assuming an element with this ID exists
-                    .prepend(`<div>[${timeStr}] ${nip19.npubEncode(event.pubkey)}: ${DOMPurify.sanitize(event.content)}</div>`)
-                    .children(":gt(19)")
-                    .remove();
+                const nostrFeed = document.getElementById("nostr-feed"); // Assuming an element with this ID exists
+                if (nostrFeed) {
+                    nostrFeed.prepend(DOMPurify.sanitize(`<div>[${timeStr}] ${nip19.npubEncode(event.pubkey)}: ${event.content}</div>`));
+                    Array.from(nostrFeed.children).slice(20).forEach(child => nostrFeed.removeChild(child));
+                }
                 break;
             case 0:
                 await this.handleKind0(event);
@@ -222,7 +223,7 @@ export class Nostr {
                     contacts = Object.keys(content);
                 }
             } catch (e) {
-                // content might not be there.
+                console.warn("Error parsing content:", e);
             }
 
             // Extract p tags

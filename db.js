@@ -2,17 +2,18 @@
 import * as NostrTools from 'nostr-tools';
 import { openDB } from 'idb';
 
+const NOW = () => new Date().toISOString();
 /**
  * Creates a default object with the given ID and kind.
  */
-async function createDefaultObject(db, id, kind) {
+async function createDefaultObject(db, id, kind = 30000) {
     const object = {
-        id: id,
-        kind: kind,
+        id,
+        kind,
         content: '',
         tags: [],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        createdAt: NOW(),
+        updatedAt: NOW(),
     };
     await db.put(OBJECTS_STORE, object);
     return object;
@@ -60,7 +61,8 @@ export class DB{
                }
            },
        });
-
+        await DB.getDefaultObject(FRIENDS_OBJECT_ID);
+        await DB.getDefaultObject(SETTINGS_OBJECT_ID);
         return this.db;
    }
 
@@ -76,8 +78,11 @@ export class DB{
      * Get a single object by its ID.
      */
     async get(id){
-            return DB.db.get(OBJECTS_STORE, id);
+        if (!DB.db) {
+            await DB.initDB();
         }
+        return DB.db.get(OBJECTS_STORE, id);
+    }
 
     /**
      * Create or update an object (must have an `id`).
@@ -121,17 +126,10 @@ export class DB{
         return FRIENDS_OBJECT_ID;
    }
 
-    async getFriends(){
-            let friendsObject = await DB.db.get(OBJECTS_STORE, FRIENDS_OBJECT_ID);
-
-        if (!friendsObject){
-            // If the friends object doesn't exist, create it
-            friendsObject = await createDefaultObject(DB.db, FRIENDS_OBJECT_ID, 30000);
+    
+        async getFriends(){
+            return DB.getDefaultObject(FRIENDS_OBJECT_ID);
        }
-
-        return friendsObject;
-   }
-
     async addFriend(friend){
             const friendsObject = await this.getFriends();
 
@@ -142,7 +140,7 @@ export class DB{
         if (existingFriendIndex === -1){
             // Friend doesn't exist, add them
             friendsObject.tags.push(["People", friend.pubkey, friend.name, friend.picture]);
-            friendsObject.updatedAt = new Date().toISOString();
+            friendsObject.updatedAt = NOW();
             await DB.db.put(OBJECTS_STORE, friendsObject);
        }
    }
@@ -156,7 +154,7 @@ export class DB{
 
         if (friendIndex !== -1){
             friendsObject.tags.splice(friendIndex, 1);
-            friendsObject.updatedAt = new Date().toISOString();
+            friendsObject.updatedAt = NOW();
             await DB.db.put(OBJECTS_STORE, friendsObject);
        }
    }
@@ -171,7 +169,7 @@ export class DB{
         if (friendIndex !== -1){
             friendsObject.tags[friendIndex][2] = name;
             friendsObject.tags[friendIndex][3] = picture;
-            friendsObject.updatedAt = new Date().toISOString();
+            friendsObject.updatedAt = NOW();
             await DB.db.put(OBJECTS_STORE, friendsObject);
        }
    }
@@ -180,17 +178,10 @@ export class DB{
         return SETTINGS_OBJECT_ID;
    }
 
-    async getSettings(){
-            let settingsObject = await DB.db.get(OBJECTS_STORE, SETTINGS_OBJECT_ID);
-
-        if (!settingsObject){
-            // If the settings object doesn't exist, create it
-            settingsObject = await createDefaultObject(DB.db, SETTINGS_OBJECT_ID, 30000);
+    
+        async getSettings(){
+            return DB.getDefaultObject(SETTINGS_OBJECT_ID);
        }
-
-        return settingsObject;
-   }
-
    async saveSettings(settings){
            let settingsObject = await this.getSettings();
 
@@ -211,9 +202,28 @@ export class DB{
             settingsObject.tags.push(["profilePicture", settings.profilePicture]);
        }
 
-        settingsObject.updatedAt = new Date().toISOString();
-        await DB.db.put(OBJECTS_STORE, settingsObject);
+        settingsObject.updatedAt = NOW();
+        try {
+            await DB.db.put(OBJECTS_STORE, settingsObject);
+        } catch (error) {
+            console.error("Failed to save settings:", error);
+            throw error;
+        }
    }
+
+    static async getDefaultObject(id) {
+        if (!DB.db) {
+            await DB.initDB();
+        }
+        let object = await DB.db.get(OBJECTS_STORE, id);
+
+        if (!object) {
+            // If the object doesn't exist, create it
+            object = await createDefaultObject(DB.db, id);
+        }
+
+        return object;
+    }
 }
 
 const generatePrivateKey = () =>{

@@ -7,8 +7,8 @@ export class SettingsView extends View {
     }
 
     build() {
-        this.$el.append(
-            `<h3>Nostr Keys</h3>
+        this.el.innerHTML = `
+            <h3>Nostr Keys</h3>
             <button id="generate-key-btn">Generate Key Pair</button>
             <button id="import-key-btn">Import Key</button>
             <button id="export-key-btn">Export Key</button>
@@ -22,16 +22,16 @@ export class SettingsView extends View {
             <label for="profile-picture">Picture:</label><input type="text" id="profile-picture">
             <div id="profile-display"></div>
             <button id="save-settings-btn">Save Settings</button>
-            <button id="clear-all-data-btn">Clear All Data</button> `
-        );
+            <button id="clear-all-data-btn">Clear All Data</button>
+        `;
     }
 
     bindEvents() {
-        this.$el.find("#generate-key-btn").on("click", this.generateKeyPair.bind(this));
-        this.$el.find("#import-key-btn").on("click", this.importKey.bind(this));
-        this.$el.find("#export-key-btn").on("click", this.exportKey.bind(this));
-        this.$el.find("#save-settings-btn").on("click", this.saveSettings.bind(this));
-        this.$el.find("#clear-all-data-btn").on("click", () => {
+        this.el.querySelector("#generate-key-btn").addEventListener("click", this.generateKeyPair.bind(this));
+        this.el.querySelector("#import-key-btn").addEventListener("click", this.importKey.bind(this));
+        this.el.querySelector("#export-key-btn").addEventListener("click", this.exportKey.bind(this));
+        this.el.querySelector("#save-settings-btn").addEventListener("click", this.saveSettings.bind(this));
+        this.el.querySelector("#clear-all-data-btn").addEventListener("click", () => {
             if (confirm("Are you sure you want to clear all data? This cannot be undone.")) {
                 this.app.db.clearAllData().then(() => {
                     this.app.showNotification("All data cleared.", "success");
@@ -49,17 +49,17 @@ export class SettingsView extends View {
             settingsObject.tags.forEach(tag => {
                 if (tag[0] === "relays") {
                     settings.relays = tag[1];
-                    this.$el.find("#relay-list").val(tag[1]);
+                    this.el.querySelector("#relay-list").value = tag[1];
                 } else if (tag[0] === "dateFormat") {
                     settings.dateFormat = tag[1];
-                    this.$el.find("#date-format-select").val(tag[1]);
+                    this.el.querySelector("#date-format-select").value = tag[1];
                     localStorage.setItem("dateFormat", tag[1]);
                 } else if (tag[0] === "profileName") {
                     settings.profileName = tag[1];
-                    this.$el.find("#profile-name").val(tag[1]);
+                    this.el.querySelector("#profile-name").value = tag[1];
                 } else if (tag[0] === "profilePicture") {
                     settings.profilePicture = tag[1];
-                    this.$el.find("#profile-picture").val(tag[1]);
+                    this.el.querySelector("#profile-picture").value = tag[1];
                     this.displayProfile({name: settings.profileName, picture: settings.profilePicture});
                 }
             });
@@ -67,10 +67,10 @@ export class SettingsView extends View {
     }
 
     async saveSettings() {
-        const relays = this.$el.find("#relay-list").val();
-        const dateFormat =  this.$el.find("#date-format-select").val();
-        const profileName = this.$el.find("#profile-name").val();
-        const profilePicture = this.$el.find("#profile-picture").val()
+        const relays = this.el.querySelector("#relay-list").value;
+        const dateFormat =  this.el.querySelector("#date-format-select").value;
+        const profileName = this.el.querySelector("#profile-name").value;
+        const profilePicture = this.el.querySelector("#profile-picture").value;
 
         const settings = {
             relays: relays,
@@ -127,15 +127,15 @@ export class SettingsView extends View {
 
     displayKeys() {
         if (window.keys) {
-            this.$el.find("#key-display").html(`<p><strong>Public Key:</strong> ${NostrTools.nip19.npubEncode(window.keys?.pub) || "No key"}</p>`);
+            this.el.querySelector("#key-display").innerHTML = `<p><strong>Public Key:</strong> ${NostrTools.nip19.npubEncode(window.keys?.pub) || "No key"}</p>`;
         }
     }
 
     displayProfile(profile) {
-        let profileHtml = `<p><strong>Name:</strong> ${profile.name || ""}</p>`;
-        if (profile.picture) {
-            profileHtml += `<img src="${profile.picture}" style="max-width:100px;max-height:100px;">`;
-        }
-        this.$el.find("#profile-display").html(profileHtml);
+        const profileDisplay = this.el.querySelector("#profile-display");
+        profileDisplay.innerHTML = `
+            <p><strong>Name:</strong> ${profile.name || ""}</p>
+            ${profile.picture ? `<img src="${profile.picture}" style="max-width:100px;max-height:100px;">` : ""}
+        `;
     }
 }

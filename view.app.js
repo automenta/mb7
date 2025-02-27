@@ -2,7 +2,6 @@ import $ from 'jquery';
 import _ from 'lodash';
 import {format, isValid as isValidDate, parseISO} from "date-fns";
 import {UIComponent, View} from "./view.js";
-import {Edit} from './edit.js';
 import * as NostrTools from 'nostr-tools';
 
 export const formatDate = (timestamp) =>
@@ -13,7 +12,7 @@ export const formatDate = (timestamp) =>
 
 export class ContentView extends View {
     constructor(app) {
-        super(app, '<div id="content-view" class="view"><h2>Dashboard</h2><div class="dashboard-container"><div id="recent-feed" class="dashboard-column"><h3>Recent Activity</h3><div id="recent-activity"></div></div><div id="live-feed" class="dashboard-column"><h3>Live Feed</h3><div id="nostr-feed"></div></div></div></div>');
+        super(app, '<div id="content-view" class="view"><h2>Dashboard</h2><div class="dashboard-container"><div id="recent-feed" class="dashboard-column"><h3>Recent Activity</h3><div id="recent-activity"></div></div><div id="live-feed" class="dashboard-column"><h3>Live Feed</h3><div id="nostr-feed"></div></div></div><div id="object-list"></div></div>');
     }
 
     build() {
@@ -22,41 +21,28 @@ export class ContentView extends View {
 
     async renderRecentActivity() {
         const recent = await this.app.db.getRecent(5);
-        this.$el.find("#recent-activity").html(recent.map(obj => `<p><strong>${obj.name}</strong> - Updated: ${formatDate(obj.updatedAt)}</p>`).join(''));
+        const recentActivity = this.el.querySelector("#recent-activity");
+        recentActivity.innerHTML = recent.map(obj => `<p><strong>${obj.name}</strong> - Updated: ${formatDate(obj.updatedAt)}</p>`).join('');
     }
 
     bindEvents() {
-        this.$el.on("click", "button[data-view], button[data-list]", (e) => {
-            e.preventDefault();
-            this.app.setView($(e.currentTarget).data("view") || "content");
+        this.el.addEventListener("click", (e) => {
+            if (e.target.matches("button[data-view], button[data-list]")) {
+                e.preventDefault();
+                this.app.setView(e.target.dataset.view || "content");
+            }
         });
     }
 
     async render() {
-        // const selectedView = this.$el.find("#content-view-select").val();
-        // this.$el.find("#object-list, #dashboard-stats, #recent-activity, #tag-cloud").hide();
-
-        // if (selectedView === "objects") {
-        //     this.$el.find("#object-list").show();
-        //     this.app.renderList();
-        // } else if(selectedView === "recent") {
-        //     const stats = await this.app.db.getStats();
-        //     this.$el.find("#dashboard-stats").html(`<p>Objects: ${stats.objectCount}</p><p>Tags: ${stats.tagCount}</p>`).show();
-        //     const recent = await this.app.db.getRecent(5);
-        //     this.$el.find("#recent-activity").html(recent.map(obj => `<p><strong>${obj.name}</strong> - Updated: ${formatDate(obj.updatedAt)}</p>`).join('')).show();
-        // } else if (selectedView === "tagcloud") {
-        //     this.renderTagCloud();
-        //     this.$el.find("#tag-cloud").show();
-        // } else if (selectedView === "friends") {
-        //     this.$el.find("#recent-activity").html("<p>Friends activity will be here</p>").show();
-        // }
         this.renderRecentActivity();
         this.displayPubkeyOnDashboard();
     }
 
     displayPubkeyOnDashboard() {
-        if (window.keys?.pub && !$("#dashboard-view #pubkey-display").length) {
-            $("#content-view").append(`<p id="pubkey-display">Your Public Key: ${NostrTools.nip19.npubEncode(window.keys.pub)}</p>`);
+        const contentView = document.querySelector("#content-view");
+        if (window.keys?.pub && contentView && !document.querySelector("#dashboard-view #pubkey-display")) {
+            contentView.append(`<p id="pubkey-display">Your Public Key: ${NostrTools.nip19.npubEncode(window.keys.pub)}</p>`);
         }
     }
 
@@ -65,38 +51,44 @@ export class ContentView extends View {
         this.app.db.getAll().then(objects => {
             const tagCounts = {};
             objects.forEach(obj => obj.tags?.forEach(tag => tagCounts[tag.name] = (tagCounts[tag.name] || 0) + 1));
-            this.$el.find("#tag-cloud").html(Object.entries(tagCounts)
+            const tagCloud = this.el.querySelector("#tag-cloud");
+            tagCloud.innerHTML = Object.entries(tagCounts)
                 .sort(([, countA], [, countB]) => countB - countA)
-                .map(([tagName, count]) => `<span style="font-size:${10 + count * 2}px; margin-right:5px;">${tagName}</span>`).join(''));
+                .map(([tagName, count]) => `<span style="font-size:${10 + count * 2}px; margin-right:5px;">${tagName}</span>`).join('');
         });
     }
 }
 
 export class Menubar extends View {
     constructor(app) {
-        super(app, `<div class="menubar-top" role="navigation" aria-label="Main menu"></div>`);
+        super(app);
     }
 
     build() {
-        this.$el.append(
-            this.buildSection("Menu", [ {
+        this.el.innerHTML = '';
+        this.el.className = 'menubar-top';
+        this.buildSection("Menu", [ {
                 label: "Content",
                 view: "content"
             }, {label: "New Object", view: "new_object"},
-            {label: "Settings", view: "settings"}, {label: "Friends", view: "friends"}]),
+            {label: "Settings", view: "settings"}, {label: "Friends", view: "friends"}]).forEach(htmlString => this.el.append(document.createRange().createContextualFragment(htmlString)));
             //this.buildSection("Links", [{label: "Recent Items", list: "recent"}]),
-            this.buildSection("Network", [{
-                label: '<span id="network-status" style="float: right;">Connecting...</span>',
-                list: "network"
-            }]),
-            //$(`<div id='nostr-feed'></div>`)
-        );
+        this.buildSection("Network", [{
+            label: '<span id="network-status" style="float: right;" id="network-status">Connecting...</span>',
+            list: "network"
+        }]).forEach(htmlString => {
+          const networkElement = document.createRange().createContextualFragment(htmlString).firstElementChild;
+          this.el.append(networkElement);
+        });
+            //this.el.append($(`<div id='nostr-feed'></div>`))
     }
 
     bindEvents() {
-        this.$el.on("click", "button[data-view], button[data-list]", (e) => {
-            e.preventDefault();
-            this.app.setView($(e.currentTarget).data("view") || "content");
+        this.el.addEventListener("click", (e) => {
+            if (e.target.matches("button[data-view], button[data-list]")) {
+                e.preventDefault();
+                this.app.setView(e.target.dataset.view || "content");
+            }
         });
     }
 
@@ -123,6 +115,7 @@ export class MainContent extends UIComponent {
     }
 
     showView(view) {
-        this.$el.find(".content").empty().append(view.$el);
+        this.el.querySelector(".content").innerHTML = "";
+        this.el.querySelector(".content").append(view.el);
     }
 }

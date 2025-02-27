@@ -13,11 +13,11 @@ body {
 }
 /* Sidebar Styles */
 .menubar-top {
-  background-color: #111;
+  background-color: #111;  
   color: #ddd;
   width: 100%;
   overflow-y: auto;
-  display: inline-flex;
+  display: flex;
 }
 
 .menubar-top button:hover {

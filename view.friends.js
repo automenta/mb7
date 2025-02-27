@@ -8,21 +8,21 @@ export class FriendsView extends View {
     }
 
     build() {
-        this.$el.append(
-            `<input type="text" id="friend-pubkey" placeholder="Enter friend's nPub or pubkey">
-             <button id="add-friend-btn">Add Friend</button>
-             <h3>Your Friends</h3>
-             <ul id="friends-list"></ul>`
-        );
+        this.el.innerHTML = `
+            <input type="text" id="friend-pubkey" placeholder="Enter friend's nPub or pubkey">
+            <button id="add-friend-btn">Add Friend</button>
+            <h3>Your Friends</h3>
+            <ul id="friends-list"></ul>
+        `;
     }
 
     bindEvents() {
-        this.$el.find("#add-friend-btn").on("click", () => this.addFriend());
+        this.el.querySelector("#add-friend-btn").addEventListener("click", () => this.addFriend());
         this.loadFriends(); // Load friends on initialization
     }
 
     async addFriend() {
-        let pubkey = this.$el.find("#friend-pubkey").val().trim();
+        let pubkey = this.el.querySelector("#friend-pubkey").value.trim();
         if (!pubkey) return;
 
         // Check if input is an npub and decode to hex
@@ -59,13 +59,13 @@ export class FriendsView extends View {
         const friendsObject = await this.app.db.get(friendsObjectId);
 
         if (!friendsObject || !friendsObject.tags) {
-            this.$el.find("#friends-list").html("<p>No friends found.</p>");
+            this.el.querySelector("#friends-list").innerHTML = "<p>No friends found.</p>";
             return;
         }
 
         const peopleTagDefinition = getTagDefinition("People");
 
-        this.$el.find("#friends-list").html(friendsObject.tags.map(tag => {
+        this.el.querySelector("#friends-list").innerHTML = friendsObject.tags.map(tag => {
             if (tag[0] === "People") {
                 const pubkey = tag[1];
                 const name = tag[2] || "";
@@ -76,8 +76,8 @@ export class FriendsView extends View {
                 const profilePicture = picture ? `<img src="${picture}" alt="Profile Picture" style="width: 24px; height: 24px; border-radius: 50%; margin-right: 8px;">` : '';
                 return `<li>${profilePicture}${displayName} <button class="remove-friend" data-pubkey="${pubkey}">Remove</button></li>`;
             }
-        }).join(''));
-        this.$el.find(".remove-friend").on("click", (e) => this.removeFriend($(e.target).data("pubkey")));
+        }).join('');
+        this.el.querySelectorAll(".remove-friend").forEach(button => button.addEventListener("click", (e) => this.removeFriend(button.dataset.pubkey)));
     }
 
     async removeFriend(pubkey) {

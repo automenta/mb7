@@ -53,7 +53,8 @@ export class Matcher {
                 if (condition === "is") return eventDate.getTime() === parsedValue.getTime();
                 if (condition === "before") return eventDate < parsedValue;
                 if (condition === "after") return eventDate > parsedValue;
-            } catch {
+            } catch (e) {
+                console.warn("Error parsing time:", e);
             }
             return false;
         };
@@ -76,11 +77,12 @@ export class Matcher {
         } else if (condition === "matches regex") {
             try {
                 return new RegExp(value, "i").test(text);
-            } catch {
+            } catch (e) {
+                console.warn("Error creating regex:", e);
                 return false;
             }
         } else if (["is", "contains"].includes(condition)) {
-            return text.includes(value.toLowerCase());
+            return text.includes(value?.toLowerCase());
         } else if (["before", "after"].includes(condition)) {
             return checkTime(value);
         }

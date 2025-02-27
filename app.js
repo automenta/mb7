@@ -6,9 +6,8 @@ import { SettingsView } from "./view.settings.js";
 import { EditView } from "./view.edit.js";
 import * as Net from "./net.js";
 import * as DB from "./db.js";
-import{Matcher}from "./match.js";
+import { Matcher } from "./match.js";
 import { nanoid } from 'nanoid';
-import{Edit}from "./edit.js";
 const NOTIFICATION_DURATION = 4000;
 
 class App{
@@ -19,38 +18,41 @@ class App{
         this.selected = null;
         this.notificationQueue = [];
         this.nostrClient = new Net.Nostr(this);  // Initialize Nostr client and make it globally accessible within the app
-        this.sidebar = new Menubar(this);
-        this.mainContent = new MainContent();
+       this.mainContent = new MainContent();
+        this.settingsView = new SettingsView(this);
+        this.friendsView = new FriendsView(this);
         //this.$editorContainer = $("#editor-container");
         this.$objectName = $("#object-name");
         this.$createdAt = $("#created-at");
 
-        this.init(); // Call the initialization
-   }
+    }
 
     async init(){
         await DB.DB.initDB(); // Initialize the database *first*
+        await this.loadKeysAndConnect();
         await this.initUI();      // *Then* initialize the UI
-   }
+    }
 
     async initUI(){
-        this.loadKeysAndConnect();
-
-        this.$container = $('<div class="container"></div>');
-        $("body").append(
-            this.$container.append(this.sidebar.$el, this.mainContent.$el),
-            $('<div id="notification-area"></div>')
-            //$('<div class="loading-overlay"><div class="spinner"></div></div>')
-        );
-        this.settingsView = new SettingsView(this);
-        this.friendsView = new FriendsView(this);
+        
+        this.$container = document.createElement('div');
+        this.$container.className = 'container';
+        this.sidebar = new Menubar(this);
+        this.sidebar.build();
+        this.$container.append(this.sidebar.el);
+        this.$container.append(this.mainContent.el);
+        const appDiv = document.getElementById('app');
+        appDiv.append(this.$container);
+        const notificationArea = document.createElement('div');
+        notificationArea.setAttribute("id", "notification-area");
+        document.body.append(notificationArea);
 
         // initial view
         this.setView(
             "new_object"
             //"content"
-        ); 
-   }
+        );
+    }
 
    /*initSidebar() {};
    initMainContent() {};
@@ -62,7 +64,10 @@ class App{
 
     //Add a method to easily update network status:
     updateNetworkStatus(message){
-        $("#network-status").html(message);
+        const networkStatusEl = document.querySelector("#network-status");
+        if (networkStatusEl) {
+            networkStatusEl.innerHTML = message;
+        }
    }
 
     async deleteCurrentObject(){
@@ -100,8 +105,9 @@ class App{
             "new_object": () => {
                 const editView = new EditView(this);
                 this.createNewObject(editView);
-                return editView;    
-            }        
+                this.mainContent.showView(editView);
+                return editView;
+            }
         };
 
         const view = views[viewName]();
@@ -114,7 +120,8 @@ class App{
    }
 
     async renderList(filter = ""){
-        const $list = $("#object-list").empty();
+        const listEl = document.querySelector("#object-list");
+        listEl.innerHTML = "";
         const objects = await this.db.getAll();
         const filtered = filter
             ? objects.filter(o => Object.values(o).some(val => typeof val === 'string' && val.toLowerCase().includes(filter.toLowerCase())))
@@ -122,18 +129,22 @@ class App{
 
         if (filtered.length){
             filtered.forEach(obj =>{
-                const $item = $(`<div class="object-item" data-id="${obj.id}" tabindex="0">
+                const itemEl = document.createElement('div');
+                itemEl.className = "object-item";
+                itemEl.dataset.id = obj.id;
+                itemEl.tabIndex = 0;
+                itemEl.innerHTML = `
                     <div class="object-header">
                         <strong>${obj.name}</strong>
                         <small>Updated: ${formatDate(obj.updatedAt)}</small>
                     </div>
                     <div class="object-content">${obj.content.substring(0, 100)}...</div>
                     <div class="object-tags">${obj.tags?.map(tag => `<span class="tag">${tag.name}</span>`).join('')}</div>
-                </div>`);
-                $list.append($item);
+                `;
+                listEl.append(itemEl);
            });
        }else{
-            $list.html("<p>No objects found.</p>");
+            listEl.innerHTML = "<p>No objects found.</p>";
        }
    }
 createNewObject(editView){
@@ -141,7 +152,6 @@ createNewObject(editView){
     this.showEditor({
         id: nanoid(),
         editView: editView,
-            id: nanoid(),
             name: "",
             content: "",
             tags: [],
@@ -158,18 +168,25 @@ createNewObject(editView){
     showEditor(object){
         this.selected = object;
         this.mainContent.showView(object.editView);
-        $("#object-name").val(object.name || "");
-        $("#created-at").text(object.createdAt ? formatDate(object.createdAt) : "");
+        const objectNameEl = document.querySelector("#object-name");
+        const createdAtEl = document.querySelector("#created-at");
+
+        if (objectNameEl) {
+            objectNameEl.value = object.name || "";
+        }
+        if (createdAtEl) {
+            createdAtEl.textContent = object.createdAt ? formatDate(object.createdAt) : "";
+        }
         object.editView.setContent(object.content || "");
    }
 
     hideEditor(){
-        this.$editorContainer.hide();
+        //this.$editorContainer.hide();
         this.selected = null;
         // Clear input fields and editor content
-        this.$objectName.val('');
-        this.$createdAt.text('');
-        this.editor.setContent('');
+        document.querySelector("#object-name").value = '';
+        document.querySelector("#created-at").textContent = '';
+        this.selected?.editView?.edit.setContent('');
    }
 
     async saveObject(){
@@ -180,7 +197,7 @@ createNewObject(editView){
             return;
        }
 
-        const sanitizedContent = DOMPurify.sanitize(this.editor.getContent(),{
+        const sanitizedContent = DOMPurify.sanitize(this.selected?.editView?.edit.getContent(),{
             ALLOWED_TAGS: ["br", "b", "i", "span"],
             ALLOWED_ATTR: ["class", "contenteditable", "tabindex", "id", "aria-label"]
        });
@@ -231,7 +248,7 @@ createNewObject(editView){
 
     async updateCurrentObject(){
         if (!this.selected) return;
-        const sanitizedContent = DOMPurify.sanitize(this.editor.getContent(),{
+        const sanitizedContent = DOMPurify.sanitize(this.selected?.editView?.edit.getContent(),{
             ALLOWED_TAGS: ["br", "b", "i", "span"],
             ALLOWED_ATTR: ["class", "contenteditable", "tabindex", "id", "aria-label"]
        });
@@ -243,8 +260,8 @@ createNewObject(editView){
                    }catch (e){
             this.showNotification("Object update failed.", "error");
        }
-             throw e;
-         }
+         //throw e;
+        }
 
     showNotification(message, type = "info") {
         this.notificationQueue.push({ message, type });
@@ -260,28 +277,33 @@ createNewObject(editView){
         }
         const { message, type } = this.notificationQueue.shift();
         const icon = type === "success" ? "✅" : type === "warning" ? "⚠️" : type === "error" ? "❌" : "ℹ️";
-        const $notification = $(`<div class="notification ${type}">${icon} ${message}</div>`).appendTo("#notification-area");
-        $notification.css({
-            right: '-300px',
-            opacity: 0
-        }).animate({
+        const notificationArea = document.querySelector("#notification-area");
+        const notificationEl = document.createElement('div');
+        notificationEl.className = `notification ${type}`;
+        notificationEl.innerHTML = `${icon} ${message}`;
+        notificationArea.append(notificationEl);
+        notificationEl.style.right = '-300px';
+        notificationEl.style.opacity = 0;
+        
+        notificationEl.animate({
             right: '10px',
             opacity: 1
-        }, 300, () => {
-            this.notificationTimeout = setTimeout(() => {
-                $notification.animate({
-                    right: '-300px',
-                    opacity: 0
-                }, 300, () => {
-                    $notification.remove();
-                    this.showNextNotification();
-                });
-            }, NOTIFICATION_DURATION);
-        });
+        }, {duration: 300, fill: 'forwards'});
+
+        this.notificationTimeout = setTimeout(() => {
+            notificationEl.animate({
+                right: '-300px',
+                opacity: 0
+            }, {duration: 300, fill: 'forwards'}).finished.then(() => {
+                notificationEl.remove();
+                this.showNextNotification();
+            });
+        }, NOTIFICATION_DURATION);
    }
 
 }
 
-$(() => {
+document.addEventListener("DOMContentLoaded", async () => {
     window.app = new App();
+    await window.app.init();
 });
