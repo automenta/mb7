@@ -36,7 +36,7 @@ export class FriendsView extends View {
         }
 
         // Validate the public key format (hex)
-        if (!/^[0-9a-fA-F]{64}$/.test(pubkey)) {
+        if (!this.isValidPublicKey(pubkey)) {
             this.app.showNotification("Invalid public key format", "error");
             return;
         }
@@ -65,18 +65,20 @@ export class FriendsView extends View {
 
         const peopleTagDefinition = getTagDefinition("People");
 
-        this.el.querySelector("#friends-list").innerHTML = friendsObject.tags.map(tag => {
-            if (tag[0] === "People") {
-                const pubkey = tag[1];
-                const name = tag[2] || "";
-                const picture = tag[3] || "";
+        this.el.querySelector("#friends-list").innerHTML = friendsObject.tags
+            .map(tag => {
+                if (tag[0] === "People") {
+                    const pubkey = tag[1];
+                    const name = tag[2] || "";
+                    const picture = tag[3] || "";
 
-                const npub = NostrTools.nip19.npubEncode(pubkey);
-                const displayName = name ? `${name} (${npub})` : npub;
-                const profilePicture = picture ? `<img src="${picture}" alt="Profile Picture" style="width: 24px; height: 24px; border-radius: 50%; margin-right: 8px;">` : '';
-                return `<li>${profilePicture}${displayName} <button class="remove-friend" data-pubkey="${pubkey}">Remove</button></li>`;
-            }
-        }).join('');
+                    const npub = NostrTools.nip19.npubEncode(pubkey);
+                    const displayName = name ? `${name} (${npub})` : npub;
+                    const profilePictureHTML = picture ? `<img src="${picture}" alt="Profile Picture" style="width: 24px; height: 24px; border-radius: 50%; margin-right: 8px;">` : '';
+                    return `<li>${profilePictureHTML}${displayName} <button class="remove-friend" data-pubkey="${pubkey}">Remove</button></li>`;
+                }
+            })
+            .join('');
         this.el.querySelectorAll(".remove-friend").forEach(button => button.addEventListener("click", (e) => this.removeFriend(button.dataset.pubkey)));
     }
 
@@ -88,5 +90,8 @@ export class FriendsView extends View {
         } catch (error) {
             this.app.showNotification("Failed to remove friend.", "error");
         }
+    }
+    isValidPublicKey(pubkey) {
+        return /^[0-9a-fA-F]{64}$/.test(pubkey);
     }
 }

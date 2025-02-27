@@ -16,7 +16,7 @@ export class SettingsView extends View {
             <h3>Relays</h3>
             <textarea id="relay-list" placeholder="Relays (one per line)"></textarea>
             <h3>Preferences</h3>
-            <label>Date/Time Format: <select id="date-format-select"><option value="Pp">Pp</option><option value="MM/dd/yyyy">MM/dd/yyyy</option></select></label>
+            <label>Date/Time Format: <select id="date-format-select"><option value="Pp">Pp</option><option value="MM/dd/yyyy"></option></select></label>
             <h3>User Profile (Nostr)</h3>
             <label for="profile-name">Name:</label><input type="text" id="profile-name">
             <label for="profile-picture">Picture:</label><input type="text" id="profile-picture">
@@ -60,7 +60,7 @@ export class SettingsView extends View {
                 } else if (tag[0] === "profilePicture") {
                     settings.profilePicture = tag[1];
                     this.el.querySelector("#profile-picture").value = tag[1];
-                    this.displayProfile({name: settings.profileName, picture: settings.profilePicture});
+                    this.updateProfileDisplay({name: settings.profileName, picture: settings.profilePicture});
                 }
             });
         }
@@ -81,7 +81,7 @@ export class SettingsView extends View {
 
         await this.app.db.saveSettings(settings);
         this.app.nostrClient?.setRelays(relays.split("\n").map(l => l.trim()).filter(Boolean));
-        this.displayProfile({name: profileName, picture: profilePicture});
+        this.updateProfileDisplay({name: profileName, picture: profilePicture});
         localStorage.setItem("dateFormat", dateFormat);
         this.app.showNotification("Settings saved.", "success");
     }
@@ -132,6 +132,13 @@ export class SettingsView extends View {
     }
 
     displayProfile(profile) {
+        const profileDisplay = this.el.querySelector("#profile-display");
+        profileDisplay.innerHTML = `
+            <p><strong>Name:</strong> ${profile.name || ""}</p>
+            ${profile.picture ? `<img src="${profile.picture}" style="max-width:100px;max-height:100px;">` : ""}
+        `;
+    }
+    updateProfileDisplay(profile) {
         const profileDisplay = this.el.querySelector("#profile-display");
         profileDisplay.innerHTML = `
             <p><strong>Name:</strong> ${profile.name || ""}</p>

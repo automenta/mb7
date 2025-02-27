@@ -2,6 +2,8 @@ import DOMPurify from 'dompurify';
 import {getEventHash, nip19, Relay, validateEvent, verifyEvent} from 'nostr-tools';
 import {nanoid} from 'nanoid';
 
+const pubkeyRegex = /^[0-9a-fA-F]{64}$/;
+
 export class Nostr {
     constructor(app) {
         this.app = app;
@@ -12,32 +14,13 @@ export class Nostr {
     }
 
     setRelays(relays) {
-        // Close existing connections and clear subscriptions
-        Object.values(this.subscriptions).forEach(subs => {
-            Object.values(subs).forEach(sub => this.unsubscribe(sub)); // Use the new unsubscribe
-        });
-        this.subscriptions = {};
-        this.relayStatuses = {};
-
-        //Close existing relay objects
-        for (const url in this.relayObjects) {
-            this.relayObjects[url].close();
-        }
-        this.relayObjects = {};
-
-
+        this.disconnectFromAllRelays();
         this.relays = relays;
         this.connect(); // Reconnect with new relays
     }
 
     connect() {
-        // Close any existing connections
-        for (const url in this.relayObjects) {
-            this.relayObjects[url].close();
-        }
-
-        this.relayStatuses = {}; // Reset relay statuses
-        this.relayObjects = {};
+        this.disconnectFromAllRelays();
         this.connectToRelays(); // Connect to all relays
     }
 
@@ -57,19 +40,14 @@ export class Nostr {
             return; // Already connecting or connected
         }
 
-        console.trace(`Connecting to relay: ${relayUrl}`);
+        //console.log(`Connecting to relay: ${relayUrl}`);
         this.relayStatuses[relayUrl] = {status: "connecting"};
 
         try {
             const relay = await Relay.connect(relayUrl);
             this.relayObjects[relayUrl] = relay; //Store the relay object
 
-            //relay.on('connect', () => this.onOpen(relay));
-            //relay.on('notice', (notice) => this.onNotice(relay, notice));
-            //relay.on('disconnect', () => this.onClose(relay));
-            //Event handled in subscribe.
-
-            this.onOpen(relay); //Manually call onOpen, since it might have already happened.
+            this.onOpen(relay); // Manually call onOpen, since it might have already happened.
 
         } catch (error) {
             console.error("WebSocket connection error:", error);
@@ -117,12 +95,14 @@ export class Nostr {
             this.relays.forEach(relayUrl => {
                 if (this.relayStatuses[relayUrl]?.status === 'connected') {
                     const relay = this.relayObjects[relayUrl];
-                    const sub = relay.subscribe(filters, {id: subId});
-                    this.subscriptions[relayUrl] = {...(this.subscriptions[relayUrl] || {}), [subId]: sub};
-                    sub.on('event', options.onEvent || this.onEvent.bind(this));
-                    sub.on('eose', () => {
-                        console.log(`EOSE from ${relay.url} for subscription ${subId}`);
+                    const sub = relay.subscribe(filters, {
+                        id: subId,
+                        onevent: options.onEvent || this.onEvent.bind(this),
+                        eose: () => {
+                            console.log(`EOSE from ${relay.url} for subscription ${subId}`);
+                        }
                     });
+                    this.subscriptions[relayUrl] = {...(this.subscriptions[relayUrl] || {}), [subId]: sub};
                 }
             });
             return {id: subId};
@@ -163,7 +143,7 @@ export class Nostr {
                 const timeStr = new Date(event.created_at * 1000).toLocaleTimeString();
                 const nostrFeed = document.getElementById("nostr-feed"); // Assuming an element with this ID exists
                 if (nostrFeed) {
-                    nostrFeed.prepend(DOMPurify.sanitize(`<div>[${timeStr}] ${nip19.npubEncode(event.pubkey)}: ${event.content}</div>`));
+                    nostrFeed.prepend(DOMPurify.sanitize("<div>[" + timeStr + "] " + nip19.npubEncode(event.pubkey) + ": " + event.content + "</div>"));
                     Array.from(nostrFeed.children).slice(20).forEach(child => nostrFeed.removeChild(child));
                 }
                 break;
@@ -224,7 +204,7 @@ export class Nostr {
 
             for (const pubkey of contacts) {
                 // Check if the pubkey is valid before adding
-                if (/^[0-9a-fA-F]{64}$/.test(pubkey) && pubkey !== window.keys.pub) {
+                if (pubkeyRegex.test(pubkey) && pubkey !== window.keys.pub) {
                     await this.app.db.addFriend(pubkey);
                     // Subscribe to the friend's profile (Kind 0) - Use the unified subscribe
                     this.subscribe([{kinds: [0], authors: [pubkey]}], {id: `friend-profile-${pubkey}`});
@@ -245,7 +225,7 @@ export class Nostr {
             try {
                 await this.app.db.delete(eventId);
             } catch (error) {
-                console.error(`Failed to delete object with id ${eventId}: `, error)
+                console.error(`Failed to delete object with id ${eventId}: `, error);
             }
         }
 
@@ -255,10 +235,10 @@ export class Nostr {
         }
     }
 
-    async handleObjectEvent(ev) {
+    async handleObjectEvent(event) {
         try {
-            if (!ev.content || ev.content.trim()[0] !== "{") return;
-            const data = JSON.parse(ev.content);
+            if (!event.content || event.content.trim()[0] !== "{") return;
+            const data = JSON.parse(event.content);
             if (!data.id) return;
 
             const existingObj = await this.app.db.get(data.id);
@@ -267,14 +247,14 @@ export class Nostr {
                 id: data.id,
                 name: data.name,
                 content: DOMPurify.sanitize(data.content),
-                tags: this.extractTagsFromEvent(ev), // Use a dedicated function
-                createdAt: existingObj?.createdAt || (ev.created_at * 1000), // Keep existing, if present
-                updatedAt: ev.created_at * 1000,
+                tags: this.extractTagsFromEvent(event), // Use a dedicated function to extract and normalize tags
+                createdAt: existingObj?.createdAt || (event.created_at * 1000), // Keep existing, if present
+                updatedAt: event.created_at * 1000,
             };
             await this.app.db.save(nobj);
 
-        } catch (e) {
-            console.error("Parsing error", e);
+        } catch (error) {
+            console.error("Parsing error", error);
         }
     }
 
@@ -343,16 +323,17 @@ export class Nostr {
             return
         }
         this.relays.forEach(relayUrl => {
-            if (this.relayStatuses[relayUrl]?.status === 'connected') {
+            const relayStatus = this.relayStatuses[relayUrl]?.status;
+            if (relayStatus === 'connected') {
                 const relay = this.relayObjects[relayUrl];
-                let pub = relay.publish(event)
+                const pub = relay.publish(event);
                 pub.on('ok', () => {
-                    console.log(`${relay.url} has accepted our event`)
-                })
+                    console.log(`${relay.url} has accepted our event`);
+                });
                 pub.on('failed', reason => {
-                    console.log(`failed to publish to ${relay.url}: ${reason}`)
+                    console.log(`failed to publish to ${relay.url}: ${reason}`);
                     this.app.showNotification(`Failed to publish to ${relayUrl}: ${reason}.`, "warning");
-                })
+                });
             } else {
                 console.warn(`Trying to publish to a disconnected relay ${relay.url}`);
                 //optionally, queue the event for later.
@@ -401,5 +382,14 @@ export class Nostr {
             id: `friends-object`,
             onEvent: this.handleObjectEvent.bind(this)
         });
+    }
+
+    disconnectFromAllRelays() {
+        for (const relayUrl in this.relayObjects) {
+            this.relayObjects[relayUrl].close();
+        }
+        this.relayStatuses = {}; // Reset relay statuses
+        this.relayObjects = {};
+        this.subscriptions = {}; // Clear subscriptions
     }
 }

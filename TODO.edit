@@ -488,7 +488,7 @@ Below are some ideas and directions on how one could extend or abstract the Onto
 
 ### 4.1 Standards Integration
 - **RDF or JSON-LD**: Let the user export or align their structured text with semantic web standards. Each tag could be associated with an RDF `uri` or JSON-LD context.
-- **SPARQL-Backed Ontology**: Offer suggestions from an external triplestore or knowledge graph so the user can pick from actual existing resources, not just the local `ontologyData`.
+- **SPARQL-Backed Ontology**: Offer suggestions from an external triplestore or knowledge graph so the user can pick from actual existing resources, not just the local ontology.
 
 ### 4.2 Enterprise Knowledge Base
 - **Integration with Corporate Repositories**: Tags like “Customer” or “Product” can be fetched from a real-time system (CRM, inventory DB). This keeps the suggestions up-to-date with the latest business objects.

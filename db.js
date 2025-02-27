@@ -8,13 +8,14 @@ const NOW = () => new Date().toISOString();
  * Creates a default object with the given ID and kind.
  */
 async function createDefaultObject(db, id, kind = 30000) {
+    const now = new Date().toISOString();
     const object = {
         id,
         kind,
         content: '',
         tags: [],
-        createdAt: NOW(),
-        updatedAt: NOW(),
+        createdAt: now,
+        updatedAt: now,
     };
     await db.put(OBJECTS_STORE, object);
     return object;
@@ -144,47 +145,42 @@ export class DB {
     async getFriends() {
         return DB.getDefaultObject(FRIENDS_OBJECT_ID);
     }
+async addFriend(friend) {
+    const friendsObject = await this.getFriends();
+    const existingFriendIndex = friendsObject.tags.findIndex(
+        (tag) => tag[0] === 'People' && tag[1] === friend.pubkey
+    );
 
-    async addFriend(friend) {
-        const friendsObject = await this.getFriends();
-
-        const existingFriendIndex = friendsObject.tags.findIndex(
-            (tag) => tag[0] === "People" && tag[1] === friend.pubkey
-        );
-
-        if (existingFriendIndex === -1) {
-            // Friend doesn't exist, add them
-            friendsObject.tags.push(["People", friend.pubkey, friend.name, friend.picture]);
-            friendsObject.updatedAt = NOW();
-            await DB.db.put(OBJECTS_STORE, friendsObject);
-        }
+    if (existingFriendIndex === -1) {
+        friendsObject.tags.push(['People', friend.pubkey, friend.name, friend.picture]);
+        friendsObject.updatedAt = new Date().toISOString();
+        await DB.db.put(OBJECTS_STORE, friendsObject);
     }
+}
 
     async removeFriend(pubkey) {
         const friendsObject = await this.getFriends();
-
         const friendIndex = friendsObject.tags.findIndex(
-            (tag) => tag[0] === "People" && tag[1] === pubkey
+            (tag) => tag[0] === 'People' && tag[1] === pubkey
         );
 
         if (friendIndex !== -1) {
             friendsObject.tags.splice(friendIndex, 1);
-            friendsObject.updatedAt = NOW();
+            friendsObject.updatedAt = new Date().toISOString();
             await DB.db.put(OBJECTS_STORE, friendsObject);
         }
     }
 
     async updateFriendProfile(pubkey, name, picture) {
         const friendsObject = await this.getFriends();
-
         const friendIndex = friendsObject.tags.findIndex(
-            (tag) => tag[0] === "People" && tag[1] === pubkey
+            (tag) => tag[0] === 'People' && tag[1] === pubkey
         );
 
         if (friendIndex !== -1) {
             friendsObject.tags[friendIndex][2] = name;
             friendsObject.tags[friendIndex][3] = picture;
-            friendsObject.updatedAt = NOW();
+            friendsObject.updatedAt = new Date().toISOString();
             await DB.db.put(OBJECTS_STORE, friendsObject);
         }
     }
@@ -202,22 +198,20 @@ export class DB {
 
         settingsObject.tags = [];
 
-        // Add settings to the settings object
-        if (settings.relays) {
-            settingsObject.tags.push(["relays", settings.relays]);
-        }
-        if (settings.dateFormat) {
-            settingsObject.tags.push(["dateFormat", settings.dateFormat]);
+        const settingsMap = {
+            relays: settings.relays,
+            dateFormat: settings.dateFormat,
+            profileName: settings.profileName,
+            profilePicture: settings.profilePicture,
+        };
+
+        for (const [key, value] of Object.entries(settingsMap)) {
+            if (value) {
+                settingsObject.tags.push([key, value]);
+            }
         }
 
-        if (settings.profileName) {
-            settingsObject.tags.push(["profileName", settings.profileName]);
-        }
-        if (settings.profilePicture) {
-            settingsObject.tags.push(["profilePicture", settings.profilePicture]);
-        }
-
-        settingsObject.updatedAt = NOW();
+        settingsObject.updatedAt = new Date().toISOString();
         try {
             await DB.db.put(OBJECTS_STORE, settingsObject);
         } catch (error) {

@@ -1,104 +1,19 @@
+import { UnifiedOntology } from './ontology.js';
 // edit.js
 import DOMPurify from 'dompurify';
 
 // --- Constants and Helpers ---
 
-const ontologyData = {
-    Physical: [
-        {
-            name: "Mass",
-            type: "number",
-            unit: "kg",
-            emoji: "⚖️",
-            conditions: {is: "is", "is between": "is between", "is below": "is below", "is above": "is above"}
-        },
-        {
-            name: "Length",
-            type: "number",
-            unit: "m",
-            emoji: "📏",
-            conditions: {is: "is", "is between": "is between", "is below": "is below", "is above": "is above"}
-        },
-        {
-            name: "Temperature",
-            type: "number",
-            unit: "°C",
-            emoji: "🌡️",
-            conditions: {is: "is", "is between": "is between", "is below": "is below", "is above": "is above"}
-        },
-        {name: "Location", type: "location", emoji: "📍", conditions: {"is at": "is at", "is within": "is within"}},
-        {name: "Color", type: "color", emoji: "🎨", conditions: {is: "is"}}
-    ],
-    Emotion: [
-        {
-            name: "Happiness",
-            type: "range",
-            emoji: "😊",
-            min: 0,
-            max: 10,
-            conditions: {is: "is", "is between": "is between", "is below": "is below", "is above": "is above"}
-        },
-        {
-            name: "Sadness",
-            type: "range",
-            emoji: "😢",
-            min: 0,
-            max: 10,
-            conditions: {is: "is", "is between": "is between", "is below": "is below", "is above": "is above"}
-        },
-        {
-            name: "Anger",
-            type: "range",
-            emoji: "😡",
-            min: 0,
-            max: 10,
-            conditions: {is: "is", "is between": "is between", "is below": "is below", "is above": "is above"}
-        }
-    ],
-    Business: [
-        {
-            name: "Revenue",
-            type: "number",
-            unit: "USD",
-            emoji: "💰",
-            conditions: {is: "is", "is between": "is between", "is below": "is below", "is above": "is above"}
-        },
-        {
-            name: "Product",
-            type: "list",
-            emoji: "📦",
-            options: ["Software", "Hardware", "Service"],
-            conditions: {"is one of": "is one of"}
-        },
-        {
-            name: "Customer",
-            type: "list",
-            emoji: "👥",
-            options: ["B2B", "B2C", "Government"],
-            conditions: {"is one of": "is one of"}
-        }
-    ],
-    Time: [
-        {
-            name: "Time",
-            type: "time",
-            emoji: "⏰",
-            conditions: {"is at": "is at", "is between": "is between", "is before": "is before", "is after": "is after"}
-        }
-    ],
-    Data: [
-        {name: "List", type: "list", emoji: "🔖", options: [], conditions: {"is one of": "is one of"}}
-    ]
-};
-
 const createElement = (tag, attrs = {}, text = "") => {
     const el = document.createElement(tag);
-    Object.entries(attrs).forEach(([key, value]) =>
-        key.startsWith("on") && typeof value === "function"
-            ? el.addEventListener(key.substring(2), value)
-            : el.setAttribute(key, value)
-    );
-    if (text) el.textContent = text;
+    for (const [key, value] of Object.entries(attrs)) {
+        if (key.startsWith("on") && typeof value === "function") {
+            el.addEventListener(key.slice(2), value);
+        } else {
+            el.setAttribute(key, value);
+        }
+    }
+    el.textContent = text ?? "";
     return el;
 };
 
@@ -153,7 +68,9 @@ class TagConditionRenderer extends TagRenderer {
                 this.tag.onUpdate?.();
             },
         });
-        Object.entries(conditions).forEach(([value, label]) => select.add(new Option(label, value)));
+        for (const [value, label] of Object.entries(conditions)) {
+            select.add(new Option(label, value));
+        }
         select.value = condition;
         this.el.append(select);
     }
@@ -346,20 +263,28 @@ class OntologyBrowser {
     }
 
     build() {
-        this.el.innerHTML = "";
-        Object.entries(this.ontology).forEach(([category, tags]) => {
-            const categoryDiv = createElement("div", {class: "category"}, category);
-            tags.forEach(tagData =>
-                categoryDiv.append(
-                    createElement("div", {
-                        class: "tag-item",
-                        onclick: () => this.onTagSelect(new InlineTag(tagData, this.onTagSelect)),
-                    }, `${tagData.emoji || ""} ${tagData.name}`)
-                )
-            );
-            this.el.append(categoryDiv);
-        });
-    }
+            this.el.innerHTML = "";
+            Object.entries(this.ontology).forEach(([key, value]) => {
+                const categoryDiv = createElement("div", {class: "category"}, key);
+                if (value.instances) {
+                    value.instances.forEach(tagData =>
+                        categoryDiv.append(
+                            createElement("div", {
+                                class: "tag-item",
+                                onclick: () => this.onTagSelect(new InlineTag(tagData, this.onTagSelect)),
+                            }, `${tagData.emoji || ""} ${tagData.name}`)
+                        )
+                    );
+                } else {
+                    // Handle cases where there are no instances, e.g., string, number
+                    // You might want to display a default tag or a message indicating no specific instances
+                    categoryDiv.append(
+                        createElement("div", {class: "tag-item"}, '')
+                    );
+                }
+                this.el.append(categoryDiv);
+            });
+        }
 
     show() {
         this.el.style.display = "block";
@@ -488,8 +413,7 @@ class Autosuggest {
             NodeFilter.SHOW_TEXT,
             {acceptNode: node => node.parentNode.closest(".inline-tag, .autosuggest") ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT}
         );
-
-        const wordRegex = /\b([a-zA-Z]{3,})\b/g;
+        const wordRegex = /\b[a-zA-Z]{3,}\b/g;
 
         let node;
         while ((node = walker.nextNode())) {
@@ -497,8 +421,9 @@ class Autosuggest {
             if (!text) continue;
 
             let hasMatch = false;
-            for (let match; (match = wordRegex.exec(text)) !== null;) {
-                if (this.editor.matchesOntology(match[1])) {
+            let match;
+            while ((match = wordRegex.exec(text)) !== null) {
+                if (this.editor.matchesOntology(match[0])) {
                     hasMatch = true;
                     break;  // Only need one match per word
                 }
@@ -511,7 +436,7 @@ class Autosuggest {
         const text = textNode.nodeValue;
         const fragment = document.createDocumentFragment();
         let lastIndex = 0;
-        const regex = /\b([a-zA-Z]{3,})\b/g; // Create regex here to reset lastIndex
+        const regex = /\b[a-zA-Z]{3,}\b/g; // Create regex here to reset lastIndex
 
         let match;
         while ((match = regex.exec(text)) !== null) {
@@ -520,7 +445,7 @@ class Autosuggest {
             if (start > lastIndex) {
                 fragment.append(text.substring(lastIndex, start));
             }
-            fragment.append(createElement("span", {class: "autosuggest"}, match[1]));
+            fragment.append(createElement("span", {class: "autosuggest"}, match[0]));
             lastIndex = end;
         }
 
@@ -535,7 +460,7 @@ class Autosuggest {
 class EditorContentHandler {
     constructor(editor) {
         this.editor = editor;
-        this.lastValidRange = null; // Store the last valid range within the editor
+        this.lastValidRange = null; // Store the last valid range within the editor for handling tag insertions
     }
 
     insertLineBreak() {
@@ -552,53 +477,53 @@ class EditorContentHandler {
 
         selection.removeAllRanges();
         selection.addRange(newRange);
-        this.lastValidRange = selection.getRangeAt(0).cloneRange(); // Important: Save range
+        this.lastValidRange = selection.getRangeAt(0).cloneRange(); // Save range for future tag insertions
     }
 
 
     insertTagAtSelection(tag) {
         const editorArea = this.editor.editorArea;
 
-        // 1. Get the selection, OR use the last valid range
+        // 1. Get the current selection, or use the last known valid range
         const selection = window.getSelection();
         let range;
 
         if (selection.rangeCount > 0 && editorArea.contains(selection.anchorNode)) {
-            // If there's a valid selection in the editor, use it.
+            // If there's a valid selection within the editor, use it
             range = selection.getRangeAt(0);
-            this.lastValidRange = range.cloneRange(); // Save the current range
+            this.lastValidRange = range.cloneRange(); // Store this range as the last valid one
         } else if (this.lastValidRange) {
-            // If no valid selection, but we have a saved range, use that.
+            // If no current selection, but a valid range was previously stored, use that
             range = this.lastValidRange.cloneRange();
         } else {
-            // If no selection and no saved range, default to the end.
+            // If no selection and no stored range, default to the end of the editor content
             range = document.createRange();
             range.selectNodeContents(editorArea);
-            range.collapse(false);
+            range.collapse(false); // Collapse to the end
         }
 
-        // 2. Now focus the editorArea (after getting the range)
+        // 2. Ensure the editorArea has focus before manipulating selections
         editorArea.focus();
 
-        // 3. Restore the range to the selection.  Important to do this AFTER focusing.
+        // 3. Restore the selection based on the determined range - crucial to apply focus
         selection.removeAllRanges();
         selection.addRange(range);
 
-        // 4. Insert the tag
-        range.deleteContents();
-        range.insertNode(tag.el);
+        // 4. Insert the tag at the current selection
+        range.deleteContents(); // Remove selected content, if any
+        range.insertNode(tag.el); // Insert the tag element
 
-        // 5. Move the cursor after the tag
+        // 5. Adjust the cursor position after the inserted tag
         range.setStartAfter(tag.el);
-        range.collapse(true);
+        range.collapse(true); // Collapse to the new position
 
-        // 6. Update the selection again
+        // 6. Update the selection with the new range
         selection.removeAllRanges();
         selection.addRange(range);
-        this.lastValidRange = range.cloneRange();  // Update lastValidRange
+        this.lastValidRange = range.cloneRange();  // Update the last valid range
 
-        // 7. Autosuggest Update
-        this.editor.autosuggest.apply(); // Update autosuggest after insertion
+        // 7. Trigger autosuggest to update suggestions based on changes
+        this.editor.autosuggest.apply(); // Refresh suggestions
     }
 
 
@@ -649,7 +574,7 @@ class EditorContentHandler {
 
 class Edit {
     constructor() {
-        this.ontology = ontologyData;
+        this.ontology = UnifiedOntology;
         this.editorArea = createElement("div", {contenteditable: "true", id: "editor-area"});
         const menu = createElement('div');
         this.el = createElement('div');

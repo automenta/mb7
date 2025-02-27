@@ -1,8 +1,8 @@
 /* General Styles */
 body {
     font-family: sans-serif;
-    background-color: #000; /* Dark background */
-    color: #ddd; /* White text */
+    background-color: #121212; /* Dark background */
+    color: #e0e0e0; /* Light gray text */
     margin: 0;
     padding: 0;
 }
@@ -13,15 +13,15 @@ body {
 }
 
 .menubar-top {
-    background-color: #111;
-    color: #ddd;
+    background-color: #212121;
+    color: #e0e0e0;
     width: 100%;
     overflow-y: auto;
     display: flex;
 }
 
 .menubar-top button {
-    border: none; background: transparent; color: #ddd; cursor: pointer; font-size: 125%
+    border: none; background: transparent; color: #e0e0e0; cursor: pointer; font-size: 125%
 }
 
 .menubar-top button:hover {
@@ -29,17 +29,17 @@ body {
 }
 
 .sidebar-left a {
-    color: #adb5bd;
+    color: #9e9e9e;
     text-decoration: none;
 }
 
 .sidebar-left a:hover,
 .sidebar-left a:focus {
-    color: #ddd;
+    color: #e0e0e0;
 }
 
 .sidebar h2 {
-    color: #ddd;
+    color: #e0e0e0;
 }
 
 /* Main Content Styles */
@@ -71,7 +71,7 @@ body {
 }
 
 .object-header strong {
-    color: #ddd;
+    color: #e0e0e0;
 }
 
 .object-content {
@@ -84,8 +84,8 @@ body {
 }
 
 .object-tags span {
-    background-color: #555;
-    color: #ddd;
+    background-color: #424242;
+    color: #e0e0e0;
     padding: 2px 5px;
     margin-right: 5px;
     margin-bottom: 5px;
@@ -106,16 +106,16 @@ body {
 }
 
 #object-name {
-    background-color: #444;
-    color: #ddd;
+    background-color: #303030;
+    color: #e0e0e0;
     border: none;
     padding: 10px;
 }
 
 /* Notification Styles */
 .notification {
-    background-color: rgba(0, 123, 255, 0.8);
-    color: #ddd;
+    background-color: rgba(33, 150, 243, 0.8);
+    color: #fff;
     padding: 15px;
     margin-bottom: 10px;
     border-radius: 5px;
@@ -140,12 +140,12 @@ body {
 
 /* Psychedelic Highlights */
 a {
-    color: #ff4081; /* Fuchsia */
+    color: #ba68c8; /* Purple */
     text-decoration: none;
 }
 
 a:hover {
-    color: #00bcd4; /* Aqua */
+    color: #4dd0e1; /* Cyan */
 }
 
 

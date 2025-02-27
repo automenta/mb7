@@ -1,9 +1,12 @@
-export const TagOntology = {
+export const UnifiedOntology = {
     "location": {
         conditions: ["is", "contains", "near"],
         validate: (value, condition) => typeof value === "string" && value.length > 0,
         serialize: (value) => value,
-        deserialize: (value) => value
+        deserialize: (value) => value,
+        instances: [
+            {name: "Location", emoji: "📍", conditions: {"is at": "is at", "is within": "is within"}}
+        ]
     },
     "time": {
         conditions: ["is", "before", "after", "between"],
@@ -15,7 +18,14 @@ export const TagOntology = {
         },
         serialize: (value) => typeof value === 'object' && value !== null ?
             {start: formatISO(parseISO(value.start)), end: formatISO(parseISO(value.end))} : formatISO(parseISO(value)),
-        deserialize: (value) => value
+        deserialize: (value) => value,
+        instances: [
+            {
+                name: "Time",
+                emoji: "⏰",
+                conditions: {"is at": "is at", "is between": "is between", "is before": "is before", "is after": "is after"}
+            }
+        ]
     },
     "string": {
         conditions: ["is", "contains", "matches regex"],
@@ -38,7 +48,13 @@ export const TagOntology = {
             }
             return String(value)
         },
-        deserialize: (value) => value // Could also convert back to number if needed
+        deserialize: (value) => value, // Could also convert back to number if needed
+        instances: [
+            {name: "Mass", unit: "kg", emoji: "⚖️", conditions: {is: "is", "is between": "is between", "is below": "is below", "is above": "is above"}},
+            {name: "Length", unit: "m", emoji: "📏", conditions: {is: "is", "is between": "is between", "is below": "is below", "is above": "is above"}},
+            {name: "Temperature", unit: "°C", emoji: "🌡️", conditions: {is: "is", "is between": "is between", "is below": "is below", "is above": "is above"}},
+            {name: "Revenue", unit: "USD", emoji: "💰", conditions: {is: "is", "is between": "is between", "is below": "is below", "is above": "is above"}}
+        ]
     },
     "People": {
         conditions: ["is"],
@@ -69,7 +85,25 @@ export const TagOntology = {
         },
         serialize: (value) => value,
         deserialize: (value) => value
+    },
+    "Emotion": {
+        instances: [
+            {name: "Happiness", type: "range", emoji: "😊", min: 0, max: 10, conditions: {is: "is", "is between": "is between", "is below": "is below", "is above": "is above"}},
+            {name: "Sadness", type: "range", emoji: "😢", min: 0, max: 10, conditions: {is: "is", "is between": "is between", "is below": "is below", "is above": "is above"}},
+            {name: "Anger", type: "range", emoji: "😡", min: 0, max: 10, conditions: {is: "is", "is between": "is between", "is below": "is below", "is above": "is above"}}
+        ]
+    },
+    "Business": {
+        instances: [
+            {name: "Product", type: "list", emoji: "📦", options: ["Software", "Hardware", "Service"], conditions: {"is one of": "is one of"}},
+            {name: "Customer", type: "list", emoji: "👥", options: ["B2B", "B2C", "Government"], conditions: {"is one of": "is one of"}}
+        ]
+    },
+    "Data": {
+        instances: [
+            {name: "List", type: "list", emoji: "🔖", options: [], conditions: {"is one of": "is one of"}}
+        ]
     }
 };
 
-export const getTagDefinition = (name) => TagOntology[name] || TagOntology.string;
+export const getTagDefinition = (name) => UnifiedOntology[name] || UnifiedOntology.string;

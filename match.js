@@ -1,5 +1,5 @@
 import Fuse from 'fuse.js';
-import {formatDate} from './view.app.js';
+import {formatDate} from './content-view-renderer.js';
 import {nip19} from 'nostr-tools';
 
 export class Matcher {

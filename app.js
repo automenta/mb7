@@ -1,6 +1,7 @@
 import $ from 'jquery';
-import {formatISO} from "date-fns";
-import {ContentView, formatDate, MainContent, Menubar} from "./view.app.js";
+import { formatISO } from "date-fns";
+import { formatDate } from './content-view-renderer.js';
+import {ContentView, MainContent, Menubar} from "./view.app.js";
 import {FriendsView} from "./view.friends.js";
 import {SettingsView} from "./view.settings.js";
 import {EditView} from "./view.edit.js";
@@ -8,9 +9,13 @@ import * as Net from "./net.js";
 import * as DB from "./db.js";
 import {Matcher} from "./match.js";
 import {nanoid} from 'nanoid';
-import Notification from './notification.js';
+import { extractTags } from "./tag-utils.js";
+import { NotificationManager } from "./notification-manager.js";
 
-const NOTIFICATION_DURATION = 4000;
+const DOMPURIFY_CONFIG = {
+    ALLOWED_TAGS: ["br", "b", "i", "span"],
+    ALLOWED_ATTR: ["class", "contenteditable", "tabindex", "id", "aria-label"]
+};
 
 class App {
 
@@ -18,15 +23,14 @@ class App {
         this.db = new DB.DB();
         this.matcher = new Matcher(this);
         this.selected = null;
-        this.notificationQueue = [];
-        this.nostrClient = new Net.Nostr(this);  // Initialize Nostr client and make it globally accessible within the app
+        this.nostrClient = new Net.Nostr(this);
         this.mainContent = new MainContent();
         this.settingsView = new SettingsView(this);
         this.friendsView = new FriendsView(this);
-        //this.$editorContainer = $("#editor-container");
         this.$objectName = $("#object-name");
         this.$createdAt = $("#created-at");
         this.elements = {};
+        this.notificationManager = new NotificationManager(this);
     }
 
     async init() {
@@ -56,9 +60,6 @@ class App {
         );
     }
 
-    /*initSidebar() {};
-    initMainContent() {};
-    initViews() {};*/
     async loadKeysAndConnect() {
         window.keys = await DB.loadKeys();
         this.nostrClient.connectToRelays();
@@ -84,7 +85,7 @@ class App {
             await this.db.delete(this.selected.id);
             this.hideEditor();
             await this.renderList();
-            this.showNotification(`"${this.selected.name}" deleted.`, "success");
+            this.notificationManager.showNotification(`"${this.selected.name}" deleted.`, "success");
         }
     }
 
@@ -152,8 +153,8 @@ class App {
             name: "",
             content: "",
             tags: [],
-            createdAt: formatISO(new Date()),
-            updatedAt: formatISO(new Date())
+            createdAt: (() => { const now = new Date(); return formatISO(now); })(),
+            updatedAt: (() => { const now = new Date(); return formatISO(now); })()
         };
         this.showEditor(object);
     }
@@ -191,105 +192,37 @@ class App {
         if (!this.selected) return;
         const name = $("#object-name").val().trim();
         if (!name) {
-            this.showNotification("Object name is required.", "warning");
+            this.notificationManager.showNotification("Object name is required.", "warning");
             return;
         }
 
-        const sanitizedContent = DOMPurify.sanitize(this.selected?.editView?.edit.getContent(), {
-            ALLOWED_TAGS: ["br", "b", "i", "span"],
-            ALLOWED_ATTR: ["class", "contenteditable", "tabindex", "id", "aria-label"]
-        });
+        const sanitizedContent = DOMPurify.sanitize(this.selected?.editView?.edit.getContent(), DOMPURIFY_CONFIG);
 
         this.selected = {
             ...this.selected,
             name,
             content: sanitizedContent,
-            tags: this.extractTags(sanitizedContent),
-            updatedAt: formatISO(new Date())
+            tags: extractTags(sanitizedContent),
+            updatedAt: (() => { const now = new Date(); return formatISO(now); })()
         };
         await this.db.save(this.selected);
-        //this.nostrClient.publish(this.selected); //use this.nostrClient
 
         this.hideEditor();
         await this.renderList();
-        this.showNotification("Object saved.", "success");
-    }
-
-    extractTags(html) {
-        const doc = new DOMParser().parseFromString(html, "text/html");
-        const tagElements = Array.from(doc.querySelectorAll(".inline-tag"));
-
-        return tagElements.map(el => {
-            const name = el.querySelector(".tag-name").textContent.trim();
-            const condition = el.querySelector(".tag-condition").value;
-            const tagDef = getTagDefinition(name);
-            const valueElements = el.querySelectorAll(".tag-value");
-
-            let value;
-            switch (true) {
-                case condition === "between" && tagDef.name === "time":
-                    value = {
-                        start: valueElements[0]?.value ?? undefined,
-                        end: valueElements[1]?.value ?? undefined
-                    };
-                    break;
-                case condition === "between" && tagDef.name === "number":
-                    value = {
-                        lower: valueElements[0]?.value ?? undefined,
-                        upper: valueElements[1]?.value ?? undefined
-                    };
-                    break;
-                default:
-                    value = valueElements[0]?.value ?? undefined;
-            }
-            return {name, condition, value};
-        });
+        this.notificationManager.showNotification("Object saved.", "success");
     }
 
     async updateCurrentObject() {
         if (!this.selected) return;
-        const sanitizedContent = DOMPurify.sanitize(this.selected?.editView?.edit.getContent(), {
-            ALLOWED_TAGS: ["br", "b", "i", "span"],
-            ALLOWED_ATTR: ["class", "contenteditable", "tabindex", "id", "aria-label"]
-        });
+        const sanitizedContent = DOMPurify.sanitize(this.selected?.editView?.edit.getContent(), DOMPURIFY_CONFIG);
         this.selected.content = sanitizedContent;
-        this.selected.tags = this.extractTags(sanitizedContent);
+        this.selected.tags = extractTags(sanitizedContent);
         try {
             await this.db.save(this.selected);
-            //this.nostrClient.publish(this.selected);
         } catch (e) {
-            this.showNotification("Object update failed.", "error");
-        }
-        //throw e;
-    }
-
-    showNotification(message, type = "info") {
-        this.notificationQueue.push({message, type});
-        if (!this.notificationTimeout) {
-            this.showNextNotification();
+            this.notificationManager.showNotification("Object update failed.", "error");
         }
     }
-
-    async showNextNotification() {
-        if (!this.notificationQueue.length) {
-            this.notificationTimeout = null;
-            return;
-        }
-        const {message, type} = this.notificationQueue.shift();
-        const notification = new Notification(message, type);
-        const notificationArea = this.elements.notificationArea;
-        notification.appendTo(notificationArea);
-
-        await notification.animateIn();
-
-        this.notificationTimeout = setTimeout(async () => {
-            await notification.animateOut();
-            notification.remove();
-            this.showNextNotification();
-        }, NOTIFICATION_DURATION);
-
-    }
-
 }
 
 document.addEventListener("DOMContentLoaded", async () => {

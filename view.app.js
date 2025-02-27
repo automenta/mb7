@@ -1,12 +1,7 @@
-import {format, isValid as isValidDate, parseISO} from "date-fns";
 import {UIComponent, View} from "./view.js";
 import * as NostrTools from 'nostr-tools';
-
-export const formatDate = (timestamp) =>
-    timestamp && isValidDate(typeof timestamp === "string" ? parseISO(timestamp) : new Date(timestamp))
-        ? format(typeof timestamp === "string" ? parseISO(timestamp) : new Date(timestamp), localStorage.getItem("dateFormat") || "Pp")
-        : "";
-
+import {emojiMap} from "./menu-config.js";
+import {renderRecentActivity, renderTagCloud} from "./content-view-renderer.js";
 
 
 export class ContentView extends View {
@@ -17,13 +12,7 @@ export class ContentView extends View {
         };
     }
     build() {
-        this.renderRecentActivity();
-    }
-
-    async renderRecentActivity() {
-        const recent = await this.app.db.getRecent(5);
-        const recentActivity = this.el.querySelector("#recent-activity");
-        recentActivity.innerHTML = recent.map(obj => `<p><strong>${obj.name}</strong> - Updated: ${formatDate(obj.updatedAt)}</p>`).join('');
+        renderRecentActivity(this.app, this.el);
     }
 
     bindEvents() {
@@ -36,27 +25,20 @@ export class ContentView extends View {
     }
 
     async render() {
-        await this.renderRecentActivity();
+        await renderRecentActivity(this.app, this.el);
         this.displayPubkeyOnDashboard();
     }
 
     displayPubkeyOnDashboard() {
         const contentView = document.querySelector("#content-view");
-        if (window.keys?.pub && contentView && !document.querySelector("#dashboard-view #pubkey-display")) {
+        if (window.keys?.pub && contentView && !document.querySelector("#pubkey-display")) {
             contentView.append(`<p id="pubkey-display">Your Public Key: ${NostrTools.nip19.npubEncode(window.keys.pub)}</p>`);
         }
     }
 
 
     renderTagCloud() {
-        this.app.db.getAll().then(objects => {
-            const tagCounts = {};
-            objects.forEach(obj => obj.tags?.forEach(tag => tagCounts[tag.name] = (tagCounts[tag.name] || 0) + 1));
-            const tagCloud = this.el.querySelector("#tag-cloud");
-            tagCloud.innerHTML = Object.entries(tagCounts)
-                .sort(([, countA], [, countB]) => countB - countA)
-                .map(([tagName, count]) => `<span style="font-size:${10 + count * 2}px; margin-right:5px;">${tagName}</span>`).join('');
-        });
+        renderTagCloud(this.app, this.el);
     }
 }
 
@@ -75,16 +57,7 @@ export class Menubar extends View {
             {label: "Settings", view: "settings"}, {
                 label: "Friends",
                 view: "friends"
-            }]).forEach(htmlString => this.el.append(document.createRange().createContextualFragment(htmlString)));
-        //this.buildSection("Links", [{label: "Recent Items", list: "recent"}]),
-        //this.buildSection("Network", [{
-        //    label: '<span id="network-status" style="float: right;" id="network-status">Connecting...</span>',
-        //    list: "network"
-        //}]).forEach(htmlString => {
-        //    const networkElement = document.createRange().createContextualFragment(htmlString).firstElementChild;
-        //    this.el.append(networkElement);
-        //});
-        //this.el.append($(`<div id='nostr-feed'></div>`))
+            }]).forEach(button => this.el.append(button));
     }
 
     bindEvents() {
@@ -97,18 +70,18 @@ export class Menubar extends View {
     }
 
     buildSection(title, items) {
-        
-        const emojiMap = {
-            "Content": "📄",
-            "New Object": "✨",
-            "Settings": "⚙️",
-            "Friends": "👥",
-            "Network": "🌐"
-        };
-        return [
-            //`<h3>${title}</h3>`,
-            `${items.map(item => `<button tabindex="0" title="${item.label}" ${item.view ? `data-view="${item.view}"` : `data-list="${item.list}"`}>${emojiMap[item.label] || ""}</button>`).join('')}`
-        ];
+        return items.map(item => {
+            const button = document.createElement('button');
+            button.tabIndex = 0;
+            button.title = item.label;
+            if (item.view) {
+                button.dataset.view = item.view;
+            } else if (item.list) {
+                button.dataset.list = item.list;
+            }
+            button.textContent = emojiMap[item.label] || "";
+            return button;
+        });
     }
 
 }
@@ -119,7 +92,8 @@ export class MainContent extends UIComponent {
     }
 
     showView(view) {
-        this.el.querySelector(".content").innerHTML = "";
-        this.el.querySelector(".content").append(view.el);
+        const s = this.el.querySelector(".content");
+        s.innerHTML = "";
+        s.append(view.el);
     }
 }
