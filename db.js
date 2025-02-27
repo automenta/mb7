@@ -1,6 +1,7 @@
 // db.js
 import * as NostrTools from 'nostr-tools';
 import {openDB} from 'idb';
+import * as Y from 'yjs'
 
 const NOW = () => new Date().toISOString();
 
@@ -27,6 +28,7 @@ const OBJECTS_STORE = 'objects';
 const KEY_STORAGE = 'nostr_keys';
 const FRIENDS_OBJECT_ID = 'friends';
 const SETTINGS_OBJECT_ID = 'settings';
+const NOTES_INDEX_ID = 'notes-index';
 
 /**
  * The main database class for your app.
@@ -145,18 +147,19 @@ export class DB {
     async getFriends() {
         return DB.getDefaultObject(FRIENDS_OBJECT_ID);
     }
-async addFriend(friend) {
-    const friendsObject = await this.getFriends();
-    const existingFriendIndex = friendsObject.tags.findIndex(
-        (tag) => tag[0] === 'People' && tag[1] === friend.pubkey
-    );
 
-    if (existingFriendIndex === -1) {
-        friendsObject.tags.push(['People', friend.pubkey, friend.name, friend.picture]);
-        friendsObject.updatedAt = new Date().toISOString();
-        await DB.db.put(OBJECTS_STORE, friendsObject);
+    async addFriend(friend) {
+        const friendsObject = await this.getFriends();
+        const existingFriendIndex = friendsObject.tags.findIndex(
+            (tag) => tag[0] === 'People' && tag[1] === friend.pubkey
+        );
+
+        if (existingFriendIndex === -1) {
+            friendsObject.tags.push(['People', friend.pubkey, friend.name, friend.picture]);
+            friendsObject.updatedAt = new Date().toISOString();
+            await DB.db.put(OBJECTS_STORE, friendsObject);
+        }
     }
-}
 
     async removeFriend(pubkey) {
         const friendsObject = await this.getFriends();
@@ -219,6 +222,22 @@ async addFriend(friend) {
             throw error;
         }
     }
+
+    async saveYDoc(id, yDoc) {
+        const yDocData = Y.encodeStateAsUpdate(yDoc);
+        await DB.db.put(OBJECTS_STORE, { id: `${id}-ydoc`, yDocData: yDocData });
+    }
+
+    async getYDoc(id) {
+        const yDocObject = await DB.db.get(OBJECTS_STORE, `${id}-ydoc`);
+        if (yDocObject) {
+            const yDoc = new Y.Doc();
+            Y.applyUpdate(yDoc, yDocObject.yDocData);
+            return yDoc;
+        } else {
+            return null;
+        }
+    }
 }
 
 const generatePrivateKey = () => {
@@ -253,3 +272,15 @@ export async function loadKeys() {
     }
     return keys;
 }
+
+async function getNotesIndex() {
+    const index = await DB.getDefaultObject(NOTES_INDEX_ID);
+    return index.tags || [];
+}
+
+async function updateNotesIndex(newIndex) {
+    await DB.db.put(OBJECTS_STORE, {id: NOTES_INDEX_ID, tags: newIndex});
+}
+
+export { getNotesIndex, updateNotesIndex };
+

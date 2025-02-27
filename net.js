@@ -1,6 +1,7 @@
 import DOMPurify from 'dompurify';
 import {getEventHash, nip19, Relay, validateEvent, verifyEvent} from 'nostr-tools';
 import {nanoid} from 'nanoid';
+import { getTagDefinition } from './ontology';
 
 const pubkeyRegex = /^[0-9a-fA-F]{64}$/;
 
@@ -114,17 +115,19 @@ export class Nostr {
         if (!subInfo) return;
 
         if (subInfo.relay) {
-            //we have a specific relay.
-            if (this.subscriptions[subInfo.relay] && this.subscriptions[subInfo.relay][subInfo.id]) {
-                this.subscriptions[subInfo.relay][subInfo.id].close();
-                delete this.subscriptions[subInfo.relay][subInfo.id];
+            //a specific relay.
+            const r = this.subscriptions[subInfo.relay];
+            if (r && r[subInfo.id]) {
+                r[subInfo.id].close();
+                delete r[subInfo.id];
             }
         } else {
             //unsubscribe from *all* relays
             for (let relayUrl in this.subscriptions) {
-                if (this.subscriptions[relayUrl][subInfo.id]) {
-                    this.subscriptions[relayUrl][subInfo.id].close();
-                    delete this.subscriptions[relayUrl][subInfo.id];
+                const u = this.subscriptions[relayUrl];
+                if (u[subInfo.id]) {
+                    u[subInfo.id].close();
+                    delete u[subInfo.id];
                 }
             }
         }
@@ -291,7 +294,7 @@ export class Nostr {
             created_at: Math.floor(Date.now() / 1000),
             tags: object.tags.map(tag => {
                 // Serialize the tag value based on its type
-                const tagDef = this.app.getTagDefinition(tag.name);
+                const tagDef = getTagDefinition(tag.name);
                 const serializedValue = tagDef.serialize(tag.value);
 
                 // Construct the tag array as expected by Nostr
@@ -356,8 +359,7 @@ export class Nostr {
         // We'll subscribe to events tagged with this pubkey.
         this.relays.forEach(relayUrl => {
             if (this.relayStatuses[relayUrl]?.status === 'connected') {
-                const relay = this.relayObjects[relayUrl];
-                this.subscribeToPubkey(relay, pubkey);
+                this.subscribeToPubkey(this.relayObjects[relayUrl], pubkey);
             } else {
                 //If not connected, we rely on the 'connect' event listener already set up in connectToRelay.
             }

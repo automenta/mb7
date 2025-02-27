@@ -21,7 +21,11 @@ body {
 }
 
 .menubar-top button {
-    border: none; background: transparent; color: #e0e0e0; cursor: pointer; font-size: 125%
+    border: none;
+    background: transparent;
+    color: #e0e0e0;
+    cursor: pointer;
+    font-size: 125%
 }
 
 .menubar-top button:hover {

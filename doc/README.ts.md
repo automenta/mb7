@@ -1,4 +1,7 @@
-Below is a detailed and complete TypeScript pseudocode representation of **Netention**, our tag-driven "semantic operating system." This pseudocode is structured to serve as a blueprint for a full prototype implementation, covering all core modules, reactivity, UI components, and networking. It’s written in a clear, executable style with comments to guide implementation, balancing abstraction and specificity for practical use.
+Below is a detailed and complete TypeScript pseudocode representation of **Netention**, our tag-driven "semantic
+operating system." This pseudocode is structured to serve as a blueprint for a full prototype implementation, covering
+all core modules, reactivity, UI components, and networking. It’s written in a clear, executable style with comments to
+guide implementation, balancing abstraction and specificity for practical use.
 
 ---
 
@@ -493,17 +496,20 @@ document.head.appendChild(styleSheet);
 ## Implementation Notes
 
 ### Structure
+
 - **Core Modules:** `Data`, `Ontology`, `Net`, `UI` encapsulate all functionality.
 - **Reactivity:** `Data.setupReactivity` wires tag changes to Ontology handlers.
 - **UI:** Preact components render NObjects and tags dynamically.
 
 ### Key Features
+
 - **Collaboration:** Yjs syncs `content` and `tags` across clients.
 - **Networking:** Nostr handles publishing and subscriptions.
 - **Tags:** Drive all behavior via `Ontology.onChange`.
 - **Views:** Filter NObjects by tags, no separate logic needed.
 
 ### Next Steps
+
 1. **Setup:** Initialize a Vite project with Preact, Yjs, `idb`, and `nostr-tools`.
 2. **Core:** Implement `Data` with IndexedDB and Yjs.
 3. **Ontology:** Populate with base tags; test reactivity.
@@ -513,17 +519,22 @@ document.head.appendChild(styleSheet);
 
 ---
 
-This pseudocode is a complete, executable foundation for Netention. It’s tag-driven, reactive, and unified, ready to evolve into a full prototype. Let’s bring this semantic OS to life—what’s the first piece you’d like to tackle?
+This pseudocode is a complete, executable foundation for Netention. It’s tag-driven, reactive, and unified, ready to
+evolve into a full prototype. Let’s bring this semantic OS to life—what’s the first piece you’d like to tackle?
 
 ---------
 
-Below is a detailed and complete TypeScript pseudocode representation of **Netention**, our "semantic operating system." This pseudocode is structured to serve as a blueprint for a full prototype implementation, capturing the tag-driven reactivity, unified NObject model, and intuitive UX we’ve refined. It includes all core modules, UI components, and the Ontology with comprehensive tag reactions, ready to be fleshed out into executable code.
+Below is a detailed and complete TypeScript pseudocode representation of **Netention**, our "semantic operating system."
+This pseudocode is structured to serve as a blueprint for a full prototype implementation, capturing the tag-driven
+reactivity, unified NObject model, and intuitive UX we’ve refined. It includes all core modules, UI components, and the
+Ontology with comprehensive tag reactions, ready to be fleshed out into executable code.
 
 ---
 
 # Netention: TypeScript Pseudocode
 
 ## Project Structure
+
 ```
 src/
 ├── core/
@@ -948,52 +959,71 @@ export { Net };
 ### App (ui/App.tsx)
 
 ```typescript
-import { h, render } from "preact";
-import { useState, useEffect } from "preact/hooks";
-import { Data } from "../core/Data";
-import { Net } from "../core/Net";
-import { NObject } from "../core/NObject";
-import { Sidebar } from "./Sidebar";
-import { NObjectView } from "./NObjectView";
-import { Notification } from "./Notification";
+import {h, render} from "preact";
+import {useState, useEffect} from "preact/hooks";
+import {Data} from "../core/Data";
+import {Net} from "../core/Net";
+import {NObject} from "../core/NObject";
+import {Sidebar} from "./Sidebar";
+import {NObjectView} from "./NObjectView";
+import {Notification} from "./Notification";
 
 const App = () => {
-  const [nobjects, setNobjects] = useState<NObject[]>([]);
-  const [view, setView] = useState("all");
-  const [notifications, setNotifications] = useState<string[]>([]);
+    const [nobjects, setNobjects] = useState<NObject[]>([]);
+    const [view, setView] = useState("all");
+    const [notifications, setNotifications] = useState<string[]>([]);
 
-  useEffect(() => {
-    Net.init();
-    Data.list().then((list) => setNobjects(list));
-  }, []);
+    useEffect(() => {
+        Net.init();
+        Data.list().then((list) => setNobjects(list));
+    }, []);
 
-  const filterByTag = (tagType: string) => nobjects.filter((n) => n.tags.has(tagType));
+    const filterByTag = (tagType: string) => nobjects.filter((n) => n.tags.has(tagType));
 
-  const addNObject = () => {
-    const nobject = NObject.create("New NObject");
-    setNobjects([...nobjects, nobject]);
-  };
+    const addNObject = () => {
+        const nobject = NObject.create("New NObject");
+        setNobjects([...nobjects, nobject]);
+    };
 
-  const notify = (message: string) => setNotifications([...notifications, message]);
+    const notify = (message: string) => setNotifications([...notifications, message]);
 
-  UI.notify = notify; // Global UI notifier
+    UI.notify = notify; // Global UI notifier
 
-  return (
-    <div className="app">
-      <Sidebar setView={setView} addNObject={addNObject} nobjects={nobjects} />
-      <div className="main">
-        {view === "all" && nobjects.map((n) => <NObjectView nobject={n} />)}
-        {view === "tasks" && filterByTag("task").map((n) => <NObjectView nobject={n} />)}
-        {view === "friends" && filterByTag("friend").map((n) => <NObjectView nobject={n} />)}
-      </div>
-      {notifications.map((msg, i) => (
-        <Notification key={i} message={msg} onClose={() => setNotifications(notifications.filter((_, j) => j !== i))} />
-      ))}
-    </div>
-  );
-};
+    return (
+        <div className = "app" >
+        <Sidebar setView = {setView}
+    addNObject = {addNObject}
+    nobjects = {nobjects}
+    />
+    < div
+    className = "main" >
+        {view === "all" && nobjects.map((n) => <NObjectView nobject = {n}
+    />)}
+    {
+        view === "tasks" && filterByTag("task").map((n) => <NObjectView nobject = {n}
+        />)}
+        {
+            view === "friends" && filterByTag("friend").map((n) => <NObjectView nobject = {n}
+            />)}
+            < /div>
+            {
+                notifications.map((msg, i) => (
+                    <Notification key = {i}
+                message = {msg}
+                onClose = {()
+            =>
+                setNotifications(notifications.filter((_, j) => j !== i))
+            }
+                />
+            ))
+            }
+            </div>
+        )
+            ;
+        }
+        ;
 
-export { App };
+        export {App};
 ```
 
 ### Sidebar (ui/Sidebar.tsx)
@@ -1103,19 +1133,19 @@ export { Tag };
 ### Notification (ui/Notification.tsx)
 
 ```typescript
-import { h } from "preact";
-import { useEffect } from "preact/hooks";
+import {h} from "preact";
+import {useEffect} from "preact/hooks";
 
-const Notification = ({ message, onClose }: { message: string; onClose: () => void }) => {
-  useEffect(() => {
-    const timer = setTimeout(onClose, 3000);
-    return () => clearTimeout(timer);
-  }, [onClose]);
+const Notification = ({message, onClose}: { message: string; onClose: () => void }) => {
+    useEffect(() => {
+        const timer = setTimeout(onClose, 3000);
+        return () => clearTimeout(timer);
+    }, [onClose]);
 
-  return <div className="notification">{message}</div>;
+    return <div className = "notification" > {message} < /div>;
 };
 
-export { Notification };
+export {Notification};
 ```
 
 ### UI Utilities (ui/UI.ts)
@@ -1176,21 +1206,29 @@ render(<App />, document.getElementById("root")!);
 
 ---
 
-This pseudocode provides a complete, tag-driven prototype for Netention. It’s ready to be implemented, with all functionality—publishing, tasks, notifications, and more—flowing from reactive tags. Let me know if you’d like to refine any part further or start coding!
+This pseudocode provides a complete, tag-driven prototype for Netention. It’s ready to be implemented, with all
+functionality—publishing, tasks, notifications, and more—flowing from reactive tags. Let me know if you’d like to refine
+any part further or start coding!
 
 ----------
 
-Below is a detailed and complete TypeScript pseudocode representation of **Netention**, our "semantic operating system." This pseudocode is structured to serve as a blueprint for a full prototype implementation, covering all core components, reactivity, and tag-driven functionality. It’s written in a way that balances clarity for understanding with specificity for coding, making it ready to evolve into a working prototype.
+Below is a detailed and complete TypeScript pseudocode representation of **Netention**, our "semantic operating system."
+This pseudocode is structured to serve as a blueprint for a full prototype implementation, covering all core components,
+reactivity, and tag-driven functionality. It’s written in a way that balances clarity for understanding with specificity
+for coding, making it ready to evolve into a working prototype.
 
 ---
 
 # Netention: TypeScript Pseudocode
 
-**Netention** is a tag-driven, collaborative workspace where **NObjects** and **Tags** power all functionality through a reactive system. This pseudocode includes the core modules, UI components, and tag-driven behaviors, ready for implementation with Preact, Yjs, and Nostr.
+**Netention** is a tag-driven, collaborative workspace where **NObjects** and **Tags** power all functionality through a
+reactive system. This pseudocode includes the core modules, UI components, and tag-driven behaviors, ready for
+implementation with Preact, Yjs, and Nostr.
 
 ---
 
 ## Project Structure
+
 ```
 src/
 ├── core/
@@ -1213,6 +1251,7 @@ src/
 ## Core Modules
 
 ### `NObject.ts`
+
 Defines the NObject, the central reactive entity.
 
 ```typescript
@@ -1281,6 +1320,7 @@ export class NObjectImpl implements NObject {
 ```
 
 ### `Ontology.ts`
+
 Defines the tag schema and reactive behaviors.
 
 ```typescript
@@ -1430,6 +1470,7 @@ export const ontology: { [key: string]: TagSpec } = {
 ```
 
 ### `Data.ts`
+
 Handles persistence using IndexedDB.
 
 ```typescript
@@ -1474,6 +1515,7 @@ export async function listNObjects(): Promise<NObject[]> {
 ```
 
 ### `Net.ts`
+
 Manages Nostr networking.
 
 ```typescript
@@ -1511,6 +1553,7 @@ export function subscribe(callback: (nobject: NObject) => void) {
 ## UI Components
 
 ### `App.tsx`
+
 Root component orchestrating the app.
 
 ```typescript
@@ -1559,6 +1602,7 @@ export default App;
 ```
 
 ### `Sidebar.tsx`
+
 Navigation and tag management.
 
 ```typescript
@@ -1610,6 +1654,7 @@ export default Sidebar;
 ```
 
 ### `NObjectView.tsx`
+
 Renders an NObject with its tags.
 
 ```typescript
@@ -1660,6 +1705,7 @@ export default NObjectView;
 ```
 
 ### `Tag.tsx`
+
 Renders a tag based on Ontology.
 
 ```typescript
@@ -1675,6 +1721,7 @@ export default TagComponent;
 ```
 
 ### `Notification.tsx`
+
 Displays toast notifications.
 
 ```typescript
@@ -1713,6 +1760,7 @@ export default Notification;
 ```
 
 ### `main.tsx`
+
 Entry point.
 
 ```typescript
@@ -1732,6 +1780,7 @@ render(
 ---
 
 ## CSS (Basic Styling)
+
 ```css
 .app { display: flex; }
 .sidebar { width: 200px; border-right: 1px solid #ccc; padding: 10px; }
@@ -1764,15 +1813,22 @@ render(
 
 ---
 
-This pseudocode provides a complete, tag-driven prototype of Netention. It’s ready to be fleshed out with real Nostr key management and additional tag types as needed. The system is lean (~300-400 lines), reactive, and user-empowering—perfect for a full implementation! Let me know if you’d like to refine further or start coding!
+This pseudocode provides a complete, tag-driven prototype of Netention. It’s ready to be fleshed out with real Nostr key
+management and additional tag types as needed. The system is lean (~300-400 lines), reactive, and
+user-empowering—perfect for a full implementation! Let me know if you’d like to refine further or start coding!
 
 ---------
 
-Below is a detailed and complete TypeScript pseudocode implementation of **Netention**, our tag-driven "semantic operating system." This is designed for a prototype, written with the precision and efficiency of a 1990s demoscene coder—optimized, functional, and focused on the mission to empower users and address global challenges through collaboration and semantics. The code is structured to be immediately actionable, leveraging TypeScript's type safety and modern libraries like Yjs and Nostr for real-time reactivity and decentralization.
+Below is a detailed and complete TypeScript pseudocode implementation of **Netention**, our tag-driven "semantic
+operating system." This is designed for a prototype, written with the precision and efficiency of a 1990s demoscene
+coder—optimized, functional, and focused on the mission to empower users and address global challenges through
+collaboration and semantics. The code is structured to be immediately actionable, leveraging TypeScript's type safety
+and modern libraries like Yjs and Nostr for real-time reactivity and decentralization.
 
 ---
 
 ### Project Structure
+
 ```
 src/
 ├── core/
@@ -1794,6 +1850,7 @@ src/
 ---
 
 ### src/types.ts
+
 ```typescript
 export interface NObject {
   id: string;
@@ -1822,6 +1879,7 @@ export interface Ontology {
 ---
 
 ### src/core/NObject.ts
+
 ```typescript
 import * as Y from "yjs";
 import { Ontology } from "../Ontology";
@@ -1878,6 +1936,7 @@ export class NObject {
 ---
 
 ### src/core/Ontology.ts
+
 ```typescript
 import { NObject } from "./NObject";
 import { Net } from "./Net";
@@ -1999,6 +2058,7 @@ export namespace Ontology {
 ---
 
 ### src/core/Data.ts
+
 ```typescript
 import { openDB } from "idb";
 import { NObject } from "./NObject";
@@ -2050,6 +2110,7 @@ export namespace Data {
 ---
 
 ### src/core/Net.ts
+
 ```typescript
 import * as Nostr from "nostr-tools";
 import { NObject } from "./NObject";
@@ -2149,6 +2210,7 @@ export namespace Net {
 ---
 
 ### src/ui/UI.ts
+
 ```typescript
 export namespace UI {
   const notifications: { id: string; message: string }[] = [];
@@ -2170,6 +2232,7 @@ export namespace UI {
 ---
 
 ### src/ui/Tag.tsx
+
 ```typescript
 import { h } from "preact";
 import { Ontology } from "../core/Ontology";
@@ -2183,6 +2246,7 @@ export const Tag = ({ type, value, onChange }: { type: string; value: any; onCha
 ---
 
 ### src/ui/NObjectView.tsx
+
 ```typescript
 import { h } from "preact";
 import { useState, useEffect } from "preact/hooks";
@@ -2231,6 +2295,7 @@ export const NObjectView = ({ nobject }: { nobject: NObject }) => {
 ---
 
 ### src/ui/Sidebar.tsx
+
 ```typescript
 import { h } from "preact";
 import { NObject } from "../core/NObject";
@@ -2266,6 +2331,7 @@ export const Sidebar = ({ nobjects, setView, addNObject }: {
 ---
 
 ### src/ui/Notification.tsx
+
 ```typescript
 import { h } from "preact";
 import { UI } from "./UI";
@@ -2287,6 +2353,7 @@ export const Notification = () => {
 ---
 
 ### src/ui/App.tsx
+
 ```typescript
 import { h, render } from "preact";
 import { useState, useEffect } from "preact/hooks";
@@ -2336,6 +2403,7 @@ export const App = () => {
 ---
 
 ### src/main.tsx
+
 ```typescript
 import { h, render } from "preact";
 import { App } from "./ui/App";
@@ -2348,21 +2416,29 @@ render(<App />, document.body);
 ---
 
 ### Notes for Implementation
+
 1. **Dependencies:** Install `preact`, `yjs`, `idb`, `nostr-tools` via npm.
 2. **Build:** Use Vite with TypeScript configuration.
 3. **CSS:** Add minimal styling for layout and tag rendering (e.g., flexbox, basic colors).
 4. **Testing:** Start with local NObjects, then connect to Nostr relays.
 
-This pseudocode forms a lean, reactive prototype—under 500 lines—that implements the full vision. It’s optimized for clarity and function, ready to scale Earth-saving collaboration through semantic power. Let’s build it and change the world!
+This pseudocode forms a lean, reactive prototype—under 500 lines—that implements the full vision. It’s optimized for
+clarity and function, ready to scale Earth-saving collaboration through semantic power. Let’s build it and change the
+world!
 
 
 ----------
 
-Below is a detailed and complete TypeScript pseudocode implementation of **Netention**, our tag-driven "semantic operating system." This is written with the precision and intensity of a senior developer, optimized for clarity, functionality, and immediate prototyping. The code reflects the unified, reactive design we’ve refined, leveraging NObjects, Tags, and Ontology to empower users and streamline complexity. Every line serves the purpose of creating a robust, decentralized, collaborative workspace.
+Below is a detailed and complete TypeScript pseudocode implementation of **Netention**, our tag-driven "semantic
+operating system." This is written with the precision and intensity of a senior developer, optimized for clarity,
+functionality, and immediate prototyping. The code reflects the unified, reactive design we’ve refined, leveraging
+NObjects, Tags, and Ontology to empower users and streamline complexity. Every line serves the purpose of creating a
+robust, decentralized, collaborative workspace.
 
 ---
 
 ## Project Structure
+
 ```
 src/
 ├── core/
@@ -2385,6 +2461,7 @@ src/
 ## Core Implementation
 
 ### `NObject.ts`
+
 ```typescript
 import * as Y from "yjs";
 
@@ -2430,6 +2507,7 @@ import { ontology } from "./Ontology";
 ```
 
 ### `Ontology.ts`
+
 ```typescript
 import { Tag, NObject } from "./NObject";
 import { h } from "preact";
@@ -2558,6 +2636,7 @@ export const ontology: { [type: string]: OntologySpec } = {
 ```
 
 ### `Data.ts`
+
 ```typescript
 import { openDB } from "idb";
 import { NObject, NObjectImpl } from "./NObject";
@@ -2612,6 +2691,7 @@ export const data = new Data();
 ```
 
 ### `Net.ts`
+
 ```typescript
 import * as Nostr from "nostr-tools";
 import { NObject, Tag } from "./NObject";
@@ -2699,6 +2779,7 @@ export const net = new Net();
 ## UI Implementation
 
 ### `App.tsx`
+
 ```typescript
 import { h, render } from "preact";
 import { useState, useEffect } from "preact/hooks";
@@ -2748,6 +2829,7 @@ render(<App />, document.body);
 ```
 
 ### `Sidebar.tsx`
+
 ```typescript
 import { h } from "preact";
 import { useState } from "preact/hooks";
@@ -2776,6 +2858,7 @@ export const Sidebar = ({ setView, addNObject }: { setView: (view: string) => vo
 ```
 
 ### `NObjectView.tsx`
+
 ```typescript
 import { h } from "preact";
 import { useState, useEffect } from "preact/hooks";
@@ -2822,6 +2905,7 @@ export const NObjectView = ({ nobject }: { nobject: NObject }) => {
 ```
 
 ### `Tag.tsx`
+
 ```typescript
 import { h } from "preact";
 import { ontology } from "../core/Ontology";
@@ -2833,6 +2917,7 @@ export const Tag = ({ type, value, onChange }: { type: string; value: any; onCha
 ```
 
 ### `Notification.tsx`
+
 ```typescript
 import { h } from "preact";
 import { useState } from "preact/hooks";
@@ -2870,6 +2955,7 @@ export const Notification = () => {
 ---
 
 ## `main.tsx`
+
 ```typescript
 import { h, render } from "preact";
 import { App } from "./ui/App";
@@ -2879,6 +2965,7 @@ render(<App />, document.getElementById("app")!);
 ```
 
 ## `styles.css`
+
 ```css
 .app { display: flex; }
 .sidebar { width: 200px; border-right: 1px solid #ccc; padding: 10px; }
@@ -2898,16 +2985,23 @@ render(<App />, document.getElementById("app")!);
 - **Execution:** Run `npx vite` to start the dev server.
 - **Scaling:** Add more tags to `ontology` as needed; extend `Net` for additional relays.
 
-This pseudocode is a fully functional blueprint—tight, reactive, and ready to prototype. It harnesses tag-driven reactivity to unify functionality, empowering users to shape their world with minimal friction. The Earth-saving mission starts here—let’s build it!
+This pseudocode is a fully functional blueprint—tight, reactive, and ready to prototype. It harnesses tag-driven
+reactivity to unify functionality, empowering users to shape their world with minimal friction. The Earth-saving mission
+starts here—let’s build it!
 
 
 ----------
 
-Below is a detailed and complete TypeScript pseudocode implementation of **Netention**, our tag-driven semantic operating system. This pseudocode is structured for a production-ready prototype, reflecting the reactive, unified design we’ve developed. It’s written with the precision and energy of a senior developer, optimized for clarity and implementation efficiency, with a focus on saving Earth through powerful, accessible collaboration tools. Let’s get to it.
+Below is a detailed and complete TypeScript pseudocode implementation of **Netention**, our tag-driven semantic
+operating system. This pseudocode is structured for a production-ready prototype, reflecting the reactive, unified
+design we’ve developed. It’s written with the precision and energy of a senior developer, optimized for clarity and
+implementation efficiency, with a focus on saving Earth through powerful, accessible collaboration tools. Let’s get to
+it.
 
 ---
 
 ## Directory Structure
+
 ```
 /src
 ├── core/
@@ -2930,6 +3024,7 @@ Below is a detailed and complete TypeScript pseudocode implementation of **Neten
 ## Core Modules
 
 ### `core/NObject.ts`
+
 ```typescript
 import * as Y from "yjs";
 import { nanoid } from "nanoid";
@@ -2985,6 +3080,7 @@ export class NObject {
 ```
 
 ### `core/Ontology.ts`
+
 ```typescript
 import { h, JSX } from "preact";
 import { NObject, Tag } from "./NObject";
@@ -3149,6 +3245,7 @@ export function extendOntology(type: string, spec: OntologySpec): void {
 ```
 
 ### `core/Data.ts`
+
 ```typescript
 import { openDB } from "idb";
 import { NObject } from "./NObject";
@@ -3191,6 +3288,7 @@ export const data = new Data();
 ```
 
 ### `core/Net.ts`
+
 ```typescript
 import { RelayPool } from "nostr-tools";
 import { NObject } from "./NObject";
@@ -3262,6 +3360,7 @@ export function init(): void {
 ## UI Components
 
 ### `ui/App.tsx`
+
 ```typescript
 import { h, render } from "preact";
 import { useState, useEffect } from "preact/hooks";
@@ -3302,6 +3401,7 @@ export function App() {
 ```
 
 ### `ui/Sidebar.tsx`
+
 ```typescript
 import { h, JSX } from "preact";
 import { useState } from "preact/hooks";
@@ -3335,6 +3435,7 @@ export function Sidebar({ setView, addNObject }: SidebarProps): JSX.Element {
 ```
 
 ### `ui/NObjectView.tsx`
+
 ```typescript
 import { h, JSX } from "preact";
 import { useState, useEffect } from "preact/hooks";
@@ -3387,6 +3488,7 @@ export function NObjectView({ nobject }: NObjectViewProps): JSX.Element {
 ```
 
 ### `ui/Tag.tsx`
+
 ```typescript
 import { h, JSX } from "preact";
 import { ontology } from "../core/Ontology";
@@ -3404,6 +3506,7 @@ export function Tag({ type, value, onChange }: TagProps): JSX.Element {
 ```
 
 ### `ui/Notification.tsx`
+
 ```typescript
 import { h, JSX } from "preact";
 import { useState } from "preact/hooks";
@@ -3434,6 +3537,7 @@ export function NotificationArea(): JSX.Element {
 ```
 
 ### `main.tsx`
+
 ```typescript
 import { h, render } from "preact";
 import { App } from "./ui/App";
@@ -3446,22 +3550,30 @@ render(<App />, document.getElementById("app")!);
 ## Notes for Implementation
 
 - **Dependencies:** Install `preact`, `yjs`, `idb`, `nostr-tools`, `nanoid`.
-- **CSS:** Add basic styling for `.app`, `.sidebar`, `.nobject`, `.tags`, `.notification` to ensure layout and visibility.
+- **CSS:** Add basic styling for `.app`, `.sidebar`, `.nobject`, `.tags`, `.notification` to ensure layout and
+  visibility.
 - **Nostr Keys:** Implement key generation/import for `localUser` in `Net.ts`.
 - **Error Handling:** Add try-catch blocks in `Data` and `Net` methods for robustness.
 - **Testing:** Simulate tag reactions (e.g., `"public"`, `"task"`) to verify reactivity.
 
-This pseudocode forms a complete, reactive foundation for Netention. Every feature—from publishing to task management—flows from tag changes, unifying the system into a lean, powerful tool. We’re ready to prototype and save the Earth, one NObject at a time. Let’s do this!
+This pseudocode forms a complete, reactive foundation for Netention. Every feature—from publishing to task
+management—flows from tag changes, unifying the system into a lean, powerful tool. We’re ready to prototype and save the
+Earth, one NObject at a time. Let’s do this!
 
 ---------
 
-Below is a detailed and complete TypeScript pseudocode implementation of **Netention**, our tag-driven "semantic operating system." This pseudocode is structured to serve as a blueprint for a full prototype, reflecting the tag-reactive design we’ve honed. It’s written with precision and depth, leveraging a Prolog-inspired declarative style where possible, optimized for clarity and implementation readiness. Given the stakes—saving Earth—this is a focused, no-nonsense foundation.
+Below is a detailed and complete TypeScript pseudocode implementation of **Netention**, our tag-driven "semantic
+operating system." This pseudocode is structured to serve as a blueprint for a full prototype, reflecting the
+tag-reactive design we’ve honed. It’s written with precision and depth, leveraging a Prolog-inspired declarative style
+where possible, optimized for clarity and implementation readiness. Given the stakes—saving Earth—this is a focused,
+no-nonsense foundation.
 
 ---
 
 # Netention: TypeScript Pseudocode
 
 ## File Structure
+
 ```
 src/
 ├── core/
@@ -3481,6 +3593,7 @@ src/
 ```
 
 ## Dependencies
+
 - `preact`, `yjs`, `idb`, `nostr-tools`
 
 ---
@@ -3488,6 +3601,7 @@ src/
 ## Core Modules
 
 ### `NObject.ts`
+
 ```typescript
 import * as Y from "yjs";
 import { nanoid } from "nanoid";
@@ -3554,6 +3668,7 @@ export class NObjectImpl implements NObject {
 ```
 
 ### `Ontology.ts`
+
 ```typescript
 import { NObject } from "./NObject";
 import * as Net from "./Net";
@@ -3682,6 +3797,7 @@ export function extendOntology(type: string, spec: TagSpec): void {
 ```
 
 ### `Data.ts`
+
 ```typescript
 import { openDB } from "idb";
 import { NObject, NObjectImpl } from "./NObject";
@@ -3720,6 +3836,7 @@ export const data = new Data();
 ```
 
 ### `Net.ts`
+
 ```typescript
 import { relayInit, getEventHash, signEvent } from "nostr-tools";
 import { NObject } from "./NObject";
@@ -3804,6 +3921,7 @@ const localUser = {
 ## UI Components
 
 ### `App.tsx`
+
 ```typescript
 import { h, render } from "preact";
 import { useState, useEffect } from "preact/hooks";
@@ -3847,6 +3965,7 @@ render(<App />, document.body);
 ```
 
 ### `Sidebar.tsx`
+
 ```typescript
 import { h } from "preact";
 import { useState } from "preact/hooks";
@@ -3890,6 +4009,7 @@ export const Sidebar = ({ setView, addNObject, nobjects }: { setView: (v: string
 ```
 
 ### `Editor.tsx`
+
 ```typescript
 import { h } from "preact";
 import { useState, useEffect } from "preact/hooks";
@@ -3930,6 +4050,7 @@ export const Editor = ({ nobject }: { nobject: NObject }) => {
 ```
 
 ### `Tag.tsx`
+
 ```typescript
 import { h } from "preact";
 import { ontology } from "../core/Ontology";
@@ -3941,6 +4062,7 @@ export const Tag = ({ type, value, onChange }: { type: string; value: any; onCha
 ```
 
 ### `Notification.tsx`
+
 ```typescript
 // Placeholder for toast implementation
 export const notify = (message: string) => {
@@ -3950,6 +4072,7 @@ export const notify = (message: string) => {
 ```
 
 ### `Views.tsx`
+
 ```typescript
 import { h } from "preact";
 import { NObject } from "../core/NObject";
@@ -3974,6 +4097,7 @@ export const Views = ({ view, nobjects }: { view: string; nobjects: NObject[] })
 ```
 
 ### `main.tsx`
+
 ```typescript
 import { h, render } from "preact";
 import { App } from "./ui/App";
@@ -3994,15 +4118,22 @@ Net.init().then(() => {
 - **UI:** Preact components reactively update based on Yjs state; tags render dynamically.
 - **Extensibility:** Users can call `extendOntology` to add custom tags at runtime.
 
-This pseudocode is a complete, executable skeleton—tight, declarative, and ready for a prototype. It harnesses tag-driven reactivity to unify functionality, aligning with our mission to empower users and save Earth through semantic clarity. Next steps: flesh out CSS, test Nostr integration, and iterate!
+This pseudocode is a complete, executable skeleton—tight, declarative, and ready for a prototype. It harnesses
+tag-driven reactivity to unify functionality, aligning with our mission to empower users and save Earth through semantic
+clarity. Next steps: flesh out CSS, test Nostr integration, and iterate!
 
 ----------
 
-Below is a detailed and complete TypeScript pseudocode implementation of **Netention**, our tag-driven "semantic operating system." This is designed with the rigor and precision of a senior TypeScript developer, optimized for clarity, modularity, and immediate prototyping. Given the gravity of the mission—to save Earth from its own destruction—the code is focused, professional, and devoid of frivolous commentary. It encapsulates the unified NObject model, reactive tag system, Ontology-driven behavior, decentralized networking via Nostr, and a Preact-based UI.
+Below is a detailed and complete TypeScript pseudocode implementation of **Netention**, our tag-driven "semantic
+operating system." This is designed with the rigor and precision of a senior TypeScript developer, optimized for
+clarity, modularity, and immediate prototyping. Given the gravity of the mission—to save Earth from its own
+destruction—the code is focused, professional, and devoid of frivolous commentary. It encapsulates the unified NObject
+model, reactive tag system, Ontology-driven behavior, decentralized networking via Nostr, and a Preact-based UI.
 
 ---
 
 ### Project Structure
+
 ```
 src/
 ├── core/
@@ -4023,6 +4154,7 @@ src/
 ---
 
 ### `src/types.ts`
+
 ```typescript
 import * as Y from "yjs";
 
@@ -4053,6 +4185,7 @@ export interface Ontology {
 ---
 
 ### `src/core/NObject.ts`
+
 ```typescript
 import * as Y from "yjs";
 import { NObject } from "../types";
@@ -4100,6 +4233,7 @@ export class NObjectImpl implements NObject {
 ---
 
 ### `src/core/Ontology.ts`
+
 ```typescript
 import { Ontology, NObject, Tag } from "../types";
 import { Net } from "./Net";
@@ -4229,6 +4363,7 @@ export const ontology: Ontology = {
 ---
 
 ### `src/core/Data.ts`
+
 ```typescript
 import { openDB } from "idb";
 import { NObjectImpl } from "./NObject";
@@ -4289,6 +4424,7 @@ export const data = new Data();
 ---
 
 ### `src/core/Net.ts`
+
 ```typescript
 import { RelayPool } from "nostr-tools";
 import { NObject } from "../types";
@@ -4359,6 +4495,7 @@ export const Net = new Net();
 ---
 
 ### `src/ui/UI.ts`
+
 ```typescript
 export class UI {
   static notify(message: string): void {
@@ -4374,6 +4511,7 @@ export class UI {
 ---
 
 ### `src/ui/App.tsx`
+
 ```typescript
 import { h, render } from "preact";
 import { useState, useEffect } from "preact/hooks";
@@ -4421,6 +4559,7 @@ export default App;
 ---
 
 ### `src/ui/Editor.tsx`
+
 ```typescript
 import { h } from "preact";
 import { useState, useEffect } from "preact/hooks";
@@ -4480,6 +4619,7 @@ export const Editor = ({ nobject, onSelect }: { nobject: NObject; onSelect?: () 
 ---
 
 ### `src/ui/Tag.tsx`
+
 ```typescript
 import { h } from "preact";
 import { ontology } from "../core/Ontology";
@@ -4500,6 +4640,7 @@ export const Tag = ({ type, value, onChange }: { type: string; value: any; onCha
 ---
 
 ### `src/ui/Sidebar.tsx`
+
 ```typescript
 import { h } from "preact";
 import { NObject } from "../types";
@@ -4552,6 +4693,7 @@ export const Sidebar = ({
 ---
 
 ### `src/main.tsx`
+
 ```typescript
 import { h, render } from "preact";
 import App from "./ui/App";
@@ -4564,14 +4706,17 @@ render(<App />, document.getElementById("app")!);
 ## Implementation Notes
 
 ### Dependencies
+
 - Install: `npm install preact yjs idb nostr-tools`
 - Dev: `npm install -D typescript vite @preact/preset-vite`
 
 ### Compilation
+
 - Use Vite: `vite build`
 - Serve: `vite preview`
 
 ### Next Steps
+
 1. **Key Management:** Replace placeholder keys in `Net.ts` with secure generation/storage.
 2. **Event Signing:** Implement Nostr event signing with `nostr-tools`.
 3. **Styling:** Add CSS for responsiveness and polish.
@@ -4579,6 +4724,9 @@ render(<App />, document.getElementById("app")!);
 
 ---
 
-This pseudocode is a complete, production-ready foundation for Netention. It leverages tag-driven reactivity to unify functionality, aligns with user empowerment through intuitive abstractions, and ensures a consistent, predictable UX. The system is now poised to scale and save Earth—one NObject at a time. Ready for prototyping! Let me know if you need further refinements or specific implementation guidance.
+This pseudocode is a complete, production-ready foundation for Netention. It leverages tag-driven reactivity to unify
+functionality, aligns with user empowerment through intuitive abstractions, and ensures a consistent, predictable UX.
+The system is now poised to scale and save Earth—one NObject at a time. Ready for prototyping! Let me know if you need
+further refinements or specific implementation guidance.
 
 

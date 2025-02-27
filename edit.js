@@ -1,6 +1,10 @@
-import { UnifiedOntology } from './ontology.js';
+import {UnifiedOntology} from './ontology.js';
 // edit.js
 import DOMPurify from 'dompurify';
+import * as Y from 'yjs'
+import { IndexeddbPersistence } from 'y-indexeddb'
+import { getNotesIndex, updateNotesIndex } from './db';
+import { DB } from './db';
 
 // --- Constants and Helpers ---
 
@@ -263,28 +267,28 @@ class OntologyBrowser {
     }
 
     build() {
-            this.el.innerHTML = "";
-            Object.entries(this.ontology).forEach(([key, value]) => {
-                const categoryDiv = createElement("div", {class: "category"}, key);
-                if (value.instances) {
-                    value.instances.forEach(tagData =>
-                        categoryDiv.append(
-                            createElement("div", {
-                                class: "tag-item",
-                                onclick: () => this.onTagSelect(new InlineTag(tagData, this.onTagSelect)),
-                            }, `${tagData.emoji || ""} ${tagData.name}`)
-                        )
-                    );
-                } else {
-                    // Handle cases where there are no instances, e.g., string, number
-                    // You might want to display a default tag or a message indicating no specific instances
+        this.el.innerHTML = "";
+        Object.entries(this.ontology).forEach(([key, value]) => {
+            const categoryDiv = createElement("div", {class: "category"}, key);
+            if (value.instances) {
+                value.instances.forEach(tagData =>
                     categoryDiv.append(
-                        createElement("div", {class: "tag-item"}, '')
-                    );
-                }
-                this.el.append(categoryDiv);
-            });
-        }
+                        createElement("div", {
+                            class: "tag-item",
+                            onclick: () => this.onTagSelect(new InlineTag(tagData, this.onTagSelect)),
+                        }, `${tagData.emoji || ""} ${tagData.name}`)
+                    )
+                );
+            } else {
+                // Handle cases where there are no instances, e.g., string, number
+                // You might want to display a default tag or a message indicating no specific instances
+                categoryDiv.append(
+                    createElement("div", {class: "tag-item"}, '')
+                );
+            }
+            this.el.append(categoryDiv);
+        });
+    }
 
     show() {
         this.el.style.display = "block";
@@ -575,6 +579,10 @@ class EditorContentHandler {
 class Edit {
     constructor() {
         this.ontology = UnifiedOntology;
+        this.db = new DB();
+        this.yDoc = new Y.Doc();
+        this.indexeddbPersistence = new IndexeddbPersistence('yjs-indexeddb-provider', this.yDoc);
+        this.yText = this.yDoc.getText('content');
         this.editorArea = createElement("div", {contenteditable: "true", id: "editor-area"});
         const menu = createElement('div');
         this.el = createElement('div');
@@ -591,6 +599,28 @@ class Edit {
 
         this.setupEditorEvents();
         this.editorArea.focus();
+        this.loadYDoc();
+    }
+
+    async loadYDoc() {
+        const yDoc = await this.db.getYDoc(this.yText.toString());
+        if (yDoc) {
+            this.yDoc.transact(() => {
+                this.yText.delete(0, this.yText.length);
+                this.yText.insert(0, yDoc.getText('content').toString())
+            })
+        }
+    }
+
+    async updateNotesIndex() {
+        try {
+            const currentId = this.yText.toString();
+            const index = await getNotesIndex();
+            const newIndex = index.includes(currentId) ? index : [...index, currentId];
+            await updateNotesIndex(newIndex);
+        } catch (error) {
+            console.error('Error updating notes index:', error);
+        }
     }
 
     setupEditorEvents() {
@@ -666,15 +696,21 @@ class Edit {
     }
 
     getContent() {
-        return this.editorArea.innerHTML;
+        return this.yText.toString();
     }
 
     setContent(html) {
+        this.yDoc.transact(() => {
+            this.yText.delete(0, this.yText.length);
+            this.yText.insert(0, html);
+        });
         this.editorArea.innerHTML = DOMPurify.sanitize(html, {
             ALLOWED_TAGS: ["br", "b", "i", "span", "u"],
             ALLOWED_ATTR: ["class", "contenteditable", "tabindex", "id"]
         });
         this.autosuggest.apply(); // Apply autosuggest after setting content.
+        this.db.saveYDoc(this.yText.toString(), this.yDoc);
+        this.updateNotesIndex();
     }
 
 

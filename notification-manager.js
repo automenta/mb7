@@ -10,7 +10,7 @@ export class NotificationManager {
     }
 
     showNotification(message, type = "info") {
-        this.notificationQueue.push({ message, type });
+        this.notificationQueue.push({message, type});
         if (!this.notificationTimeout) {
             this.showNextNotification();
         }
@@ -21,7 +21,7 @@ export class NotificationManager {
             this.notificationTimeout = null;
             return;
         }
-        const { message, type } = this.notificationQueue.shift();
+        const {message, type} = this.notificationQueue.shift();
         const notification = new Notification(message, type);
         const notificationArea = this.app.elements.notificationArea;
         notification.appendTo(notificationArea);

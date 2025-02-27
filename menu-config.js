@@ -1,6 +1,7 @@
 export const emojiMap = {
-    "Content": "📄",
     "New Object": "✨",
+    "Content": "📰",
+    "Notes": "✅",
     "Settings": "⚙️",
     "Friends": "👥",
     "Network": "🌐"

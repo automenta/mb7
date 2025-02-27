@@ -11,7 +11,7 @@ export function extractTags(html) {
 
         const value = extractTagValue(el, condition, tagDef);
 
-        return { name, condition, value };
+        return {name, condition, value};
     });
 }
 

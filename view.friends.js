@@ -91,6 +91,7 @@ export class FriendsView extends View {
             this.app.showNotification("Failed to remove friend.", "error");
         }
     }
+
     isValidPublicKey(pubkey) {
         return /^[0-9a-fA-F]{64}$/.test(pubkey);
     }

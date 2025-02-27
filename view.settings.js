@@ -138,6 +138,7 @@ export class SettingsView extends View {
             ${profile.picture ? `<img src="${profile.picture}" style="max-width:100px;max-height:100px;">` : ""}
         `;
     }
+
     updateProfileDisplay(profile) {
         const profileDisplay = this.el.querySelector("#profile-display");
         profileDisplay.innerHTML = `

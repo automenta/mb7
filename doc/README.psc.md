@@ -1,14 +1,20 @@
 # Netention: Semantic Operating System (Pseudocode, v1)
 
-**Netention** operates as a reactive, tag-driven environment where NObjects encapsulate content and behavior, orchestrated by an Ontology and synchronized via decentralized networking. This pseudocode outlines the core modules, their interactions, and the tag reaction system.
+**Netention** operates as a reactive, tag-driven environment where NObjects encapsulate content and behavior,
+orchestrated by an Ontology and synchronized via decentralized networking. This pseudocode outlines the core modules,
+their interactions, and the tag reaction system.
 
-_Pseudocode sketch of app, envisioned as a "semantic operating system" where NObjects and tag-driven reactivity form the foundation. This pseudocode is structured for implementation readiness, providing a clear, high-level blueprint for a complete prototype. It captures the unified, intuitive, and empowering design we’ve refined, focusing on modularity and tag reactions to minimize complexity._
+_Pseudocode sketch of app, envisioned as a "semantic operating system" where NObjects and tag-driven reactivity form the
+foundation. This pseudocode is structured for implementation readiness, providing a clear, high-level blueprint for a
+complete prototype. It captures the unified, intuitive, and empowering design we’ve refined, focusing on modularity and
+tag reactions to minimize complexity._
 
 ---
 
 ## Core Data Structures
 
 ### NObject
+
 ```pseudocode
 CLASS NObject
     PROPERTIES
@@ -37,6 +43,7 @@ CLASS NObject
 ```
 
 ### Tag
+
 ```pseudocode
 STRUCT Tag
     type: string              // Tag type (e.g., "public")
@@ -45,6 +52,7 @@ STRUCT Tag
 ```
 
 ### Ontology
+
 ```pseudocode
 GLOBAL ontology: MAP<string, TagSpec>
 
@@ -61,6 +69,7 @@ STRUCT TagSpec
 ## Core Modules
 
 ### Data (Data.psc)
+
 ```pseudocode
 MODULE Data
     GLOBAL store: IndexedDB("NetentionDB")
@@ -84,6 +93,7 @@ MODULE Data
 ```
 
 ### Net (Net.psc)
+
 ```pseudocode
 MODULE Net
     GLOBAL nostrPool: NostrConnection(["wss://relay.damus.io"])
@@ -117,6 +127,7 @@ MODULE Net
 ```
 
 ### Ontology (Ontology.psc)
+
 ```pseudocode
 MODULE Ontology
     GLOBAL ontology: MAP<string, TagSpec> = {
@@ -165,6 +176,7 @@ MODULE Ontology
 ```
 
 ### UI (UI.psc)
+
 ```pseudocode
 MODULE UI
     GLOBAL currentView: string = "all"
@@ -262,19 +274,23 @@ PROGRAM Netention
 ## Implementation Notes
 
 ### Tag Reactions
+
 - **Observation:** `NObject.observeTags()` centralizes all reactivity—each tag change invokes its Ontology handler.
 - **Default Values:** Add `defaultValue` to `TagSpec` for initial tag creation (e.g., `"public": { value: false }`).
 
 ### UI Components
+
 - **Sidebar:** Combines navigation and tag palette; clicking a tag type adds it to the current NObject.
 - **MainView:** Switches views based on tag filters or edit mode; renders NObjects dynamically.
 - **EditableText:** Binds to `nobject.content` with Yjs for real-time sync.
 
 ### Networking
+
 - **Nostr:** Publishes NObjects as kind `30000`; subscribes to updates and friend events.
 - **Local Sync:** IndexedDB ensures offline capability; Nostr syncs when online.
 
 ### Extensibility
+
 - **Custom Tags:** Users call `Ontology.addTagType("meeting", { render: ..., onChange: ... })` via a UI form.
 - **Discovery:** Experiment with tags like `"script"` for user-defined logic.
 
@@ -301,7 +317,9 @@ PROGRAM Netention
 
 ---
 
-This pseudocode turns Netention into a **semantic OS** where tags are the user’s language, NObjects are their canvas, and reactions are the magic. It’s lean, unified, and ready to code—open to your wildest tag ideas! What do you think—any tags to tweak or add?
+This pseudocode turns Netention into a **semantic OS** where tags are the user’s language, NObjects are their canvas,
+and reactions are the magic. It’s lean, unified, and ready to code—open to your wildest tag ideas! What do you think—any
+tags to tweak or add?
 
 
 -----------
@@ -309,15 +327,21 @@ This pseudocode turns Netention into a **semantic OS** where tags are the user�
 
 # Netention (Pseudocode, v2)
 
-Netention operates as a reactive system where **NObjects** (semantic entities) and **Tags** drive all behavior through an **Ontology**. The pseudocode is structured into core components, with tag reactions as the central mechanism.
+Netention operates as a reactive system where **NObjects** (semantic entities) and **Tags** drive all behavior through
+an **Ontology**. The pseudocode is structured into core components, with tag reactions as the central mechanism.
 
-Below is a pseudocode sketch for **Netention**, our "semantic operating system," designed to prepare for a complete prototype implementation. This pseudocode captures the refined tag-driven, reactive architecture we've developed, focusing on clarity, modularity, and the core functionality outlined in the tag table and metalinguistic abstractions. It’s written in a high-level, implementation-agnostic style to guide coding in TypeScript/Preact while leaving room for specific library details (e.g., Yjs, Nostr).
+Below is a pseudocode sketch for **Netention**, our "semantic operating system," designed to prepare for a complete
+prototype implementation. This pseudocode captures the refined tag-driven, reactive architecture we've developed,
+focusing on clarity, modularity, and the core functionality outlined in the tag table and metalinguistic abstractions.
+It’s written in a high-level, implementation-agnostic style to guide coding in TypeScript/Preact while leaving room for
+specific library details (e.g., Yjs, Nostr).
 
 ---
 
 ## Core Structures
 
 ### NObject
+
 ```
 STRUCT NObject
     id: STRING              // Unique identifier
@@ -342,6 +366,7 @@ END STRUCT
 ```
 
 ### Ontology
+
 ```
 STRUCT Ontology
     MAP<STRING, TagSpec>    // Tag type definitions
@@ -385,6 +410,7 @@ GLOBAL ontology: Ontology = {
 ## Core Functions
 
 ### Data Management
+
 ```
 MODULE Data
     GLOBAL store: DATABASE = IndexedDB("Netention")
@@ -410,6 +436,7 @@ END MODULE
 ```
 
 ### Network (Nostr Integration)
+
 ```
 MODULE Net
     GLOBAL relays: LIST<STRING> = ["wss://relay.damus.io"]
@@ -448,6 +475,7 @@ END MODULE
 ```
 
 ### UI Management
+
 ```
 MODULE UI
     GLOBAL currentView: STRING = "all"
@@ -512,6 +540,7 @@ END MODULE
 ```
 
 ### Tag Reactivity
+
 ```
 FUNCTION handleTagChange(nobject: NObject, events: LIST<Event>)
     FOR EACH event IN events
@@ -548,6 +577,7 @@ END FUNCTION
 ## Implementation Notes
 
 ### Setup
+
 ```
 INITIALIZE Preact with Vite
 INSTALL yjs, idb, nostr-tools
@@ -555,6 +585,7 @@ CREATE main.ts TO CALL main()
 ```
 
 ### Tag-Driven Features
+
 - **Publishing:** Handled by `"public"` tag’s `onChange`.
 - **Tasks:** `"task"` tag filters into Task view; `"due"` and `"expired"` cascade.
 - **Notifications:** `"notify"` tag triggers toast.
@@ -562,6 +593,7 @@ CREATE main.ts TO CALL main()
 - **Custom Styles:** `"style"` and `"emoji"` tags apply UI tweaks.
 
 ### UX Flow
+
 ```
 USER opens app
     -> Sees all NObjects in "All" view
@@ -585,4 +617,6 @@ USER types "#notify Hello" in content
 - **Ontology as Grammar:** Defines the rules of tag expression and reaction.
 - **Reactivity as Pulse:** Every tag beat drives the system forward.
 
-This pseudocode sketches a **semantic OS** where users wield tags like brushes on an NObject canvas, painting functionality with minimal effort. It’s concise (~200-300 lines in pseudocode), ready for a TypeScript/Preact prototype, and brimming with potential for fun and power. Let’s prototype it—any tweaks before we code?
+This pseudocode sketches a **semantic OS** where users wield tags like brushes on an NObject canvas, painting
+functionality with minimal effort. It’s concise (~200-300 lines in pseudocode), ready for a TypeScript/Preact prototype,
+and brimming with potential for fun and power. Let’s prototype it—any tweaks before we code?

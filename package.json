@@ -15,12 +15,8 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
+  "license": "AGPL",
   "type": "commonjs",
-  "bugs": {
-    "url": "https://github.com/automenta/mb7/issues"
-  },
-  "homepage": "https://github.com/automenta/mb7#readme",
   "devDependencies": {
     "@vitejs/plugin-basic-ssl": "^1.2.0",
     "vite": "^6.2.0"
@@ -33,6 +29,8 @@
     "jquery": "^3.7.1",
     "lodash": "^4.17.21",
     "nanoid": "^5.1.2",
-    "nostr-tools": "^2.10.4"
+    "nostr-tools": "^2.10.4",
+    "y-indexeddb": "^9.0.12",
+    "yjs": "^13.6.23"
   }
 }

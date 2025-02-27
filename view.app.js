@@ -11,6 +11,7 @@ export class ContentView extends View {
             objectList: this.el.querySelector("#object-list")
         };
     }
+
     build() {
         renderRecentActivity(this.app, this.el);
     }
@@ -55,8 +56,11 @@ export class Menubar extends View {
             view: "content"
         }, {label: "New Object", view: "new_object"},
             {label: "Settings", view: "settings"}, {
-                label: "Friends",
-                view: "friends"
+                label: "Friends", view: "friends"
+            },
+            {
+                label: "Notes",
+                view: "notes"
             }]).forEach(button => this.el.append(button));
     }
 
@@ -79,6 +83,7 @@ export class Menubar extends View {
             } else if (item.list) {
                 button.dataset.list = item.list;
             }
+            console.log(button);
             button.textContent = emojiMap[item.label] || "";
             return button;
         });

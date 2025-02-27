@@ -10,10 +10,14 @@ class Notification {
 
     getIcon() {
         switch (this.type) {
-            case "success": return "✅";
-            case "warning": return "⚠️";
-            case "error": return "❌";
-            default: return "ℹ️";
+            case "success":
+                return "✅";
+            case "warning":
+                return "⚠️";
+            case "error":
+                return "❌";
+            default:
+                return "ℹ️";
         }
     }
 

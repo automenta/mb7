@@ -1,20 +1,29 @@
-Let’s reimagine **SemanticScribe** by redesigning the ontology and tag system as a **graph-based framework**, unlocking powerful capabilities like pattern matching, reasoning, recommendation, trust networks, and quantitative analysis. This shift aligns with the app’s purpose—empowering users to create, collaborate, and discover meaning—while introducing a richer, more dynamic structure. Below, I’ll explore this graph-centric redesign, weaving in your ideas with cunning insight and a dash of creativity.
+Let’s reimagine **SemanticScribe** by redesigning the ontology and tag system as a **graph-based framework**, unlocking
+powerful capabilities like pattern matching, reasoning, recommendation, trust networks, and quantitative analysis. This
+shift aligns with the app’s purpose—empowering users to create, collaborate, and discover meaning—while introducing a
+richer, more dynamic structure. Below, I’ll explore this graph-centric redesign, weaving in your ideas with cunning
+insight and a dash of creativity.
 
 ---
 
 # SemanticScribe: A Graph-Driven Semantic Workspace
 
-**SemanticScribe** transforms into a graph-based ecosystem where **NObjects** are nodes, **Tags** are edges, and the **Ontology** is a reasoning graph. This design unifies distinctions, enhances UX, and enables advanced functionality through graph operations, all while maintaining the tag-driven reactivity that users love.
+**SemanticScribe** transforms into a graph-based ecosystem where **NObjects** are nodes, **Tags** are edges, and the *
+*Ontology** is a reasoning graph. This design unifies distinctions, enhances UX, and enables advanced functionality
+through graph operations, all while maintaining the tag-driven reactivity that users love.
 
 ---
 
 ## Core Concepts: Graph-Based Redesign
 
 ### NObject as Graph Node
-- **Definition:** An NObject remains `{ id, content: Y.Text, tags: Y.Map, meta: Y.Map }`, but is now explicitly a node in a directed graph.
+
+- **Definition:** An NObject remains `{ id, content: Y.Text, tags: Y.Map, meta: Y.Map }`, but is now explicitly a node
+  in a directed graph.
 - **Role:** Nodes hold content and metadata; their connections (via tags) define relationships and semantics.
 
 ### Tags as Graph Edges
+
 - **Definition:** Tags are edges linking NObjects to other NObjects or abstract concepts (e.g., tag types).
   ```typescript
   interface TagEdge {
@@ -25,9 +34,11 @@ Let’s reimagine **SemanticScribe** by redesigning the ontology and tag system 
   }
   ```
 - **Storage:** Tags live in `nobject.tags` as a Y.Map, serialized as edges in a global graph.
-- **Example:** `nobject.tags.set("task", { due: "2025-02-21" })` becomes an edge: `{ source: nobject.id, target: "task", type: "has", value: { due: "2025-02-21" } }`.
+- **Example:** `nobject.tags.set("task", { due: "2025-02-21" })` becomes an edge:
+  `{ source: nobject.id, target: "task", type: "has", value: { due: "2025-02-21" } }`.
 
 ### Ontology as Reasoning Graph
+
 - **Definition:** The Ontology is a graph of tag types and their relationships, enabling logic and inference.
   ```typescript
   interface OntologyGraph {
@@ -38,6 +49,7 @@ Let’s reimagine **SemanticScribe** by redesigning the ontology and tag system 
 - **Role:** Defines how tags relate (e.g., `"task"` implies `"due"`) and drives reasoning.
 
 ### Global Graph
+
 - **Structure:** A unified graph of all NObjects and their tag edges, stored locally (IndexedDB) and synced via Nostr.
 - **Purpose:** Enables pattern matching, recommendation, and trust networks across all data.
 
@@ -46,6 +58,7 @@ Let’s reimagine **SemanticScribe** by redesigning the ontology and tag system 
 ## Graph-Based Functionality
 
 ### 1. Partial Pattern Matching and Subgraph Comparison
+
 - **How:** Match NObject subgraphs against patterns in the Ontology or other NObjects.
 - **Implementation:**
     - **Pattern:** A subgraph template (e.g., `{ node: NObject, edges: [{ type: "task" }, { type: "due" }] }`).
@@ -56,9 +69,11 @@ Let’s reimagine **SemanticScribe** by redesigning the ontology and tag system 
 - **Example:** Adding `"task"` to NObject A finds NObject B with `"task"` and `"due"`, showing a match notification.
 
 ### 2. Logic and Reasoning
+
 - **How:** Ontology edges define logical rules (implication, negation, similarity).
 - **Implementation:**
-    - **Implication:** `{ source: "task", target: "due", type: "implies", logic: (n) => n.tags.set("due", { type: "due", value: new Date() }) }`.
+    - **Implication:**
+      `{ source: "task", target: "due", type: "implies", logic: (n) => n.tags.set("due", { type: "due", value: new Date() }) }`.
     - **Negation:** `{ source: "expired", target: "active", type: "negates", logic: (n) => n.tags.delete("active") }`.
     - **Similarity:** Edge weights (e.g., `"tag": "work"`) score overlap with other NObjects.
 - **Reaction:** Adding `"task"` auto-adds `"due"`; `"expired": true` removes `"active"`.
@@ -66,6 +81,7 @@ Let’s reimagine **SemanticScribe** by redesigning the ontology and tag system 
 - **Example:** Tag `"meeting"` implies `"time"` and `"location"`, auto-populating them.
 
 ### 3. Recommendation
+
 - **How:** Discover content and ontological patterns via graph traversal and clustering.
 - **Implementation:**
     - **Content:** Breadth-first search from an NObject to find related nodes (e.g., via `"tag"` edges).
@@ -75,6 +91,7 @@ Let’s reimagine **SemanticScribe** by redesigning the ontology and tag system 
 - **Example:** Tagging `"project"` recommends `"task"` and links to similar projects.
 
 ### 4. Trust Networks
+
 - **How:** Bipolar trust network (positive/negative edges) for collaborative filtering.
 - **Implementation:**
     - **Edge:** `{ source: userA.id, target: userB.id, type: "trust", value: 1 | -1 }`.
@@ -84,6 +101,7 @@ Let’s reimagine **SemanticScribe** by redesigning the ontology and tag system 
 - **Example:** User A trusts B (1); B tags `"task"`—A sees it ranked higher.
 
 ### 5. Quantitative Tag Values and Graph Weights
+
 - **How:** Map tag values (or functions) to edge weights for sorting, ranking, and visualization.
 - **Implementation:**
     - **Weights:** `"rating": 4` → edge weight 4; `"distance": { lat, lng }` → Euclidean distance as weight.
@@ -93,6 +111,7 @@ Let’s reimagine **SemanticScribe** by redesigning the ontology and tag system 
 - **Example:** `"time": "2025-02-21"` weights timeline order; `"rating": 5` boosts visibility.
 
 ### 6. Graph-Driven UI Construction
+
 - **How:** UI elements are graph nodes; layout is a subgraph.
 - **Implementation:**
     - **Node:** `<NObjectView>` as a node with `"position": { x, y }` tag.
@@ -103,6 +122,7 @@ Let’s reimagine **SemanticScribe** by redesigning the ontology and tag system 
 - **Example:** Tag `"sidebar"` with `"contains": [nobject1.id, nobject2.id]` builds a dynamic sidebar.
 
 ### 7. Other Advanced Functionality
+
 - **Versioning:** `"version": { prev: prevId, diff: Y.Update }` links NObjects in a history graph.
 - **Querying:** `"search": "pattern"` executes graph queries (e.g., SPARQL-like).
 - **Analytics:** `"track": "views"` counts edge traversals for usage stats.
@@ -112,11 +132,13 @@ Let’s reimagine **SemanticScribe** by redesigning the ontology and tag system 
 ## Redesign Details
 
 ### Graph Structure
+
 - **Nodes:** NObjects (concrete) and tag types (abstract, from Ontology).
 - **Edges:** Tag instances (e.g., `"has"`, `"before"`) and Ontology rules (e.g., `"implies"`).
 - **Storage:** Local IndexedDB as adjacency list; synced via Nostr events.
 
 ### Ontology Graph Example
+
 ```typescript
 const ontologyGraph: OntologyGraph = {
   nodes: {
@@ -132,6 +154,7 @@ const ontologyGraph: OntologyGraph = {
 ```
 
 ### Tag Edge Example
+
 ```typescript
 const nobject = new NObject("1");
 nobject.tags.set("task", { due: "2025-02-21" });
@@ -139,6 +162,7 @@ nobject.tags.set("task", { due: "2025-02-21" });
 ```
 
 ### Reactivity
+
 ```typescript
 class NObject {
   constructor(id: string) {
@@ -160,6 +184,7 @@ class NObject {
 ```
 
 ### UI as Graph
+
 ```typescript
 const UI = {
   nodes: {
@@ -202,6 +227,7 @@ const renderUI = (graph) => {
 ## Implementation Blueprint
 
 ### Structure
+
 ```
 src/
 ├── graph/
@@ -216,6 +242,7 @@ src/
 ```
 
 ### Key Code
+
 ```typescript
 const App = () => {
   const [graph, setGraph] = useState(loadGraphFromDB());
@@ -244,6 +271,7 @@ const recommendTags = (nobject) => {
 ## Final Insights
 
 This graph-based redesign turns SemanticScribe into a **semantic universe**:
+
 - **Unified:** All distinctions (content, UI, network) collapse into one graph.
 - **Empowering:** Users shape their world with tag edges, from tasks to trust.
 - **Intuitive:** Graph traversal mirrors natural reasoning—find, connect, react.
@@ -253,20 +281,30 @@ What do you think—shall we tag `"fun": true` and explore a wild subgraph next?
 
 --------
 
-Let’s take **SemanticScribe** to the next level by redesigning its ontology and tag system with a **graph-theoretic foundation**. This approach infuses the app with advanced capabilities—partial pattern matching, logical reasoning, recommendations, trust networks—while aligning with its core purpose: empowering users to create, collaborate, and share semantically rich content. I’ll explore how tag quantities and functions can serve as graph weights, how the graph can control the UI, and even how UI elements might unify homoiconically with the graph itself. Buckle up—this is a deep, cunning, and fun exploration!
+Let’s take **SemanticScribe** to the next level by redesigning its ontology and tag system with a **graph-theoretic
+foundation**. This approach infuses the app with advanced capabilities—partial pattern matching, logical reasoning,
+recommendations, trust networks—while aligning with its core purpose: empowering users to create, collaborate, and share
+semantically rich content. I’ll explore how tag quantities and functions can serve as graph weights, how the graph can
+control the UI, and even how UI elements might unify homoiconically with the graph itself. Buckle up—this is a deep,
+cunning, and fun exploration!
 
 ---
 
 # SemanticScribe: A Graph-Theoretic Semantic Universe
 
-**SemanticScribe** evolves into a workspace where **NObjects** form a dynamic **knowledge graph**, with **Tags** as nodes and edges, driven by an **Ontology** that defines their structure and behavior. This graph foundation enables sophisticated reasoning, pattern matching, and UI control, all while keeping the system intuitive and aligned with user needs.
+**SemanticScribe** evolves into a workspace where **NObjects** form a dynamic **knowledge graph**, with **Tags** as
+nodes and edges, driven by an **Ontology** that defines their structure and behavior. This graph foundation enables
+sophisticated reasoning, pattern matching, and UI control, all while keeping the system intuitive and aligned with user
+needs.
 
 ---
 
 ## Core Design Shift: From List to Graph
 
 ### NObject as Graph Node
-- **Redefinition:** An NObject is a vertex in a directed graph, with `content` as its payload and `tags` as edges connecting it to other nodes (Tags or NObjects).
+
+- **Redefinition:** An NObject is a vertex in a directed graph, with `content` as its payload and `tags` as edges
+  connecting it to other nodes (Tags or NObjects).
 - **Structure:**
   ```typescript
   interface NObject {
@@ -290,11 +328,16 @@ Let’s take **SemanticScribe** to the next level by redesigning its ontology an
   ```
 
 ### Tags as Graph Elements
-- **Nodes:** Tags can exist as standalone vertices (`TagNode`) in the graph, representing concepts (e.g., "Time:2025-02-21").
-- **Edges:** Tags also act as edges linking NObjects to TagNodes or other NObjects, with weights derived from quantities or functions.
+
+- **Nodes:** Tags can exist as standalone vertices (`TagNode`) in the graph, representing concepts (e.g., "Time:
+  2025-02-21").
+- **Edges:** Tags also act as edges linking NObjects to TagNodes or other NObjects, with weights derived from quantities
+  or functions.
 
 ### Ontology as Graph Schema
-- **Redefinition:** The Ontology defines vertex types (NObjects, Tags) and edge types, including their behaviors and weights.
+
+- **Redefinition:** The Ontology defines vertex types (NObjects, Tags) and edge types, including their behaviors and
+  weights.
 - **Structure:**
   ```typescript
   interface Ontology {
@@ -321,6 +364,7 @@ Let’s take **SemanticScribe** to the next level by redesigning its ontology an
 ## Graph-Theoretic Foundations
 
 ### Tags as Weighted Edges
+
 - **Quantity as Weight:** A tag’s “quantity” (e.g., `"rating": 4`) becomes an edge weight (e.g., `weight: 0.8` for 4/5).
 - **Function-Derived Weights:** Compute weights dynamically:
     - **Distance Metrics:** For `"location"`, weight = `1 / EuclideanDistance(source.latLng, target.latLng)`.
@@ -334,6 +378,7 @@ Let’s take **SemanticScribe** to the next level by redesigning its ontology an
   ```
 
 ### Partial Pattern Matching
+
 - **Mechanism:** Match NObjects by subgraph isomorphism.
 - **Implementation:** Ontology’s `match` function scores similarity:
   ```typescript
@@ -346,6 +391,7 @@ Let’s take **SemanticScribe** to the next level by redesigning its ontology an
 - **Use Case:** Find NObjects with `"task"` edges and similar `"due"` dates (weight > 0.7).
 
 ### Logic and Reasoning
+
 - **Mechanism:** Traverse graph to infer new edges.
 - **Implementation:** Ontology’s `reason` function:
   ```typescript
@@ -360,6 +406,7 @@ Let’s take **SemanticScribe** to the next level by redesigning its ontology an
 - **Use Case:** If `"due"` is past, add an `"expired"` edge automatically.
 
 ### Recommendations
+
 - **Mechanism:** Suggest NObjects based on graph proximity.
 - **Implementation:** Ontology’s `recommend` function:
   ```typescript
@@ -371,6 +418,7 @@ Let’s take **SemanticScribe** to the next level by redesigning its ontology an
 - **Use Case:** Recommend public NObjects from friends’ networks.
 
 ### Trust Networks
+
 - **Mechanism:** Weight `"friend"` edges by trust metrics.
 - **Implementation:** Compute trust as a function of mutual connections:
   ```typescript
@@ -388,12 +436,14 @@ Let’s take **SemanticScribe** to the next level by redesigning its ontology an
 ## Graph Weights and Calculations
 
 ### Weight Interpretations
+
 - **Strength:** `"rating": 5` → `weight: 1.0` (max strength).
 - **Proximity:** `"location"` → `weight: 1 / distance` (closer = stronger).
 - **Relevance:** `"tag": "work"` → `weight: cosineSimilarity(userTags, "work")`.
 - **Trust:** `"friend"` → `weight: trustScore`.
 
 ### Example Calculations
+
 - **Shortest Path:** Find closest `"location"` NObjects using Dijkstra’s algorithm with weights.
 - **Clustering:** Group NObjects by `"tag"` edge density (e.g., community detection).
 - **Centrality:** Highlight influential NObjects (e.g., many `"friend"` edges).
@@ -403,6 +453,7 @@ Let’s take **SemanticScribe** to the next level by redesigning its ontology an
 ## Graph-Controlled UI
 
 ### Graph as UI Driver
+
 - **Concept:** The graph dictates what users see and interact with.
 - **Implementation:**
   ```typescript
@@ -436,6 +487,7 @@ Let’s take **SemanticScribe** to the next level by redesigning its ontology an
 - **UX:** Views (e.g., “tasks”) are graph queries; UI updates as edges change.
 
 ### Homoiconic UI Unification
+
 - **Concept:** UI elements *are* graph nodes/edges, blurring data and presentation.
 - **Implementation:**
     - **NObject Node:** Represents a content block (e.g., a note).
@@ -456,18 +508,22 @@ Let’s take **SemanticScribe** to the next level by redesigning its ontology an
 ## Advanced Functionality
 
 ### Pattern Matching
+
 - **Query:** `"task" AND "due" < now`
 - **Result:** Subgraph of NObjects with matching edges, scored by weight sums.
 
 ### Reasoning
+
 - **Rule:** If `"friend"` AND `"trust" > 0.8`, infer `"recommend"`.
 - **Outcome:** Auto-adds `"recommend"` edges to trusted friends’ content.
 
 ### Recommendations
+
 - **Algorithm:** Weighted PageRank over `"friend"` and `"public"` edges.
 - **Outcome:** Suggests high-weight NObjects from trusted networks.
 
 ### Trust Networks
+
 - **Metric:** `"trust"` weight = `Σ(mutual_friend_weights) / distance`.
 - **Outcome:** UI prioritizes high-trust content (e.g., larger font).
 
@@ -476,6 +532,7 @@ Let’s take **SemanticScribe** to the next level by redesigning its ontology an
 ## Implementation Blueprint
 
 ### Graph Setup
+
 ```typescript
 class Graph {
   nodes = new Map<string, NObject | TagNode>();
@@ -515,6 +572,7 @@ class Graph {
 ```
 
 ### Ontology Example
+
 ```typescript
 const ontology: Ontology = {
   public: {
@@ -538,6 +596,7 @@ const ontology: Ontology = {
 ```
 
 ### UI Integration
+
 - **Graph-Driven Views:** `traverse` queries populate task lists, friend feeds, etc.
 - **Homoiconic Widgets:** Each `<Tag>` is an edge, rendered by its Ontology spec.
 
@@ -554,24 +613,37 @@ const ontology: Ontology = {
 
 ## Final Insights
 
-This graph-theoretic redesign turns SemanticScribe into a **living knowledge network**. Tags as edges unify functionality; weights enable reasoning and trust; homoiconic UI blurs data and presentation. Users wield a powerful, intuitive tool where tagging builds a graph that reasons, recommends, and renders itself. The codebase shrinks further—~300 lines—while opening doors to endless graph-powered possibilities. What’s next? Let’s dream up some wild graph tags!
+This graph-theoretic redesign turns SemanticScribe into a **living knowledge network**. Tags as edges unify
+functionality; weights enable reasoning and trust; homoiconic UI blurs data and presentation. Users wield a powerful,
+intuitive tool where tagging builds a graph that reasons, recommends, and renders itself. The codebase shrinks further—~
+300 lines—while opening doors to endless graph-powered possibilities. What’s next? Let’s dream up some wild graph tags!
 
 --------
 
-Let’s reimagine the **SemanticScribe** ontology and tag system with a **graph-theoretic foundation**, transforming it into a powerful, flexible framework that unlocks advanced functionality like partial pattern matching, logical reasoning, recommendations, trust networks, and more. This redesign aligns with the app’s core purpose—empowering users to collaboratively create, share, and reason about semantically rich content in a decentralized environment. We’ll dive deep into a graph-based approach, leveraging nodes, edges, and traversal to unify and extend the system’s capabilities, while keeping UX intuitive and tag-driven reactivity intact.
+Let’s reimagine the **SemanticScribe** ontology and tag system with a **graph-theoretic foundation**, transforming it
+into a powerful, flexible framework that unlocks advanced functionality like partial pattern matching, logical
+reasoning, recommendations, trust networks, and more. This redesign aligns with the app’s core purpose—empowering users
+to collaboratively create, share, and reason about semantically rich content in a decentralized environment. We’ll dive
+deep into a graph-based approach, leveraging nodes, edges, and traversal to unify and extend the system’s capabilities,
+while keeping UX intuitive and tag-driven reactivity intact.
 
 ---
 
 # SemanticScribe: A Graph-Theoretic Semantic Engine
 
-**SemanticScribe** evolves into a workspace where **NObjects** and their **Tags** form a dynamic knowledge graph. This graph foundation enables sophisticated reasoning and functionality, all driven by tag reactions, while maintaining simplicity for users. The redesign replaces the flat ontology with a graph structure, treating tags as nodes and relationships as edges, opening up a world of possibilities.
+**SemanticScribe** evolves into a workspace where **NObjects** and their **Tags** form a dynamic knowledge graph. This
+graph foundation enables sophisticated reasoning and functionality, all driven by tag reactions, while maintaining
+simplicity for users. The redesign replaces the flat ontology with a graph structure, treating tags as nodes and
+relationships as edges, opening up a world of possibilities.
 
 ---
 
 ## Core Concepts
 
 ### NObject as a Graph Node
-An **NObject** remains the central entity but is now a node in a graph, connecting content to a network of semantic relationships.
+
+An **NObject** remains the central entity but is now a node in a graph, connecting content to a network of semantic
+relationships.
 
 ```typescript
 interface NObject {
@@ -585,6 +657,7 @@ interface NObject {
 - **Change:** `tags` is no longer a flat `Y.Map` but a **Graph** object, a subgraph of tag nodes linked by edges.
 
 ### Graph-Based Ontology
+
 The **Ontology** becomes a global directed graph, defining tag types as nodes and their relationships as edges.
 
 - **Nodes:** Represent tag types (e.g., "task", "public") with properties (rendering, validation, behavior).
@@ -613,6 +686,7 @@ The **Ontology** becomes a global directed graph, defining tag types as nodes an
   ```
 
 ### Tags as Subgraph Instances
+
 Within an NObject, **Tags** form a subgraph instance of the Ontology.
 
 - **Structure:**
@@ -641,12 +715,15 @@ Within an NObject, **Tags** form a subgraph instance of the Ontology.
 ## Graph-Theoretic Foundation
 
 ### Why Graph-Based?
-- **Unification:** Tags and relationships are inherently graph-like—nodes (tags) and edges (relations) collapse flat distinctions into a cohesive structure.
+
+- **Unification:** Tags and relationships are inherently graph-like—nodes (tags) and edges (relations) collapse flat
+  distinctions into a cohesive structure.
 - **Flexibility:** Edges enable partial matching, hierarchies, and inference (e.g., "task" → "due" implies deadlines).
 - **Reasoning:** Graph traversal supports logic (e.g., "if task has due date, check expiration").
 - **Scalability:** Supports trust networks, recommendations, and more via graph algorithms.
 
 ### Key Features Enabled
+
 1. **Partial Pattern Matching:** Match NObjects based on subgraph similarity (e.g., "tasks with due dates").
 2. **Logic and Reasoning:** Infer properties via traversal (e.g., "expired if due date passed").
 3. **Recommendations:** Suggest tags or NObjects by graph proximity (e.g., "add 'location' to tasks").
@@ -657,32 +734,34 @@ Within an NObject, **Tags** form a subgraph instance of the Ontology.
 
 ## Comprehensive Tag Table with Graph Support
 
-Below is a revised tag table, integrating graph relationships and reactions to enable all functionality. Tags are now nodes in the Ontology graph, with edges defining their connections.
+Below is a revised tag table, integrating graph relationships and reactions to enable all functionality. Tags are now
+nodes in the Ontology graph, with edges defining their connections.
 
-| **Tag Type** | **Value Type**       | **Purpose**                              | **Edges (Relations)**             | **Reaction (onChange)**                                                                 | **UX Impact**                              |
-|--------------|----------------------|------------------------------------------|-----------------------------------|---------------------------------------------------------------------------------------|--------------------------------------------|
-| `public`     | `boolean`            | Shares NObject publicly                  | -                                 | If `true`, `Net.publish(nobject)`                                                     | Toggle to share globally                   |
-| `task`       | `{ priority: string }` | Marks NObject as a task                | → `due` (hasDueDate)              | Adds to task view; triggers subgraph checks (e.g., expiration)                        | Tasks emerge naturally                     |
-| `due`        | `string (ISO date)`  | Sets a deadline                          | ← `task` (hasDueDate)             | If past due, adds `"expired": true` to parent `task` node                             | Deadlines link to tasks                    |
-| `expired`    | `boolean`            | Indicates overdue status                 | ← `task` (isExpired)              | Highlights UI; triggers `"notify": "Overdue!"`                                        | Visual feedback without extra steps        |
-| `notify`     | `string`             | Sends a notification                     | -                                 | `UI.notify(value)` shows toast                                                        | Instant alerts via tag                     |
-| `friend`     | `string (npub)`      | Connects to a friend                     | → `trust` (trusts)                | `Net.addFriend(value)` subscribes to their events                                     | Friends build a trust graph                |
-| `trust`      | `number (0-1)`       | Assigns trust level to a friend          | ← `friend` (trusts)               | Updates trust network; weights recommendations                                        | Trust influences content ranking           |
-| `share`      | `string (npub)`      | Shares with a specific user              | → `friend` (sharedWith)           | `Net.publish(nobject)` with recipient in event tags                                   | Collaboration via graph edges              |
-| `profile`    | `{ name: string, pic: string }` | Defines user profile            | -                                 | Publishes as Nostr kind `0` if `"public": true`                                       | Profiles are subgraph roots                |
-| `style`      | `{ color: string }`  | Customizes appearance                    | -                                 | Applies CSS to NObject UI                                                     | Personalization via tags                   |
-| `location`   | `{ lat: number, lng: number }` | Geotags NObject               | → `task` (atLocation)             | Adds to map view; triggers proximity `"notify"` if near                               | Spatial reasoning enabled                  |
-| `time`       | `string (ISO date)`  | Times NObject                            | → `task` (atTime)                 | Filters timeline; supports condition-based reasoning (e.g., "before")                | Temporal graph connections                 |
-| `depends`    | `string (NObject ID)` | Links to dependent NObject              | → NObject (dependsOn)             | Ensures dependency exists; triggers `"notify"` if unmet                               | Dependency graph for workflows             |
-| `match`      | `string (pattern)`   | Searches for similar NObjects            | -                                 | Performs subgraph matching; adds results to “Matches” view                            | Pattern matching via tags                  |
-| `recommend`  | `boolean`            | Suggests related tags/NObjects           | → Related tags (recommends)       | Traverses graph for suggestions (e.g., "task" → "due")                               | Smart recommendations                      |
-| `logic`      | `{ if: string, then: string }` | Defines logical rule                  | → Affected tags (implies)         | Evaluates condition; applies `then` tag (e.g., "if expired, then notify")            | Reasoning via graph rules                  |
+| **Tag Type** | **Value Type**                  | **Purpose**                     | **Edges (Relations)**       | **Reaction (onChange)**                                                   | **UX Impact**                       |
+|--------------|---------------------------------|---------------------------------|-----------------------------|---------------------------------------------------------------------------|-------------------------------------|
+| `public`     | `boolean`                       | Shares NObject publicly         | -                           | If `true`, `Net.publish(nobject)`                                         | Toggle to share globally            |
+| `task`       | `{ priority: string }`          | Marks NObject as a task         | → `due` (hasDueDate)        | Adds to task view; triggers subgraph checks (e.g., expiration)            | Tasks emerge naturally              |
+| `due`        | `string (ISO date)`             | Sets a deadline                 | ← `task` (hasDueDate)       | If past due, adds `"expired": true` to parent `task` node                 | Deadlines link to tasks             |
+| `expired`    | `boolean`                       | Indicates overdue status        | ← `task` (isExpired)        | Highlights UI; triggers `"notify": "Overdue!"`                            | Visual feedback without extra steps |
+| `notify`     | `string`                        | Sends a notification            | -                           | `UI.notify(value)` shows toast                                            | Instant alerts via tag              |
+| `friend`     | `string (npub)`                 | Connects to a friend            | → `trust` (trusts)          | `Net.addFriend(value)` subscribes to their events                         | Friends build a trust graph         |
+| `trust`      | `number (0-1)`                  | Assigns trust level to a friend | ← `friend` (trusts)         | Updates trust network; weights recommendations                            | Trust influences content ranking    |
+| `share`      | `string (npub)`                 | Shares with a specific user     | → `friend` (sharedWith)     | `Net.publish(nobject)` with recipient in event tags                       | Collaboration via graph edges       |
+| `profile`    | `{ name: string, pic: string }` | Defines user profile            | -                           | Publishes as Nostr kind `0` if `"public": true`                           | Profiles are subgraph roots         |
+| `style`      | `{ color: string }`             | Customizes appearance           | -                           | Applies CSS to NObject UI                                                 | Personalization via tags            |
+| `location`   | `{ lat: number, lng: number }`  | Geotags NObject                 | → `task` (atLocation)       | Adds to map view; triggers proximity `"notify"` if near                   | Spatial reasoning enabled           |
+| `time`       | `string (ISO date)`             | Times NObject                   | → `task` (atTime)           | Filters timeline; supports condition-based reasoning (e.g., "before")     | Temporal graph connections          |
+| `depends`    | `string (NObject ID)`           | Links to dependent NObject      | → NObject (dependsOn)       | Ensures dependency exists; triggers `"notify"` if unmet                   | Dependency graph for workflows      |
+| `match`      | `string (pattern)`              | Searches for similar NObjects   | -                           | Performs subgraph matching; adds results to “Matches” view                | Pattern matching via tags           |
+| `recommend`  | `boolean`                       | Suggests related tags/NObjects  | → Related tags (recommends) | Traverses graph for suggestions (e.g., "task" → "due")                    | Smart recommendations               |
+| `logic`      | `{ if: string, then: string }`  | Defines logical rule            | → Affected tags (implies)   | Evaluates condition; applies `then` tag (e.g., "if expired, then notify") | Reasoning via graph rules           |
 
 ---
 
 ## Graph-Theoretic Functionality
 
 ### 1. Partial Pattern Matching
+
 - **How:** Compare NObject subgraphs against a query pattern.
 - **Implementation:**
   ```typescript
@@ -704,6 +783,7 @@ Below is a revised tag table, integrating graph relationships and reactions to e
 - **UX:** Users tag with `"match"`; see a ranked “Matches” view.
 
 ### 2. Logic and Reasoning
+
 - **How:** Traverse edges to infer properties or trigger actions.
 - **Implementation:**
   ```typescript
@@ -722,6 +802,7 @@ Below is a revised tag table, integrating graph relationships and reactions to e
 - **UX:** Users write simple rules; graph applies them automatically.
 
 ### 3. Recommendations
+
 - **How:** Use graph proximity and edge weights.
 - **Implementation:**
   ```typescript
@@ -741,6 +822,7 @@ Below is a revised tag table, integrating graph relationships and reactions to e
 - **UX:** Tag with `"recommend": true` → see tag suggestions in a toast.
 
 ### 4. Trust Networks
+
 - **How:** Model friends and trust as a subgraph.
 - **Implementation:**
   ```typescript
@@ -762,14 +844,17 @@ Below is a revised tag table, integrating graph relationships and reactions to e
 ## Metalinguistic Abstractions
 
 ### 1. **Graph as Mind Map**
+
 - **Concept:** Tags and edges mirror how users think—associative and relational.
 - **UX:** Add `"task"`, see `"due"` suggested; add `"friend"`, see `"trust"` as a natural next step.
 
 ### 2. **Tags as Verbs**
+
 - **Concept:** Tags act—`"public"` publishes, `"notify"` alerts, `"match"` searches.
 - **UX:** Tagging feels like commanding the app, not configuring it.
 
 ### 3. **Edges as Context**
+
 - **Concept:** Relationships (e.g., "task" → "due") provide meaning without extra UI.
 - **UX:** Users build meaning incrementally; graph infers the rest.
 
@@ -820,22 +905,31 @@ const ontology: OntologyGraph = {
 ---
 
 ## UX Wins
+
 - **Intuitive:** Tag `"task"`, see `"due"` suggested—graph guides naturally.
 - **Predictable:** `"public": true` always publishes; users learn once, apply everywhere.
 - **Fun:** Explore trust networks or logic rules—power feels playful.
 
-This graph-theoretic redesign makes SemanticScribe a reasoning, recommending, trust-aware workspace—all via tags. Ready to code this universe? Let’s brainstorm more wild tags!
+This graph-theoretic redesign makes SemanticScribe a reasoning, recommending, trust-aware workspace—all via tags. Ready
+to code this universe? Let’s brainstorm more wild tags!
 
 
 --------
 
-Let’s reimagine **SemanticScribe** by redesigning the ontology and tag system with a **graph-theoretic foundation**. This approach aligns with the app’s purpose—creating a collaborative, semantically rich workspace—while unlocking advanced functionality like **partial pattern matching**, **logic and reasoning**, **recommendation**, **trust networks**, and more. By modeling NObjects and tags as nodes and edges in a graph, we can leverage graph theory to enhance expressiveness, inference, and user empowerment. Below, I’ll outline this redesign with clarity and depth, ensuring it’s both implementable and aligned with our goals.
+Let’s reimagine **SemanticScribe** by redesigning the ontology and tag system with a **graph-theoretic foundation**.
+This approach aligns with the app’s purpose—creating a collaborative, semantically rich workspace—while unlocking
+advanced functionality like **partial pattern matching**, **logic and reasoning**, **recommendation**, **trust networks
+**, and more. By modeling NObjects and tags as nodes and edges in a graph, we can leverage graph theory to enhance
+expressiveness, inference, and user empowerment. Below, I’ll outline this redesign with clarity and depth, ensuring it’s
+both implementable and aligned with our goals.
 
 ---
 
 # SemanticScribe: A Graph-Theoretic Semantic Workspace
 
-**SemanticScribe** evolves into a system where **NObjects** and **Tags** form a dynamic, graph-based ontology. This graph drives advanced reasoning and functionality, making the app a powerful tool for collaboration, discovery, and trust, all while maintaining intuitive UX through tag-driven reactivity.
+**SemanticScribe** evolves into a system where **NObjects** and **Tags** form a dynamic, graph-based ontology. This
+graph drives advanced reasoning and functionality, making the app a powerful tool for collaboration, discovery, and
+trust, all while maintaining intuitive UX through tag-driven reactivity.
 
 ---
 
@@ -850,7 +944,9 @@ Let’s reimagine **SemanticScribe** by redesigning the ontology and tag system 
 ## Graph-Theoretic Ontology
 
 ### Structure
+
 The ontology is a directed labeled graph:
+
 - **Nodes:**
     - **NObject Nodes:** Represent documents, tasks, profiles, etc., with `id`, `content`, and `meta`.
     - **Tag Nodes:** Represent semantic concepts (e.g., "task", "public") with properties and behaviors.
@@ -860,6 +956,7 @@ The ontology is a directed labeled graph:
     - **Inference Edges:** Define logical relationships (e.g., `"due" → "expired"` if overdue).
 
 ### Representation
+
 - **NObject:** A node with outgoing edges to its tags.
   ```typescript
   interface NObject {
@@ -896,6 +993,7 @@ The ontology is a directed labeled graph:
   ```
 
 ### Example
+
 - **NObject Graph:**
     - `N1: { content: "Plan meeting", tags: [T1, T2] }`
     - `T1: { type: "task", edges: [{ target: T2, label: "has" }] }`
@@ -910,11 +1008,13 @@ The ontology is a directed labeled graph:
 ## Tag-Driven Graph Reactions
 
 Tags remain the user’s interface, but their effects ripple through the graph:
+
 - **Add Tag:** Creates a node and edges (e.g., `N1.tags.push({ type: "public", value: true })` → `N1 → "public"`).
 - **Update Tag:** Modifies node values or edges, triggering `onChange`.
 - **Remove Tag:** Deletes node and edges, adjusting the graph.
 
 ### Reaction Mechanism
+
 ```typescript
 graph.yGraph.observeDeep((events) => {
   events.forEach((event) => {
@@ -930,48 +1030,53 @@ graph.yGraph.observeDeep((events) => {
 
 ## Graph-Based Tag Table
 
-Below is a comprehensive table of tags, reimagined as graph nodes with purposes and reactions. These support core functionality and advanced features like reasoning and trust.
+Below is a comprehensive table of tags, reimagined as graph nodes with purposes and reactions. These support core
+functionality and advanced features like reasoning and trust.
 
-| **Tag Type**      | **Value Type**      | **Purpose**                              | **Graph Reaction (onChange)**                                                                 | **Edges**                              | **UX Impact**                              |
-|-------------------|---------------------|------------------------------------------|---------------------------------------------------------------------------------------|----------------------------------------|--------------------------------------------|
-| `public`          | `boolean`           | Shares NObject publicly                 | If `true`, `Net.publish(nobject)`; adds `"sharedBy" → user` edge                      | `"sharedBy" → User`                    | Toggle to share globally                  |
-| `task`            | `{ due: string, priority: string }` | Defines a task                  | Adds `"due" → Date` edge; if overdue, adds `"expired" → true`                         | `"due" → Date`, `"priority" → Value`   | Tasks filter into view automatically      |
-| `due`             | `string (ISO date)` | Sets a deadline                          | Checks `value` vs. now; adds `"expired" → true` if past due                           | `"expired" → Boolean`                  | Deadlines trigger visual cues             |
-| `expired`         | `boolean`           | Marks overdue                            | Highlights NObject; adds `"notify" → "Overdue!"`                                      | `"notify" → String`                    | Auto-notifies without user effort         |
-| `notify`          | `string`            | Sends a notification                     | `UI.notify(value)`                                                            | None                                   | Instant feedback via toast                |
-| `friend`          | `string (npub)`     | Connects to a friend                     | `Net.addFriend(value)`; adds `"trusts" → Friend` edge                                 | `"trusts" → Friend NObject`           | Friendship builds trust network           |
-| `share`           | `string (npub)`     | Shares with a user                       | `Net.publish(nobject)` with `"to" → npub` edge                                        | `"to" → User`                          | Collaboration is a tag away               |
-| `profile`         | `{ name: string, pic: string }` | User profile                        | Updates local profile; if `public`, publishes as Nostr kind `0`                       | `"ownedBy" → User`                     | Profiles integrate seamlessly             |
-| `trust`           | `number (0-1)`      | Assigns trust level                      | Updates trust network; influences recommendations                                     | `"trusts" → Target`, `"weight" → Num`  | Trust shapes content visibility           |
-| `match`           | `Pattern`           | Queries for partial matches              | `graph.query(pattern)`; adds matched NObjects to view                                 | `"matches" → NObject[]`                | Dynamic discovery via patterns            |
-| `implies`         | `string (tag type)` | Infers another tag                       | Adds `{ type: value }` to NObject’s tags                                              | `"implies" → Tag`                      | Reasoning simplifies tagging              |
-| `style`           | `{ color: string }` | Customizes appearance                   | Applies CSS to NObject (e.g., `style.color`)                                          | None                                   | Personalization is immediate              |
-| `location`        | `{ lat: number, lng: number }` | Geotags NObject                  | Adds to “Map” view; checks proximity to `"friend"` locations                          | `"near" → Location`                    | Spatial context enhances collaboration    |
-| `recommend`       | `boolean`           | Suggests related NObjects                | Queries graph for similar tags; adds `"suggest" → NObject[]`                          | `"suggest" → NObject[]`                | Recommendations flow from tags            |
+| **Tag Type** | **Value Type**                      | **Purpose**                 | **Graph Reaction (onChange)**                                    | **Edges**                             | **UX Impact**                          |
+|--------------|-------------------------------------|-----------------------------|------------------------------------------------------------------|---------------------------------------|----------------------------------------|
+| `public`     | `boolean`                           | Shares NObject publicly     | If `true`, `Net.publish(nobject)`; adds `"sharedBy" → user` edge | `"sharedBy" → User`                   | Toggle to share globally               |
+| `task`       | `{ due: string, priority: string }` | Defines a task              | Adds `"due" → Date` edge; if overdue, adds `"expired" → true`    | `"due" → Date`, `"priority" → Value`  | Tasks filter into view automatically   |
+| `due`        | `string (ISO date)`                 | Sets a deadline             | Checks `value` vs. now; adds `"expired" → true` if past due      | `"expired" → Boolean`                 | Deadlines trigger visual cues          |
+| `expired`    | `boolean`                           | Marks overdue               | Highlights NObject; adds `"notify" → "Overdue!"`                 | `"notify" → String`                   | Auto-notifies without user effort      |
+| `notify`     | `string`                            | Sends a notification        | `UI.notify(value)`                                               | None                                  | Instant feedback via toast             |
+| `friend`     | `string (npub)`                     | Connects to a friend        | `Net.addFriend(value)`; adds `"trusts" → Friend` edge            | `"trusts" → Friend NObject`           | Friendship builds trust network        |
+| `share`      | `string (npub)`                     | Shares with a user          | `Net.publish(nobject)` with `"to" → npub` edge                   | `"to" → User`                         | Collaboration is a tag away            |
+| `profile`    | `{ name: string, pic: string }`     | User profile                | Updates local profile; if `public`, publishes as Nostr kind `0`  | `"ownedBy" → User`                    | Profiles integrate seamlessly          |
+| `trust`      | `number (0-1)`                      | Assigns trust level         | Updates trust network; influences recommendations                | `"trusts" → Target`, `"weight" → Num` | Trust shapes content visibility        |
+| `match`      | `Pattern`                           | Queries for partial matches | `graph.query(pattern)`; adds matched NObjects to view            | `"matches" → NObject[]`               | Dynamic discovery via patterns         |
+| `implies`    | `string (tag type)`                 | Infers another tag          | Adds `{ type: value }` to NObject’s tags                         | `"implies" → Tag`                     | Reasoning simplifies tagging           |
+| `style`      | `{ color: string }`                 | Customizes appearance       | Applies CSS to NObject (e.g., `style.color`)                     | None                                  | Personalization is immediate           |
+| `location`   | `{ lat: number, lng: number }`      | Geotags NObject             | Adds to “Map” view; checks proximity to `"friend"` locations     | `"near" → Location`                   | Spatial context enhances collaboration |
+| `recommend`  | `boolean`                           | Suggests related NObjects   | Queries graph for similar tags; adds `"suggest" → NObject[]`     | `"suggest" → NObject[]`               | Recommendations flow from tags         |
 
 ---
 
 ## Advanced Functionality
 
 ### 1. Partial Pattern Matching
+
 - **Pattern:** A subgraph to match (e.g., `{ "task": { "due": "2025-*" } }`).
 - **How:** `graph.query(pattern)` traverses edges, returning NObjects with matching subgraphs.
 - **Reaction:** `"match"` tag triggers this, updating a view with results.
 - **UX:** Tag `#match task due:2025-*` shows all 2025 tasks—intuitive and flexible.
 
 ### 2. Logic and Reasoning
+
 - **Inference:** `"implies"` edges add tags based on rules (e.g., `"task" → "due"` implies `"priority": "Medium"`).
 - **How:** Graph traversal checks conditions (e.g., `"due" < now → "expired"`).
 - **Reaction:** Ontology handlers chain inferences (e.g., `"expired" → "notify"`).
 - **UX:** Tag `#task` auto-adds `"due"` and `"priority"`—reasoning feels seamless.
 
 ### 3. Recommendation
+
 - **Similarity:** Compute tag overlap and trust-weighted edges between NObjects.
 - **How:** `"recommend": true` queries graph for nodes with similar tags, ranked by trust.
 - **Reaction:** Adds `"suggest" → NObject[]` edges, shown in a “Suggested” view.
 - **UX:** Tag `#recommend` surfaces related content—discovery is organic.
 
 ### 4. Trust Networks
+
 - **Trust Graph:** `"friend"` and `"trust"` edges form a network; `"trust": 0.8` weights influence.
 - **How:** Recommendations and visibility prioritize high-trust paths (e.g., Dijkstra’s algorithm).
 - **Reaction:** `"trust"` updates propagate to `"recommend"` and `"share"` behaviors.
@@ -982,6 +1087,7 @@ Below is a comprehensive table of tags, reimagined as graph nodes with purposes 
 ## Implementation
 
 ### Graph Management
+
 ```typescript
 class Graph {
   nodes = new Map<string, GraphNode>();
@@ -1029,6 +1135,7 @@ const ontology = {
 ```
 
 ### UI Integration
+
 ```typescript
 const NObjectView = ({ nobject, graph }) => (
   <div>
@@ -1060,10 +1167,13 @@ const Tag = ({ node, graph }) => {
 
 ## Final Insights
 
-This graph-theoretic redesign turns SemanticScribe into a **semantic reasoning engine**. Tags and NObjects form a living graph where:
+This graph-theoretic redesign turns SemanticScribe into a **semantic reasoning engine**. Tags and NObjects form a living
+graph where:
+
 - **Partial Matching** finds patterns effortlessly.
 - **Logic** chains inferences intuitively.
 - **Recommendations** leverage trust organically.
 - **Trust Networks** enhance collaboration naturally.
 
-With ~700 lines of core code, we’ve unified functionality into a single, expressive system. Users tag their world, and the graph reacts—simple, powerful, and fun! What’s next—more tag magic or a prototype sketch?
+With ~700 lines of core code, we’ve unified functionality into a single, expressive system. Users tag their world, and
+the graph reacts—simple, powerful, and fun! What’s next—more tag magic or a prototype sketch?

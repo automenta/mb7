@@ -23,7 +23,12 @@ export const UnifiedOntology = {
             {
                 name: "Time",
                 emoji: "⏰",
-                conditions: {"is at": "is at", "is between": "is between", "is before": "is before", "is after": "is after"}
+                conditions: {
+                    "is at": "is at",
+                    "is between": "is between",
+                    "is before": "is before",
+                    "is after": "is after"
+                }
             }
         ]
     },
@@ -50,10 +55,30 @@ export const UnifiedOntology = {
         },
         deserialize: (value) => value, // Could also convert back to number if needed
         instances: [
-            {name: "Mass", unit: "kg", emoji: "⚖️", conditions: {is: "is", "is between": "is between", "is below": "is below", "is above": "is above"}},
-            {name: "Length", unit: "m", emoji: "📏", conditions: {is: "is", "is between": "is between", "is below": "is below", "is above": "is above"}},
-            {name: "Temperature", unit: "°C", emoji: "🌡️", conditions: {is: "is", "is between": "is between", "is below": "is below", "is above": "is above"}},
-            {name: "Revenue", unit: "USD", emoji: "💰", conditions: {is: "is", "is between": "is between", "is below": "is below", "is above": "is above"}}
+            {
+                name: "Mass",
+                unit: "kg",
+                emoji: "⚖️",
+                conditions: {is: "is", "is between": "is between", "is below": "is below", "is above": "is above"}
+            },
+            {
+                name: "Length",
+                unit: "m",
+                emoji: "📏",
+                conditions: {is: "is", "is between": "is between", "is below": "is below", "is above": "is above"}
+            },
+            {
+                name: "Temperature",
+                unit: "°C",
+                emoji: "🌡️",
+                conditions: {is: "is", "is between": "is between", "is below": "is below", "is above": "is above"}
+            },
+            {
+                name: "Revenue",
+                unit: "USD",
+                emoji: "💰",
+                conditions: {is: "is", "is between": "is between", "is below": "is below", "is above": "is above"}
+            }
         ]
     },
     "People": {
@@ -88,15 +113,48 @@ export const UnifiedOntology = {
     },
     "Emotion": {
         instances: [
-            {name: "Happiness", type: "range", emoji: "😊", min: 0, max: 10, conditions: {is: "is", "is between": "is between", "is below": "is below", "is above": "is above"}},
-            {name: "Sadness", type: "range", emoji: "😢", min: 0, max: 10, conditions: {is: "is", "is between": "is between", "is below": "is below", "is above": "is above"}},
-            {name: "Anger", type: "range", emoji: "😡", min: 0, max: 10, conditions: {is: "is", "is between": "is between", "is below": "is below", "is above": "is above"}}
+            {
+                name: "Happiness",
+                type: "range",
+                emoji: "😊",
+                min: 0,
+                max: 10,
+                conditions: {is: "is", "is between": "is between", "is below": "is below", "is above": "is above"}
+            },
+            {
+                name: "Sadness",
+                type: "range",
+                emoji: "😢",
+                min: 0,
+                max: 10,
+                conditions: {is: "is", "is between": "is between", "is below": "is below", "is above": "is above"}
+            },
+            {
+                name: "Anger",
+                type: "range",
+                emoji: "😡",
+                min: 0,
+                max: 10,
+                conditions: {is: "is", "is between": "is between", "is below": "is below", "is above": "is above"}
+            }
         ]
     },
     "Business": {
         instances: [
-            {name: "Product", type: "list", emoji: "📦", options: ["Software", "Hardware", "Service"], conditions: {"is one of": "is one of"}},
-            {name: "Customer", type: "list", emoji: "👥", options: ["B2B", "B2C", "Government"], conditions: {"is one of": "is one of"}}
+            {
+                name: "Product",
+                type: "list",
+                emoji: "📦",
+                options: ["Software", "Hardware", "Service"],
+                conditions: {"is one of": "is one of"}
+            },
+            {
+                name: "Customer",
+                type: "list",
+                emoji: "👥",
+                options: ["B2B", "B2C", "Government"],
+                conditions: {"is one of": "is one of"}
+            }
         ]
     },
     "Data": {

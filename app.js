@@ -1,6 +1,6 @@
 import $ from 'jquery';
-import { formatISO } from "date-fns";
-import { formatDate } from './content-view-renderer.js';
+import {formatISO} from "date-fns";
+import {formatDate} from './content-view-renderer.js';
 import {ContentView, MainContent, Menubar} from "./view.app.js";
 import {FriendsView} from "./view.friends.js";
 import {SettingsView} from "./view.settings.js";
@@ -9,8 +9,9 @@ import * as Net from "./net.js";
 import * as DB from "./db.js";
 import {Matcher} from "./match.js";
 import {nanoid} from 'nanoid';
-import { extractTags } from "./tag-utils.js";
-import { NotificationManager } from "./notification-manager.js";
+import {extractTags} from "./tag-utils.js";
+import {NotificationManager} from "./notification-manager.js";
+import {NotesView} from './view.notes.js';
 
 const DOMPURIFY_CONFIG = {
     ALLOWED_TAGS: ["br", "b", "i", "span"],
@@ -105,6 +106,13 @@ class App {
                 this.createNewObject(editView);
                 return editView;
             }
+            ,
+            notes: () => {
+                const notesView = new NotesView(this);
+                this.mainContent.currentView = notesView;
+                this.mainContent.showView(notesView);
+                return notesView;
+            }
         };
 
         const view = views[viewName]();
@@ -135,7 +143,7 @@ class App {
                         <strong>${obj.name}</strong>
                         <small>Updated: ${formatDate(obj.updatedAt)}</small>
                     </div>
-                    <div class="object-content">${obj.content.substring(0, 100)}...</div>
+                    <div class="object-content">${obj.content?.substring(0, 100)}...</div>
                     <div class="object-tags">${obj.tags?.map(tag => `<span class="tag">${tag.name}</span>`).join('')}</div>
                 `;
                 listEl.append(itemEl);
@@ -153,8 +161,14 @@ class App {
             name: "",
             content: "",
             tags: [],
-            createdAt: (() => { const now = new Date(); return formatISO(now); })(),
-            updatedAt: (() => { const now = new Date(); return formatISO(now); })()
+            createdAt: (() => {
+                const now = new Date();
+                return formatISO(now);
+            })(),
+            updatedAt: (() => {
+                const now = new Date();
+                return formatISO(now);
+            })()
         };
         this.showEditor(object);
     }
@@ -203,7 +217,10 @@ class App {
             name,
             content: sanitizedContent,
             tags: extractTags(sanitizedContent),
-            updatedAt: (() => { const now = new Date(); return formatISO(now); })()
+            updatedAt: (() => {
+                const now = new Date();
+                return formatISO(now);
+            })()
         };
         await this.db.save(this.selected);
 
