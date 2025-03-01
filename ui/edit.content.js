@@ -1,4 +1,4 @@
-import { createElement } from './utils.js';
+import { createElement } from './utils';
 
 class EditorContentHandler {
     constructor(editor) {
@@ -239,7 +239,7 @@ class TimeInputRenderer extends TagRenderer {
             placeholder: ph,
             value: val,
             oninput: (e) => onValueChange(e.target.value)
-        });
+        }));
 
         switch (this.tag.data.condition) {
             case "is at":

@@ -1,7 +1,6 @@
 import { createElement } from "./utils.js";
 import * as NostrTools from 'nostr-tools'
 import {View} from "./view.js";
-import * as DB from "../core/db.js";
 
 export class SettingsView extends View {
     constructor(app) {
@@ -81,7 +80,7 @@ export class SettingsView extends View {
         this.el.querySelector("#save-settings-btn").addEventListener("click", this.saveSettings.bind(this));
         this.el.querySelector("#clear-all-data-btn").addEventListener("click", () => {
             if (confirm("Are you sure you want to clear all data? This cannot be undone.")) {
-                DB.DB.prototype.deleteCurrentObject(this.app.db).then(() => {
+                this.app.db.deleteCurrentObject().then(() => {
                     this.app.showNotification("All data cleared.", "success");
                     window.location.reload();
                 });
@@ -91,7 +90,7 @@ export class SettingsView extends View {
     }
 
     async loadSettings() {
-        const settingsObject = await DB.DB.prototype.getSettings();
+        const settingsObject = await this.app.db.getSettings();
         if (settingsObject && settingsObject.tags) {
             let settings = {};
             settingsObject.tags.forEach(tag => {
@@ -142,7 +141,7 @@ export class SettingsView extends View {
             nostrPrivateKey: nostrPrivateKey
         };
 
-        await DB.DB.prototype.saveSettings(settings);
+        await this.app.db.saveSettings(settings);
         this.app.nostrClient?.setRelays(relays.split("\n").map(l => l.trim()).filter(Boolean));
         this.updateProfileDisplay({name: profileName, picture: profilePicture});
         localStorage.setItem("dateFormat", dateFormat);
@@ -151,8 +150,8 @@ export class SettingsView extends View {
 
     async generateKeyPair() {
         try {
-            let keys = await DB.generateKeys();
-            await DB.DB.prototype.saveKeys(window.keys = keys);
+            let keys = await this.app.db.generateKeys();
+            await this.app.db.saveKeys(window.keys = keys);
             this.displayKeys();
             this.app.showNotification("Keys generated.", "success");
         } catch {
@@ -167,7 +166,7 @@ export class SettingsView extends View {
             if (!/^[0-9a-fA-F]{64}$/.test(privKey)) throw new Error("Invalid key format.");
             window.keys = {priv: privKey, pub: await NostrTools.getPublicKey(privKey)};
             this.displayKeys();
-            await DB.DB.prototype.saveKeys(window.keys);
+            await this.app.db.saveKeys(window.keys);
             this.app.showNotification("Key imported.", "success");
         } catch (err) {
             this.app.showNotification(`Error importing key: ${err.message}`, "error");
@@ -175,7 +174,7 @@ export class SettingsView extends View {
     }
 
     async exportKey() {
-        const loadedKeys = await DB.loadKeys();
+        const loadedKeys = await this.app.db.loadKeys();
         if (!loadedKeys) {
             this.app.showNotification("No keys to export.", "error");
             return;

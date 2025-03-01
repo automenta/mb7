@@ -1,5 +1,5 @@
 import { createElement } from './utils.js';
-import { InlineTag } from "./editor-content-handler";
+import { InlineTag } from "./edit.content";
 
 class OntologyBrowser {
     constructor(ontology, onTagSelect) {

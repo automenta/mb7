@@ -1,6 +1,12 @@
+import { Relay } from 'nostr-tools';
 export class RelayManager {
-    constructor(app, relays, relayStatuses, relayObjects) {
-        this.app = app;
+    constructor(nostr, relays, relayStatuses, relayObjects, relayConnected, showNotification) {
+        this.nostr = nostr;
+        this.relays = relays;
+        this.relayStatuses = relayStatuses;
+        this.relayObjects = relayObjects;
+        this.relayConnected = relayConnected;
+        this.showNotification = showNotification;
         this.relays = relays;
         this.relayStatuses = relayStatuses;
         this.relayObjects = relayObjects;
@@ -19,7 +25,7 @@ export class RelayManager {
 
     connectToRelays() {
         if (this.relays.length === 0) {
-            this.app.showNotification("No relays configured.", "warning");
+            this.showNotification("No relays configured.", "warning");
             return;
         }
 
@@ -38,6 +44,7 @@ export class RelayManager {
         try {
             const relay = await Relay.connect(relayUrl);
             this.relayObjects[relayUrl] = relay;
+            console.log("Relay object:", relay);
 
             await this.onOpen(relay);
 
@@ -82,6 +89,20 @@ export class RelayManager {
             }
             this.relayStatuses = {};
             this.relayObjects = {};
+
+            // Unsubscribe from all subscriptions
+            for (const relayUrl in this.relayObjects) {
+                const relay = this.relayObjects[relayUrl];
+                const subscriptions = this.nostr.getSubscriptions();
+                for (const subId in subscriptions) {
+                    try {
+                        await relay.unsubscribe({ id: subId });
+                    } catch (error) {
+                        console.error("Error unsubscribing:", error);
+                    }
+                }
+                await relay.close();
+            }
         } catch (error) {
             console.error("Error disconnecting from relays:", error);
         }

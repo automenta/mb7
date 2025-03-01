@@ -16,7 +16,7 @@
   "keywords": [],
   "author": "",
   "license": "AGPL",
-  "type": "commonjs",
+  "type": "module",
   "devDependencies": {
     "@vitest/ui": "^3.0.7",
     "vite": "^6.2.0",

@@ -37,6 +37,11 @@ class SuggestionDropdown {
         this.el.style.display = 'none';
         this.selectedIndex = -1;
         this.onSelectCallback = null;
+        this.remove();
+    }
+
+    remove() {
+        this.el.remove();
     }
 
     moveSelection(direction) {

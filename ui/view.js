@@ -14,8 +14,6 @@ export class View extends UIComponent {
     constructor(app, selectorOrTemplate) {
         super(selectorOrTemplate)
         this.app = app;
-
-
     }
 
     build() {

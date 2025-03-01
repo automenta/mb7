@@ -34,6 +34,10 @@ export class NotesView extends HTMLElement {
         notesList.style.padding = '0';
         sidebar.appendChild(notesList);
 
+        this.elements = {
+            notesList: notesList
+        };
+
         const mainArea = document.createElement('div');
         mainArea.style.flex = '1';
         mainArea.style.flexGrow = '1';

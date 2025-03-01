@@ -1,20 +1,27 @@
 import { DB } from '../core/db.js';
 import { Nostr } from '../core/net.js';
+import { ErrorHandler } from '../core/error-handler.js';
 import { FriendsView } from "./view.friends.js";
 import { SettingsView } from "./view.settings.js";
 import { NotesView } from './view.notes.js';
 import { ContentView } from "./ui-manager.js";
 import { createMenuBar } from './menu-bar.js';
+import { NotificationManager } from './notification-manager.js';
 
 class App {
     constructor() {
         this.db = null;
         this.nostr = null;
         this.selected = null;
+        this.notificationManager = new NotificationManager();
+        this.elements = {};
     }
 
     async initialize() {
-        this.db = await DB.the();
+        await DB.the();
+        this.errorHandler = new ErrorHandler(this);
+        this.db = new DB(this, this.errorHandler);
+        await this.db.initializeKeys();
         const settings = await this.db.getSettings() || {};
         const signalingStrategy = settings.signalingStrategy || "nostr";
         const nostrRelays = settings.nostrRelays || "";
@@ -60,6 +67,10 @@ class App {
         mainContent.appendChild(view.el);
         view.bindEvents?.(); // Conditionally call bindEvents
     }
+    async relayConnected(relay) {
+        await this.nostr.relayConnected(relay);
+    }
+
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -67,9 +78,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const app = new App();
     await app.initialize();
+    await app.db.initializeKeys();
     const notesView = new NotesView(app);
-    const friendsView = new FriendsView();
-    const settingsView = new SettingsView();
+    const friendsView = new FriendsView(app);
+    const settingsView = new SettingsView(app);
     const contentView = new ContentView();
 
     const menubar = createMenuBar(app, notesView, friendsView, settingsView, contentView);
@@ -78,6 +90,12 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     appDiv.appendChild(menubar);
     appDiv.appendChild(mainContent);
+
+    // Create notification area
+    const notificationArea = document.createElement('div');
+    notificationArea.id = 'notification-area';
+    appDiv.appendChild(notificationArea);
+    app.elements = { notificationArea };
 
     app.showView(contentView); // Show content view by default
     contentView.render();

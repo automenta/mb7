@@ -7,6 +7,7 @@ import * as DB from "../core/db.js";
 export class FriendsView extends View {
     constructor(app) {
         super(app, `<div id="friends-view" class="view"><h2>Friends</h2></div>`);
+        this.app = app;
     }
 
     build() {
@@ -46,7 +47,7 @@ export class FriendsView extends View {
 
         try {
             const friend = {pubkey: pubkey};
-            await DB.DB.prototype.addFriend(friend);
+            await this.app.db.addFriend(friend);
             this.app.showNotification(`Added friend: ${NostrTools.nip19.npubEncode(pubkey)}`, "success");
             await this.app.nostrClient.subscribe([{kinds: [0], authors: [pubkey]}], {id: `friend-profile-${pubkey}`});
             await this.loadFriends();
@@ -58,8 +59,20 @@ export class FriendsView extends View {
     }
 
     async loadFriends() {
-        const friendsObjectId = await DB.DB.prototype.getFriendsObjectId();
-        const friendsObject = await DB.DB.prototype.get(friendsObjectId);
+        console.log("FriendsView.loadFriends called");
+        let friendsObjectId;
+        let friendsObject;
+        try {
+            friendsObjectId = await this.app.db.getFriendsObjectId();
+            console.log("friendsObjectId:", friendsObjectId);
+            friendsObject = await this.app.db.get(friendsObjectId);
+            console.log("friendsObject:", friendsObject);
+        } catch (error) {
+            console.error("Error loading friends:", error);
+            console.log("Error:", error);
+            this.app.errorHandler.handleError(error, "Failed to load friends");
+            return;
+        }
 
         const friendsList = this.el.querySelector("#friends-list");
         while (friendsList.firstChild) {
@@ -92,7 +105,7 @@ export class FriendsView extends View {
 
     async removeFriend(pubkey) {
         try {
-            await DB.DB.prototype.removeFriend(pubkey);
+            await this.app.db.removeFriend(pubkey);
             await this.app.nostrClient.unsubscribe(`friend-profile-${pubkey}`);
             await this.loadFriends(); // Refresh list after removing.
         } catch (error) {

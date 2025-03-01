@@ -1,5 +1,6 @@
-import { Relay, nip19, getEventHash, signEvent } from 'nostr-tools';
-import { nanoid } from 'nanoid';
+import * as nostrTools from 'nostr-tools';
+const { Relay, nip19, getEventHash } = nostrTools;
+const signEvent = nostrTools.signEvent;
 
 class NostrSignalingProvider {
     constructor(relays, nostrPrivateKey, app) {

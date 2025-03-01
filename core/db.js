@@ -10,6 +10,7 @@ import DOMPurify from 'dompurify';
 import { generateEncryptionKey, encrypt, decrypt } from './encryption';
 import { addFriend, removeFriend, updateFriendProfile } from './friends';
 import { saveSettings } from './settings';
+import { ErrorHandler } from './error-handler';
 
 /**
  * Creates a default object with the given ID and kind.
@@ -44,8 +45,9 @@ const NOTES_INDEX_ID = 'notes-index';
 export class DB {
     static db = null;
 
-    constructor() {
-
+    constructor(app, errorHandler) {
+        this.app = app;
+        this.errorHandler = errorHandler;
     }
 
     /**
@@ -73,6 +75,15 @@ export class DB {
         await DB.getDefaultObject(FRIENDS_OBJECT_ID);
         await DB.getDefaultObject(SETTINGS_OBJECT_ID);
         return this.db;
+    }
+
+    async initializeKeys() {
+        const keys = await loadKeys();
+        if (keys) {
+            window.keys = keys;
+            return keys;
+        }
+        return null;
     }
 
     static async getDefaultObject(id) {
@@ -119,15 +130,10 @@ export class DB {
             if (!DB.db) {
                 await DB.the();
             }
-            const encryptedObject = await DB.db.get(OBJECTS_STORE, id);
-            if (!encryptedObject) return null;
-            // TODO: Retrieve the user's encryption key instead of generating a new one.
-            // TODO: Implement secure encryption key management.
-            const encryptionKey = window.keys.encryptionKey;
-            const decryptedContent = await this.decrypt(encryptedObject.content, encryptionKey);
-            return { ...encryptedObject, content: decryptedContent };
+            let object = await DB.db.get(OBJECTS_STORE, id);
+            return object;
         } catch (error) {
-            this.handleDBError("Failed to get object", error);
+            this.errorHandler.handleError(error, "Failed to get object");
         }
     }
 
@@ -142,18 +148,10 @@ export class DB {
             }
             // TODO: Retrieve the user's encryption key instead of generating a new one.
             // TODO: Store the encryption key ID with the object.
-            // TODO: Implement secure encryption key management.
-            let encryptionKey = window.keys.encryptionKey;
-            if (!encryptionKey) {
-                encryptionKey = await generateEncryptionKey();
-                window.keys.encryptionKey = encryptionKey;
-            }
-            const encryptedContent = await this.encrypt(o.content, encryptionKey);
-            const encryptedObject = { ...o, content: encryptedContent, encryptionKey: window.keys.pub };
-            await DB.db.put(OBJECTS_STORE, encryptedObject);
+            await DB.db.put(OBJECTS_STORE, o);
             return o;
         } catch (error) {
-            this.handleDBError("Failed to save object", error);
+            this.errorHandler.handleError(error, "Failed to save object");
             throw error;
         }
     }
@@ -165,7 +163,7 @@ export class DB {
         try {
             await DB.db.delete(OBJECTS_STORE, id);
         } catch (error) {
-            this.handleDBError("Failed to delete object", error);
+            this.errorHandler.handleError(error, "Failed to delete object");
             throw error;
         }
     }
@@ -328,8 +326,8 @@ const generatePrivateKey = () => {
 export async function generateKeys() {
     const priv = generatePrivateKey();
     const pub = NostrTools.getPublicKey(priv);
-
-    const newKeys = { priv, pub };
+    const encryptionKey = await generateEncryptionKey();
+    const newKeys = { priv, pub, encryptionKey };
     await DB.db.put(KEY_STORAGE, newKeys, KEY_STORAGE);
     return newKeys;
 }
@@ -343,6 +341,7 @@ export async function loadKeys() {
         keys = await generateKeys();
         console.log('Keys generated and saved.');
     }
+    
     window.keys = keys;
     return keys;
 }

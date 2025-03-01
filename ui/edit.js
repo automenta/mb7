@@ -1,13 +1,13 @@
 import { UnifiedOntology } from '../core/ontology.js';
 import DOMPurify from 'dompurify';
 import * as Y from 'yjs';
-import { IndexeddbPersistence } from 'y-indexeddb';
 import { DB, getNotesIndex, updateNotesIndex } from '../core/db';
+import { ErrorHandler } from '../core/error-handler.js';
 import { Autosuggest } from './autosuggest.js';
-import { Toolbar } from './toolbar.js';
+import { Toolbar } from './edit.toolbar.js';
 import { OntologyBrowser } from './ontology-browser.js';
 import { SuggestionDropdown } from './suggestion-dropdown.js';
-import { EditorContentHandler } from './editor-content-handler.js';
+import { EditorContentHandler } from './edit.content';
 
 import { createElement, debounce } from './utils.js';
 
@@ -16,7 +16,8 @@ const tagDataMap = new WeakMap();
 class Edit {
     constructor() {
         this.ontology = UnifiedOntology;
-        this.db = new DB();
+        this.errorHandler = new ErrorHandler(this);
+        this.db = new DB(this.errorHandler);
         this.yDoc = new Y.Doc();
         //this.indexeddbPersistence = new IndexeddbPersistence('yjs-indexeddb-provider', this.yDoc); //TODO move this to DB or Net?
         this.yText = this.yDoc.getText('content');

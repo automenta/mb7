@@ -1,6 +1,4 @@
 import DOMPurify from 'dompurify';
-import { nip19 } from 'nostr-tools';
-import { getTagDefinition } from './ontology';
 
 const pubkeyRegex = /^[0-9a-fA-F]{64}$/;
 
