@@ -1,7 +1,7 @@
 import Fuse from 'fuse.js';
-import { formatDate } from '../ui/content-view-renderer.js';
-import { nip19 } from 'nostr-tools';
-import { getTagDefinition } from './ontology';
+import {formatDate} from '../ui/content-view-renderer.js';
+import {nip19} from 'nostr-tools';
+import {getTagDefinition} from './ontology';
 
 export class Matcher {
     constructor(app) {
@@ -40,7 +40,7 @@ export class Matcher {
     }
 
     matchTagData(tagData, text, event) {
-        const { name, condition, value } = tagData;
+        const {name, condition, value} = tagData;
         // TODO: Implement more sophisticated tag matching techniques
         const tagDef = getTagDefinition(name);
 

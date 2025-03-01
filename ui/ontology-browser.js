@@ -1,18 +1,18 @@
-import { createElement } from './utils.js';
-import { InlineTag } from "./edit.content";
+import {createElement} from './utils.js';
+import {InlineTag} from "./edit.content";
 
 class OntologyBrowser {
     constructor(ontology, onTagSelect) {
         this.ontology = ontology;
         this.onTagSelect = onTagSelect;
-        this.el = createElement("div", { class: "ontology-browser" });
+        this.el = createElement("div", {class: "ontology-browser"});
         this.build();
     }
 
     build() {
         this.el.innerHTML = "";
         Object.entries(this.ontology).forEach(([key, value]) => {
-            const categoryDiv = createElement("div", { class: "category" }, key);
+            const categoryDiv = createElement("div", {class: "category"}, key);
             if (value.instances) {
                 value.instances.forEach(tagData =>
                     categoryDiv.append(
@@ -26,7 +26,7 @@ class OntologyBrowser {
                 // Handle cases where there are no instances, e.g., string, number
                 // You might want to display a default tag or a message indicating no specific instances
                 categoryDiv.append(
-                    createElement("div", { class: "tag-item" }, '')
+                    createElement("div", {class: "tag-item"}, '')
                 );
             }
             this.el.append(categoryDiv);
@@ -47,4 +47,4 @@ class OntologyBrowser {
 }
 
 
-export { OntologyBrowser };
+export {OntologyBrowser};

@@ -1,6 +1,5 @@
-import { UIComponent, View } from "./view.js";
-import { createElement } from "./utils.js";
-import { renderNostrFeed, renderNetworkStatus, renderRecentActivity, renderTagCloud } from "./content-view-renderer.js";
+import {UIComponent, View} from "./view.js";
+import {renderNetworkStatus, renderNostrFeed} from "./content-view-renderer.js";
 
 class ContentView extends View {
     constructor() {
@@ -50,4 +49,4 @@ class MainContent extends UIComponent {
     }
 }
 
-export { ContentView, MainContent };
+export {ContentView, MainContent};

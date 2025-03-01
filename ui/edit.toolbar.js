@@ -1,14 +1,14 @@
 class Toolbar {
     constructor(editor) {
         this.editor = editor;
-        this.el = createElement("div", { id: "toolbar" });
+        this.el = createElement("div", {id: "toolbar"});
         this.build();
     }
 
     build() {
-        const createGroup = () => createElement("div", { class: "group" });
+        const createGroup = () => createElement("div", {class: "group"});
         const createButton = (title, text, command, arg = null) =>
-            createElement("button", { title, onclick: () => document.execCommand(command, false, arg) }, text);
+            createElement("button", {title, onclick: () => document.execCommand(command, false, arg)}, text);
 
         const formattingGroup = createGroup();
         formattingGroup.append(
@@ -33,6 +33,6 @@ class Toolbar {
     }
 }
 
-import { createElement } from './utils.js';
+import {createElement} from './utils.js';
 
-export { Toolbar };
+export {Toolbar};

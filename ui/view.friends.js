@@ -1,8 +1,7 @@
-import { createElement } from "./utils.js";
+import {createElement} from "./utils.js";
 import * as NostrTools from 'nostr-tools'
 import {View} from "./view.js";
 import {getTagDefinition} from "../core/ontology.js";
-import * as DB from "../core/db.js";
 
 export class FriendsView extends View {
     constructor(app) {
@@ -12,10 +11,14 @@ export class FriendsView extends View {
 
     build() {
         this.el.innerHTML = "";
-        const input = createElement("input", { type: "text", id: "friend-pubkey", placeholder: "Enter friend's nPub or pubkey" });
-        const button = createElement("button", { id: "add-friend-btn" }, "Add Friend");
+        const input = createElement("input", {
+            type: "text",
+            id: "friend-pubkey",
+            placeholder: "Enter friend's nPub or pubkey"
+        });
+        const button = createElement("button", {id: "add-friend-btn"}, "Add Friend");
         const h3 = createElement("h3", {}, "Your Friends");
-        const ul = createElement("ul", { id: "friends-list" });
+        const ul = createElement("ul", {id: "friends-list"});
 
         this.el.append(input, button, h3, ul);
     }

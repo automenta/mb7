@@ -1,12 +1,12 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest';
-import { App } from '../ui/app.js';
+import {App} from '../ui/app.js';
 
 describe('App', () => {
     let app;
 
     beforeEach(async () => {
         await new Promise(resolve => setTimeout(resolve, 500)); // Wait for 500ms
-                app = new App();
+        app = new App();
         app.db = {
             save: vi.fn(),
         };

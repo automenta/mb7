@@ -104,15 +104,15 @@ export class EventHandler {
                 const tagValue = tag[1];
 
                 if (tagName === 't') {
-                    tags.push({ name: tagValue, condition: 'is', value: '' })
+                    tags.push({name: tagValue, condition: 'is', value: ''})
                 } else {
                     let condition = 'is';
                     let value = tagValue;
 
-                if ((tagName === 'p' || tagName === 'e') && tag.length >= 2) {
+                    if ((tagName === 'p' || tagName === 'e') && tag.length >= 2) {
                         condition = 'references';
                     }
-                    tags.push({ name: tagName, condition, value });
+                    tags.push({name: tagName, condition, value});
                 }
             }
         }

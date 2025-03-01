@@ -1,5 +1,6 @@
 import * as nostrTools from 'nostr-tools';
-const { Relay, nip19, getEventHash } = nostrTools;
+
+const {Relay, nip19, getEventHash} = nostrTools;
 const signEvent = nostrTools.signEvent;
 
 class NostrSignalingProvider {
@@ -56,7 +57,7 @@ class NostrSignalingProvider {
             for (const relayUrl of this.connectedRelays) {
                 const relay = this.relayObjects[relayUrl];
                 if (relay) {
-                    relay.publish(event);
+                    await relay.publish(event);
                 } else {
                     console.warn(`Relay ${relayUrl} not connected.`);
                     this.app.showNotification(`Relay ${relayUrl} not connected.`, 'warning');
@@ -231,4 +232,4 @@ class NostrSignalingProvider {
     }
 }
 
-export { NostrSignalingProvider };
+export {NostrSignalingProvider};

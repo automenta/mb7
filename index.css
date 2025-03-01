@@ -1,11 +1,12 @@
 body.dark-mode {
-  background-color: #333;
-  color: #fff;
+    background-color: #333;
+    color: #fff;
 }
 
 body.dark-mode .group {
     border-color: #555;
 }
+
 .saved {
     background-color: lightgreen;
     transition: background-color 0.5s;
@@ -115,7 +116,7 @@ body {
 }
 
 .editor-area {
-    border:2px solid orange;
+    border: 2px solid orange;
     margin: 0.25em;
     padding: 0.25em;
     min-height: 12em;

@@ -38,14 +38,14 @@ class Notification {
         return this.animate({
             right: '10px',
             opacity: 1
-        }, { duration: 300, fill: 'forwards' });
+        }, {duration: 300, fill: 'forwards'});
     }
 
     animateOut() {
         return this.animate({
             right: '-300px',
             opacity: 0
-        }, { duration: 300, fill: 'forwards' });
+        }, {duration: 300, fill: 'forwards'});
     }
 
     animate(properties, options) {

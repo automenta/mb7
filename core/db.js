@@ -4,13 +4,11 @@ const DOMPURIFY_CONFIG = {
     ALLOWED_ATTR: ["class", "contenteditable", "tabindex", "id", "aria-label"]
 };
 import * as NostrTools from 'nostr-tools';
-import { openDB } from 'idb';
+import {openDB} from 'idb';
 import * as Y from 'yjs'
-import DOMPurify from 'dompurify';
-import { generateEncryptionKey, encrypt, decrypt } from './encryption';
-import { addFriend, removeFriend, updateFriendProfile } from './friends';
-import { saveSettings } from './settings';
-import { ErrorHandler } from './error-handler';
+import {generateEncryptionKey} from './encryption';
+import {addFriend, removeFriend, updateFriendProfile} from './friends';
+import {saveSettings} from './settings';
 
 /**
  * Creates a default object with the given ID and kind.
@@ -61,29 +59,20 @@ export class DB {
             upgrade(db, oldVersion, newVersion, transaction) {
                 console.log('onupgradeneeded triggered');
                 if (!db.objectStoreNames.contains(OBJECTS_STORE)) {
-                    db.createObjectStore(OBJECTS_STORE, { keyPath: 'id' });
+                    db.createObjectStore(OBJECTS_STORE, {keyPath: 'id'});
                 }
                 if (!db.objectStoreNames.contains(KEY_STORAGE)) {
                     db.createObjectStore(KEY_STORAGE);
                 }
                 const objectStore = transaction.objectStore(OBJECTS_STORE);
                 if (!objectStore.indexNames.contains('content')) {
-                    objectStore.createIndex('content', 'content', { unique: false });
+                    objectStore.createIndex('content', 'content', {unique: false});
                 }
             },
         });
         await DB.getDefaultObject(FRIENDS_OBJECT_ID);
         await DB.getDefaultObject(SETTINGS_OBJECT_ID);
         return this.db;
-    }
-
-    async initializeKeys() {
-        const keys = await loadKeys();
-        if (keys) {
-            window.keys = keys;
-            return keys;
-        }
-        return null;
     }
 
     static async getDefaultObject(id) {
@@ -97,6 +86,15 @@ export class DB {
         }
 
         return object;
+    }
+
+    async initializeKeys() {
+        const keys = await loadKeys();
+        if (keys) {
+            window.keys = keys;
+            return keys;
+        }
+        return null;
     }
 
     /**
@@ -127,11 +125,10 @@ export class DB {
      */
     async get(id) {
         try {
-            if (!DB.db) {
+            if (!DB.db)
                 await DB.the();
-            }
-            let object = await DB.db.get(OBJECTS_STORE, id);
-            return object;
+
+            return await DB.db.get(OBJECTS_STORE, id);
         } catch (error) {
             this.errorHandler.handleError(error, "Failed to get object");
         }
@@ -253,7 +250,7 @@ export class DB {
 
     async saveYDoc(id, yDoc) {
         const yDocData = Y.encodeStateAsUpdate(yDoc);
-        await DB.db.put(OBJECTS_STORE, { id: `${id}-ydoc`, yDocData: yDocData });
+        await DB.db.put(OBJECTS_STORE, {id: `${id}-ydoc`, yDocData: yDocData});
     }
 
     async getYDoc(id) {
@@ -267,6 +264,7 @@ export class DB {
             return null;
         }
     }
+
     async deleteCurrentObject(note) {
         try {
             await DB.db.delete(OBJECTS_STORE, note.id);
@@ -275,6 +273,7 @@ export class DB {
             throw error;
         }
     }
+
     async getAllObjects(filter = "") {
         return await this.getAll(filter);
     }
@@ -292,7 +291,7 @@ export class DB {
     }
 
     async saveKeys(keys) {
-        return await DB.db.put(KEY_STORAGE, keys, KEY_STORAGE);
+        return DB.db.put(KEY_STORAGE, keys, KEY_STORAGE);
     }
 
     /**
@@ -327,7 +326,7 @@ export async function generateKeys() {
     const priv = generatePrivateKey();
     const pub = NostrTools.getPublicKey(priv);
     const encryptionKey = await generateEncryptionKey();
-    const newKeys = { priv, pub, encryptionKey };
+    const newKeys = {priv, pub, encryptionKey};
     await DB.db.put(KEY_STORAGE, newKeys, KEY_STORAGE);
     return newKeys;
 }
@@ -341,7 +340,7 @@ export async function loadKeys() {
         keys = await generateKeys();
         console.log('Keys generated and saved.');
     }
-    
+
     window.keys = keys;
     return keys;
 }
@@ -352,7 +351,7 @@ async function getNotesIndex() {
 }
 
 async function updateNotesIndex(newIndex) {
-    await DB.db.put(OBJECTS_STORE, { id: NOTES_INDEX_ID, tags: newIndex });
+    await DB.db.put(OBJECTS_STORE, {id: NOTES_INDEX_ID, tags: newIndex});
 }
 
-export { getNotesIndex, updateNotesIndex };
+export {getNotesIndex, updateNotesIndex};

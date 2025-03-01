@@ -1,14 +1,14 @@
-import { Autosuggest } from './autosuggest.js';
-import { UnifiedOntology } from '../core/ontology.js';
+import {Autosuggest} from './autosuggest.js';
+import {UnifiedOntology} from '../core/ontology.js';
 import DOMPurify from 'dompurify';
 import * as Y from 'yjs';
-import { DB, getNotesIndex, updateNotesIndex } from '../core/db';
-import { ErrorHandler } from '../core/error-handler.js';
-import { Toolbar } from './edit.toolbar.js';
-import { OntologyBrowser } from './ontology-browser.js';
-import { SuggestionDropdown } from './suggestion-dropdown.js';
-import { createElement, debounce } from './utils.js';
-import { EditorContentHandler, InlineTag } from './edit.content.js';
+import {DB, getNotesIndex, updateNotesIndex} from '../core/db';
+import {ErrorHandler} from '../core/error-handler.js';
+import {Toolbar} from './edit.toolbar.js';
+import {OntologyBrowser} from './ontology-browser.js';
+import {SuggestionDropdown} from './suggestion-dropdown.js';
+import {createElement, debounce} from './utils.js';
+import {EditorContentHandler} from './edit.content.js';
 
 class Edit {
     constructor() {
@@ -18,7 +18,7 @@ class Edit {
         this.yDoc = new Y.Doc();
         this.yText = this.yDoc.getText('content');
 
-        this.editorArea = createElement("div", { contenteditable: "true", class: "editor-area" });
+        this.editorArea = createElement("div", {contenteditable: "true", class: "editor-area"});
         const menu = createElement('div');
         this.el = createElement('div');
         this.el.append(menu, this.editorArea);
@@ -30,7 +30,10 @@ class Edit {
         this.ontologyBrowser = new OntologyBrowser(this.ontology, (tag) => this.contentHandler.insertTagAtSelection(tag));
         this.toolbar = new Toolbar(this);
 
-        const ontologyBrowserButton = createElement('button', { textContent: 'Show Ontology', class: 'toggle-ontology-button' });
+        const ontologyBrowserButton = createElement('button', {
+            textContent: 'Show Ontology',
+            class: 'toggle-ontology-button'
+        });
         menu.append(this.toolbar.getElement(), ontologyBrowserButton, this.ontologyBrowser.getElement());
         this.ontologyBrowser.getElement().style.display = 'none';
 
@@ -113,7 +116,7 @@ class Edit {
         for (const category in this.ontology) {
             for (const tag of this.ontology[category]) {
                 if (tag.name.toLowerCase().startsWith(word)) {
-                    suggestions.push({ displayText: tag.name, tagData: tag, span });
+                    suggestions.push({displayText: tag.name, tagData: tag, span});
                 }
             }
         }
@@ -153,7 +156,7 @@ class Edit {
     findSuggestion(name) {
         for (const cat in this.ontology) {
             for (const t of this.ontology[cat]) {
-                if (t.name === name) return { displayText: t.name, tagData: t };
+                if (t.name === name) return {displayText: t.name, tagData: t};
             }
         }
         return null;
@@ -170,7 +173,7 @@ class Edit {
             case "Enter":
                 event.preventDefault();
                 if (this.suggestionDropdown.getSelectedSuggestion()) {
-                     // Use content handler for consistency
+                    // Use content handler for consistency
                     const suggestion = this.findSuggestion(this.suggestionDropdown.getSelectedSuggestion());
                     if (suggestion) this.contentHandler.insertTagFromSuggestion(suggestion);
                 }
@@ -183,4 +186,4 @@ class Edit {
     }
 }
 
-export { Edit };
+export {Edit};

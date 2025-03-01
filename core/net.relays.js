@@ -1,4 +1,5 @@
-import { Relay } from 'nostr-tools';
+import {Relay} from 'nostr-tools';
+
 export class RelayManager {
     constructor(nostr, relays, relayStatuses, relayObjects, relayConnected, showNotification) {
         this.nostr = nostr;
@@ -39,7 +40,7 @@ export class RelayManager {
             return;
         }
 
-        this.relayStatuses[relayUrl] = { status: "connecting" };
+        this.relayStatuses[relayUrl] = {status: "connecting"};
 
         try {
             const relay = await Relay.connect(relayUrl);
@@ -50,14 +51,14 @@ export class RelayManager {
 
         } catch (error) {
             console.error("WebSocket connection error:", error);
-            this.relayStatuses[relayUrl] = { status: "error" };
+            this.relayStatuses[relayUrl] = {status: "error"};
         }
     }
 
     async onOpen(relay) {
         try {
             console.log("Connected to relay:", relay.url);
-            this.relayStatuses[relay.url] = { status: "connected" };
+            this.relayStatuses[relay.url] = {status: "connected"};
             await this.relayConnected(relay);
         } catch (error) {
             console.error("Error handling onOpen:", error);
@@ -96,7 +97,7 @@ export class RelayManager {
                 const subscriptions = this.nostr.getSubscriptions();
                 for (const subId in subscriptions) {
                     try {
-                        await relay.unsubscribe({ id: subId });
+                        await relay.unsubscribe({id: subId});
                     } catch (error) {
                         console.error("Error unsubscribing:", error);
                     }

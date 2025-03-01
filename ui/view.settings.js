@@ -1,4 +1,4 @@
-import { createElement } from "./utils.js";
+import {createElement} from "./utils.js";
 import * as NostrTools from 'nostr-tools'
 import {View} from "./view.js";
 
@@ -10,36 +10,43 @@ export class SettingsView extends View {
     build() {
         this.el.innerHTML = "";
         const h3Keys = createElement("h3", {}, "Nostr Keys");
-        const generateKeyBtn = createElement("button", { id: "generate-key-btn" }, "Generate Key Pair");
-        const importKeyBtn = createElement("button", { id: "import-key-btn" }, "Import Key");
-        const exportKeyBtn = createElement("button", { id: "export-key-btn" }, "Export Key");
-        const keyDisplay = createElement("div", { id: "key-display" });
+        const generateKeyBtn = createElement("button", {id: "generate-key-btn"}, "Generate Key Pair");
+        const importKeyBtn = createElement("button", {id: "import-key-btn"}, "Import Key");
+        const exportKeyBtn = createElement("button", {id: "export-key-btn"}, "Export Key");
+        const keyDisplay = createElement("div", {id: "key-display"});
 
         const h3Signaling = createElement("h3", {}, "Signaling");
         const signalingStrategyLabel = createElement("label", {}, "Signaling Strategy:");
-        const signalingStrategySelect = createElement("select", { id: "signaling-strategy-select" }, `<option value="nostr">Nostr</option><option value="webrtc">WebRTC Signaling Server (Not Implemented)</option>`);
+        const signalingStrategySelect = createElement("select", {id: "signaling-strategy-select"}, `<option value="nostr">Nostr</option><option value="webrtc">WebRTC Signaling Server (Not Implemented)</option>`);
         signalingStrategyLabel.append(signalingStrategySelect);
 
         const h3Nostr = createElement("h3", {}, "Nostr Settings");
         const nostrRelayListLabel = createElement("label", {}, "Relays (one per line):");
-        const nostrRelayList = createElement("textarea", { id: "nostr-relay-list", placeholder: "Relays (one per line)" });
+        const nostrRelayList = createElement("textarea", {
+            id: "nostr-relay-list",
+            placeholder: "Relays (one per line)"
+        });
         nostrRelayListLabel.append(nostrRelayList);
         const nostrPrivateKeyLabel = createElement("label", {}, "Private Key:");
-        const nostrPrivateKeyInput = createElement("input", { type: "text", id: "nostr-private-key", placeholder: "hex encoded private key" });
+        const nostrPrivateKeyInput = createElement("input", {
+            type: "text",
+            id: "nostr-private-key",
+            placeholder: "hex encoded private key"
+        });
         nostrPrivateKeyLabel.append(nostrPrivateKeyInput);
 
         const h3Preferences = createElement("h3", {}, "Preferences");
         const dateFormatLabel = createElement("label", {}, `Date/Time Format: `);
-        const dateFormatSelect = createElement("select", { id: "date-format-select" }, `<option value="Pp">Pp</option><option value="MM/dd/yyyy"></option>`);
+        const dateFormatSelect = createElement("select", {id: "date-format-select"}, `<option value="Pp">Pp</option><option value="MM/dd/yyyy"></option>`);
         dateFormatLabel.append(dateFormatSelect);
         const h3UserProfile = createElement("h3", {}, "User Profile (Nostr)");
-        const profileNameLabel = createElement("label", { htmlFor: "profile-name" }, "Name:");
-        const profileNameInput = createElement("input", { type: "text", id: "profile-name" });
-        const profilePictureLabel = createElement("label", { htmlFor: "profile-picture" }, "Picture:");
-        const profilePictureInput = createElement("input", { type: "text", id: "profile-picture" });
-        const profileDisplay = createElement("div", { id: "profile-display" });
-        const saveSettingsBtn = createElement("button", { id: "save-settings-btn" }, "Save Settings");
-         const clearAllDataBtn = createElement("button", { id: "clear-all-data-btn" }, "Clear All Data");
+        const profileNameLabel = createElement("label", {htmlFor: "profile-name"}, "Name:");
+        const profileNameInput = createElement("input", {type: "text", id: "profile-name"});
+        const profilePictureLabel = createElement("label", {htmlFor: "profile-picture"}, "Picture:");
+        const profilePictureInput = createElement("input", {type: "text", id: "profile-picture"});
+        const profileDisplay = createElement("div", {id: "profile-display"});
+        const saveSettingsBtn = createElement("button", {id: "save-settings-btn"}, "Save Settings");
+        const clearAllDataBtn = createElement("button", {id: "clear-all-data-btn"}, "Clear All Data");
 
         this.el.append(
             h3Keys,

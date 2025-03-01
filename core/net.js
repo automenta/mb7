@@ -1,9 +1,9 @@
 import DOMPurify from 'dompurify';
-import { getEventHash, nip19, validateEvent, verifyEvent } from 'nostr-tools';
-import { getTagDefinition } from './ontology';
-import { NostrSignalingProvider } from './net.signaling';
-import { RelayManager } from './net.relays';
-import { EventHandler } from './net.events';
+import {getEventHash, nip19, validateEvent, verifyEvent} from 'nostr-tools';
+import {getTagDefinition} from './ontology';
+import {NostrSignalingProvider} from './net.signaling';
+import {RelayManager} from './net.relays';
+import {EventHandler} from './net.events';
 
 const pubkeyRegex = /^[0-9a-fA-F]{64}$/;
 
@@ -21,7 +21,7 @@ export class Nostr {
         this.relayManager = new RelayManager(this, this.relays, this.relayStatuses, this.relayObjects, this.relayConnected.bind(this), this.app.showNotification);
         this.eventHandler = new EventHandler(this.app);
     }
-    
+
     getSubscriptions() {
         return this.subscriptions;
     }
@@ -52,10 +52,13 @@ export class Nostr {
                 break;
             case 0:
                 await this.eventHandler.handleKind0(event);
+                break;
             case 3:
                 await this.eventHandler.handleKind3(event);
+                break;
             case 5:
                 await this.eventHandler.handleKind5(event);
+                break;
             case 30000:
                 await this.eventHandler.handleObjectEvent(event);
                 break;
@@ -130,14 +133,16 @@ export class Nostr {
         try {
             const nostr = this;
             await this.subscribeToFriends(relay);
-            await relay.subscribe([{ kinds: [30000], authors: [window.keys.pub] }], {
+            await relay.subscribe([{kinds: [30000], authors: [window.keys.pub]}], {
                 relay,
                 id: `object-${relay.url}`,
                 onEvent: this.eventHandler.handleObjectEvent.bind(this.eventHandler)
             });
-            await relay.subscribe([{ kinds: [1] }], { relay, id: `feed-${relay.url}`, onevent: (event) => {
-                nostr.onevent(event);
-            } });
+            await relay.subscribe([{kinds: [1]}], {
+                relay, id: `feed-${relay.url}`, onevent: (event) => {
+                    nostr.onevent(event);
+                }
+            });
         } catch (error) {
             console.error("Error in relayConnected:", error);
         }
@@ -155,19 +160,7 @@ export class Nostr {
         }
     }
 
-    async subscribeToPubkey(relay, pubkey) {
-        try {
-            const subId = `friend_${pubkey}`;
-            await relay.unsubscribe({ id: subId });
 
-            await relay.subscribe([{ kinds: [1, 30000], authors: [pubkey] }, { kinds: [1, 30000], '#p': [pubkey] }], {
-                relay,
-                id: subId
-            });
-        } catch (error) {
-            console.error("Error subscribing to pubkey:", error);
-        }
-    }
 
     async subscribeToFriends(relay) {
         try {
@@ -176,7 +169,7 @@ export class Nostr {
                 console.warn("No friends object id found.");
                 return;
             }
-            await relay.subscribe([{ kinds: [30000], ids: [friendsObjectId] }], {
+            await relay.subscribe([{kinds: [30000], ids: [friendsObjectId]}], {
                 relay,
                 id: `friends-object-${relay.url}`,
                 onEvent: this.eventHandler.handleObjectEvent.bind(this.eventHandler)
@@ -185,6 +178,7 @@ export class Nostr {
             console.error("Error subscribing to friends:", error);
         }
     }
+
     /**
      * Establishes a direct peer-to-peer connection using WebRTC.
      * @param {string} peerId - The ID of the peer to connect to.
@@ -267,32 +261,16 @@ export class Nostr {
     }
 
 
-    async disconnectFromAllRelays() {
-        this.relayManager.disconnectFromAllRelays();
-    }
-    async subscribeToFriends(relay) {
-        try {
-            const friendsObjectId = await this.app.db.getFriendsObjectId();
-            await relay.subscribe([{ kinds: [30000], ids: [friendsObjectId] }], {
-                relay,
-                id: `friends-object`,
-                onEvent: this.eventHandler.handleObjectEvent.bind(this.eventHandler)
-            });
-        } catch (error) {
-            console.error("Error subscribing to friends:", error);
-        }
-    }
     async subscribeToPubkey(relay, pubkey) {
         try {
             const subId = `friend_${pubkey}`;
-            await relay.unsubscribe({ relay: relay.url, id: subId });
+            await relay.unsubscribe({id: subId});
 
-            await relay.subscribe([{ kinds: [1, 30000], authors: [pubkey] }, { kinds: [1, 30000], '#p': [pubkey] }], {
+            await relay.subscribe([{kinds: [1, 30000], authors: [pubkey]}, {kinds: [1, 30000], '#p': [pubkey]}], {
                 relay,
                 id: subId
             });
         } catch (error) {
             console.error("Error subscribing to pubkey:", error);
         }
-    }
-}
+    }}

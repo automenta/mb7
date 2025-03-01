@@ -1,11 +1,11 @@
-import { createElement } from './utils';
+import {createElement} from './utils';
 
 class EditorContentHandler {
     constructor(editor, autosuggest) {
-            this.editor = editor;
-            this.autosuggest = autosuggest;
-            this.lastValidRange = null; // Store the last valid range within the editor for handling tag insertions
-        }
+        this.editor = editor;
+        this.autosuggest = autosuggest;
+        this.lastValidRange = null; // Store the last valid range within the editor for handling tag insertions
+    }
 
     insertLineBreak() {
         const selection = window.getSelection();
@@ -122,7 +122,7 @@ export class InlineTag {
     constructor(tagData, onUpdate) {
         this.data = this.normalizeTagData(tagData);
         this.onUpdate = onUpdate;
-        this.el = createElement("span", { class: "inline-tag", contenteditable: "false" });
+        this.el = createElement("span", {class: "inline-tag", contenteditable: "false"});
         tagDataMap.set(this.el, this.data);
         this.renderers = [
             new TagMetadataRenderer(this),
@@ -138,7 +138,7 @@ export class InlineTag {
             ...tagData,
             condition: tagData.condition || Object.keys(tagData.conditions)[0],
         };
-        const { type, condition } = data;
+        const {type, condition} = data;
         data.value ??= (type === "list") ? (data.options?.[0] || "") : (type === "color" ? "#000000" : "");
         if (condition === "is between") {
             data.min ??= 0;
@@ -174,14 +174,14 @@ class TagRenderer {
 
 class TagMetadataRenderer extends TagRenderer {
     append() {
-        const { emoji, name } = this.tag.data;
-        this.el.append(emoji ? createElement("span", { class: "tag-emoji" }, `${emoji} `) : "", name + " ");
+        const {emoji, name} = this.tag.data;
+        this.el.append(emoji ? createElement("span", {class: "tag-emoji"}, `${emoji} `) : "", name + " ");
     }
 }
 
 class TagConditionRenderer extends TagRenderer {
     append() {
-        const { conditions, condition } = this.tag.data;
+        const {conditions, condition} = this.tag.data;
         const select = createElement("select", {
             class: "tag-condition",
             onchange: () => {
@@ -209,7 +209,7 @@ class NumberInputRenderer extends TagRenderer {
     }
 
     append() {
-        const { unit, value, min, max } = this.tag.data;
+        const {unit, value, min, max} = this.tag.data;
 
         switch (this.tag.data.condition) {
             case "is":
@@ -219,6 +219,7 @@ class NumberInputRenderer extends TagRenderer {
                 this.numberInput("Min", min, v => this.tag.data.min = v);
                 this.el.append(" and ");
                 this.numberInput("Max", max, v => this.tag.data.max = v);
+                break;
             case "is below":
                 this.numberInput("Max", max, v => this.tag.data.max = v);
                 break;
@@ -226,14 +227,14 @@ class NumberInputRenderer extends TagRenderer {
                 this.numberInput("Min", min, v => this.tag.data.min = v);
                 break;
         }
-        if (unit) this.el.append(createElement("span", { class: "unit-label" }, ` ${unit}`));
+        if (unit) this.el.append(createElement("span", {class: "unit-label"}, ` ${unit}`));
     }
 }
 
 
 class TimeInputRenderer extends TagRenderer {
     append() {
-        const { value, min, max } = this.tag.data;
+        const {value, min, max} = this.tag.data;
         const timeInput = (ph, val, onValueChange) => this.el.append(createElement("input", {
             type: "text",
             placeholder: ph,
@@ -249,6 +250,7 @@ class TimeInputRenderer extends TagRenderer {
                 timeInput("Start Time", min, v => this.tag.data.min = v);
                 this.el.append(" and ");
                 timeInput("End Time", max, v => this.tag.data.max = v);
+                break;
             case "is before":
                 timeInput("Before", max, v => this.tag.data.max = v);
                 break;
@@ -261,7 +263,7 @@ class TimeInputRenderer extends TagRenderer {
 
 class TagValueRenderer extends TagRenderer {
     append() {
-        const { type, condition, options, value } = this.tag.data;
+        const {type, condition, options, value} = this.tag.data;
 
         switch (type) {
             case "number":
@@ -289,7 +291,7 @@ class TagValueRenderer extends TagRenderer {
                         this.tag.onUpdate?.();
                     }
                 });
-                const preview = createElement("span", { class: "color-preview" });
+                const preview = createElement("span", {class: "color-preview"});
                 preview.style.backgroundColor = value;
                 this.el.append(colorInput, preview);
                 break;
@@ -303,7 +305,7 @@ class TagValueRenderer extends TagRenderer {
                         const [latStr, lngStr] = e.target.value.split(",").map(s => s.trim());
                         const lat = parseFloat(latStr);
                         const lng = parseFloat(lngStr);
-                        this.tag.data.value = (!isNaN(lat) && !isNaN(lng)) ? { lat, lng } : null;
+                        this.tag.data.value = (!isNaN(lat) && !isNaN(lng)) ? {lat, lng} : null;
                         this.tag.onUpdate?.();
                     }
                 }));
@@ -333,4 +335,4 @@ class TagRemoveButtonRenderer extends TagRenderer {
     }
 }
 
-export { EditorContentHandler };
+export {EditorContentHandler};

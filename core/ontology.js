@@ -5,7 +5,7 @@ export const UnifiedOntology = {
         serialize: (value) => value,
         deserialize: (value) => value,
         instances: [
-            { name: "Location", emoji: "📍", conditions: { "is at": "is at", "is within": "is within" } }
+            {name: "Location", emoji: "📍", conditions: {"is at": "is at", "is within": "is within"}}
         ]
     },
     "time": {
@@ -17,7 +17,7 @@ export const UnifiedOntology = {
             return isValidDate(parseISO(value));
         },
         serialize: (value) => typeof value === 'object' && value !== null ?
-            { start: formatISO(parseISO(value.start)), end: formatISO(parseISO(value.end)) } : formatISO(parseISO(value)),
+            {start: formatISO(parseISO(value.start)), end: formatISO(parseISO(value.end))} : formatISO(parseISO(value)),
         deserialize: (value) => value,
         instances: [
             {
@@ -49,7 +49,7 @@ export const UnifiedOntology = {
         },
         serialize: (value) => {
             if (typeof value === 'object' && value !== null) {
-                return { lower: String(value.lower), upper: String(value.upper) };
+                return {lower: String(value.lower), upper: String(value.upper)};
             }
             return String(value)
         },
@@ -59,25 +59,25 @@ export const UnifiedOntology = {
                 name: "Mass",
                 unit: "kg",
                 emoji: "⚖️",
-                conditions: { is: "is", "is between": "is between", "is below": "is below", "is above": "is above" }
+                conditions: {is: "is", "is between": "is between", "is below": "is below", "is above": "is above"}
             },
             {
                 name: "Length",
                 unit: "m",
                 emoji: "📏",
-                conditions: { is: "is", "is between": "is between", "is below": "is below", "is above": "is above" }
+                conditions: {is: "is", "is between": "is between", "is below": "is below", "is above": "is above"}
             },
             {
                 name: "Temperature",
                 unit: "°C",
                 emoji: "🌡️",
-                conditions: { is: "is", "is between": "is between", "is below": "is below", "is above": "is above" }
+                conditions: {is: "is", "is between": "is between", "is below": "is below", "is above": "is above"}
             },
             {
                 name: "Revenue",
                 unit: "USD",
                 emoji: "💰",
-                conditions: { is: "is", "is between": "is between", "is below": "is below", "is above": "is above" }
+                conditions: {is: "is", "is between": "is between", "is below": "is below", "is above": "is above"}
             }
         ]
     },
@@ -85,9 +85,9 @@ export const UnifiedOntology = {
         conditions: ["is"],
         type: "object",
         properties: {
-            pubkey: { type: "string", required: true },
-            name: { type: "string" },
-            picture: { type: "string" }
+            pubkey: {type: "string", required: true},
+            name: {type: "string"},
+            picture: {type: "string"}
         },
         validate: (value, condition) => {
             return typeof value === 'object' &&
@@ -100,10 +100,10 @@ export const UnifiedOntology = {
         conditions: ["is"],
         type: "object",
         properties: {
-            relays: { type: "string", required: false },
-            dateFormat: { type: "string", required: false },
-            profileName: { type: "string", required: false },
-            profilePicture: { type: "string", required: false }
+            relays: {type: "string", required: false},
+            dateFormat: {type: "string", required: false},
+            profileName: {type: "string", required: false},
+            profilePicture: {type: "string", required: false}
         },
         validate: (value, condition) => {
             return typeof value === 'object';
@@ -119,7 +119,7 @@ export const UnifiedOntology = {
                 emoji: "😊",
                 min: 0,
                 max: 10,
-                conditions: { is: "is", "is between": "is between", "is below": "is below", "is above": "is above" }
+                conditions: {is: "is", "is between": "is between", "is below": "is below", "is above": "is above"}
             },
             {
                 name: "Sadness",
@@ -127,7 +127,7 @@ export const UnifiedOntology = {
                 emoji: "😢",
                 min: 0,
                 max: 10,
-                conditions: { is: "is", "is between": "is between", "is below": "is below", "is above": "is above" }
+                conditions: {is: "is", "is between": "is between", "is below": "is below", "is above": "is above"}
             },
             {
                 name: "Anger",
@@ -135,7 +135,7 @@ export const UnifiedOntology = {
                 emoji: "😡",
                 min: 0,
                 max: 10,
-                conditions: { is: "is", "is between": "is between", "is below": "is below", "is above": "is above" }
+                conditions: {is: "is", "is between": "is between", "is below": "is below", "is above": "is above"}
             }
         ]
     },
@@ -146,31 +146,46 @@ export const UnifiedOntology = {
                 type: "list",
                 emoji: "📦",
                 options: ["Software", "Hardware", "Service"],
-                conditions: { "is one of": "is one of" }
+                conditions: {"is one of": "is one of"}
             },
             {
                 name: "Customer",
                 type: "list",
                 emoji: "👥",
                 options: ["B2B", "B2C", "Government"],
-                conditions: { "is one of": "is one of" }
+                conditions: {"is one of": "is one of"}
             }
         ]
     },
     "Data": {
         instances: [
-            { name: "List", type: "list", emoji: "🔖", options: [], conditions: { "is one of": "is one of" } }
+            {name: "List", type: "list", emoji: "🔖", options: [], conditions: {"is one of": "is one of"}}
         ]
     }
 
 };
 
 const physicalInstances = [
-    { name: "Mass", unit: "kg", emoji: "⚖️", conditions: { is: "is", "is between": "is between", "is below": "is below", "is above": "is above" } },
-    { name: "Length", unit: "m", emoji: "📏", conditions: { is: "is", "is between": "is between", "is below": "is below", "is above": "is above" } },
-    { name: "Temperature", unit: "°C", emoji: "🌡️", conditions: { is: "is", "is between": "is between", "is below": "is below", "is above": "is above" } },
-    { name: "Location", emoji: "📍", conditions: { "is at": "is at", "is within": "is within" } },
-    { name: "Color", emoji: "🎨", conditions: { is: "is" } }
+    {
+        name: "Mass",
+        unit: "kg",
+        emoji: "⚖️",
+        conditions: {is: "is", "is between": "is between", "is below": "is below", "is above": "is above"}
+    },
+    {
+        name: "Length",
+        unit: "m",
+        emoji: "📏",
+        conditions: {is: "is", "is between": "is between", "is below": "is below", "is above": "is above"}
+    },
+    {
+        name: "Temperature",
+        unit: "°C",
+        emoji: "🌡️",
+        conditions: {is: "is", "is between": "is between", "is below": "is below", "is above": "is above"}
+    },
+    {name: "Location", emoji: "📍", conditions: {"is at": "is at", "is within": "is within"}},
+    {name: "Color", emoji: "🎨", conditions: {is: "is"}}
 ];
 
 UnifiedOntology.Physical = {
@@ -179,7 +194,11 @@ UnifiedOntology.Physical = {
 
 
 const timeInstances = [
-    { name: "Time", emoji: "⏰", conditions: { "is at": "is at", "is between": "is between", "is before": "is before", "is after": "is after" } }
+    {
+        name: "Time",
+        emoji: "⏰",
+        conditions: {"is at": "is at", "is between": "is between", "is before": "is before", "is after": "is after"}
+    }
 ];
 
 UnifiedOntology.Time2 = { // Renamed to avoid conflict with existing Time category
@@ -187,22 +206,55 @@ UnifiedOntology.Time2 = { // Renamed to avoid conflict with existing Time catego
 };
 
 const emotionInstances = [
-    { name: "Happiness", type: "range", emoji: "😊", min: 0, max: 10, conditions: { is: "is", "is between": "is between", "is below": "is below", "is above": "is above" } },
-    { name: "Sadness", type: "range", emoji: "😢", min: 0, max: 10, conditions: { is: "is", "is between": "is between", "is below": "is below", "is above": "is above" } },
-    { name: "Anger", type: "range", emoji: "😡", min: 0, max: 10, conditions: { is: "is", "is between": "is between", "is below": "is below", "is above": "is above" } }
+    {
+        name: "Happiness",
+        type: "range",
+        emoji: "😊",
+        min: 0,
+        max: 10,
+        conditions: {is: "is", "is between": "is between", "is below": "is below", "is above": "is above"}
+    },
+    {
+        name: "Sadness",
+        type: "range",
+        emoji: "😢",
+        min: 0,
+        max: 10,
+        conditions: {is: "is", "is between": "is between", "is below": "is below", "is above": "is above"}
+    },
+    {
+        name: "Anger",
+        type: "range",
+        emoji: "😡",
+        min: 0,
+        max: 10,
+        conditions: {is: "is", "is between": "is between", "is below": "is below", "is above": "is above"}
+    }
 ];
 
 UnifiedOntology.Emotion.instances = emotionInstances;
 
 const businessInstances = [
-    { name: "Product", type: "list", emoji: "📦", options: ["Software", "Hardware", "Service"], conditions: { "is one of": "is one of" } },
-    { name: "Customer", type: "list", emoji: "👥", options: ["B2B", "B2C", "Government"], conditions: { "is one of": "is one of" } }
+    {
+        name: "Product",
+        type: "list",
+        emoji: "📦",
+        options: ["Software", "Hardware", "Service"],
+        conditions: {"is one of": "is one of"}
+    },
+    {
+        name: "Customer",
+        type: "list",
+        emoji: "👥",
+        options: ["B2B", "B2C", "Government"],
+        conditions: {"is one of": "is one of"}
+    }
 ];
 
 UnifiedOntology.Business.instances = businessInstances;
 
 const dataInstances = [
-    { name: "List", type: "list", emoji: "🔖", options: [], conditions: { "is one of": "is one of" } }
+    {name: "List", type: "list", emoji: "🔖", options: [], conditions: {"is one of": "is one of"}}
 ];
 
 UnifiedOntology.Data.instances = dataInstances;

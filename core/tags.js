@@ -1,4 +1,4 @@
-import { getTagDefinition } from "./ontology.js";
+import {getTagDefinition} from "./ontology.js";
 
 export function extractTags(html) {
     const doc = new DOMParser().parseFromString(html, "text/html");
@@ -11,7 +11,7 @@ export function extractTags(html) {
 
         const value = extractTagValue(el, condition, tagDef);
 
-        return { name, condition, value };
+        return {name, condition, value};
     });
 }
 

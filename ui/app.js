@@ -1,12 +1,12 @@
-import { DB } from '../core/db.js';
-import { Nostr } from '../core/net.js';
-import { ErrorHandler } from '../core/error-handler.js';
-import { FriendsView } from "./view.friends.js";
-import { SettingsView } from "./view.settings.js";
-import { NotesView } from './view.notes.js';
-import { ContentView } from "./ui-manager.js";
-import { createMenuBar } from './menu-bar.js';
-import { NotificationManager } from './notification-manager.js';
+import {DB} from '../core/db.js';
+import {Nostr} from '../core/net.js';
+import {ErrorHandler} from '../core/error-handler.js';
+import {FriendsView} from "./view.friends.js";
+import {SettingsView} from "./view.settings.js";
+import {NotesView} from './view.notes.js';
+import {ContentView} from "./ui-manager.js";
+import {createMenuBar} from './menu-bar.js';
+import {NotificationManager} from './notification-manager.js';
 
 class App {
     constructor() {
@@ -39,7 +39,7 @@ class App {
     async createNewObject(editView, newNote) {
         const id = crypto.randomUUID();
         console.log('createNewObject', editView, newNote);
-        const newObject = { id: id, name: newNote.name, content: newNote.content };
+        const newObject = {id: id, name: newNote.name, content: newNote.content};
         await this.db.saveObject(newObject);
         return newObject;
     }
@@ -54,6 +54,7 @@ class App {
     minimizeCognitiveLoad() {
         console.log("Implementing UI improvements to minimize cognitive load (not implemented)");
     }
+
     // TODO: Integrate YDoc with the UI to enable real-time collaborative editing
 
     /**
@@ -67,9 +68,11 @@ class App {
         mainContent.appendChild(view.el);
         view.bindEvents?.(); // Conditionally call bindEvents
     }
+
     async relayConnected(relay) {
         await this.nostr.relayConnected(relay);
     }
+
     prepareObjectForSaving(object) {
         if (!object.tags || !Array.isArray(object.tags)) {
             return;
@@ -109,9 +112,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     const notificationArea = document.createElement('div');
     notificationArea.id = 'notification-area';
     appDiv.appendChild(notificationArea);
-    app.elements = { notificationArea };
+    app.elements = {notificationArea};
 
     app.showView(contentView); // Show content view by default
     contentView.render();
 });
-export { App };
+export {App};
