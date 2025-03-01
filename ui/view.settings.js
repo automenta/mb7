@@ -28,8 +28,6 @@ export class SettingsView extends View {
         const nostrPrivateKeyInput = createElement("input", { type: "text", id: "nostr-private-key", placeholder: "hex encoded private key" });
         nostrPrivateKeyLabel.append(nostrPrivateKeyInput);
 
-        const h3Relays = createElement("h3", {}, "Relays");
-        const relayList = createElement("textarea", { id: "relay-list", placeholder: "Relays (one per line)" });
         const h3Preferences = createElement("h3", {}, "Preferences");
         const dateFormatLabel = createElement("label", {}, `Date/Time Format: `);
         const dateFormatSelect = createElement("select", { id: "date-format-select" }, `<option value="Pp">Pp</option><option value="MM/dd/yyyy"></option>`);
@@ -56,10 +54,6 @@ export class SettingsView extends View {
             h3Nostr,
             nostrRelayListLabel,
             nostrPrivateKeyLabel,
-
-            h3Relays,
-            relayList,
-
             h3Preferences,
             dateFormatLabel,
             h3UserProfile,

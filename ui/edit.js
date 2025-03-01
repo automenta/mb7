@@ -1,17 +1,14 @@
+import { Autosuggest } from './autosuggest.js';
 import { UnifiedOntology } from '../core/ontology.js';
 import DOMPurify from 'dompurify';
 import * as Y from 'yjs';
 import { DB, getNotesIndex, updateNotesIndex } from '../core/db';
 import { ErrorHandler } from '../core/error-handler.js';
-import { Autosuggest } from './autosuggest.js';
 import { Toolbar } from './edit.toolbar.js';
 import { OntologyBrowser } from './ontology-browser.js';
 import { SuggestionDropdown } from './suggestion-dropdown.js';
-import { EditorContentHandler } from './edit.content';
-
 import { createElement, debounce } from './utils.js';
-
-const tagDataMap = new WeakMap();
+import { EditorContentHandler, InlineTag } from './edit.content.js';
 
 class Edit {
     constructor() {
@@ -19,7 +16,6 @@ class Edit {
         this.errorHandler = new ErrorHandler(this);
         this.db = new DB(this.errorHandler);
         this.yDoc = new Y.Doc();
-        //this.indexeddbPersistence = new IndexeddbPersistence('yjs-indexeddb-provider', this.yDoc); //TODO move this to DB or Net?
         this.yText = this.yDoc.getText('content');
 
         this.editorArea = createElement("div", { contenteditable: "true", class: "editor-area" });
@@ -28,10 +24,11 @@ class Edit {
         this.el.append(menu, this.editorArea);
 
         this.suggestionDropdown = new SuggestionDropdown();
+        this.editor = this;
+        this.autosuggest = new Autosuggest(this);
+        this.contentHandler = new EditorContentHandler(this, this.autosuggest);
         this.ontologyBrowser = new OntologyBrowser(this.ontology, (tag) => this.contentHandler.insertTagAtSelection(tag));
         this.toolbar = new Toolbar(this);
-        this.autosuggest = new Autosuggest(this);
-        this.contentHandler = new EditorContentHandler(this);
 
         const ontologyBrowserButton = createElement('button', { textContent: 'Show Ontology', class: 'toggle-ontology-button' });
         menu.append(this.toolbar.getElement(), ontologyBrowserButton, this.ontologyBrowser.getElement());
@@ -71,33 +68,40 @@ class Edit {
     }
 
     setupEditorEvents() {
-        const handleDropdownKeys = this.handleDropdownKeys.bind(this);
-        this.editorArea.addEventListener("keyup", () => {
+        this.editorArea.addEventListener("keyup", debounce(() => {
             if (this.suggestionDropdown.el.style.display !== 'block') {
-                this.autosuggest.debouncedApply();
+                this.editor.autosuggest.apply(); // Call on content handler
             }
-            // Store last valid range after keyup
             const selection = window.getSelection();
             if (selection.rangeCount > 0 && this.editorArea.contains(selection.anchorNode)) {
                 this.contentHandler.lastValidRange = selection.getRangeAt(0).cloneRange();
             }
-        });
+        }, 300));
 
         this.editorArea.addEventListener("click", (e) => {
             if (e.target.classList.contains("autosuggest")) {
                 e.stopPropagation();
                 this.showSuggestionsForSpan(e.target);
             }
-            // Store last valid range after click inside editorArea
             const selection = window.getSelection();
             if (selection.rangeCount > 0 && this.editorArea.contains(selection.anchorNode)) {
                 this.contentHandler.lastValidRange = selection.getRangeAt(0).cloneRange();
             }
         });
-        this.editorArea.addEventListener("keydown", (e) => e.key === "Enter" && (e.preventDefault() || this.contentHandler.insertLineBreak()));
-        document.addEventListener("keydown", handleDropdownKeys);
+
+        this.editorArea.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+                e.preventDefault();
+                this.contentHandler.insertLineBreak();
+            }
+        });
+
+        document.addEventListener("keydown", this.handleDropdownKeys.bind(this));
+
         document.addEventListener("click", (e) => {
-            if (!this.editorArea.contains(e.target) && !this.ontologyBrowser.getElement().contains(e.target) && !this.suggestionDropdown.el.contains(e.target)) {
+            if (!this.editorArea.contains(e.target) &&
+                !this.ontologyBrowser.getElement().contains(e.target) &&
+                !this.suggestionDropdown.el.contains(e.target)) {
                 this.suggestionDropdown.hide();
             }
         });
@@ -114,11 +118,12 @@ class Edit {
             }
         }
         const rect = span.getBoundingClientRect();
-        this.suggestionDropdown.show(suggestions, rect.left + window.scrollX, rect.bottom + window.scrollY, this.contentHandler.insertTagFromSuggestion.bind(this.contentHandler)); // Use bind for correct 'this'
+        // Use the content handler's method for consistency
+        this.suggestionDropdown.show(suggestions, rect.left + window.scrollX, rect.bottom + window.scrollY, this.contentHandler.insertTagFromSuggestion.bind(this.contentHandler));
     }
 
     matchesOntology(word) {
-        return Object.values(this.ontology).flat().some(tag => tag && tag.name && tag.name.toLowerCase().startsWith(word.toLowerCase()));
+        return Object.values(this.ontology).flat().some(tag => tag?.name?.toLowerCase().startsWith(word.toLowerCase()));
     }
 
     getContent() {
@@ -130,21 +135,20 @@ class Edit {
             this.yText.delete(0, this.yText.length);
             this.yText.insert(0, html);
         });
+
         this.editorArea.innerHTML = DOMPurify.sanitize(html, {
             ALLOWED_TAGS: ["br", "b", "i", "span", "u"],
             ALLOWED_ATTR: ["class", "contenteditable", "tabindex", "id"]
         });
-        this.autosuggest.apply(); // Apply autosuggest after setting content.
+        this.editor.autosuggest.apply(); // Use content handler
         this.db.saveYDoc(this.yText.toString(), this.yDoc);
         this.updateNotesIndex();
     }
 
     getName() {
-        // Extract first line as note name
         const firstLine = this.yText.toString().split('\n')[0];
         return firstLine || 'Untitled Note';
     }
-
 
     findSuggestion(name) {
         for (const cat in this.ontology) {
@@ -166,6 +170,7 @@ class Edit {
             case "Enter":
                 event.preventDefault();
                 if (this.suggestionDropdown.getSelectedSuggestion()) {
+                     // Use content handler for consistency
                     const suggestion = this.findSuggestion(this.suggestionDropdown.getSelectedSuggestion());
                     if (suggestion) this.contentHandler.insertTagFromSuggestion(suggestion);
                 }

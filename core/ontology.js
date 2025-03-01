@@ -162,7 +162,50 @@ export const UnifiedOntology = {
             { name: "List", type: "list", emoji: "🔖", options: [], conditions: { "is one of": "is one of" } }
         ]
     }
+
 };
+
+const physicalInstances = [
+    { name: "Mass", unit: "kg", emoji: "⚖️", conditions: { is: "is", "is between": "is between", "is below": "is below", "is above": "is above" } },
+    { name: "Length", unit: "m", emoji: "📏", conditions: { is: "is", "is between": "is between", "is below": "is below", "is above": "is above" } },
+    { name: "Temperature", unit: "°C", emoji: "🌡️", conditions: { is: "is", "is between": "is between", "is below": "is below", "is above": "is above" } },
+    { name: "Location", emoji: "📍", conditions: { "is at": "is at", "is within": "is within" } },
+    { name: "Color", emoji: "🎨", conditions: { is: "is" } }
+];
+
+UnifiedOntology.Physical = {
+    instances: physicalInstances
+};
+
+
+const timeInstances = [
+    { name: "Time", emoji: "⏰", conditions: { "is at": "is at", "is between": "is between", "is before": "is before", "is after": "is after" } }
+];
+
+UnifiedOntology.Time2 = { // Renamed to avoid conflict with existing Time category
+    instances: timeInstances
+};
+
+const emotionInstances = [
+    { name: "Happiness", type: "range", emoji: "😊", min: 0, max: 10, conditions: { is: "is", "is between": "is between", "is below": "is below", "is above": "is above" } },
+    { name: "Sadness", type: "range", emoji: "😢", min: 0, max: 10, conditions: { is: "is", "is between": "is between", "is below": "is below", "is above": "is above" } },
+    { name: "Anger", type: "range", emoji: "😡", min: 0, max: 10, conditions: { is: "is", "is between": "is between", "is below": "is below", "is above": "is above" } }
+];
+
+UnifiedOntology.Emotion.instances = emotionInstances;
+
+const businessInstances = [
+    { name: "Product", type: "list", emoji: "📦", options: ["Software", "Hardware", "Service"], conditions: { "is one of": "is one of" } },
+    { name: "Customer", type: "list", emoji: "👥", options: ["B2B", "B2C", "Government"], conditions: { "is one of": "is one of" } }
+];
+
+UnifiedOntology.Business.instances = businessInstances;
+
+const dataInstances = [
+    { name: "List", type: "list", emoji: "🔖", options: [], conditions: { "is one of": "is one of" } }
+];
+
+UnifiedOntology.Data.instances = dataInstances;
 
 export const getTagDefinition = (name) => {
     // TODO: Add support for semantic information, such as synonyms, related concepts, and hierarchical relationships

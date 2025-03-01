@@ -98,19 +98,13 @@ export class NotesView extends HTMLElement {
     }
 
     async addNoteToList(noteId) {
-        let notesList = this.yMap.get(this.notesListId);
-        if (!notesList) {
-            notesList = [];
-        }
+        let notesList = this.yMap.get(this.notesListId) ?? [];
         notesList.push(noteId);
         this.yMap.set(this.notesListId, notesList);
     }
 
     async loadNotes() {
-        let notesList = this.yMap.get(this.notesListId);
-        if (!notesList) {
-            notesList = [];
-        }
+        let notesList = this.yMap.get(this.notesListId) ?? [];
 
         this.elements.notesList.innerHTML = '';
         for (const noteId of notesList) {

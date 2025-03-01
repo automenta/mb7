@@ -1,10 +1,11 @@
 import { createElement } from './utils';
 
 class EditorContentHandler {
-    constructor(editor) {
-        this.editor = editor;
-        this.lastValidRange = null; // Store the last valid range within the editor for handling tag insertions
-    }
+    constructor(editor, autosuggest) {
+            this.editor = editor;
+            this.autosuggest = autosuggest;
+            this.lastValidRange = null; // Store the last valid range within the editor for handling tag insertions
+        }
 
     insertLineBreak() {
         const selection = window.getSelection();
@@ -66,7 +67,7 @@ class EditorContentHandler {
         this.lastValidRange = range.cloneRange();  // Update the last valid range
 
         // 7. Trigger autosuggest to update suggestions based on changes
-        this.editor.autosuggest.apply(); // Refresh suggestions
+        this.autosuggest.apply(); // Refresh suggestions
     }
 
 
@@ -74,7 +75,7 @@ class EditorContentHandler {
         if (!suggestion?.span) return;
         const newTag = new InlineTag(suggestion.tagData, () => this.editor.autosuggest.apply());
         suggestion.span.replaceWith(newTag.el);
-        this.editor.autosuggest.apply(); //apply after insertion
+        this.autosuggest.apply(); //apply after insertion
     }
 
     serialize() {
@@ -218,7 +219,6 @@ class NumberInputRenderer extends TagRenderer {
                 this.numberInput("Min", min, v => this.tag.data.min = v);
                 this.el.append(" and ");
                 this.numberInput("Max", max, v => this.tag.data.max = v);
-                break;
             case "is below":
                 this.numberInput("Max", max, v => this.tag.data.max = v);
                 break;

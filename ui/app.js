@@ -70,6 +70,20 @@ class App {
     async relayConnected(relay) {
         await this.nostr.relayConnected(relay);
     }
+    prepareObjectForSaving(object) {
+        if (!object.tags || !Array.isArray(object.tags)) {
+            return;
+        }
+
+        object.tags.forEach(tag => {
+            if (!tag.name) {
+                throw new Error('Tag name is required.');
+            }
+            if (tag.name.length > 50) {
+                throw new Error('Tag name is too long (max 50 characters).');
+            }
+        });
+    }
 
 }
 
@@ -100,3 +114,4 @@ document.addEventListener("DOMContentLoaded", async () => {
     app.showView(contentView); // Show content view by default
     contentView.render();
 });
+export { App };
