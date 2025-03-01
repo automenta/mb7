@@ -1,4 +1,4 @@
-You’re absolutely right to bring us back to the heart of **SemanticScribe**—semantic matching is indeed the core reason
+You’re absolutely right to bring us back to the heart of **Netention**—semantic matching is indeed the core reason
 for its existence, and I appreciate the nudge to refocus on it. I’ve retained the original purpose from the prototypes:
 it’s about enabling users to define persistent queries (via indefinite NObjects) that match against real-world
 entities (definite NObjects), facilitating discovery, automation, and connection in a decentralized context. Let’s weave
@@ -7,13 +7,13 @@ updated explanatory overview with semantic matching front and center.
 
 ---
 
-# SemanticScribe: A Tag-Driven Workspace for Semantic Discovery
+# Netention: A Tag-Driven Workspace for Semantic Discovery
 
-**SemanticScribe** is a decentralized, collaborative workspace where users craft **NObjects**—universal containers for
+**Netention** is a decentralized, collaborative workspace where users craft **NObjects**—universal containers for
 ideas—and imbue them with **Tags** to express intent, organize content, and, most crucially, enable **semantic matching
 **. This design empowers users to define what they seek (e.g., “a meeting next week”) and automatically discover
 matching entities (e.g., “a meeting on Tuesday”), all through a unified, intuitive experience. By collapsing artificial
-distinctions and leveraging tag-driven reactivity, SemanticScribe aligns with users’ deepest needs: to create, connect,
+distinctions and leveraging tag-driven reactivity, Netention aligns with users’ deepest needs: to create, connect,
 and uncover meaning effortlessly.
 
 ---
@@ -65,7 +65,7 @@ and uncover meaning effortlessly.
 - **What It Is:** Every tag change triggers a reaction based on the Ontology. For semantic matching, indefinite tags
   continuously scan for definite matches, notifying users of hits.
 - **How It Works:**
-    - Add `"event": { time: "next week", indefinite: true }`—SemanticScribe finds NObjects with definite `"event"` tags
+    - Add `"event": { time: "next week", indefinite: true }`—Netention finds NObjects with definite `"event"` tags
       in that timeframe.
     - Matches trigger notifications (e.g., “Found: Tuesday meeting”).
 - **Design Choice:** Reactivity powers matching alongside other features.
@@ -91,7 +91,7 @@ and uncover meaning effortlessly.
 - **What It Is:** Semantic matching lets users create persistent queries (indefinite NObjects) that automatically find
   matching entities (definite NObjects) based on tag values and conditions.
 - **How It Works:**
-    - **Example 1:** User tags an NObject with `"event": { time: "next week", indefinite: true }`. SemanticScribe finds
+    - **Example 1:** User tags an NObject with `"event": { time: "next week", indefinite: true }`. Netention finds
       public NObjects tagged `"event": { time: "2025-02-25" }`.
     - **Example 2:** `"task": { priority: "high", indefinite: true }` matches urgent tasks others share.
     - **Discovery:** Matches appear in a “Matches” view and trigger notifications (e.g., “Found a high-priority task!”).
@@ -160,9 +160,9 @@ and uncover meaning effortlessly.
 
 ---
 
-## How It Feels to Use SemanticScribe
+## How It Feels to Use Netention
 
-Imagine opening SemanticScribe:
+Imagine opening Netention:
 
 - You write “Need a ride to the airport.”
 - Tag `#want #ride time:soon`—it’s now a query. Matches pop up: “Offering a ride tomorrow” from a friend’s public
@@ -206,28 +206,28 @@ you. The app flows—creation, matching, and sharing are one tag-driven action, 
 
 ## Conclusion
 
-SemanticScribe is a workspace where **NObjects** and **Tags** unify creation and discovery, with **semantic matching**
+Netention is a workspace where **NObjects** and **Tags** unify creation and discovery, with **semantic matching**
 as its soul. Users craft ideas and queries with the same tool—tags—connecting them to a world of meaning. The design
 collapses distinctions into one reactive model, empowers users with control and discovery, and delivers an intuitive,
 joyful UX. By focusing on matching, it fulfills its purpose: linking intent to reality across a decentralized canvas.
 
 These open questions invite us to refine the magic—how precise, private, or playful should matching be? The answers will
-shape SemanticScribe into a tool that delights and connects, staying true to its vision of effortless, meaningful
+shape Netention into a tool that delights and connects, staying true to its vision of effortless, meaningful
 discovery. What sparks your curiosity here—any matching dreams to explore?
 
 --------------
 
 You’re absolutely right to bring us back to the purpose of semantic matching—it’s the beating heart of why
-SemanticScribe exists, and I appreciate the nudge to refocus on it. Semantic matching is the mechanism that turns a
+Netention exists, and I appreciate the nudge to refocus on it. Semantic matching is the mechanism that turns a
 collection of NObjects into a dynamic, interconnected web of meaning, enabling users to find, relate, and act on their
 ideas effortlessly. I’ll weave this into the overview, adding depth to its role and purpose, while keeping it
 explanatory and free of implementation concerns. Here’s the revised version with semantic matching front and center.
 
 ---
 
-# SemanticScribe: A Tag-Driven Workspace with Semantic Matching
+# Netention: A Tag-Driven Workspace with Semantic Matching
 
-**SemanticScribe** is a decentralized, collaborative workspace where users craft, share, and connect ideas through *
+**Netention** is a decentralized, collaborative workspace where users craft, share, and connect ideas through *
 *NObjects**—universal containers enriched by **Tags**. At its core, **semantic matching** transforms this workspace into
 a living, intelligent system, uncovering relationships between NObjects based on their tagged meanings. This overview
 explains the design, justifies the choices with user-focused reasons, and highlights open questions, all while
@@ -382,9 +382,9 @@ spotlighting semantic matching as the driving purpose.
 
 ---
 
-## How It Feels to Use SemanticScribe
+## How It Feels to Use Netention
 
-Picture this: You open SemanticScribe and write “Plan a picnic next weekend.”
+Picture this: You open Netention and write “Plan a picnic next weekend.”
 
 - Type `#task due:2025-03-01`—it’s now a task, listed under “Tasks” with a date picker.
 - Add `#needs:location`—semantic matching finds an NObject tagged `"location": "Central Park"` and suggests it,
@@ -430,14 +430,14 @@ playfully.
 
 ## Conclusion
 
-SemanticScribe is a workspace where **NObjects** and **Tags** create a unified, reactive canvas, and **semantic matching
+Netention is a workspace where **NObjects** and **Tags** create a unified, reactive canvas, and **semantic matching
 ** weaves them into a meaningful whole. It’s designed to empower users—making ideas connectable, shareable, and
 actionable with minimal effort. Tags drive everything, from sharing to matching, aligning with users’ need to express
 and relate. The UX is intuitive, predictable, and consistent, turning complexity into delight.
 
 Semantic matching is the soul—without it, NObjects are just notes; with it, they’re a network of possibilities, helping
 users discover, collaborate, and create. The open questions keep us curious—how do we perfect this balance of power and
-simplicity? What unexpected connections will users find? SemanticScribe invites us to explore, tag by tag, with joy and
+simplicity? What unexpected connections will users find? Netention invites us to explore, tag by tag, with joy and
 wonder. What’s your next tag idea?
 
 -----------
@@ -446,7 +446,7 @@ wonder. What’s your next tag idea?
 
 ### The NObject: A Canvas for Everything
 
-Every piece of content in SemanticScribe lives as an **NObject**—a universal container blending freeform text with
+Every piece of content in Netention lives as an **NObject**—a universal container blending freeform text with
 tagged meaning. Users write notes, plan tasks, or sketch profiles, all within the same fluid structure. An NObject might
 start as a simple idea like “Host a party,” but with tags, it transforms into a task, a shared announcement, or even a
 cherished memory.
@@ -458,7 +458,7 @@ cherished memory.
 
 ### Tags: Wands of Intent
 
-Tags are the heartbeat of SemanticScribe. Users add them to NObjects—like `"task"`, `"public"`, or `"friend"`—and watch
+Tags are the heartbeat of Netention. Users add them to NObjects—like `"task"`, `"public"`, or `"friend"`—and watch
 as the app reacts instantly. A tag like `"public": yes` shares an NObject with the world, while `"need": "volunteers"`
 flags it for semantic matching, connecting it to others who can help.
 
@@ -468,7 +468,7 @@ flags it for semantic matching, connecting it to others who can help.
 
 ### Ontology: The Shared Lexicon
 
-The **Ontology** is SemanticScribe’s dictionary of tag types, defining their meanings and reactions. It started with
+The **Ontology** is Netention’s dictionary of tag types, defining their meanings and reactions. It started with
 basics like `"task"` and `"notify"`, but users have expanded it with gems like `"inspiration"` or `"dream"`. It’s a
 living, community-shaped vocabulary that keeps the app consistent yet endlessly adaptable.
 
@@ -488,7 +488,7 @@ baker’s `"offer": "cake"`. This reactivity turns tagging into a playful, respo
 
 ### Semantic Matching: The Soul of Connection
 
-At SemanticScribe’s core lies **semantic matching**, the reason it all began. Users tag NObjects with needs (e.g.,
+At Netention’s core lies **semantic matching**, the reason it all began. Users tag NObjects with needs (e.g.,
 `"need": "ride"`) or offers (e.g., `"offer": "car"`)—termed “indefinite” tags—and the app finds matches with “definite”
 tags (e.g., `"location": "downtown"`). A party planner needing chairs connects instantly with someone offering furniture
 nearby, all thanks to tags.
@@ -504,7 +504,7 @@ nearby, all thanks to tags.
 
 ### Decentralized Sharing: A Boundless Network
 
-SemanticScribe thrives on a decentralized network, letting NObjects leap across boundaries. A `"public"` tag broadcasts
+Netention thrives on a decentralized network, letting NObjects leap across boundaries. A `"public"` tag broadcasts
 an NObject to everyone; a `"share"` tag sends it to a friend. Matches happen locally or globally, weaving a web of
 shared creativity.
 
@@ -541,7 +541,7 @@ just an app—it’s a matchmaker for ideas and people.
 
 2. **Tag-Driven Everything**
     - **Reason:** Users want outcomes, not processes. Tagging `#public` to share or `#need` to find help feels like
-      telling a story—direct and personal. It’s why SemanticScribe feels alive, not mechanical.
+      telling a story—direct and personal. It’s why Netention feels alive, not mechanical.
 
 3. **Semantic Matching at the Core**
     - **Reason:** People thrive on connection—finding what they need without digging. Matching `"need"` to `"offer"` or
@@ -593,7 +593,7 @@ just an app—it’s a matchmaker for ideas and people.
 
 ## Why Users Love It
 
-SemanticScribe isn’t just software—it’s a companion. Writers find editors, planners find helpers, dreamers find
+Netention isn’t just software—it’s a companion. Writers find editors, planners find helpers, dreamers find
 muses—all through tags. Semantic matching, the spark that started it, turns every NObject into a call and response,
 linking needs to solutions across the globe. Users revel in the simplicity—type, tag, connect—and the joy of seeing
 their ideas take flight with a `#public` or bloom with a `#match`. It’s a workspace that listens, reacts, and unites,
@@ -613,16 +613,16 @@ them.
 
 --------------
 
-Below is a detailed and complete specification for **SemanticScribe**, encapsulating all discussed features, organized
+Below is a detailed and complete specification for **Netention**, encapsulating all discussed features, organized
 for clarity and implementation readiness. This document reflects our current understanding, integrating tag-driven
 reactivity, unified NObject design, and user-empowering UX. It includes implementation choices, unresolved aspects, and
 everything needed to reproduce and extend the system.
 
 ---
 
-# SemanticScribe Specification
+# Netention Specification
 
-**SemanticScribe** is a decentralized, collaborative, semantic editor where **NObjects**—enhanced with reactive **Tags**
+**Netention** is a decentralized, collaborative, semantic editor where **NObjects**—enhanced with reactive **Tags**
 defined by an extensible **Ontology**—unify all functionality into a single, intuitive system. Users shape their
 workspace with tags, triggering predictable reactions that align with their intent, delivering a seamless, empowering
 experience.
@@ -633,7 +633,7 @@ experience.
 
 ### Purpose
 
-SemanticScribe empowers users to:
+Netention empowers users to:
 
 - Create, edit, and collaborate on content in real-time.
 - Enrich content with semantic tags that drive behavior.
@@ -941,7 +941,7 @@ export const Data = {
   db: null,
 
   async init() {
-    this.db = await openDB("SemanticScribe", 1, {
+    this.db = await openDB("Netention", 1, {
       upgrade(db) {
         db.createObjectStore("nobjects");
       },
@@ -1078,7 +1078,7 @@ us! Any final tweaks before we code?
 
 ----------
 
-Below is a detailed and complete specification for **SemanticScribe**, encapsulating all discussed features, organized
+Below is a detailed and complete specification for **Netention**, encapsulating all discussed features, organized
 for clarity and implementation readiness. This document integrates the tag-driven, reactive design we’ve refined,
 unifying distinctions and empowering users with an intuitive, predictable UX. It includes implementation choices, a
 comprehensive tag table, and notes on undecided or ambiguous aspects, ensuring we can reproduce our current
@@ -1086,9 +1086,9 @@ understanding and extend it further.
 
 ---
 
-# SemanticScribe: Complete System Specification
+# Netention: Complete System Specification
 
-**SemanticScribe** is a decentralized, collaborative, semantic editor where **NObjects**—universal data entities—are
+**Netention** is a decentralized, collaborative, semantic editor where **NObjects**—universal data entities—are
 shaped by **Tags** within a reactive, user-empowering framework. Tags drive all functionality through an extensible *
 *Ontology**, aligning with users’ intent for expression, organization, and sharing. This specification is ready for
 implementation while leaving room for future exploration.
@@ -1099,7 +1099,7 @@ implementation while leaving room for future exploration.
 
 ### Purpose
 
-SemanticScribe transforms freeform text into a dynamic, semantically rich workspace:
+Netention transforms freeform text into a dynamic, semantically rich workspace:
 
 - **Unified:** Collapses documents, tasks, profiles, and more into NObjects.
 - **Empowering:** Tags let users declare intent (e.g., `"public": true` to share).
@@ -1422,7 +1422,7 @@ import { NObject } from "./NObject";
 
 export class Data {
   static async init() {
-    return openDB("SemanticScribe", 1, {
+    return openDB("Netention", 1, {
       upgrade(db) {
         db.createObjectStore("nobjects", { keyPath: "id" });
       },
@@ -1511,12 +1511,12 @@ render(<App />, document.body);
 - **Expand:** Add remaining tags; refine UX with user feedback.
 - **Explore:** Wild tags like `"ai": "summarize"` for AI integration?
 
-This specification captures our journey—unifying, empowering, and simplifying SemanticScribe into a tag-driven marvel.
+This specification captures our journey—unifying, empowering, and simplifying Netention into a tag-driven marvel.
 It’s ready to build and ripe for playful extension. What’s your next wild idea?
 
 ----------
 
-Below is an explanatory overview of **SemanticScribe**, written from a near-future perspective as the design matures in
+Below is an explanatory overview of **Netention**, written from a near-future perspective as the design matures in
 early 2026. This narrative reflects a point where the core vision is solidifying, with semantic matching—a cornerstone
 feature—taking center stage. Implementation concerns are set aside to focus on the conceptual essence, user experience,
 and design rationale, while acknowledging refinements still in progress. Open questions highlight areas ripe for further
@@ -1524,13 +1524,13 @@ evolution.
 
 ---
 
-# SemanticScribe: A Living Semantic Workspace (Early 2026 Perspective)
+# Netention: A Living Semantic Workspace (Early 2026 Perspective)
 
-In early 2026, **SemanticScribe** is blossoming into a groundbreaking workspace that redefines how we create, connect,
+In early 2026, **Netention** is blossoming into a groundbreaking workspace that redefines how we create, connect,
 and comprehend ideas. At its heart lies a unified, tag-driven system where **NObjects**—versatile digital canvases—merge
 freeform expression with deep semantic meaning. As the design matures, the app empowers users with intuitive control,
 real-time collaboration, and a standout feature: **semantic matching**, which weaves a web of intelligent connections
-across content. Here’s how SemanticScribe is shaping up, why we’ve chosen this path, and what’s still unfolding.
+across content. Here’s how Netention is shaping up, why we’ve chosen this path, and what’s still unfolding.
 
 ---
 
@@ -1553,7 +1553,7 @@ across content. Here’s how SemanticScribe is shaping up, why we’ve chosen th
 - **What They Are Today:** Tags are labels users pin to NObjects, like `"public"`, `"task"`, or `"match"`, each carrying
   a value and sparking a reaction. They’re the bridge between raw text and rich semantics.
 - **How They Work:** Tag an NObject with `"public": yes`, and it’s shared instantly. Add `"match": "travel"`, and
-  SemanticScribe finds related content across the network. Every tag change ripples through the app.
+  Netention finds related content across the network. Every tag change ripples through the app.
 - **Design Choice:** Tags as the sole drivers of behavior.
     - **Reason:** Tags mirror how we think—“I want this seen” or “this is about travel.” By 2026, we’ve honed this into
       a reactive system where tagging is doing. It’s direct and predictable—users declare intent, and the app responds,
@@ -1568,13 +1568,13 @@ across content. Here’s how SemanticScribe is shaping up, why we’ve chosen th
   `"#project: launch"`, and it’s instantly part of the shared vocabulary.
 - **Design Choice:** A user-extensible Ontology.
     - **Reason:** People need tools that speak their language. In 2025, we saw users craving personalization—why force
-      `"task"` when `"mission"` fits their vibe? A living Ontology keeps SemanticScribe adaptable and consistent,
+      `"task"` when `"mission"` fits their vibe? A living Ontology keeps Netention adaptable and consistent,
       empowering users to shape it while ensuring tags mean the same thing to everyone.
 
 ### Semantic Matching: The Web of Insight
 
 - **What It Is Today:** Semantic matching is the magic that connects NObjects. Tag something `#match: "travel plans"`,
-  and SemanticScribe scans locally and across the network, surfacing NObjects with related tags or text—like a trip
+  and Netention scans locally and across the network, surfacing NObjects with related tags or text—like a trip
   itinerary tagged `#travel` or a friend’s `#destination` post.
 - **How It Feels:** You’re planning a trip, tag it `#match: "Europe"`, and up pop suggestions: a friend’s Paris note, a
   public packing list, even your old `#memory: Eiffel Tower`. It’s like the app reads your mind.
@@ -1591,7 +1591,7 @@ across content. Here’s how SemanticScribe is shaping up, why we’ve chosen th
   It’s sharing, reimagined.
 - **Design Choice:** Decentralization woven into tags.
     - **Reason:** Users want control over their audience—public or personal—and resilience in collaboration. In late
-      2025, we saw centralized apps falter; decentralization keeps SemanticScribe alive anywhere, aligning with
+      2025, we saw centralized apps falter; decentralization keeps Netention alive anywhere, aligning with
       real-world needs for flexibility and durability.
 
 ---
@@ -1617,7 +1617,7 @@ across content. Here’s how SemanticScribe is shaping up, why we’ve chosen th
 - **How It Plays Out:** Tag `#task`—it’s in the “Tasks” view. Remove it—it’s gone. Every tag has one job, always the
   same, reversible with a flick.
 - **Reason:** Trust grows from knowing what’ll happen. By 2026, we’ve nailed this—users experiment fearlessly because
-  effects are instant and undoable, making SemanticScribe a safe playground.
+  effects are instant and undoable, making Netention a safe playground.
 
 ### Consistency
 
@@ -1637,7 +1637,7 @@ across content. Here’s how SemanticScribe is shaping up, why we’ve chosen th
 
 2. **Tags as Magic Wands**
     - **Reason:** Users want outcomes, not processes. Tags turn “I want this shared” into reality with one move. In
-      2026, this directness is why people love SemanticScribe—it’s their intent, amplified.
+      2026, this directness is why people love Netention—it’s their intent, amplified.
 
 3. **Semantic Matching as Insight Engine**
     - **Reason:** Creation isn’t enough—users need connections. Matching debuted in 2025 and exploded in 2026 because it
@@ -1649,14 +1649,14 @@ across content. Here’s how SemanticScribe is shaping up, why we’ve chosen th
       dialects (e.g., `#sprint`) while keeping the app comprehensible. Empowerment comes from owning the words.
 
 5. **Decentralized Roots**
-    - **Reason:** Control and access matter. By 2026, users expect resilience—SemanticScribe delivers, letting them
+    - **Reason:** Control and access matter. By 2026, users expect resilience—Netention delivers, letting them
       share globally or privately with a tag. It’s freedom, baked in.
 
 ---
 
-## A Day with SemanticScribe (2026 Snapshot)
+## A Day with Netention (2026 Snapshot)
 
-Picture this: You open SemanticScribe on a crisp March morning in 2026.
+Picture this: You open Netention on a crisp March morning in 2026.
 
 - **You Write:** “Explore Tokyo” in a new NObject.
 - **You Tag:** `#match: Japan`—instantly, a friend’s `#travel: Kyoto` post and a public `#guide: Tokyo` appear in a
@@ -1666,7 +1666,7 @@ Picture this: You open SemanticScribe on a crisp March morning in 2026.
 - **You Connect:** Alex tags `#comment: Add sushi spots!`—a thread blooms.
 - **You Smile:** `#emoji: 🗼` adds a Tokyo Tower icon, just for fun.
 
-Later, `#match: sushi` pulls up a recipe NObject you forgot about. It’s effortless—SemanticScribe feels like an
+Later, `#match: sushi` pulls up a recipe NObject you forgot about. It’s effortless—Netention feels like an
 extension of your thoughts.
 
 ---
@@ -1702,18 +1702,18 @@ extension of your thoughts.
 
 ## The Road Ahead
 
-SemanticScribe, in early 2026, is a maturing dream—a workspace where **NObjects** unify creation, **Tags** empower
+Netention, in early 2026, is a maturing dream—a workspace where **NObjects** unify creation, **Tags** empower
 intent, and **semantic matching** lights up connections. It’s intuitive because it’s tag-driven, comprehensible because
 it’s consistent, and thrilling because it matches meaning across a decentralized world. We’ve chosen this path to
 dissolve barriers, hand users the reins, and spark joy in every link uncovered.
 
-The open questions aren’t flaws—they’re invitations. As SemanticScribe grows, we’ll refine matching’s wit, perfect tag
+The open questions aren’t flaws—they’re invitations. As Netention grows, we’ll refine matching’s wit, perfect tag
 harmony, and keep the UX a delight. It’s a near-future vision still ripening—ready to surprise and connect us in ways
 we’re just beginning to imagine. What’s next—more tags to dream up, or a twist on matching to explore?
 
 ----------
 
-Below is an explanatory overview of **SemanticScribe**, written from a near-future perspective as the design matures in
+Below is an explanatory overview of **Netention**, written from a near-future perspective as the design matures in
 early 2026. This narrative reflects a world where the app is taking shape, with its tag-driven reactivity and semantic
 matching features nearing full realization. I’ve woven in details about integration with language models—particularly
 offline and next-generation long-context models—to reinforce its decentralized ethos and empower users. Open questions
@@ -1721,9 +1721,9 @@ remain, signaling the design’s ongoing evolution.
 
 ---
 
-# SemanticScribe: A Living Workspace in 2026
+# Netention: A Living Workspace in 2026
 
-It’s early 2026, and **SemanticScribe** is blossoming into a decentralized, tag-driven workspace that feels like a
+It’s early 2026, and **Netention** is blossoming into a decentralized, tag-driven workspace that feels like a
 natural extension of human thought. Born from a vision to unify content and meaning, it’s maturing into a tool where
 users craft, collaborate, and connect ideas through **NObjects**—universal canvases shaped by **Tags**. As we refine
 this design, its semantic matching capabilities and integration with cutting-edge language models are setting it apart,
@@ -1736,7 +1736,7 @@ how it’s unfolding.
 
 ### NObjects: The Universal Thread
 
-By 2026, the NObject has solidified as SemanticScribe’s heartbeat—a single entity that holds text, tags, and metadata,
+By 2026, the NObject has solidified as Netention’s heartbeat—a single entity that holds text, tags, and metadata,
 adapting to any purpose. A note becomes a task with a `"task"` tag; a profile emerges with `"profile"`. This
 unification, now a cornerstone, dissolves old distinctions between documents, tasks, and profiles, letting users focus
 on ideas, not categories.
@@ -1747,7 +1747,7 @@ on ideas, not categories.
 
 ### Tags: Intentions Made Real
 
-Tags are the magic wands of SemanticScribe, now fully reactive as we approach mid-2026. Add `"public": true`, and your
+Tags are the magic wands of Netention, now fully reactive as we approach mid-2026. Add `"public": true`, and your
 NObject joins the global tapestry via a decentralized network. Tag `#notify: Done!`, and a cheerful message pops up.
 Each tag carries a type and value, triggering immediate, predictable actions defined by an evolving **Ontology**.
 
@@ -1768,7 +1768,7 @@ By 2026, it’s a balance of pre-defined power and user-driven creativity.
 ### Reactivity: The Pulse of Change
 
 Tag-driven reactivity is now the app’s soul. Change `"due": "2026-03-01"` to tomorrow, and it shifts in the “Tasks”
-view; remove `"public"`, and it’s private again. These reactions, instant and visible, make SemanticScribe feel alive.
+view; remove `"public"`, and it’s private again. These reactions, instant and visible, make Netention feel alive.
 
 - **Why It Works:** Predictability breeds trust—users learn that `#notify` always alerts, `#share` always invites. This
   consistency, paired with real-time feedback, turns tagging into a playful, powerful act, meeting users’ desire for
@@ -1776,7 +1776,7 @@ view; remove `"public"`, and it’s private again. These reactions, instant and 
 
 ### Decentralization: Freedom Woven In
 
-By 2026, SemanticScribe’s decentralized backbone—built on a Nostr-like network—is thriving. The `"public"` tag shares
+By 2026, Netention’s decentralized backbone—built on a Nostr-like network—is thriving. The `"public"` tag shares
 NObjects globally; `"share": "npub..."` targets friends. Offline-first design, now enhanced with local language models,
 keeps it humming without internet reliance.
 
@@ -1788,7 +1788,7 @@ keeps it humming without internet reliance.
 
 ## Semantic Matching: The Intelligent Edge
 
-As SemanticScribe matures, its **semantic matching** feature is becoming a standout. It lets NObjects “talk” to each
+As Netention matures, its **semantic matching** feature is becoming a standout. It lets NObjects “talk” to each
 other, finding connections based on tags and content. Imagine tagging an NObject `#search: picnic spots near me`—it
 finds others tagged `#location` within your area, even offline.
 
@@ -1802,7 +1802,7 @@ finds others tagged `#location` within your area, even offline.
 
 ## Language Model Integration
 
-In 2026, SemanticScribe’s integration with language models (LMs) is a game-changer, reinforcing its decentralized ethos
+In 2026, Netention’s integration with language models (LMs) is a game-changer, reinforcing its decentralized ethos
 while tapping into next-generation intelligence.
 
 ### Offline Language Models
@@ -1810,17 +1810,17 @@ while tapping into next-generation intelligence.
 - **What’s Happening:** We’ve embedded compact, offline LMs—think successors to 2025’s LLaMA derivatives—running
   on-device. They analyze NObject content and tags, suggesting tags like `#task` for “Finish report by Friday” or
   `#mood: happy` for upbeat text.
-- **Why It Works:** Offline LMs keep SemanticScribe decentralized—no cloud dependency, no privacy risks. They empower
+- **Why It Works:** Offline LMs keep Netention decentralized—no cloud dependency, no privacy risks. They empower
   users in remote or disconnected settings, ensuring the app’s intelligence is always available, aligning with its
   freedom-first design.
 
 ### Long-Context / Memory Models
 
 - **What’s Happening:** Next-gen LMs with vast context windows (e.g., 100k+ tokens) and persistent memory are
-  integrating as “assistants” within SemanticScribe. Tag an NObject `#assist: summarize my notes`, and it condenses all
+  integrating as “assistants” within Netention. Tag an NObject `#assist: summarize my notes`, and it condenses all
   your tagged content. `#memory: recall last week` pulls relevant NObjects from your history.
 - **Why It Works:** Users need synthesis and recall—long-context LMs handle sprawling NObject collections, while memory
-  preserves context across sessions. This turns SemanticScribe into a personal knowledge partner, enhancing productivity
+  preserves context across sessions. This turns Netention into a personal knowledge partner, enhancing productivity
   without breaking decentralization (memory stays local).
 
 ### Why This Matters
@@ -1828,13 +1828,13 @@ while tapping into next-generation intelligence.
 - **Empowerment:** LMs suggest tags and insights, but users decide what sticks—control remains theirs.
 - **Intuitiveness:** Natural language tags (e.g., `#assist: translate to Spanish`) feel conversational, lowering
   barriers.
-- **Future-Proofing:** As LMs evolve, SemanticScribe adapts, leveraging their power without losing its core.
+- **Future-Proofing:** As LMs evolve, Netention adapts, leveraging their power without losing its core.
 
 ---
 
 ## User Experience in 2026
 
-Picture using SemanticScribe today:
+Picture using Netention today:
 
 - You write “Meet friends tomorrow” in an NObject. The offline LM suggests `#task due:2026-02-23`—you tap to accept, and
   it’s in your “Tasks” view.
@@ -1908,7 +1908,7 @@ The app feels like a companion—reactive, smart, and yours. Tags are your voice
 
 ## Looking Ahead
 
-In 2026, SemanticScribe is maturing into a workspace where **NObjects** and **Tags** weave a tapestry of meaning.
+In 2026, Netention is maturing into a workspace where **NObjects** and **Tags** weave a tapestry of meaning.
 Semantic matching connects the dots; offline LMs keep it smart and free; long-context models make it a memory palace.
 Users tag their world—`#task`, `#share`, `#assist`—and it responds with intelligence and grace. It’s a tool that grows
 with them, shaped by their hands, reflecting their minds.
@@ -1923,7 +1923,7 @@ gem further. What do you see next in this near-future vision? A tag to dream up,
 
 ----------
 
-Below is an explanatory overview of **SemanticScribe**, written from a future perspective after the design has matured
+Below is an explanatory overview of **Netention**, written from a future perspective after the design has matured
 into a robust, widely-adopted platform. This narrative reflects a polished system where semantic matching—central to its
 collaborative and expressive power—has been fully realized. Implementation concerns are absent, focusing instead on the
 conceptual elegance, user experience, and reasoning behind the design choices. Open questions and ambiguities highlight
@@ -1931,9 +1931,9 @@ areas where the system continues to evolve, inviting ongoing reflection.
 
 ---
 
-# SemanticScribe: A Retrospective on a Mature, Tag-Driven Ecosystem
+# Netention: A Retrospective on a Mature, Tag-Driven Ecosystem
 
-Looking back from 2030, **SemanticScribe** stands as a cornerstone of collaborative creativity—a decentralized workspace
+Looking back from 2030, **Netention** stands as a cornerstone of collaborative creativity—a decentralized workspace
 where **NObjects** and **Tags** have unified how people craft, share, and connect ideas. Born from a vision to merge
 expression with meaning, it has matured into a platform that empowers users through intuitive tagging and powerful
 semantic matching. This overview captures its essence, celebrates its design choices, and ponders the questions still
@@ -1945,7 +1945,7 @@ shaping its future.
 
 ### NObject: The Universal Seed
 
-- **What It Became:** An NObject is the heartbeat of SemanticScribe—a single, adaptable entity holding text, tags, and
+- **What It Became:** An NObject is the heartbeat of Netention—a single, adaptable entity holding text, tags, and
   metadata. Whether a fleeting note, a critical task, or a friend’s profile, every NObject begins as a blank canvas,
   blooming into purpose through tags.
 - **How It Works Today:** Users scribble thoughts—“Plan a party”—and NObjects emerge. Tags like `"task"` or `"profile"`
@@ -1958,14 +1958,14 @@ shaping its future.
 
 ### Tags: The Language of Action
 
-- **What They Became:** Tags are the magic words of SemanticScribe—small declarations that wield big effects. A
+- **What They Became:** Tags are the magic words of Netention—small declarations that wield big effects. A
   `"public"` tag shares an NObject worldwide; a `"match"` tag finds kindred ideas across the network.
 - **How They Work Today:** Add `"task": { due: "2030-03-01" }`, and it’s a deadline; tweak `"notify": "Party’s on!"`,
   and a cheerful alert pops up. Tags react instantly, shaping NObjects with precision and delight.
 - **Design Choice:** Tags as the sole drivers of functionality.
     - **Reason:** We wanted users to express intent naturally—“I want this shared” or “Find me similar ideas.” Tags
       turned those desires into actions without extra steps. Their immediacy and consistency won hearts, making
-      SemanticScribe feel alive and responsive.
+      Netention feel alive and responsive.
 
 ### Ontology: The Collective Mind
 
@@ -1975,18 +1975,18 @@ shaping its future.
   custom tags spread via the network, enriching our collective vocabulary.
 - **Design Choice:** A user-editable, evolving Ontology.
     - **Reason:** People’s needs shift—rigid systems fail them. Letting users define tags like `"hope"` or `"deadline"`
-      empowered them to mold SemanticScribe to their lives. It’s a living tool, reflecting diverse voices while keeping
+      empowered them to mold Netention to their lives. It’s a living tool, reflecting diverse voices while keeping
       reactions predictable.
 
 ### Semantic Matching: The Soul of Connection
 
-- **What It Became:** Semantic matching is SemanticScribe’s crown jewel—linking NObjects based on tag meanings. It finds
+- **What It Became:** Semantic matching is Netention’s crown jewel—linking NObjects based on tag meanings. It finds
   a gardener’s `"task": { plant: "roses" }` and pairs it with a florist’s `"offer": { item: "roses" }`.
 - **How It Works Today:** Tag `"match": "gardening"` on your NObject, and it lights up with related ideas—tips,
   collaborators, supplies—drawn from the global pool. Matches spark conversations, trades, and friendships.
 - **Design Choice:** Deep, tag-based matching over simple keyword searches.
     - **Reason:** Keywords miss nuance—“rose” could mean a flower or a name. Tags carry intent (`"plant"`, `"offer"`),
-      letting us connect ideas with precision. This turned SemanticScribe into a hub of serendipity, fulfilling users’
+      letting us connect ideas with precision. This turned Netention into a hub of serendipity, fulfilling users’
       need to find and be found.
 
 ### Decentralized Network: A Shared World
@@ -2008,7 +2008,7 @@ shaping its future.
 - **How It Feels:** You start with “Buy gifts” in an NObject. Type `#task due:2030-12-20`, and a calendar widget
   appears. Add `#match: gifts`, and suggestions flood in—shops, ideas, friends’ lists. It’s like chatting with a clever
   assistant.
-- **Reason:** We leaned on familiar habits—writing and tagging—making SemanticScribe a natural extension of thought.
+- **Reason:** We leaned on familiar habits—writing and tagging—making Netention a natural extension of thought.
   Widgets emerge where tags land, keeping actions in context.
 
 ### Crystal-Clear Meaning
@@ -2037,7 +2037,7 @@ shaping its future.
 ## Semantic Matching: The Bridge of Minds
 
 - **How It Shines:** Matching isn’t just search—it’s understanding. Tag `"match": { interest: "poetry" }`, and
-  SemanticScribe finds NObjects with `"poetry"`, `"verse"`, or even `"mood": "reflective"`, thanks to the Ontology’s
+  Netention finds NObjects with `"poetry"`, `"verse"`, or even `"mood": "reflective"`, thanks to the Ontology’s
   deep connections.
 - **Real-World Impact:** A student’s `"match": "thesis help"` links to a mentor’s `"offer": "editing"`. A cook’s
   `"match": "recipe ideas"` meets a farmer’s `"produce": "tomatoes"`. Communities form around shared meanings.
@@ -2056,7 +2056,7 @@ shaping its future.
 
 2. **Tags as Power Tools**
     - **Reason:** People think in goals—“share this,” “remind me”—not menus. Tags handed them direct control, making
-      SemanticScribe a partner, not a puzzle. The reactive spark kept them hooked.
+      Netention a partner, not a puzzle. The reactive spark kept them hooked.
 
 3. **Ontology’s Living Pulse**
     - **Reason:** A static system would’ve withered—users needed to name their world. The Ontology’s growth mirrored
@@ -2072,9 +2072,9 @@ shaping its future.
 
 ---
 
-## A Day in SemanticScribe, 2030
+## A Day in Netention, 2030
 
-Picture this: You open SemanticScribe and scribble “Host a concert.” Tag `#task due:2030-06-15`, and it’s scheduled. Add
+Picture this: You open Netention and scribble “Host a concert.” Tag `#task due:2030-06-15`, and it’s scheduled. Add
 `#match: musicians`, and a guitarist’s `"offer": "live performance"` pings your feed. Tag `#public`, and it’s out
 there—venues reply with `#comment: "We’ve got space!"`. Sprinkle `#emoji: 🎸` for flair, and `#notify: "Booked!"`
 celebrates your win. Friends join via `#share`, tagging `#time: 20:00` to sync plans. It’s effortless, joyful—a dance of
@@ -2114,8 +2114,8 @@ tags weaving your vision into reality.
 
 ## Looking Back, Looking Forward
 
-SemanticScribe’s maturity reflects a bet on unity and reactivity—NObjects and Tags erased silos, semantic matching wove
+Netention’s maturity reflects a bet on unity and reactivity—NObjects and Tags erased silos, semantic matching wove
 a global tapestry, and users found a voice in the Ontology. It’s a platform where intent meets action, where a tag can
 spark a movement. The choices—unification, empowerment, connection—paid off, making work feel like play. Yet, the open
-questions keep us dreaming: how deep can matching go, how wild can tags grow? The future beckons, and SemanticScribe’s
+questions keep us dreaming: how deep can matching go, how wild can tags grow? The future beckons, and Netention’s
 next chapter is ours to tag.

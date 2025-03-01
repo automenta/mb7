@@ -2,145 +2,33 @@ import DOMPurify from 'dompurify';
 import { getEventHash, nip19, Relay, validateEvent, verifyEvent } from 'nostr-tools';
 import { nanoid } from 'nanoid';
 import { getTagDefinition } from './ontology';
+import { NostrSignalingProvider } from './signaling';
+import { RelayManager } from './relay-manager';
+import { EventHandler } from './event-handler';
 
 const pubkeyRegex = /^[0-9a-fA-F]{64}$/;
 
 export class Nostr {
-    constructor(app) {
+    constructor(app, signalingStrategy, nostrRelays, nostrPrivateKey) {
         this.app = app;
-        this.relays = ["wss://relay.damus.io", "wss://relay.snort.social"];
+        this.signalingStrategy = signalingStrategy;
+        this.nostrRelays = nostrRelays;
+        this.nostrPrivateKey = nostrPrivateKey;
+        this.relays = ["wss://relay.damus.io", "wss://relay.snort.social"]; // Default relays, can be overridden
         this.subscriptions = {};
         this.relayStatuses = {};
         this.relayObjects = {};
+
+        this.relayManager = new RelayManager(this.app, this.relays, this.relayStatuses, this.relayObjects);
+        this.eventHandler = new EventHandler(this.app);
     }
 
     setRelays(relays) {
-        this.disconnectFromAllRelays();
-        this.relays = relays;
-        this.connect();
+        this.relayManager.setRelays(relays);
     }
 
     connect() {
-        this.disconnectFromAllRelays();
-        this.connectToRelays();
-    }
-
-    connectToRelays() {
-        if (this.relays.length === 0) {
-            this.app.showNotification("No relays configured.", "warning");
-            return;
-        }
-
-        for (const relayUrl of this.relays) {
-            this.connectToRelay(relayUrl);
-        }
-    }
-
-    async connectToRelay(relayUrl) {
-        if (this.relayStatuses[relayUrl]?.status === "connecting" || this.relayStatuses[relayUrl]?.status === "connected") {
-            return;
-        }
-
-        this.relayStatuses[relayUrl] = { status: "connecting" };
-
-        try {
-            const relay = await Relay.connect(relayUrl);
-            this.relayObjects[relayUrl] = relay;
-
-            await this.onOpen(relay);
-
-        } catch (error) {
-            console.error("WebSocket connection error:", error);
-            this.relayStatuses[relayUrl] = { status: "error" };
-        }
-    }
-
-    async onOpen(relay) {
-        try {
-            console.log("Connected to relay:", relay.url);
-            this.relayStatuses[relay.url] = { status: "connected" };
-            await this.relayConnected(relay);
-        } catch (error) {
-            console.error("Error handling onOpen:", error);
-        }
-    }
-
-    async onNotice(relay, notice) {
-        try {
-            console.log(`NOTICE from ${relay.url}: ${notice}`);
-            this.app.showNotification(`NOTICE from ${relay.url}: ${notice}`, "warning");
-        } catch (error) {
-            console.error("Error handling notice:", error);
-        }
-    }
-
-    async onClose(relay) {
-        try {
-            console.log("Disconnected from relay:", relay.url);
-            this.relayStatuses[relay.url].status = "disconnected";
-        } catch (error) {
-            console.error("Error handling close:", error);
-        }
-    }
-
-
-    async subscribe(filters, options) {
-        const relay = options.relay;
-        const subId = options.id || nanoid();
-        try {
-            if (relay) {
-                const sub = await relay.subscribe(filters, {
-                    id: subId, onevent: options.onEvent || this.onEvent.bind(this), eose: () => {
-                        console.log(`EOSE from ${relay.url} for subscription ${subId}`);
-                    }
-                });
-                this.subscriptions[relay.url] = { ...(this.subscriptions[relay.url] || {}), [subId]: sub };
-                return { relay: relay.url, id: subId };
-            } else {
-                for (const relayUrl of this.relays) {
-                    if (this.relayStatuses[relayUrl]?.status === 'connected') {
-                        const relay = this.relayObjects[relayUrl];
-                        const sub = await relay.subscribe(filters, {
-                            id: subId,
-                            onevent: options.onEvent || this.onEvent.bind(this),
-                            eose: () => {
-                                console.log(`EOSE from ${relay.url} for subscription ${subId}`);
-                            }
-                        });
-                        this.subscriptions[relayUrl] = { ...(this.subscriptions[relayUrl] || {}), [subId]: sub };
-                    }
-                }
-                return { id: subId };
-            }
-        } catch (error) {
-            console.error("Error subscribing:", error);
-            throw error;
-        }
-    }
-
-    async unsubscribe(subInfo) {
-        try {
-            if (!subInfo) return;
-
-            if (subInfo.relay) {
-                const r = this.subscriptions[subInfo.relay];
-                if (r && r[subInfo.id]) {
-                    await r[subInfo.id].close();
-                    delete r[subInfo.id];
-                }
-            } else {
-                for (let relayUrl in this.subscriptions) {
-                    const u = this.subscriptions[relayUrl];
-                    if (u[subInfo.id]) {
-                        await u[subInfo.id].close();
-                        delete u[subInfo.id];
-                    }
-                }
-            }
-        } catch (error) {
-            console.error("Error unsubscribing:", error);
-            throw error;
-        }
+        this.relayManager.connect();
     }
 
     async onEvent(event) {
@@ -160,131 +48,15 @@ export class Nostr {
                 }
                 break;
             case 0:
-                await this.handleKind0(event);
-                break;
+                await this.eventHandler.handleKind0(event);
             case 3:
-                await this.handleKind3(event);
-                break;
+                await this.eventHandler.handleKind3(event);
             case 5:
-                await this.handleKind5(event);
+                await this.eventHandler.handleKind5(event);
             case 30000:
-                await this.handleObjectEvent(event);
+                await this.eventHandler.handleObjectEvent(event);
                 break;
         }
-    }
-
-    async handleKind0(event) {
-        try {
-            const profileData = JSON.parse(event.content);
-            if (event.pubkey === window.keys.pub) {
-                this.app.settingsView?.displayProfile(profileData);
-            } else {
-                await this.app.db.updateFriendProfile(event.pubkey, profileData.name, profileData.picture);
-                if (this.app.mainContent.currentView instanceof this.app.FriendsView && (await this.app.db.getFriend(event.pubkey))) {
-                    await this.app.friendsView.loadFriends();
-                }
-            }
-        } catch (error) {
-            console.error("Error processing Kind 0 event:", error);
-        }
-    }
-
-    async handleKind3(event) {
-        try {
-            let contacts = [];
-            try {
-                const content = JSON.parse(event.content);
-                if (Array.isArray(content)) {
-                    contacts = content;
-                } else if (typeof content === 'object' && content !== null) {
-                    contacts = Object.keys(content);
-                }
-            } catch (e) {
-                console.warn("Error parsing content:", e);
-            }
-
-            const pTags = event.tags.filter(tag => tag[0] === 'p').map(tag => tag[1]);
-            contacts = contacts.concat(pTags);
-
-            contacts = [...new Set(contacts)];
-
-            for (const pubkey of contacts) {
-                if (pubkeyRegex.test(pubkey) && pubkey !== window.keys.pub) {
-                    await this.app.db.addFriend(pubkey);
-                    await this.subscribe([{ kinds: [0], authors: [pubkey] }], { id: `friend-profile-${pubkey}` });
-                }
-            }
-            if (event.pubkey === window.keys.pub) {
-                await this.app.friendsView?.loadFriends();
-            }
-        } catch (error) {
-            console.error("Error processing kind 3 event:", error);
-        }
-    }
-
-    async handleKind5(event) {
-        try {
-            const eventIdsToDelete = event.tags.filter(tag => tag[0] === 'e').map(tag => tag[1]);
-            for (const eventId of eventIdsToDelete) {
-                try {
-                    await this.app.db.delete(eventId);
-                } catch (error) {
-                    console.error(`Failed to delete object with id ${eventId}: `, error);
-                }
-            }
-
-            if (this.app.mainContent.currentView instanceof this.app.ContentView) {
-                await this.app.renderList();
-            }
-        } catch (error) {
-            console.error("Error handling kind 5 event:", error);
-        }
-    }
-
-    async handleObjectEvent(event) {
-        try {
-            if (!event.content || event.content.trim()[0] !== "{") return;
-            const data = JSON.parse(event.content);
-            if (!data.id) return;
-
-            const existingObj = await this.app.db.get(data.id);
-            const nobj = {
-                ...existingObj,
-                id: data.id,
-                name: data.name,
-                content: DOMPurify.sanitize(data.content),
-                tags: this.extractTagsFromEvent(event),
-                createdAt: existingObj?.createdAt || (event.created_at * 1000),
-                updatedAt: event.created_at * 1000,
-            };
-            await this.app.db.save(nobj);
-
-        } catch (error) {
-            console.error("Parsing error", error);
-        }
-    }
-
-    extractTagsFromEvent(event) {
-        const tags = [];
-        for (const tag of event.tags) {
-            if (tag.length >= 2) {
-                const tagName = tag[0];
-                const tagValue = tag[1];
-
-                if (tagName === 't') {
-                    tags.push({ name: tagValue, condition: 'is', value: '' })
-                } else {
-                    let condition = 'is';
-                    let value = tagValue;
-
-                    if ((tagName === 'p' || tagName === 'e') && tag.length >= 2) {
-                        condition = 'references';
-                    }
-                    tags.push({ name: tagName, condition, value });
-                }
-            }
-        }
-        return tags;
     }
 
     async publish(object) {
@@ -353,7 +125,7 @@ export class Nostr {
         try {
             await this.subscribe([{ kinds: [30000], authors: [window.keys.pub] }], {
                 relay,
-                onEvent: this.handleObjectEvent.bind(this)
+                onEvent: this.eventHandler.handleObjectEvent.bind(this.eventHandler)
             });
             await this.subscribe([{ kinds: [1] }], { relay, id: `feed-${relay.url}` });
             await this.subscribeToFriends(relay);
@@ -394,23 +166,120 @@ export class Nostr {
             await this.subscribe([{ kinds: [30000], ids: [friendsObjectId] }], {
                 relay,
                 id: `friends-object`,
-                onEvent: this.handleObjectEvent.bind(this)
+                onEvent: this.eventHandler.handleObjectEvent.bind(this.eventHandler)
             });
         } catch (error) {
             console.error("Error subscribing to friends:", error);
         }
     }
+    /**
+     * Establishes a direct peer-to-peer connection using WebRTC.
+     * @param {string} peerId - The ID of the peer to connect to.
+     */
+    async connectWebRTC(peerId, isInitiator) {
+        let signalingProvider;
+        try {
+            if (this.signalingStrategy === "nostr") {
+                signalingProvider = new NostrSignalingProvider(this.nostrRelays.split("\n").map(l => l.trim()).filter(Boolean), this.nostrPrivateKey, this.app);
+            } else {
+                console.error("WebRTC signaling server not implemented");
+                this.app.showNotification("WebRTC signaling server not implemented", "error");
+                return;
+            }
+
+            try {
+                const peerConnection = new RTCPeerConnection();
+
+                peerConnection.onicecandidate = (event) => {
+                    if (event.candidate) {
+                        signalingProvider.sendIceCandidate(peerId, event.candidate);
+                    }
+                };
+
+                signalingProvider.onIceCandidateReceived((remotePeerId, candidate) => {
+                    peerConnection.addIceCandidate(candidate);
+                });
+
+                if (isInitiator) {
+                    // Initiator creates offer
+                    const offer = await peerConnection.createOffer();
+                    await peerConnection.setLocalDescription(offer);
+
+                    signalingProvider.initiateConnection(peerId, async (remoteAnswer) => {
+                        await peerConnection.setRemoteDescription(new RTCSessionDescription(remoteAnswer));
+                    });
+
+                    signalingProvider.sendOffer(peerId, offer.sdp);
+
+                } else {
+                    // Receiver accepts offer
+                    signalingProvider.onOfferReceived(async (remotePeerId, remoteOffer) => {
+                        await peerConnection.setRemoteDescription(new RTCSessionDescription(remoteOffer));
+                        const answer = await peerConnection.createAnswer();
+                        await peerConnection.setLocalDescription(answer);
+
+                        signalingProvider.acceptConnection(peerId, async (remoteAnswer) => {
+                            await peerConnection.setRemoteDescription(new RTCSessionDescription(remoteAnswer));
+                        });
+
+                        signalingProvider.sendAnswer(peerId, answer.sdp);
+                    });
+                }
+
+                //Data Channel
+                const dataChannel = peerConnection.createDataChannel("dataChannel");
+                dataChannel.onopen = () => {
+                    console.log("Data channel is open");
+                }
+                dataChannel.onmessage = (event) => {
+                    console.log("Received Message", event.data);
+                }
+            } catch (error) {
+                console.error("Error in connectWebRTC:", error);
+                this.app.showNotification(`Error in connectWebRTC: ${error.message}`, 'error');
+            }
+        } catch (error) {
+            console.error("Error creating signaling provider:", error);
+            this.app.showNotification(`Error creating signaling provider: ${error.message}`, 'error');
+        }
+    }
+
+    /**
+     * Handles incoming WebRTC data channel messages.
+     * @param {MessageEvent} event - The message event.
+     */
+    handleWebRTCMessage(event) {
+        // TODO: Process incoming WebRTC message
+        console.log(`Received WebRTC message: ${event.data} (not implemented)`);
+    }
+
 
     async disconnectFromAllRelays() {
+        this.relayManager.disconnectFromAllRelays();
+    }
+    async subscribeToFriends(relay) {
         try {
-            for (const relayUrl in this.relayObjects) {
-                await this.relayObjects[relayUrl].close();
-            }
-            this.relayStatuses = {};
-            this.relayObjects = {};
-            this.subscriptions = {};
+            const friendsObjectId = await this.app.db.getFriendsObjectId();
+            await this.subscribe([{ kinds: [30000], ids: [friendsObjectId] }], {
+                relay,
+                id: `friends-object`,
+                onEvent: this.eventHandler.handleObjectEvent.bind(this.eventHandler)
+            });
         } catch (error) {
-            console.error("Error disconnecting from relays:", error);
+            console.error("Error subscribing to friends:", error);
+        }
+    }
+    async subscribeToPubkey(relay, pubkey) {
+        try {
+            const subId = `friend_${pubkey}`;
+            await this.unsubscribe({ relay: relay.url, id: subId });
+
+            await this.subscribe([{ kinds: [1, 30000], authors: [pubkey] }, { kinds: [1, 30000], '#p': [pubkey] }], {
+                relay,
+                id: subId
+            });
+        } catch (error) {
+            console.error("Error subscribing to pubkey:", error);
         }
     }
 }

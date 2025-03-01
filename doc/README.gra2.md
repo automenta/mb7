@@ -1,13 +1,13 @@
-Below, I present the refined vision of **SemanticScribe**, a graph-powered, tag-driven, collaborative workspace designed
+Below, I present the refined vision of **Netention**, a graph-powered, tag-driven, collaborative workspace designed
 as a self-consistent software singularity. This system maximizes user-friendliness, delivers economic value, and is
 poised for widespread adoption and adoration. Leveraging deep insights, I’ve organized the components into a cohesive
 whole, ensuring every part aligns seamlessly with the overarching goals.
 
 ---
 
-## Introducing SemanticScribe: A Graph-Based Singularity
+## Introducing Netention: A Graph-Based Singularity
 
-**SemanticScribe** is a revolutionary workspace where all data, behavior, and user interface (UI) elements unify into a
+**Netention** is a revolutionary workspace where all data, behavior, and user interface (UI) elements unify into a
 single, collaborative graph. Users interact with this graph through intuitive tagging, creating a system that is simple
 to learn, powerful to use, and joyful to explore. Below, I’ll break down the system into its core components,
 functionalities, and value propositions.
@@ -16,7 +16,7 @@ functionalities, and value propositions.
 
 ## Core Abstraction: The Graph
 
-At the heart of SemanticScribe lies a single, collaborative graph:
+At the heart of Netention lies a single, collaborative graph:
 
 - **Nodes**: Represent entities called **NObjects**, which can be content (e.g., text, tasks), concepts (e.g., tags), UI
   elements (e.g., buttons), or users.
@@ -74,7 +74,7 @@ const taskNode = {
 };
 ```
 
-**Why It Works**: Users can extend the ontology by adding new types, sharing them as NObjects, making SemanticScribe
+**Why It Works**: Users can extend the ontology by adding new types, sharing them as NObjects, making Netention
 adaptable to any domain.
 
 ---
@@ -226,7 +226,7 @@ const App = () => (
 
 ## Final Overview
 
-**SemanticScribe** is:
+**Netention** is:
 
 - A **single graph** syncing via Nostr.
 - Powered by **NObjects** and an editable **ontology**.
@@ -235,13 +235,13 @@ const App = () => (
 - Designed for **collaboration**, **value creation**, and **ubiquity**.
 
 This system is a software singularity where users effortlessly weave meaning, collaborate globally, and unlock economic
-potential—all through the joy of tagging and exploring. SemanticScribe is ready to be embraced and adored by all.
+potential—all through the joy of tagging and exploring. Netention is ready to be embraced and adored by all.
 
 --------
 
-# Refining SemanticScribe into a Self-Consistent Software Singularity
+# Refining Netention into a Self-Consistent Software Singularity
 
-I’ve been tasked with refining **SemanticScribe** into a unified platform—a *software singularity* that seamlessly
+I’ve been tasked with refining **Netention** into a unified platform—a *software singularity* that seamlessly
 blends **user-friendliness**, **economic value**, and **adored ubiquity**. By leveraging a graph-based foundation, we
 can clarify and organize its components into a cohesive system where every part serves the user with elegance and
 simplicity. Here’s how we’ll achieve this bold vision.
@@ -250,7 +250,7 @@ simplicity. Here’s how we’ll achieve this bold vision.
 
 ## The Vision: A Graph-Powered Universe
 
-At its core, **SemanticScribe** is a single, reactive graph—a living network where everything is interconnected. This
+At its core, **Netention** is a single, reactive graph—a living network where everything is interconnected. This
 isn’t just a technical choice; it’s the foundation of a user experience that feels intuitive, powerful, and delightful.
 
 - **Nodes** (called *NObjects*) represent everything: content (notes, tasks), concepts (tags like "task"), users, and
@@ -296,7 +296,7 @@ model, all actions.
 
 ### 3. User Experience: Intuitive and Delightful
 
-The UX is where **SemanticScribe** becomes beloved. Here’s how:
+The UX is where **Netention** becomes beloved. Here’s how:
 
 - **Tag Syntax:** Write `#tag:value` (e.g., `#task priority:High`), and it parses into edges. It’s as natural as jotting
   notes.
@@ -312,7 +312,7 @@ This is about **speaking the user’s language**, **anticipating their needs**, 
 
 ## Driving Economic Value
 
-**SemanticScribe** isn’t just useful—it’s a platform for value creation.
+**Netention** isn’t just useful—it’s a platform for value creation.
 
 ### Decentralized Marketplace
 
@@ -326,7 +326,7 @@ This is about **speaking the user’s language**, **anticipating their needs**, 
 - **Concept:** Users vote on Ontology improvements using `"trust"` edges—like a reputation system for ideas.
 - **Outcome:** The best concepts (e.g., a brilliant `#project` tag setup) rise naturally, driven by collective wisdom.
 
-This turns **SemanticScribe** into a living economy where creativity pays off.
+This turns **Netention** into a living economy where creativity pays off.
 
 ---
 
@@ -380,7 +380,7 @@ A quick roadmap to bring this to life:
 
 ## The Final Picture
 
-**SemanticScribe** emerges as:
+**Netention** emerges as:
 
 - **User-Friendly:** Tags and instant feedback make it a joy to use.
 - **Economically Valuable:** A marketplace and community drive real worth.
@@ -391,9 +391,9 @@ as it is powerful. It’s ready to be built, loved, and shared with the world. L
 
 --------
 
-# SemanticScribe: A Graph-Driven Semantic Workspace
+# Netention: A Graph-Driven Semantic Workspace
 
-**SemanticScribe** is a decentralized, reactive platform designed to empower users to collaboratively create, analyze,
+**Netention** is a decentralized, reactive platform designed to empower users to collaboratively create, analyze,
 and discover semantically enriched content. By leveraging a **graph-based ontology and tag system**, it unifies data
 manipulation, analysis, and visualization into a single, intuitive workspace. This refined system integrates insights
 from graph databases, knowledge graph platforms, dataflow and ETL tools, data analytics and visualization platforms, and
@@ -528,7 +528,7 @@ valuable, and poised for ubiquity.
 ### **3. Data Analytics and Visualization Platforms**
 
 - **KNIME/RapidMiner**: Embed machine learning and statistical analysis for predictive insights on NObjects.
-- **Tableau/Power BI**: Provide interactive dashboards and visualizations directly within SemanticScribe.
+- **Tableau/Power BI**: Provide interactive dashboards and visualizations directly within Netention.
 
 ### **4. Dataflow Programming Environments**
 
@@ -569,7 +569,7 @@ valuable, and poised for ubiquity.
 
 ## **Final Vision: A Software Singularity**
 
-SemanticScribe becomes a **self-consistent, user-friendly singularity**:
+Netention becomes a **self-consistent, user-friendly singularity**:
 
 - **Unified**: One graph handles data, UI, and logic—no silos.
 - **Empowering**: Users wield tags (edges) to shape their workspace intuitively.
@@ -582,9 +582,9 @@ seamlessly—all through the power of a living graph.
 
 --------
 
-# Redesigning SemanticScribe: A Graph-Powered Semantic Workspace
+# Redesigning Netention: A Graph-Powered Semantic Workspace
 
-To address your query, I’ve refined the ontology and tag system of **SemanticScribe** into a **self-consistent software
+To address your query, I’ve refined the ontology and tag system of **Netention** into a **self-consistent software
 singularity** that maximizes **user-friendliness**, **economic value**, and **adored ubiquity**. By leveraging **graph
 theory** and drawing inspiration from graph databases, dataflow tools, analytics platforms, and programming
 environments (e.g., Neo4j, Apache NiFi, Tableau, LabVIEW), this redesign unifies distinctions, enhances user
@@ -595,7 +595,7 @@ functional tags inspired by the provided applications, and organize everything i
 
 ## Core Vision: A Graph-Driven Ecosystem
 
-**SemanticScribe** transforms into a **graph-powered semantic workspace** where all entities—content (NObjects), tags,
+**Netention** transforms into a **graph-powered semantic workspace** where all entities—content (NObjects), tags,
 ontology, UI, and user interactions—are represented as a single, reactive graph. This approach collapses traditional
 silos into an elegant, interconnected network, unlocking powerful functionality while keeping the system intuitive and
 delightful.
@@ -704,7 +704,7 @@ delightful.
 Drawing from the functionality of graph databases (e.g., Neo4j, Stardog), dataflow tools (e.g., Apache NiFi, Talend),
 analytics platforms (e.g., Tableau, KNIME), and programming environments (e.g., LabVIEW, Simulink), I’ve enriched the
 tag system with additional functional tags. These tags enhance **data manipulation**, **analysis**, and **user
-interaction**, aligning with SemanticScribe’s graph-based paradigm.
+interaction**, aligning with Netention’s graph-based paradigm.
 
 ### Comprehensive Tag Table
 
@@ -817,7 +817,7 @@ const publish = (nobject) => {
 - **Economic Value**: Supports personal use, enterprise workflows, and everything in between with one system.
 - **Adored Ubiquity**: Nostr integration and a delightful UX make it shareable and omnipresent.
 
-This redesign turns **SemanticScribe** into a **living network** where users weave meaning, collaborate, and discover
+This redesign turns **Netention** into a **living network** where users weave meaning, collaborate, and discover
 with every tag. It’s bold, elegant, and ready to transform how we interact with semantic workspaces!
 
 --------

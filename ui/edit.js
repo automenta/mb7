@@ -9,15 +9,7 @@ import { OntologyBrowser } from './ontology-browser.js';
 import { SuggestionDropdown } from './suggestion-dropdown.js';
 import { EditorContentHandler } from './editor-content-handler.js';
 
-import { createElement } from './utils.js';
-
-const debounce = (fn, delay) => {
-    let timeoutId;
-    return (...args) => {
-        clearTimeout(timeoutId);
-        timeoutId = setTimeout(() => fn(...args), delay);
-    };
-};
+import { createElement, debounce } from './utils.js';
 
 const tagDataMap = new WeakMap();
 
@@ -40,6 +32,15 @@ class Edit {
         this.autosuggest = new Autosuggest(this);
         this.contentHandler = new EditorContentHandler(this);
 
+        const ontologyBrowserButton = createElement('button', { textContent: 'Show Ontology', class: 'toggle-ontology-button' });
+        menu.append(this.toolbar.getElement(), ontologyBrowserButton, this.ontologyBrowser.getElement());
+        this.ontologyBrowser.getElement().style.display = 'none';
+
+        ontologyBrowserButton.addEventListener('click', () => {
+            const isVisible = this.ontologyBrowser.getElement().style.display !== 'none';
+            this.ontologyBrowser.getElement().style.display = isVisible ? 'none' : 'block';
+            ontologyBrowserButton.textContent = isVisible ? 'Show Ontology' : 'Hide Ontology';
+        });
         menu.append(this.toolbar.getElement(), this.ontologyBrowser.getElement());
 
         this.setupEditorEvents();
@@ -69,28 +70,7 @@ class Edit {
     }
 
     setupEditorEvents() {
-        const handleDropdownKeys = (event) => {
-            if (this.suggestionDropdown.el.style.display !== "block") return;
-            switch (event.key) {
-                case "ArrowDown":
-                case "ArrowUp":
-                    event.preventDefault();
-                    this.suggestionDropdown.moveSelection(event.key === "ArrowDown" ? 1 : -1);
-                    break;
-                case "Enter":
-                    event.preventDefault();
-                    if (this.suggestionDropdown.getSelectedSuggestion()) {
-                        const suggestion = this.findSuggestion(this.suggestionDropdown.getSelectedSuggestion());
-                        if (suggestion) this.contentHandler.insertTagFromSuggestion(suggestion);
-                    }
-                    this.suggestionDropdown.hide();
-                    break;
-                case "Escape":
-                    this.suggestionDropdown.hide();
-                    break;
-            }
-        };
-
+        const handleDropdownKeys = this.handleDropdownKeys.bind(this);
         this.editorArea.addEventListener("keyup", () => {
             if (this.suggestionDropdown.el.style.display !== 'block') {
                 this.autosuggest.debouncedApply();
@@ -172,6 +152,28 @@ class Edit {
             }
         }
         return null;
+    }
+
+    handleDropdownKeys(event) {
+        if (this.suggestionDropdown.el.style.display !== "block") return;
+        switch (event.key) {
+            case "ArrowDown":
+            case "ArrowUp":
+                event.preventDefault();
+                this.suggestionDropdown.moveSelection(event.key === "ArrowDown" ? 1 : -1);
+                break;
+            case "Enter":
+                event.preventDefault();
+                if (this.suggestionDropdown.getSelectedSuggestion()) {
+                    const suggestion = this.findSuggestion(this.suggestionDropdown.getSelectedSuggestion());
+                    if (suggestion) this.contentHandler.insertTagFromSuggestion(suggestion);
+                }
+                this.suggestionDropdown.hide();
+                break;
+            case "Escape":
+                this.suggestionDropdown.hide();
+                break;
+        }
     }
 }
 

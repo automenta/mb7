@@ -1,6 +1,6 @@
-# System Specification for SemanticScribe
+# System Specification for Netention
 
-SemanticScribe is a decentralized, collaborative semantic editor built on a graph-based system where content, tags, and
+Netention is a decentralized, collaborative semantic editor built on a graph-based system where content, tags, and
 ontology are interconnected nodes and edges. It leverages a tag-driven approach to provide intuitive, powerful
 functionality through reactions triggered by user interactions. This specification provides a comprehensive, concise
 blueprint for development, organized into core components, functionality, and a step-by-step implementation plan.
@@ -122,7 +122,7 @@ blueprint for development, organized into core components, functionality, and a 
 
 ## 6. Functional Tags
 
-Tags drive SemanticScribe’s functionality, emulating features from various applications. Each tag has an Ontology
+Tags drive Netention’s functionality, emulating features from various applications. Each tag has an Ontology
 definition with specific reactions.
 
 | **Tag**               | **Purpose**                    | **Reaction (on Edge Change)**                              | **Emulates**             |
@@ -204,14 +204,14 @@ definition with specific reactions.
 
 ---
 
-This specification delivers a complete, elegant framework for SemanticScribe, ensuring all features are cohesively
+This specification delivers a complete, elegant framework for Netention, ensuring all features are cohesively
 integrated for a user-friendly, decentralized, and tag-driven collaborative experience.
 
 --------
 
-# SemanticScribe System Specification
+# Netention System Specification
 
-**SemanticScribe** is a decentralized, collaborative semantic editor that transforms how users create, analyze, and
+**Netention** is a decentralized, collaborative semantic editor that transforms how users create, analyze, and
 share knowledge. Leveraging a graph-based architecture, it unifies data manipulation, analysis, and visualization into a
 single, intuitive platform. This specification outlines the complete system design, focusing on delivering a
 user-friendly, tag-driven experience that empowers users through real-time collaboration and decentralized networking.
@@ -222,7 +222,7 @@ user-friendly, tag-driven experience that empowers users through real-time colla
 
 ### Purpose
 
-SemanticScribe enables users to collaboratively edit, semantically enrich, and decentralizedly share content. It
+Netention enables users to collaboratively edit, semantically enrich, and decentralizedly share content. It
 integrates features from graph databases, dataflow tools, analytics platforms, and programming environments, all through
 a unified, graph-based model.
 
@@ -474,15 +474,15 @@ duplication.
 
 ---
 
-SemanticScribe’s graph-based, tag-driven design unifies data manipulation, analysis, and visualization into a single,
+Netention’s graph-based, tag-driven design unifies data manipulation, analysis, and visualization into a single,
 intuitive platform. This specification ensures a user-friendly, decentralized system that empowers users through
 real-time collaboration and semantic enrichment, ready for implementation.
 
 --------
 
-# SemanticScribe System Specification
+# Netention System Specification
 
-This document outlines the complete system specification for SemanticScribe, a semantic reality editor app designed as a
+This document outlines the complete system specification for Netention, a semantic reality editor app designed as a
 functional prototype for internal development team dogfooding. The focus is on core functionality—collaborative editing,
 semantic tagging, and decentralized networking—while deferring advanced features like graph-based interactions for later
 iterations. The specification is modular, scalable, and user-oriented, providing a clear, deduplicated, and
@@ -770,7 +770,7 @@ const Editor = ({ nobject }) => {
 
 ## Conclusion
 
-This specification delivers a concise, implementation-ready plan for SemanticScribe, focusing on the original semantic
+This specification delivers a concise, implementation-ready plan for Netention, focusing on the original semantic
 reality editor app. The modular design supports collaborative editing, semantic tagging, and decentralized networking,
 creating a functional prototype for dogfooding. Future enhancements, such as graph interactions, can build on this
 foundation. With this plan, the development team can efficiently construct a tool that meets user needs for expression,

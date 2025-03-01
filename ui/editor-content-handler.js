@@ -195,7 +195,9 @@ class TagConditionRenderer extends TagRenderer {
         select.value = condition;
         this.el.append(select);
     }
+}
 
+class NumberInputRenderer extends TagRenderer {
     numberInput(ph, inputValue, onValueChange) {
         this.el.append(createElement("input", {
             type: "number",
@@ -203,39 +205,31 @@ class TagConditionRenderer extends TagRenderer {
             value: inputValue,
             oninput: (e) => onValueChange(parseFloat(e.target.value) || "")
         }));
-        this.numberInput("Value", this.tag.data.value, v => this.tag.data.value = v);
     }
-}
 
-class NumberInputRenderer extends TagRenderer {
     append() {
         const { unit, value, min, max } = this.tag.data;
-        const numberInput = (ph, val, onValueChange) => this.el.append(createElement("input", {
-            type: "number",
-            placeholder: ph,
-            value: val,
-            oninput: (e) => onValueChange(parseFloat(e.target.value) || "")
-        }));
 
         switch (this.tag.data.condition) {
             case "is":
-                numberInput("Value", value, v => this.tag.data.value = v);
+                this.numberInput("Value", value, v => this.tag.data.value = v);
                 break;
             case "is between":
-                numberInput("Min", min, v => this.tag.data.min = v);
+                this.numberInput("Min", min, v => this.tag.data.min = v);
                 this.el.append(" and ");
-                numberInput("Max", max, v => this.tag.data.max = v);
+                this.numberInput("Max", max, v => this.tag.data.max = v);
                 break;
             case "is below":
-                numberInput("Max", max, v => this.tag.data.max = v);
+                this.numberInput("Max", max, v => this.tag.data.max = v);
                 break;
             case "is above":
-                numberInput("Min", min, v => this.tag.data.min = v);
+                this.numberInput("Min", min, v => this.tag.data.min = v);
                 break;
         }
         if (unit) this.el.append(createElement("span", { class: "unit-label" }, ` ${unit}`));
     }
 }
+
 
 class TimeInputRenderer extends TagRenderer {
     append() {
@@ -245,7 +239,7 @@ class TimeInputRenderer extends TagRenderer {
             placeholder: ph,
             value: val,
             oninput: (e) => onValueChange(e.target.value)
-        }));
+        });
 
         switch (this.tag.data.condition) {
             case "is at":
@@ -255,7 +249,6 @@ class TimeInputRenderer extends TagRenderer {
                 timeInput("Start Time", min, v => this.tag.data.min = v);
                 this.el.append(" and ");
                 timeInput("End Time", max, v => this.tag.data.max = v);
-                break;
             case "is before":
                 timeInput("Before", max, v => this.tag.data.max = v);
                 break;
@@ -308,7 +301,8 @@ class TagValueRenderer extends TagRenderer {
                     value: this.tag.data.value ? `${this.tag.data.value.lat}, ${this.tag.data.value.lng}` : "",
                     oninput: (e) => {
                         const [latStr, lngStr] = e.target.value.split(",").map(s => s.trim());
-                        const [lat, lng] = [parseFloat(latStr), parseFloat(lngStr)];
+                        const lat = parseFloat(latStr);
+                        const lng = parseFloat(lngStr);
                         this.tag.data.value = (!isNaN(lat) && !isNaN(lng)) ? { lat, lng } : null;
                         this.tag.onUpdate?.();
                     }

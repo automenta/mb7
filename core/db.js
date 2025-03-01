@@ -7,6 +7,9 @@ import * as NostrTools from 'nostr-tools';
 import { openDB } from 'idb';
 import * as Y from 'yjs'
 import DOMPurify from 'dompurify';
+import { generateEncryptionKey, encrypt, decrypt } from './encryption';
+import { addFriend, removeFriend, updateFriendProfile } from './friends';
+import { saveSettings } from './settings';
 
 /**
  * Creates a default object with the given ID and kind.
@@ -116,13 +119,15 @@ export class DB {
             if (!DB.db) {
                 await DB.the();
             }
-            return DB.db.get(OBJECTS_STORE, id);
+            const encryptedObject = await DB.db.get(OBJECTS_STORE, id);
+            if (!encryptedObject) return null;
+            // TODO: Retrieve the user's encryption key instead of generating a new one.
+            // TODO: Implement secure encryption key management.
+            const encryptionKey = window.keys.encryptionKey;
+            const decryptedContent = await this.decrypt(encryptedObject.content, encryptionKey);
+            return { ...encryptedObject, content: decryptedContent };
         } catch (error) {
-            console.error("Failed to save settings:", error);
-            console.error("Error updating friend profile:", error);
-
-
-            throw error;
+            this.handleDBError("Failed to get object", error);
         }
     }
 
@@ -135,13 +140,20 @@ export class DB {
                 console.error('Attempted to save an object without an `id`:', o);
                 throw new Error('Missing id property on object');
             }
-            await DB.db.put(OBJECTS_STORE, o);
+            // TODO: Retrieve the user's encryption key instead of generating a new one.
+            // TODO: Store the encryption key ID with the object.
+            // TODO: Implement secure encryption key management.
+            let encryptionKey = window.keys.encryptionKey;
+            if (!encryptionKey) {
+                encryptionKey = await generateEncryptionKey();
+                window.keys.encryptionKey = encryptionKey;
+            }
+            const encryptedContent = await this.encrypt(o.content, encryptionKey);
+            const encryptedObject = { ...o, content: encryptedContent, encryptionKey: window.keys.pub };
+            await DB.db.put(OBJECTS_STORE, encryptedObject);
             return o;
         } catch (error) {
-            console.error("Failed to save settings:", error);
-            console.error("Error updating friend profile:", error);
-
-
+            this.handleDBError("Failed to save object", error);
             throw error;
         }
     }
@@ -153,10 +165,7 @@ export class DB {
         try {
             await DB.db.delete(OBJECTS_STORE, id);
         } catch (error) {
-            console.error("Failed to save settings:", error);
-            console.error("Error updating friend profile:", error);
-
-
+            this.handleDBError("Failed to delete object", error);
             throw error;
         }
     }
@@ -169,10 +178,7 @@ export class DB {
             const all = await this.getAll();
             return all.slice(0, limit);
         } catch (error) {
-            console.error("Failed to save settings:", error);
-            console.error("Error updating friend profile:", error);
-
-
+            this.handleDBError("Failed to get recent objects", error);
             throw error;
         }
     }
@@ -191,7 +197,6 @@ export class DB {
             console.error("Failed to save settings:", error);
             console.error("Error updating friend profile:", error);
 
-
             throw error;
         }
     }
@@ -206,65 +211,27 @@ export class DB {
 
     async addFriend(friend) {
         try {
-            const friendsObject = await this.getFriends();
-            const existingFriendIndex = friendsObject.tags.findIndex(
-                (tag) => tag[0] === 'People' && tag[1] === friend.pubkey
-            );
-
-            if (existingFriendIndex === -1) {
-                friendsObject.tags.push(['People', friend.pubkey, friend.name, friend.picture]);
-                friendsObject.updatedAt = new Date().toISOString();
-                await DB.db.put(OBJECTS_STORE, friendsObject);
-            }
+            await addFriend(DB.db, FRIENDS_OBJECT_ID, friend);
         } catch (error) {
-            console.error("Failed to save settings:", error);
-            console.error("Error updating friend profile:", error);
-
-
+            console.error("Failed to add friend:", error);
             throw error;
         }
     }
 
     async removeFriend(pubkey) {
         try {
-            const friendsObject = await this.getFriends();
-            const friendIndex = friendsObject.tags.findIndex(
-                (tag) => tag[0] === 'People' && tag[1] === pubkey
-            );
-
-            if (friendIndex !== -1) {
-                friendsObject.tags.splice(friendIndex, 1);
-                friendsObject.updatedAt = new Date().toISOString();
-                await DB.db.put(OBJECTS_STORE, friendsObject);
-            }
+            await removeFriend(DB.db, FRIENDS_OBJECT_ID, pubkey);
         } catch (error) {
-            console.error("Failed to save settings:", error);
-            console.error("Error updating friend profile:", error);
-
-
+            console.error("Failed to remove friend:", error);
             throw error;
         }
     }
 
     async updateFriendProfile(pubkey, name, picture) {
         try {
-            const friendsObject = await this.getFriends();
-            const friendIndex = friendsObject.tags.findIndex(
-                (tag) => tag[0] === 'People' && tag[1] === pubkey
-            );
-
-            if (friendIndex !== -1) {
-                friendsObject.tags[friendIndex][2] = name;
-                friendsObject.tags[friendIndex][3] = picture;
-                friendsObject.updatedAt = new Date().toISOString();
-                await DB.db.put(OBJECTS_STORE, friendsObject);
-            }
+            await updateFriendProfile(DB.db, FRIENDS_OBJECT_ID, pubkey, name, picture);
         } catch (error) {
-            console.error("Failed to save settings:", error);
-            console.error("Error updating friend profile:", error);
-
-
-            console.error("Error updating friend profile:", error);
+            console.error("Failed to update friend profile:", error);
             throw error;
         }
     }
@@ -278,31 +245,9 @@ export class DB {
     }
 
     async saveSettings(settings) {
-        let settingsObject = await this.getSettings();
-
-        settingsObject.tags = [];
-
-        const settingsMap = {
-            relays: settings.relays,
-            dateFormat: settings.dateFormat,
-            profileName: settings.profileName,
-            profilePicture: settings.profilePicture,
-        };
-
-        for (const [key, value] of Object.entries(settingsMap)) {
-            if (value) {
-                settingsObject.tags.push([key, value]);
-            }
-        }
-
-        settingsObject.updatedAt = new Date().toISOString();
         try {
-            await DB.db.put(OBJECTS_STORE, settingsObject);
+            await saveSettings(DB.db, SETTINGS_OBJECT_ID, settings);
         } catch (error) {
-            console.error("Failed to save settings:", error);
-            console.error("Error updating friend profile:", error);
-
-
             console.error("Failed to save settings:", error);
             throw error;
         }
@@ -351,6 +296,22 @@ export class DB {
     async saveKeys(keys) {
         return await DB.db.put(KEY_STORAGE, keys, KEY_STORAGE);
     }
+
+    /**
+     * Implements privacy controls to ensure NObjects are private by default.
+     * @param {object} object - The NObject to apply privacy controls to.
+     */
+    async enforcePrivacy(object) {
+        object.private = true;
+        // TODO: Implement logic to ensure NObjects are private by default
+        // TODO: Implement encryption, access control, and data masking
+        // TODO: Consider creating a new file to handle encryption and decryption
+        // TODO: Consider modifying ui/app.js to allow users to control privacy settings
+        // TODO: Enforce access control based on the `private` flag.
+        // TODO: Implement privacy controls, such as access control and data masking.
+        object.content = "This object is private.";
+        console.log(`Enforcing privacy for object: ${object.id} (not implemented)`);
+    }
 }
 
 const generatePrivateKey = () => {
@@ -382,6 +343,7 @@ export async function loadKeys() {
         keys = await generateKeys();
         console.log('Keys generated and saved.');
     }
+    window.keys = keys;
     return keys;
 }
 

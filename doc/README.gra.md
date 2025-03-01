@@ -1,4 +1,4 @@
-Let’s reimagine **SemanticScribe** by redesigning the ontology and tag system as a **graph-based framework**, unlocking
+Let’s reimagine **Netention** by redesigning the ontology and tag system as a **graph-based framework**, unlocking
 powerful capabilities like pattern matching, reasoning, recommendation, trust networks, and quantitative analysis. This
 shift aligns with the app’s purpose—empowering users to create, collaborate, and discover meaning—while introducing a
 richer, more dynamic structure. Below, I’ll explore this graph-centric redesign, weaving in your ideas with cunning
@@ -6,9 +6,9 @@ insight and a dash of creativity.
 
 ---
 
-# SemanticScribe: A Graph-Driven Semantic Workspace
+# Netention: A Graph-Driven Semantic Workspace
 
-**SemanticScribe** transforms into a graph-based ecosystem where **NObjects** are nodes, **Tags** are edges, and the *
+**Netention** transforms into a graph-based ecosystem where **NObjects** are nodes, **Tags** are edges, and the *
 *Ontology** is a reasoning graph. This design unifies distinctions, enhances UX, and enables advanced functionality
 through graph operations, all while maintaining the tag-driven reactivity that users love.
 
@@ -270,7 +270,7 @@ const recommendTags = (nobject) => {
 
 ## Final Insights
 
-This graph-based redesign turns SemanticScribe into a **semantic universe**:
+This graph-based redesign turns Netention into a **semantic universe**:
 
 - **Unified:** All distinctions (content, UI, network) collapse into one graph.
 - **Empowering:** Users shape their world with tag edges, from tasks to trust.
@@ -281,7 +281,7 @@ What do you think—shall we tag `"fun": true` and explore a wild subgraph next?
 
 --------
 
-Let’s take **SemanticScribe** to the next level by redesigning its ontology and tag system with a **graph-theoretic
+Let’s take **Netention** to the next level by redesigning its ontology and tag system with a **graph-theoretic
 foundation**. This approach infuses the app with advanced capabilities—partial pattern matching, logical reasoning,
 recommendations, trust networks—while aligning with its core purpose: empowering users to create, collaborate, and share
 semantically rich content. I’ll explore how tag quantities and functions can serve as graph weights, how the graph can
@@ -290,9 +290,9 @@ cunning, and fun exploration!
 
 ---
 
-# SemanticScribe: A Graph-Theoretic Semantic Universe
+# Netention: A Graph-Theoretic Semantic Universe
 
-**SemanticScribe** evolves into a workspace where **NObjects** form a dynamic **knowledge graph**, with **Tags** as
+**Netention** evolves into a workspace where **NObjects** form a dynamic **knowledge graph**, with **Tags** as
 nodes and edges, driven by an **Ontology** that defines their structure and behavior. This graph foundation enables
 sophisticated reasoning, pattern matching, and UI control, all while keeping the system intuitive and aligned with user
 needs.
@@ -613,14 +613,14 @@ const ontology: Ontology = {
 
 ## Final Insights
 
-This graph-theoretic redesign turns SemanticScribe into a **living knowledge network**. Tags as edges unify
+This graph-theoretic redesign turns Netention into a **living knowledge network**. Tags as edges unify
 functionality; weights enable reasoning and trust; homoiconic UI blurs data and presentation. Users wield a powerful,
 intuitive tool where tagging builds a graph that reasons, recommends, and renders itself. The codebase shrinks further—~
 300 lines—while opening doors to endless graph-powered possibilities. What’s next? Let’s dream up some wild graph tags!
 
 --------
 
-Let’s reimagine the **SemanticScribe** ontology and tag system with a **graph-theoretic foundation**, transforming it
+Let’s reimagine the **Netention** ontology and tag system with a **graph-theoretic foundation**, transforming it
 into a powerful, flexible framework that unlocks advanced functionality like partial pattern matching, logical
 reasoning, recommendations, trust networks, and more. This redesign aligns with the app’s core purpose—empowering users
 to collaboratively create, share, and reason about semantically rich content in a decentralized environment. We’ll dive
@@ -629,9 +629,9 @@ while keeping UX intuitive and tag-driven reactivity intact.
 
 ---
 
-# SemanticScribe: A Graph-Theoretic Semantic Engine
+# Netention: A Graph-Theoretic Semantic Engine
 
-**SemanticScribe** evolves into a workspace where **NObjects** and their **Tags** form a dynamic knowledge graph. This
+**Netention** evolves into a workspace where **NObjects** and their **Tags** form a dynamic knowledge graph. This
 graph foundation enables sophisticated reasoning and functionality, all driven by tag reactions, while maintaining
 simplicity for users. The redesign replaces the flat ontology with a graph structure, treating tags as nodes and
 relationships as edges, opening up a world of possibilities.
@@ -910,13 +910,13 @@ const ontology: OntologyGraph = {
 - **Predictable:** `"public": true` always publishes; users learn once, apply everywhere.
 - **Fun:** Explore trust networks or logic rules—power feels playful.
 
-This graph-theoretic redesign makes SemanticScribe a reasoning, recommending, trust-aware workspace—all via tags. Ready
+This graph-theoretic redesign makes Netention a reasoning, recommending, trust-aware workspace—all via tags. Ready
 to code this universe? Let’s brainstorm more wild tags!
 
 
 --------
 
-Let’s reimagine **SemanticScribe** by redesigning the ontology and tag system with a **graph-theoretic foundation**.
+Let’s reimagine **Netention** by redesigning the ontology and tag system with a **graph-theoretic foundation**.
 This approach aligns with the app’s purpose—creating a collaborative, semantically rich workspace—while unlocking
 advanced functionality like **partial pattern matching**, **logic and reasoning**, **recommendation**, **trust networks
 **, and more. By modeling NObjects and tags as nodes and edges in a graph, we can leverage graph theory to enhance
@@ -925,9 +925,9 @@ both implementable and aligned with our goals.
 
 ---
 
-# SemanticScribe: A Graph-Theoretic Semantic Workspace
+# Netention: A Graph-Theoretic Semantic Workspace
 
-**SemanticScribe** evolves into a system where **NObjects** and **Tags** form a dynamic, graph-based ontology. This
+**Netention** evolves into a system where **NObjects** and **Tags** form a dynamic, graph-based ontology. This
 graph drives advanced reasoning and functionality, making the app a powerful tool for collaboration, discovery, and
 trust, all while maintaining intuitive UX through tag-driven reactivity.
 
@@ -1167,7 +1167,7 @@ const Tag = ({ node, graph }) => {
 
 ## Final Insights
 
-This graph-theoretic redesign turns SemanticScribe into a **semantic reasoning engine**. Tags and NObjects form a living
+This graph-theoretic redesign turns Netention into a **semantic reasoning engine**. Tags and NObjects form a living
 graph where:
 
 - **Partial Matching** finds patterns effortlessly.

@@ -12,17 +12,17 @@ class Toolbar {
 
         const formattingGroup = createGroup();
         formattingGroup.append(
-            createButton("Bold (Ctrl+B)", "B", "bold"),
-            createButton("Italic (Ctrl+I)", "I", "italic"),
-            createButton("Underline (Ctrl+U)", "U", "underline"),
-            createButton("Strike Through", "S", "strikeThrough"),
-            createButton("Clear Formatting", "Unformat", "removeFormat")
+            createButton("Bold (Ctrl+B)", "<b>B</b>", "bold"),
+            createButton("Italic (Ctrl+I)", "<i>I</i>", "italic"),
+            createButton("Underline (Ctrl+U)", "<u>U</u>", "underline"),
+            createButton("Strike Through", "<del>S</del>", "strikeThrough"),
+            createButton("Clear Formatting", "∅", "removeFormat")
         );
 
         const undoRedoGroup = createGroup();
         undoRedoGroup.append(
-            createButton("Undo (Ctrl+Z)", "Undo", "undo"),
-            createButton("Redo (Ctrl+Y)", "Redo", "redo")
+            createButton("Undo (Ctrl+Z)", "↶", "undo"),
+            createButton("Redo (Ctrl+Y)", "↷", "redo")
         );
 
         this.el.append(formattingGroup, undoRedoGroup);

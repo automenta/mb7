@@ -38,6 +38,7 @@ export const renderNostrFeed = async (app, el) => {
                 kinds: [1] // Text notes
             }
         ];
+        
         const connection = new WebSocket(relayUrl);
 
         connection.onopen = () => {
@@ -45,20 +46,19 @@ export const renderNostrFeed = async (app, el) => {
             connection.send(JSON.stringify(sub));
         };
 
-        
-                connection.onmessage = (event) => {
-                    const data = JSON.parse(event.data);
-                    console.log("Received message:", data);
-                    if (data[0] === "EVENT") {
-                        const subId = data[1];
-                        const eventContent = data[2].content;
-                        feedEl.innerHTML += `<p>[${subId}] ${eventContent}</p>`;
-                    } else if (data[0] === "NOTICE") {
-                        console.log("NOTICE:", data[1]);
-                    } else {
-                        console.log("Unknown message type:", data);
-                    }
-                };
+        connection.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            if (data[0] === "EVENT") {
+                const subId = data[1];
+                const eventContent = data[2].content;
+                feedEl.innerHTML += `<p>[${subId}] ${eventContent}</p>`;
+            } else if (data[0] === "NOTICE") {
+                console.log("NOTICE:", data[1]);
+            } else {
+                console.log("Unknown message type:", data);
+            }
+        };
+
         connection.onerror = (error) => {
             console.error('WebSocket error:', error);
             feedEl.innerHTML = '<p>Error fetching Nostr feed.</p>';

@@ -164,4 +164,7 @@ export const UnifiedOntology = {
     }
 };
 
-export const getTagDefinition = (name) => UnifiedOntology[name] || UnifiedOntology.string;
+export const getTagDefinition = (name) => {
+    // TODO: Add support for semantic information, such as synonyms, related concepts, and hierarchical relationships
+    return UnifiedOntology[name] || UnifiedOntology.string;
+};

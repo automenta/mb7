@@ -1,7 +1,7 @@
 import Fuse from 'fuse.js';
-import {formatDate} from '../ui/content-view-renderer.js';
-import {nip19} from 'nostr-tools';
-import {getTagDefinition} from './ontology';
+import { formatDate } from '../ui/content-view-renderer.js';
+import { nip19 } from 'nostr-tools';
+import { getTagDefinition } from './ontology';
 
 export class Matcher {
     constructor(app) {
@@ -40,7 +40,8 @@ export class Matcher {
     }
 
     matchTagData(tagData, text, event) {
-        const {name, condition, value} = tagData;
+        const { name, condition, value } = tagData;
+        // TODO: Implement more sophisticated tag matching techniques
         const tagDef = getTagDefinition(name);
 
         if (!tagDef.validate(value, condition)) return false;
@@ -88,5 +89,19 @@ export class Matcher {
             return checkTime(value);
         }
         return false;
+    }
+
+    /**
+     * Enhances semantic matching using advanced techniques.
+     * @param {string} text - The text to match against.
+     * @param {object[]} objects - The objects to search.
+     * @returns {object[]} - The matching objects.
+     */
+    async enhanceSemanticMatching(text, objects) {
+        // TODO: Implement enhanced semantic matching logic here
+        // TODO: Explore word embeddings or knowledge graphs for semantic matching
+        // TODO: Consider updating core/ontology.js to support semantic information
+        console.log(`Performing enhanced semantic matching for text: ${text} (not implemented)`);
+        return objects.filter(obj => obj.content.includes(text)); // Placeholder
     }
 }

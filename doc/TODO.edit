@@ -375,14 +375,14 @@ This is the ultimate app—where every word counts, every tag tells a story, and
 
 ----
 
-Imagine opening an app that feels less like a traditional text editor and more like a creative, interactive canvas for your ideas—a digital workspace where every word can carry rich meaning and dynamic data. Let’s call it **SemanticScribe**, the ultimate semantic text editor that transforms how you write, analyze, and connect ideas.
+Imagine opening an app that feels less like a traditional text editor and more like a creative, interactive canvas for your ideas—a digital workspace where every word can carry rich meaning and dynamic data. Let’s call it **Netention**, the ultimate semantic text editor that transforms how you write, analyze, and connect ideas.
 
 ---
 
 ### **A Seamless, Immersive Experience**
 
 **1. A Minimalist Yet Dynamic Workspace**
-When you launch SemanticScribe, you’re greeted by a pristine, distraction‑free interface. The main canvas is spacious and flexible, inviting you to simply start writing. As you type, the app intuitively scans your text in real‑time. Key terms and phrases—those that could unlock deeper meaning—are gently underlined with a subtle dotted highlight. This isn’t a cluttered experience; it’s a thoughtful nudge to help you enrich your ideas.
+When you launch Netention, you’re greeted by a pristine, distraction‑free interface. The main canvas is spacious and flexible, inviting you to simply start writing. As you type, the app intuitively scans your text in real‑time. Key terms and phrases—those that could unlock deeper meaning—are gently underlined with a subtle dotted highlight. This isn’t a cluttered experience; it’s a thoughtful nudge to help you enrich your ideas.
 
 **2. Intelligent Tagging and Semantic Enrichment**
 Hover over an underlined word, and a small, pulsating icon appears. With a simple click or a quick hotkey (think Alt+O), a smart pop‑up triggers. This is your gateway to a rich ontology browser, offering context‑sensitive suggestions drawn from diverse domains:
@@ -398,7 +398,7 @@ Every tag is an interactive widget embedded seamlessly into your text. Click on 
 ### **Empowering Your Workflow**
 
 **1. Contextual Autosuggest and Smart Formatting**
-As you type, SemanticScribe doesn’t just watch—it learns. It scans for words that match ontology prefixes and offers smart, inline suggestions. Imagine the editor underlining a word like “Temp…” and then offering you choices: “Temperature,” “Tempo,” or even a custom tag you might have defined. This autosuggest mechanism adapts to your style, so your content is always enriched with relevant data.
+As you type, Netention doesn’t just watch—it learns. It scans for words that match ontology prefixes and offers smart, inline suggestions. Imagine the editor underlining a word like “Temp…” and then offering you choices: “Temperature,” “Tempo,” or even a custom tag you might have defined. This autosuggest mechanism adapts to your style, so your content is always enriched with relevant data.
 
 **2. A Versatile Toolbar for Creative Control**
 At the top, a dynamic toolbar offers both traditional rich‑text controls (bold, italic, underline, strike‑through, undo/redo) and custom dropdowns for inserting semantic tags. Each dropdown is tailored to a category of thought:
@@ -410,18 +410,18 @@ At the top, a dynamic toolbar offers both traditional rich‑text controls (bold
 Selecting an option instantly inserts a beautifully rendered tag into your text, complete with its own mini‑interface for adjusting values or switching modes.
 
 **3. Rich Interactivity and Collaboration**
-SemanticScribe is designed for the modern, connected creator:
+Netention is designed for the modern, connected creator:
 - **Real‑Time Collaboration:** Multiple users can work on the same document simultaneously, with semantic tags updating live and merging data seamlessly.
 - **Cloud‑Integration and Versioning:** Automatically save, load, and share your enriched documents. Every semantic layer you add is version‑controlled, so you can track changes and revisit earlier iterations.
 - **Graph‑View Exploration:** Beyond linear text, switch to a visual map of your document’s semantic relationships. See how ideas connect in a network diagram, perfect for brainstorming sessions or data‑driven analysis.
 
 ---
 
-### **A Day in the Life with SemanticScribe**
+### **A Day in the Life with Netention**
 
 Imagine you’re Alex, a product manager drafting a comprehensive market analysis report:
 
-- **Morning Brainstorm:** You open SemanticScribe and start jotting down key concepts. As you type “Revenue is expected to grow,” the word “Revenue” is underlined. A quick click transforms it into an interactive tag, letting you specify metrics, thresholds, and even attach a mini‑chart.
+- **Morning Brainstorm:** You open Netention and start jotting down key concepts. As you type “Revenue is expected to grow,” the word “Revenue” is underlined. A quick click transforms it into an interactive tag, letting you specify metrics, thresholds, and even attach a mini‑chart.
 
 - **Midday Deep‑Dives:** Switching focus, you detail customer sentiments. The editor recognizes “satisfaction” and offers to tag it with emotional ranges. You choose “Happiness” and adjust its value using a sleek slider. Your narrative now carries embedded data points that later feed into real‑time dashboards.
 
@@ -433,9 +433,9 @@ Imagine you’re Alex, a product manager drafting a comprehensive market analysi
 
 ### **The Future of Writing**
 
-SemanticScribe isn’t just an editor—it’s a reimagining of how we interact with text. By fusing traditional writing with semantic data, it transforms your document into a living entity, continuously evolving as you add context, meaning, and actionable insights. Whether you’re a writer, researcher, marketer, or analyst, this ultimate app turns every word into a doorway to deeper understanding.
+Netention isn’t just an editor—it’s a reimagining of how we interact with text. By fusing traditional writing with semantic data, it transforms your document into a living entity, continuously evolving as you add context, meaning, and actionable insights. Whether you’re a writer, researcher, marketer, or analyst, this ultimate app turns every word into a doorway to deeper understanding.
 
-In this vision, implementation details fade into the background. The focus is on empowering creativity, enhancing clarity, and unlocking the latent potential in every line of text. Welcome to the future of writing. Welcome to SemanticScribe.
+In this vision, implementation details fade into the background. The focus is on empowering creativity, enhancing clarity, and unlocking the latent potential in every line of text. Welcome to the future of writing. Welcome to Netention.
 
 ----
 

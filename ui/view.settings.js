@@ -15,6 +15,20 @@ export class SettingsView extends View {
         const importKeyBtn = createElement("button", { id: "import-key-btn" }, "Import Key");
         const exportKeyBtn = createElement("button", { id: "export-key-btn" }, "Export Key");
         const keyDisplay = createElement("div", { id: "key-display" });
+
+        const h3Signaling = createElement("h3", {}, "Signaling");
+        const signalingStrategyLabel = createElement("label", {}, "Signaling Strategy:");
+        const signalingStrategySelect = createElement("select", { id: "signaling-strategy-select" }, `<option value="nostr">Nostr</option><option value="webrtc">WebRTC Signaling Server (Not Implemented)</option>`);
+        signalingStrategyLabel.append(signalingStrategySelect);
+
+        const h3Nostr = createElement("h3", {}, "Nostr Settings");
+        const nostrRelayListLabel = createElement("label", {}, "Relays (one per line):");
+        const nostrRelayList = createElement("textarea", { id: "nostr-relay-list", placeholder: "Relays (one per line)" });
+        nostrRelayListLabel.append(nostrRelayList);
+        const nostrPrivateKeyLabel = createElement("label", {}, "Private Key:");
+        const nostrPrivateKeyInput = createElement("input", { type: "text", id: "nostr-private-key", placeholder: "hex encoded private key" });
+        nostrPrivateKeyLabel.append(nostrPrivateKeyInput);
+
         const h3Relays = createElement("h3", {}, "Relays");
         const relayList = createElement("textarea", { id: "relay-list", placeholder: "Relays (one per line)" });
         const h3Preferences = createElement("h3", {}, "Preferences");
@@ -36,8 +50,17 @@ export class SettingsView extends View {
             importKeyBtn,
             exportKeyBtn,
             keyDisplay,
+
+            h3Signaling,
+            signalingStrategyLabel,
+
+            h3Nostr,
+            nostrRelayListLabel,
+            nostrPrivateKeyLabel,
+
             h3Relays,
             relayList,
+
             h3Preferences,
             dateFormatLabel,
             h3UserProfile,
@@ -86,6 +109,15 @@ export class SettingsView extends View {
                     settings.profilePicture = tag[1];
                     this.el.querySelector("#profile-picture").value = tag[1];
                     this.updateProfileDisplay({name: settings.profileName, picture: settings.profilePicture});
+                } else if (tag[0] === "signalingStrategy") {
+                    settings.signalingStrategy = tag[1];
+                    this.el.querySelector("#signaling-strategy-select").value = tag[1];
+                } else if (tag[0] === "nostrRelays") {
+                    settings.nostrRelays = tag[1];
+                    this.el.querySelector("#nostr-relay-list").value = tag[1];
+                } else if (tag[0] === "nostrPrivateKey") {
+                    settings.nostrPrivateKey = tag[1];
+                    this.el.querySelector("#nostr-private-key").value = tag[1];
                 }
             });
         }
@@ -96,12 +128,18 @@ export class SettingsView extends View {
         const dateFormat = this.el.querySelector("#date-format-select").value;
         const profileName = this.el.querySelector("#profile-name").value;
         const profilePicture = this.el.querySelector("#profile-picture").value;
+        const signalingStrategy = this.el.querySelector("#signaling-strategy-select").value;
+        const nostrRelays = this.el.querySelector("#nostr-relay-list").value;
+        const nostrPrivateKey = this.el.querySelector("#nostr-private-key").value;
 
         const settings = {
             relays: relays,
             dateFormat: dateFormat,
             profileName: profileName,
-            profilePicture: profilePicture
+            profilePicture: profilePicture,
+            signalingStrategy: signalingStrategy,
+            nostrRelays: nostrRelays,
+            nostrPrivateKey: nostrPrivateKey
         };
 
         await DB.DB.prototype.saveSettings(settings);

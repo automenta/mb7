@@ -10,12 +10,12 @@ class ContentView extends View {
         this.el.id = 'content-view';
     }
 
-    
-        render() {
-            console.log("ContentView.render() called");
-            this.build();
-            this.bindEvents();
-        }
+
+    render() {
+        this.build();
+        this.bindEvents();
+    }
+
     build() {
         this.el.innerHTML = `
             <h2>Content</h2>
