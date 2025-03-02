@@ -42,6 +42,7 @@ class App {
         const nostr = new Nostr(app, signalingStrategy, nostrRelays, nostrPrivateKey);
         nostr.connect();
         const matcher = new Matcher(app);
+        app.yDoc = new Y.Doc();
 
         // Initialize NotificationManager and Monitoring here, after db is ready
         const notificationManager = new NotificationManager(app);
@@ -60,10 +61,12 @@ class App {
             return null;
         }
 
-        const newObject = {id: object.id, name: object.name, content: object.content};
+        const newObject = {id: object.id, name: object.name, content: object.content, private: object.private};
         try {
             await this.db.save(newObject);
+            const matches = await this.matcher.findMatches(newObject);
             await this.publishNewObject(newObject);
+            this.publishMatches(matches);
             return newObject;
         } catch (error) {
             this.errorHandler.handleError(error, 'Error saving or publishing object');
@@ -75,11 +78,13 @@ class App {
 
     async publishNewObject(newObject) {
         console.log('publishNewObject called with newObject:', newObject);
-        try {
-            await this.nostr.publish(newObject);
-            this.notificationManager.showNotification('Published to Nostr!', 'success');
-        } catch (error) {
-            this.errorHandler.handleError(error, 'Error publishing to Nostr');
+        if (!newObject.private) {
+            try {
+                await this.nostr.publish(newObject);
+                this.notificationManager.showNotification('Published to Nostr!', 'success');
+            } catch (error) {
+                this.errorHandler.handleError(error, 'Error publishing to Nostr');
+            }
         }
     }
 
@@ -121,6 +126,22 @@ class App {
 
     showNotification(message, type) {
         this.notificationManager.showNotification(message, type);
+    }
+
+    async publishMatches(matches) {
+        console.log('publishMatches called with matches:', matches);
+        if (!matches || matches.length === 0) {
+            console.log('No matches to publish.');
+            return;
+        }
+        try {
+            for (const match of matches) {
+                await this.nostr.publish(match);
+                this.showNotification('Published match to Nostr!', 'success');
+            }
+        } catch (error) {
+            this.errorHandler.handleError(error, 'Error publishing match to Nostr');
+        }
     }
 }
     

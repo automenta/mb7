@@ -180,7 +180,7 @@ export class NoteView extends HTMLElement {
         console.log('createNote function called');
         try {
             const timestamp = Date.now();
-            const newObject = await this.app.createNewObject({name: '', content: '', timestamp, private: true, tags: [], priority: 'Medium'});
+            const newObject = await this.app.saveOrUpdateObject({name: '', content: '', timestamp, private: true, tags: [], priority: 'Medium'});
             if (newObject) {
                 await this.addNoteToList(newObject.id);
                 await this.notesListComponent.fetchDataAndRender();

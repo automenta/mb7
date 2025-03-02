@@ -11,6 +11,7 @@ class EditorContentHandler {
         this.yName = yName;
         this.app = app;
         this.lastValidRange = null; // Store the last valid range within the editor for handling tag insertions
+        this.observeYjsChanges();
     }
 
     insertLineBreak() {
@@ -162,6 +163,13 @@ class EditorContentHandler {
 
     updateEditorArea(html) {
         this.editor.editorArea.innerHTML = html;
+    }
+
+    observeYjsChanges() {
+        this.yText.observe(() => {
+            const html = this.yText.toString();
+            this.updateEditorArea(html);
+        });
     }
 }
 

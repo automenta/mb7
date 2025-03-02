@@ -1,11 +1,12 @@
 import {NostrSignalingProvider} from './net/net.signaling';
 
 export class WebRTCService {
-    constructor(app, signalingStrategy, nostrRelays, nostrPrivateKey) {
+    constructor(app, signalingStrategy, nostrRelays, nostrPrivateKey, yDoc) {
         this.app = app;
         this.signalingStrategy = signalingStrategy;
         this.nostrRelays = nostrRelays;
         this.nostrPrivateKey = nostrPrivateKey;
+        this.yDoc = yDoc;
     }
 
     /**
@@ -69,7 +70,17 @@ export class WebRTCService {
                 }
                 dataChannel.onmessage = (event) => {
                     console.log("Received Message", event.data);
-                }
+                };
+
+                // Yjs provider
+                import('y-webrtc').then(({WebrtcProvider}) => {
+                    const webrtcProvider = new WebrtcProvider(
+                        'netention-demo',
+                        this.yDoc,
+                        peerConnection
+                    );
+                });
+
             } catch (error) {
                 console.error("Error in connectWebRTC:", error);
                 this.app.showNotification(`Error in connectWebRTC: ${error.message}`, 'error');

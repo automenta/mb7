@@ -43,6 +43,33 @@ export class Matcher {
         }
     }
 
+    async findMatches(object) {
+        const matches = [];
+        const objects = await this.app.db.getAll();
+
+        if (!object) {
+            console.log('No object to match.');
+            return matches;
+        }
+
+        const text = (object.content || '').toLowerCase();
+
+        for (const obj of objects) {
+            if (obj.tags?.some(tagData => this.matchTagData(tagData, text, object)))
+                matches.push(obj);
+        }
+
+        if (!matches.length) {
+            this.fuse.setCollection(objects);
+            matches.push(...this.fuse.search(text).filter(r => r.score <= this.fuse.options.threshold).map(r => r.item));
+        }
+
+        //dedupe matches
+        const uniqueMatches = [...new Set(matches.map(m => m.id))].map(id => matches.find(m => m.id === id));
+
+        return uniqueMatches;
+    }
+
     /**
      * Matches an event against a tag's data.
      * @param {object} tagData - The tag data to match against.

@@ -18,7 +18,7 @@ import {EventHandler} from './net/net.events';
 //const pubkeyRegex = /^[0-9a-fA-F]{64}$/;
 
 export class Nostr {
-    constructor(app, signalingStrategy, nostrRelays, nostrPrivateKey) {
+    constructor(app, signalingStrategy, nostrRelays, nostrPrivateKey, yDoc) {
         this.app = app;
         this.signalingStrategy = signalingStrategy;
         this.nostrRelays = nostrRelays;
@@ -28,15 +28,22 @@ export class Nostr {
         this.relayStatuses = {};
         this.relayObjects = {};
         this.lastPublishTime = null;
+        this.yDoc = yDoc;
 
         this.relayManager = new RelayManager(this, this.relays, this.relayStatuses, this.relayObjects, this.relayConnected.bind(this), this.app.showNotification);
         this.eventHandler = new EventHandler(this.app);
-        this.webRTCService = new WebRTCService(this.app, this.signalingStrategy, this.nostrRelays, this.nostrPrivateKey);
     }
 
     async sendDM(pubkey, content) {
         try {
-            // TODO: Implement actual DM sending logic using Nostr
+            const event = {
+                kind: 4,
+                created_at: Math.floor(Date.now() / 1000),
+                tags: [['p', pubkey]],
+                content: content,
+                pubkey: window.keys.pub,
+            };
+            await this.publishEvent(event);
             console.log('Sending DM to', pubkey, 'with content:', content);
         } catch (error) {
             this.app.errorHandler.handleError(error, 'Error sending DM');

@@ -30,6 +30,11 @@ export class FriendsView extends View {
 
     bindEvents() {
         this.el.querySelector("#add-friend-btn").addEventListener("click", () => this.addFriend());
+        this.el.querySelector("#friends-list").addEventListener("click", (e) => {
+            if (e.target.classList.contains("connect-webrtc")) {
+                this.connectWebRTC(e.target.dataset.pubkey);
+            }
+        });
         this.loadFriends(); // Load friends on initialization
     }
 
@@ -105,7 +110,7 @@ export class FriendsView extends View {
                 const displayName = name ? `${name} (${npub})` : npub;
                 const profilePictureHTML = picture ? `<img src="${picture}" alt="Profile Picture" style="width: 24px; height: 24px; border-radius: 50%; margin-right: 8px;">` : '';
                 const li = createElement('li');
-                li.innerHTML = `${profilePictureHTML}${displayName} <button class="remove-friend" data-pubkey="${pubkey}">Remove</button>`;
+                li.innerHTML = `${profilePictureHTML}${displayName} <button class="remove-friend" data-pubkey="${pubkey}">Remove</button> <button class="connect-webrtc" data-pubkey="${pubkey}">Connect WebRTC</button>`;
                 friendsList.append(li);
             }
         });
@@ -137,6 +142,16 @@ export class FriendsView extends View {
         } catch (error) {
             console.error("Error during key exchange:", error);
             this.app.showNotification("Failed to exchange keys.", "error");
+        }
+    }
+
+    async connectWebRTC(pubkey) {
+        try {
+            console.log('Connecting to WebRTC peer:', pubkey);
+            await this.app.nostr.webRTCService.connectWebRTC(pubkey, true); // Assuming initiator
+        } catch (error) {
+            console.error('Error connecting to WebRTC peer:', error);
+            this.app.showNotification(`Error connecting to WebRTC peer: ${error.message}`, 'error');
         }
     }
     }
