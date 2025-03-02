@@ -1,10 +1,15 @@
-import {Edit} from './edit/edit';
+import {Edit} from './edit/edit.js';
 import * as Y from 'yjs';
 
-export class NotesView extends HTMLElement {
+import { NotesToolbar } from './note/note.toolbar.js';
+import { NotesSidebar } from './note/note.sidebar.js';
+import { NoteDetails } from './note/note.details.js';
+
+export class NoteView extends HTMLElement {
     constructor(app) {
         super();
         this.app = app;
+        const sidebar = this.sidebar = new NotesSidebar(app);
 
         this.yDoc = new Y.Doc();
         this.notesListId = 'notesList';
@@ -16,112 +21,25 @@ export class NotesView extends HTMLElement {
         this.el.style.flexDirection = 'row';
         this.el.style.display = 'flex';
 
-        const toolbar = document.createElement('div');
-        toolbar.className = 'notes-toolbar';
-        toolbar.style.display = 'flex';
-        toolbar.style.justifyContent = 'space-between';
-        toolbar.style.alignItems = 'center';
-        toolbar.style.padding = '10px';
-
-        const title = document.createElement('span');
-        title.textContent = 'Notes';
-        toolbar.appendChild(title);
-
-        const actions = document.createElement('div');
-        actions.style.display = 'flex';
-        actions.style.gap = '10px';
-        toolbar.appendChild(actions);
-
-        const searchButton = document.createElement('button');
-        searchButton.textContent = 'Search';
-        actions.appendChild(searchButton);
-
-        const addNoteButton = document.createElement('button');
-        addNoteButton.textContent = 'Add';
-        addNoteButton.addEventListener('click', () => {
-            this.createNote({name: '', content: ''});
-        });
-        actions.appendChild(addNoteButton);
-
-        // const settingsButton = document.createElement('button');
-        // settingsButton.textContent = 'Settings';
-        // actions.appendChild(settingsButton);
-
-
-        const sidebar = document.createElement('div');
-        sidebar.style.width = '200px';
-        sidebar.style.borderRight = '1px solid #ccc';
-        sidebar.style.padding = '10px';
-        sidebar.style.minWidth = '200px';
-
-        const notesList = this.newNotesList();
-
-        this.elements = {
-            notesList: notesList
-        };
-
-        sidebar.appendChild(toolbar);
-        sidebar.appendChild(notesList);
+        const noteDetails = new NoteDetails();
 
         const mainArea = document.createElement('div');
         mainArea.style.flex = '1';
         mainArea.style.flexGrow = '1';
         mainArea.style.padding = '10px';
 
-        this.el.appendChild(sidebar);
+        this.el.appendChild(sidebar.render());
 
         mainArea.appendChild(this.newTitleEdit());
 
         // Details
-        const detailsContainer = document.createElement('div');
-        detailsContainer.className = 'note-details-container';
-        detailsContainer.style.padding = '10px';
-        mainArea.appendChild(detailsContainer);
-
-        detailsContainer.appendChild(this.newPriEdit());
-        detailsContainer.appendChild(this.newPrivacyEdit());
-        detailsContainer.appendChild(this.newShareEdit());
-
-        // const editDetailsButton = document.createElement('button');
-        // editDetailsButton.textContent = '[Edit Details ✏️]';
-        // editDetailsButton.style.marginLeft = '10px';
-        // detailsContainer.appendChild(editDetailsButton);
+        mainArea.appendChild(noteDetails.render());
 
         // Content area
         const contentArea = document.createElement('div');
         contentArea.className = 'note-content-area';
         contentArea.style.padding = '10px';
         mainArea.appendChild(contentArea);
-
-        // Tags
-        const tagsContainer = document.createElement('div');
-        tagsContainer.className = 'note-tags-container';
-        tagsContainer.style.padding = '10px';
-        mainArea.appendChild(tagsContainer);
-
-        const ideaTag = document.createElement('span');
-        ideaTag.textContent = '🏷️ Idea, Development';
-        tagsContainer.appendChild(ideaTag);
-
-        const addTagButton = document.createElement('button');
-        addTagButton.textContent = '[+ Tag]';
-        addTagButton.style.marginLeft = '10px';
-        tagsContainer.appendChild(addTagButton);
-
-        // // Attachments
-        // const attachmentsContainer = document.createElement('div');
-        // attachmentsContainer.className = 'note-attachments-container';
-        // attachmentsContainer.style.padding = '10px';
-        // mainArea.appendChild(attachmentsContainer);
-        //
-        // const fileAttachment = document.createElement('span');
-        // fileAttachment.textContent = '📎 file1.pdf, image.png';
-        // attachmentsContainer.appendChild(fileAttachment);
-        //
-        // const addAttachmentButton = document.createElement('button');
-        // addAttachmentButton.textContent = '[+ Attach]';
-        // addAttachmentButton.style.marginLeft = '10px';
-        // attachmentsContainer.appendChild(addAttachmentButton);
 
         mainArea.appendChild(this.newLinkedView());
         mainArea.appendChild(this.newMatchesView());
@@ -136,10 +54,11 @@ export class NotesView extends HTMLElement {
 
         // Observe Yjs changes
         this.yMap.observe(event => {
+            console.log('Yjs observer triggered');
             this.loadNotes();
         });
 
-        notesList.addEventListener('click', async (e) => {
+        this.sidebar.elements.notesList.addEventListener('click', async (e) => {
             if (e.target.tagName === 'LI') {
                 const noteId = e.target.dataset.id;
                 const note = await this.app.db.get(noteId);
@@ -257,7 +176,8 @@ export class NotesView extends HTMLElement {
 
     async createNote(newNote) {
         try {
-            const newObject = await this.app.createNewObject(null, newNote);
+            const timestamp = Date.now();
+            const newObject = await this.app.createNewObject(null, {...newNote, timestamp});
             if (newObject) {
                 this.edit.setContent(newObject.content);
                 this.edit.setName(newObject.name);
@@ -290,21 +210,30 @@ export class NotesView extends HTMLElement {
         this.yMap.set(this.notesListId, notesList);
     }
 
-    async loadNotes() {
+    async loadNotes(limit = 10) {
         let notesList = this.yMap.get(this.notesListId) ?? [];
 
-        this.elements.notesList.innerHTML = '';
+        // Fetch notes from db and sort by timestamp
+        const notes = [];
         for (const noteId of notesList) {
             const note = await this.app.db.get(noteId);
             if (note) {
-                const noteElement = this.renderNObject(note);
-                this.elements.notesList.append(noteElement);
-
-                // Update title input value
-                const titleInput = document.querySelector('.note-title-container input[type="text"]');
-                if (titleInput)
-                    titleInput.value = note.name;
+                notes.push(note);
             }
+        }
+
+        
+                notes.sort((a, b) => b.timestamp - a.timestamp);
+        
+                this.sidebar.elements.notesList.innerHTML = '';
+                console.log('Notes to render:', notes);
+                for (const note of notes.slice(0, limit)) {
+                    const noteElement = this.renderNObject(note);
+                    this.sidebar.elements.notesList.append(noteElement);
+            // Update title input value
+            const titleInput = document.querySelector('.note-title-container input[type="text"]');
+            if (titleInput)
+                titleInput.value = note.name;
         }
 
         // Display the content of the first note in the main area
@@ -349,4 +278,6 @@ export class NotesView extends HTMLElement {
     }
 }
 
-customElements.define('notes-view', NotesView);
+if (!customElements.get('notes-view')) {
+    customElements.define('notes-view', NoteView);
+}

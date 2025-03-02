@@ -6,26 +6,17 @@ const DOMPURIFY_CONFIG = {
 import * as NostrTools from 'nostr-tools';
 import {openDB} from 'idb';
 import * as Y from 'yjs'
+// Mock indexedDB for tests
+if (process.env.NODE_ENV === 'test') {
+    const FakeIndexedDB = require('fake-indexeddb').FakeIndexedDB;
+    global.indexedDB = new FakeIndexedDB();
+}
 import {generateEncryptionKey} from './crypto';
 import {addFriend, removeFriend, updateFriendProfile} from './friend';
 import {saveSettings} from './settings';
+import { createDefaultObject } from './db.utils';
+import { loadKeys } from './db.keys';
 
-/**
- * Creates a default object with the given ID and kind.
- */
-async function createDefaultObject(db, id, kind = 30000) {
-    const now = new Date().toISOString();
-    const object = {
-        id,
-        kind,
-        content: '',
-        tags: [],
-        createdAt: now,
-        updatedAt: now,
-    };
-    await db.put(OBJECTS_STORE, object);
-    return object;
-}
 
 const DB_NAME = 'nostr-app-db';
 const DB_VERSION = 2;
@@ -320,20 +311,6 @@ export async function generateKeys() {
     const newKeys = {priv, pub, encryptionKey};
     await DB.db.put(KEY_STORAGE, newKeys, KEY_STORAGE);
     return newKeys;
-}
-
-/**
- * Load existing keys from DB. If none found, generate a new pair and save it.
- */
-export async function loadKeys() {
-    let keys = await DB.db.get(KEY_STORAGE, KEY_STORAGE);
-    if (!keys) {
-        keys = await generateKeys();
-        console.log('Keys generated and saved.');
-    }
-
-    window.keys = keys;
-    return keys;
 }
 
 async function getNotesIndex() {

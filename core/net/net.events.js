@@ -118,4 +118,23 @@ export class EventHandler {
         }
         return tags;
     }
+
+    async handleEvent(event) {
+        switch (event.kind) {
+            case 0:
+                await this.handleKind0(event);
+                break;
+            case 3:
+                await this.handleKind3(event);
+                break;
+            case 5:
+                await this.handleKind5(event);
+                break;
+            case 30000:
+                await this.handleObjectEvent(event);
+                break;
+            default:
+                console.log("Unhandled event kind:", event.kind);
+        }
+    }
 }

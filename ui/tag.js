@@ -226,6 +226,8 @@ class TagRemoveButtonRenderer extends TagRenderer {
     }
 }
 
-customElements.define('gra-tag', Tag);
+if (!customElements.get('gra-tag')) {
+    customElements.define('gra-tag', Tag);
+}
 
 export {Tag};

@@ -1,3 +1,5 @@
+import { handleDBError } from './db.utils';
+
 export async function saveSettings(db, settingsObjectId, settings) {
     // TODO: Consider using a more flexible and scalable approach for storing settings data
     let settingsObject = await db.getDefaultObject(settingsObjectId);

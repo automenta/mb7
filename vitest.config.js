@@ -13,5 +13,6 @@ export default defineConfig({
                 args: ['--no-sandbox']
             }
         },
-    }
+    },
+    globalSetup: ['./test/vitest-global-setup.js'],
 })

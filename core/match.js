@@ -47,18 +47,7 @@ export class Matcher {
         if (!tagDef.validate(value, condition)) return false;
 
         const checkTime = (val) => {
-            if (tagDef.name !== 'time') return false;
-            try {
-                const eventDate = new Date(event.created_at * 1000);
-                const parsedValue = parseISO(val);
-                if (!isValidDate(parsedValue)) return false;
-                if (condition === "is") return eventDate.getTime() === parsedValue.getTime();
-                if (condition === "before") return eventDate < parsedValue;
-                if (condition === "after") return eventDate > parsedValue;
-            } catch (e) {
-                console.warn("Error parsing time:", e);
-            }
-            return false;
+            return checkTime(val, event, tagDef, condition);
         };
 
         if (condition === "between" && tagDef.name === "time") {

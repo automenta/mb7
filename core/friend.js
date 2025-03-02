@@ -1,3 +1,5 @@
+import { handleDBError } from './db.utils';
+
 export async function addFriend(db, friendsObjectId, friend) {
     try {
         const friendsObject = await db.getDefaultObject(friendsObjectId);

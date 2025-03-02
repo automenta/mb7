@@ -28,8 +28,17 @@ export const renderTagCloud = (app, el) => {
 export const renderNostrFeed = async (app, el) => {
     const feedEl = el.querySelector('#nostr-feed');
     try {
-        // Replace with actual relay URL
-        const relayUrl = 'wss://relay.damus.io';
+        const relayUrl = 'wss://relay.damus.io'; // Replace with actual relay URL
+        const feedContent = await fetchNostrFeed(relayUrl);
+        feedEl.innerHTML = feedContent;
+    } catch (error) {
+        console.error('Error fetching Nostr feed:', error);
+        feedEl.innerHTML = '<p>Error fetching Nostr feed.</p>';
+    }
+};
+
+async function fetchNostrFeed(relayUrl) {
+    try {
         const sub = [
             "REQ",
             "my-sub",
@@ -41,33 +50,40 @@ export const renderNostrFeed = async (app, el) => {
 
         const connection = new WebSocket(relayUrl);
 
-        connection.onopen = () => {
-            console.log("WebSocket connection opened");
-            connection.send(JSON.stringify(sub));
-        };
+        return new Promise((resolve, reject) => {
+            connection.onopen = () => {
+                console.log("WebSocket connection opened");
+                connection.send(JSON.stringify(sub));
+            };
 
-        connection.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            if (data[0] === "EVENT") {
-                const subId = data[1];
-                const eventContent = data[2].content;
-                feedEl.innerHTML += `<p>[${subId}] ${eventContent}</p>`;
-            } else if (data[0] === "NOTICE") {
-                console.log("NOTICE:", data[1]);
-            } else {
-                console.log("Unknown message type:", data);
-            }
-        };
+            let feedHTML = '';
+            connection.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                if (data[0] === "EVENT") {
+                    const subId = data[1];
+                    const eventContent = data[2].content;
+                    feedHTML += `<p>[${subId}] ${eventContent}</p>`;
+                } else if (data[0] === "NOTICE") {
+                    console.log("NOTICE:", data[1]);
+                } else {
+                    console.log("Unknown message type:", data);
+                }
+            };
 
-        connection.onerror = (error) => {
-            console.error('WebSocket error:', error);
-            feedEl.innerHTML = '<p>Error fetching Nostr feed.</p>';
-        };
+            connection.onerror = (error) => {
+                console.error('WebSocket error:', error);
+                reject('<p>Error fetching Nostr feed.</p>');
+            };
+
+            connection.onclose = () => {
+                resolve(feedHTML);
+            };
+        });
     } catch (error) {
         console.error('Error fetching Nostr feed:', error);
-        feedEl.innerHTML = '<p>Error fetching Nostr feed.</p>';
+        return '<p>Error fetching Nostr feed.</p>';
     }
-};
+}
 
 export const renderNetworkStatus = (app, el) => {
     const statusEl = el.querySelector('#network-status');

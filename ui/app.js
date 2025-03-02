@@ -3,7 +3,7 @@ import {Nostr} from '../core/net.js';
 import {ErrorHandler} from '../core/error.js';
 import {FriendsView} from "./view.friends.js";
 import {SettingsView} from "./view.settings.js";
-import {NotesView} from './view.notes.js';
+import {NoteView as NoteView} from './view.note.js';
 import {ContentView} from "./ui-manager.js";
 import {createMenuBar} from './menu-bar.js';
 import {NotificationManager} from './notification-manager.js';
@@ -15,17 +15,27 @@ class App {
         this.selected = null;
         this.notificationManager = new NotificationManager();
         this.elements = {};
+
+        this.elements.notificationArea = document.createElement('div');
+        this.elements.notificationArea.id = 'notification-area';
+
+        this.initialize();
     }
 
     async initialize() {
         await DB.the();
         this.errorHandler = new ErrorHandler(this);
         this.db = new DB(this, this.errorHandler);
+        await this.initializeNostr();
+    }
+
+    async initializeNostr() {
         await this.db.initializeKeys();
-        const settings = await this.db.getSettings() || {};
-        const signalingStrategy = settings.signalingStrategy || "nostr";
-        const nostrRelays = settings.nostrRelays || "";
-        const nostrPrivateKey = settings.nostrPrivateKey || "";
+        const {
+            signalingStrategy = "nostr",
+            nostrRelays = "",
+            nostrPrivateKey = ""
+        } = await this.db.getSettings() || {};
 
         this.nostr = new Nostr(this, signalingStrategy, nostrRelays, nostrPrivateKey);
         this.nostr.connect();
@@ -40,27 +50,12 @@ class App {
         const id = crypto.randomUUID();
         console.log('createNewObject', editView, newNote);
         const newObject = {id: id, name: newNote.name, content: newNote.content};
-        await this.db.saveObject(newObject);
+        await this.db.save(newObject);
         return newObject;
-    }
-
-    showEditor(newObject) {
-        console.log('showEditor', newObject);
-    }
-
-    /**
-     * Implements UI improvements to minimize cognitive load.
-     */
-    minimizeCognitiveLoad() {
-        console.log("Implementing UI improvements to minimize cognitive load");
     }
 
     // TODO: Integrate YDoc with the UI to enable real-time collaborative editing
 
-    /**
-     * Shows a view in the main content area.
-     * @param {View} view - The view to show.
-     */
     showView(view) {
         const mainContent = document.querySelector('main');
         mainContent.innerHTML = ''; // Clear existing content
@@ -74,47 +69,47 @@ class App {
     }
 
     prepareObjectForSaving(object) {
-        if (!object.tags || !Array.isArray(object.tags)) {
+        if (!object.tags || !Array.isArray(object.tags))
             return;
-        }
-
-        object.tags.forEach(tag => {
-            if (!tag.name) {
-                throw new Error('Tag name is required.');
-            }
-            if (tag.name.length > 50) {
-                throw new Error('Tag name is too long (max 50 characters).');
-            }
-        });
+    
+        if (!object.tags.every(tag => tag.name))
+            throw new Error('Tag name is required.');    
     }
 
 }
 
-document.addEventListener("DOMContentLoaded", async () => {
-    const appDiv = document.getElementById('app');
+function createAppMainContent() {
+    const mainContent = document.createElement('main');
+    mainContent.className = 'main-content';
+    return mainContent;
+}
 
+document.addEventListener("DOMContentLoaded", async () => {
+    await setupUI();
+});
+
+async function setupUI() {
     const app = new App();
-    await app.initialize();
-    await app.db.initializeKeys();
-    const notesView = new NotesView(app);
+
+    const noteView = new NoteView(app);
     const friendsView = new FriendsView(app);
     const settingsView = new SettingsView(app);
+
     const contentView = new ContentView();
 
-    const menubar = createMenuBar(app, notesView, friendsView, settingsView, contentView);
-    const mainContent = document.createElement('main');
-    mainContent.class = 'main-content';
+    const menubar = createMenuBar(app, noteView, friendsView, settingsView, contentView);
+    const mainContent = createAppMainContent();
 
+    const appDiv = document.getElementById('app');
     appDiv.appendChild(menubar);
     appDiv.appendChild(mainContent);
+    appDiv.appendChild(app.elements.notificationArea);
 
-    // Create notification area
-    const notificationArea = document.createElement('div');
-    notificationArea.id = 'notification-area';
-    appDiv.appendChild(notificationArea);
-    app.elements = {notificationArea};
+    const defaultView = 
+        //noteView;
+        contentView;
 
-    app.showView(contentView); // Show content view by default
-    contentView.render();
-});
+    app.showView(defaultView);
+    contentView.render(); //TODO only when shown
+}
 export {App};

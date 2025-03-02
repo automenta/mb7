@@ -1,6 +1,7 @@
 import DOMPurify from 'dompurify';
 import {getEventHash, nip19, validateEvent, verifyEvent} from 'nostr-tools';
 import {getTagDefinition} from './ontology';
+import {WebRTCService} from './net.webrtc';
 import {NostrSignalingProvider} from './net/net.signaling';
 import {RelayManager} from './net/net.relays';
 import {EventHandler} from './net/net.events';
@@ -20,6 +21,7 @@ export class Nostr {
 
         this.relayManager = new RelayManager(this, this.relays, this.relayStatuses, this.relayObjects, this.relayConnected.bind(this), this.app.showNotification);
         this.eventHandler = new EventHandler(this.app);
+        this.webRTCService = new WebRTCService(this.app, this.signalingStrategy, this.nostrRelays, this.nostrPrivateKey);
     }
 
     getSubscriptions() {
@@ -83,6 +85,7 @@ export class Nostr {
             return await this.publishEvent(event);
         } catch (error) {
             console.error("Error publishing object:", error);
+            this.app.showNotification(`Error publishing object: ${error.message}`, "error");
             throw error;
         }
     }

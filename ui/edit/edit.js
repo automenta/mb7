@@ -39,6 +39,10 @@ class Edit {
         this.contentEditor.contentEditable = 'true';
         this.el.appendChild(this.contentEditor);
 
+        this.contentEditor.addEventListener('input', debounce(() => {
+            this.setContent(this.contentEditor.innerHTML);
+        }, 300));
+
         this.nameInput.addEventListener('input', () => {
             this.setName(this.nameInput.value);
         });
@@ -66,6 +70,7 @@ class Edit {
 
     setName(name) {
         this.nameInput.value = name;
+        console.log('setName called', name);
         this.yDoc.transact(() => {
             this.yName.delete(0, this.yName.length);
             this.yName.insert(0, name);
@@ -73,6 +78,7 @@ class Edit {
     }
 
     setContent(html) {
+        console.log('setContent called', html);
         this.yDoc.transact(() => {
             this.yText.delete(0, this.yText.length);
             this.yText.insert(0, html);

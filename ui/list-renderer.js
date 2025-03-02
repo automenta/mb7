@@ -10,20 +10,7 @@ function createListItem(item, updateNote, yMap) {
 
     // Sync name changes with Yjs
     const yName = yMap.get(item.id).get('name');
-    yName.observe(event => {
-        if (!nameSpan.isSameNode(document.activeElement)) {
-            nameSpan.textContent = yName.toString();
-        }
-    });
-
-    nameSpan.addEventListener('input', () => {
-        yName.delete(0, yName.length);
-        yName.insert(0, nameSpan.textContent);
-    });
-
-    nameSpan.addEventListener('blur', async () => {
-        await updateNote(item.id, {name: nameSpan.textContent});
-    });
+    syncNameWithYjs(nameSpan, yName, updateNote, item.id);
 
     // Content preview
     const contentPreview = document.createElement('span');
@@ -48,16 +35,30 @@ function createListItem(item, updateNote, yMap) {
 }
 
 function renderList(items, container, updateNote, yMap) {
-    if (!items || items.length === 0) {
-        container.textContent = 'No notes yet.';
-        return;
-    }
+    container.textContent = items?.length === 0 ? 'No notes yet.' : '';
+    if (items?.length === 0) return;
 
     container.innerHTML = '';
     items.forEach(item => {
         if (item) {
             container.appendChild(createListItem(item, updateNote, yMap));
         }
+    });
+}
+function syncNameWithYjs(nameSpan, yName, updateNote, itemId) {
+    yName.observe(event => {
+        if (!nameSpan.isSameNode(document.activeElement)) {
+            nameSpan.textContent = yName.toString();
+        }
+    });
+
+    nameSpan.addEventListener('input', () => {
+        yName.delete(0, yName.length);
+        yName.insert(0, nameSpan.textContent);
+    });
+
+    nameSpan.addEventListener('blur', async () => {
+        await updateNote(itemId, {name: nameSpan.textContent});
     });
 }
 
