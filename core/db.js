@@ -43,8 +43,7 @@ export class DB {
      * Initialize (or upgrade) the IndexedDB database using `idb`.
      */
     static async the() {
-        if (this.db)
-            return this.db;
+        if (this.db) return this.db;
 
         console.log("DB.the - opening database");
         this.db = await openDB(DB_NAME, DB_VERSION, {
@@ -68,16 +67,10 @@ export class DB {
     }
 
     static async getDefaultObject(id) {
-        if (!DB.db) {
-            await DB.the();
-        }
+        if (!DB.db) await DB.the();
+
         let object = await DB.db.get(OBJECTS_STORE, id);
-
-        if (!object) {
-            object = await createDefaultObject(DB.db, id);
-        }
-
-        return object;
+        return object ? object : await createDefaultObject(DB.db, id);
     }
 
     async initializeKeys() {

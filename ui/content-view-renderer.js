@@ -29,8 +29,7 @@ export const renderNostrFeed = async (app, el) => {
     const feedEl = el.querySelector('#nostr-feed');
     try {
         const relayUrl = 'wss://relay.damus.io'; // Replace with actual relay URL
-        const feedContent = await fetchNostrFeed(relayUrl);
-        feedEl.innerHTML = feedContent;
+        feedEl.innerHTML = await fetchNostrFeed(relayUrl);
     } catch (error) {
         console.error('Error fetching Nostr feed:', error);
         feedEl.innerHTML = '<p>Error fetching Nostr feed.</p>';

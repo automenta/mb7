@@ -54,19 +54,17 @@ class Edit {
     }
 
     createNameInput() {
-        const nameInput = createElement('input', {
+        return createElement('input', {
             type: 'text',
             placeholder: 'Note Title'
         });
-        return nameInput;
     }
 
     createEditorArea() {
-        const editorArea = createElement('div', {
+        return createElement('div', {
             contenteditable: "true",
             className: "editor-area"
         });
-        return editorArea;
     }
 
     setupEditorAreaEvents() {

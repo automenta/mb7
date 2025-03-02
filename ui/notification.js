@@ -22,12 +22,12 @@ class Notification {
     }
 
     createElement() {
-        const notificationEl = document.createElement('div');
-        notificationEl.className = `notification ${this.type}`;
-        notificationEl.innerHTML = `${this.icon} ${this.message}`;
-        notificationEl.style.right = '-300px';
-        notificationEl.style.opacity = 0;
-        return notificationEl;
+        const e = document.createElement('div');
+        e.className = `notification ${this.type}`;
+        e.innerHTML = `${this.icon} ${this.message}`;
+        e.style.right = '-300px';
+        e.style.opacity = 0;
+        return e;
     }
 
     appendTo(parent) {

@@ -15,7 +15,6 @@ export function createAppMock() {
             await app.db.save({id: "test-id", name: newNote.name, content: newNote.content});
             return {name: 'Test Note', content: 'Test Content'}
         }),
-        publishNoteToNostr: vi.fn(),
         nostr: {
             publish: vi.fn()
         },

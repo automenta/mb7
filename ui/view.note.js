@@ -69,7 +69,7 @@ export class NoteView extends HTMLElement {
                         this.yNotesList.push([note.id]);
                     });
                 });
-                this.notesListComponent.fetchDataAndRender(); // Re-render the list
+                await this.notesListComponent.fetchDataAndRender(); // Re-render the list
             } else {
                 console.log("No notes found in database on initial load.");
                 await this.createNote(); // Create default note if no notes exist
@@ -142,7 +142,7 @@ export class NoteView extends HTMLElement {
             if (newObject) {
                 this.selectedNote = newObject;
                 await this.addNoteToList(newObject.id);
-                this.notesListComponent.fetchDataAndRender();
+                await this.notesListComponent.fetchDataAndRender();
                 this.showMessage('Saved');
             } else {
                 console.error('Error creating note: newObject is null');
