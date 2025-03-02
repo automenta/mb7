@@ -6,6 +6,8 @@ import {NoteDetails} from './note/note.details.js';
 
 import {GenericListComponent} from './generic-list.js';
 
+import { Ontology } from '../core/ontology.js';
+
 export class NoteView extends HTMLElement {
     constructor(app, db, nostr) {
         super();
@@ -37,6 +39,7 @@ export class NoteView extends HTMLElement {
         mainArea.appendChild(this.newTitleEdit());
 
         // Details
+        mainArea.appendChild(this.newPrivacyEdit());
         mainArea.appendChild(noteDetails.render());
 
         // Content area
@@ -55,6 +58,26 @@ export class NoteView extends HTMLElement {
         const tagArea = document.createElement('div');
         tagArea.className = 'note-tag-area';
         tagArea.style.padding = '10px';
+        // Tag Input
+        const tagInput = document.createElement('input');
+        tagInput.type = 'text';
+        tagInput.placeholder = 'Add a tag';
+        tagInput.className = 'note-tag-input';
+        tagInput.addEventListener('input', () => {
+            const value = tagInput.value;
+            console.log('Ontology:', Ontology);
+            const suggestions = Object.keys(Ontology).filter(tag => tag.toLowerCase().startsWith(value.toLowerCase()));
+            console.log('Suggestions array:', suggestions);
+            // Display suggestions (omitted for brevity)
+            this.displayTagSuggestions(suggestions);
+        });
+
+        tagArea.appendChild(tagInput);
+
+        // Tag List
+        const tagList = document.createElement('ul');
+        tagList.className = 'note-tag-list';
+        tagArea.appendChild(tagList);
         mainArea.appendChild(tagArea);
 
         mainArea.appendChild(this.newLinkedView());
@@ -130,10 +153,23 @@ export class NoteView extends HTMLElement {
     }
 
     newPrivacyEdit() {
-        const privacyLabel = document.createElement('span');
-        privacyLabel.textContent = '🔒 Private';
-        privacyLabel.style.marginLeft = '10px';
-        return privacyLabel;
+        const privacyContainer = document.createElement('div');
+        privacyContainer.className = 'privacy-container';
+
+        const privacyLabel = document.createElement('label');
+        privacyLabel.textContent = 'Private:';
+        privacyContainer.appendChild(privacyLabel);
+
+        const privacyCheckbox = document.createElement('input');
+        privacyCheckbox.type = 'checkbox';
+        privacyCheckbox.className = 'privacy-checkbox';
+        privacyCheckbox.addEventListener('change', async (event) => {
+            const isPrivate = event.target.checked;
+            await this.updateNotePrivacy(this.selectedNote.id, isPrivate);
+        });
+        privacyContainer.appendChild(privacyCheckbox);
+
+        return privacyContainer;
     }
 
     newPriEdit() {
@@ -178,6 +214,7 @@ export class NoteView extends HTMLElement {
 
     async createNote() {
         console.log('createNote function called');
+            console.log('app.saveOrUpdateObject called');
         try {
             const timestamp = Date.now();
             const newObject = await this.app.saveOrUpdateObject({name: '', content: '', timestamp, private: true, tags: [], priority: 'Medium'});
@@ -250,6 +287,7 @@ export class NoteView extends HTMLElement {
                 nameElement.textContent = 'Error loading note - DEBUG';
             }
         });
+        this.displayTags(noteId);
 
         return li;
     }
@@ -322,6 +360,40 @@ export class NoteView extends HTMLElement {
         } catch (error) {
             console.error('Error updating note priority:', error);
         }
+    }
+
+    displayTags(noteId) {
+        const tagList = this.el.querySelector('.note-tag-list');
+        tagList.innerHTML = ''; // Clear existing tags
+        this.getNoteTags(noteId).then(tags => {
+            tags.forEach(tag => {
+                const tagItem = document.createElement('li');
+                tagItem.textContent = tag.name;
+                tagList.appendChild(tagItem);
+            });
+        });
+    }
+    
+    displayTagSuggestions(suggestions) {
+
+        const tagArea = this.el.querySelector('.note-tag-area');
+        let suggestionsList = tagArea.querySelector('.note-tag-suggestions');
+        if (!suggestionsList) {
+            suggestionsList = document.createElement('ul');
+            suggestionsList.className = 'note-tag-suggestions';
+            tagArea.appendChild(suggestionsList);
+        }
+        suggestionsList.innerHTML = ''; // Clear existing suggestions
+        suggestions.forEach(suggestion => {
+            const suggestionItem = document.createElement('li');
+            suggestionItem.textContent = suggestion;
+            suggestionItem.addEventListener('click', () => {
+                const tagInput = this.el.querySelector('.note-tag-input');
+                tagInput.value = suggestion;
+                suggestionsList.innerHTML = ''; // Clear suggestions after selection
+            });
+            suggestionsList.appendChild(suggestionItem);
+        });
     }
 }
 

@@ -1,3 +1,4 @@
+import * as Y from 'yjs'
 import { Monitoring } from '../core/monitoring.js';
 import {Matcher} from '../core/match.js';
 import {DB} from '../core/db.js';
@@ -24,7 +25,10 @@ class App {
     static async initialize(app) {
         const errorHandler = new ErrorHandler(app);
         const db = new DB(app, errorHandler);
-        const dbInstance = await DB.the();
+        let signalingStrategy = "nostr"; // Provide a default value in case of error
+        let nostrRelays = "";
+        let nostrPrivateKey = "";
+
         try {
             let {
                 signalingStrategy = "nostr",
@@ -33,9 +37,6 @@ class App {
             } = (await db.getSettings()) || {};
         } catch (error) {
             console.error('Error getting settings from db:', error);
-            signalingStrategy = "nostr"; // Provide a default value in case of error
-            nostrRelays = "";
-            nostrPrivateKey = "";
         }
         console.log('db.getSettings() returned:', await db.getSettings());
 

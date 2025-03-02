@@ -1,4 +1,3 @@
-// db.js
 const DOMPURIFY_CONFIG = {
     ALLOWED_TAGS: ["br", "b", "i", "span", "p", "strong", "em", "ul", "ol", "li", "a"],
     ALLOWED_ATTR: ["class", "contenteditable", "tabindex", "id", "aria-label"]
@@ -7,18 +6,13 @@ import DOMPurify from 'dompurify';
 import * as NostrTools from 'nostr-tools';
 import {openDB} from 'idb';
 import * as Y from 'yjs'
-// Mock indexedDB for tests
-//if (process.env.NODE_ENV === 'test') {
-//    const FakeIndexedDB = require('fake-indexeddb').FakeIndexedDB;
-//    global.indexedDB = new FakeIndexedDB();
-//}
+
 import {generateEncryptionKey} from './crypto';
 import {addFriend, removeFriend, updateFriendProfile} from './friend';
 import {saveSettings} from './settings';
 import {createDefaultObject} from './db.utils';
 import {loadKeys} from './db.keys';
 import { encrypt, decrypt } from './crypto';
-
 
 const DB_NAME = 'nostr-app-db';
 const DB_VERSION = 2;
@@ -28,11 +22,7 @@ const FRIENDS_OBJECT_ID = 'friends';
 const SETTINGS_OBJECT_ID = 'settings';
 const NOTES_INDEX_ID = 'notes-index';
 
-/**
- * The main database class for your app.
- * Use DB.DB.initDB() to ensure the DB is open/ready.
- * Then create a new DB.DB() instance for the CRUD methods.
- */
+
 export class DB {
     static db = null;
 
@@ -41,12 +31,6 @@ export class DB {
         this.errorHandler = errorHandler;
     }
 
-    /**
-     * Initialize (or upgrade) the IndexedDB database using `idb`.
-     */
-    /**
-     * Initializes the IndexedDB database.
-     */
     static async the() {
         if (this.db) return this.db;
 
