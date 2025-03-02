@@ -1,4 +1,4 @@
-import { UIComponent } from './view.js';
+import {UIComponent} from './view.js';
 
 export class GenericListComponent extends UIComponent {
     constructor(renderItem, yArray) {

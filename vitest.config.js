@@ -15,5 +15,5 @@ export default defineConfig({
         },
     },
     globalSetup: [],
-    define: { 'process.env.NODE_ENV': '"test"' }
+    define: {'process.env.NODE_ENV': '"test"'}
 })

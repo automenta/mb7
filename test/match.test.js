@@ -1,7 +1,7 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { Matcher } from '../core/match.js';
-import { createAppMock } from './test-utils.js';
-import { getTagDefinition } from '../core/ontology.js';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
+import {Matcher} from '../core/match.js';
+import {createAppMock} from './test-utils.js';
+import {getTagDefinition} from '../core/ontology.js';
 
 vi.mock('../core/ontology.js', () => {
     return {
@@ -22,8 +22,8 @@ describe('Matcher', () => {
 
     describe('matchTagData', () => {
         it('should return false if tagDef.validate returns false', () => {
-            getTagDefinition.mockReturnValue({ validate: vi.fn().mockReturnValue(false) });
-            const tagData = { name: 'test', condition: 'is', value: 'value' };
+            getTagDefinition.mockReturnValue({validate: vi.fn().mockReturnValue(false)});
+            const tagData = {name: 'test', condition: 'is', value: 'value'};
             const text = 'text';
             const event = {};
             const result = matcher.matchTagData(tagData, text, event);
@@ -31,8 +31,8 @@ describe('Matcher', () => {
         });
 
         it('should return true if condition is "is" and text includes value', () => {
-            getTagDefinition.mockReturnValue({ validate: vi.fn().mockReturnValue(true) });
-            const tagData = { name: 'test', condition: 'is', value: 'value'.toLowerCase() };
+            getTagDefinition.mockReturnValue({validate: vi.fn().mockReturnValue(true)});
+            const tagData = {name: 'test', condition: 'is', value: 'value'.toLowerCase()};
             const text = 'text with value'.toLowerCase();
             const event = {};
             const result = matcher.matchTagData(tagData, text, event);
@@ -40,8 +40,8 @@ describe('Matcher', () => {
         });
 
         it('should return false if condition is "is" and text does not include value', () => {
-            getTagDefinition.mockReturnValue({ validate: vi.fn().mockReturnValue(true) });
-            const tagData = { name: 'test', condition: 'is', value: 'value'.toLowerCase() };
+            getTagDefinition.mockReturnValue({validate: vi.fn().mockReturnValue(true)});
+            const tagData = {name: 'test', condition: 'is', value: 'value'.toLowerCase()};
             const text = 'text without value'.toLowerCase();
             const event = {};
             const result = matcher.matchTagData(tagData, text, event);
@@ -51,10 +51,15 @@ describe('Matcher', () => {
 
     describe('matchEvent', () => {
         it('should call showNotification if matches are found', async () => {
-            app.db.getAll.mockResolvedValue([{ id: '1', name: 'Test Object', content: 'Test Content', updatedAt: Date.now() }]);
+            app.db.getAll.mockResolvedValue([{
+                id: '1',
+                name: 'Test Object',
+                content: 'Test Content',
+                updatedAt: Date.now()
+            }]);
             matcher.matchTagData = vi.fn().mockReturnValue(true);
             app.showNotification = vi.fn();
-            const event = { content: 'test', pubkey: 'a'.repeat(64), tags: [] };
+            const event = {content: 'test', pubkey: 'a'.repeat(64), tags: []};
             await matcher.matchEvent(event);
             expect(app.showNotification).toHaveBeenCalled();
         });
@@ -63,7 +68,7 @@ describe('Matcher', () => {
             app.db.getAll.mockResolvedValue([]);
             matcher.fuse.search = vi.fn().mockReturnValue([]);
             app.showNotification = vi.fn();
-            const event = { content: 'test', pubkey: 'testpubkey', tags: [] };
+            const event = {content: 'test', pubkey: 'testpubkey', tags: []};
             await matcher.matchEvent(event);
             expect(app.showNotification).not.toHaveBeenCalled();
         });

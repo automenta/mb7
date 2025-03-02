@@ -14,4 +14,4 @@ async function initializeDatabase(app) {
     }
 }
 
-export { initializeDatabase };
+export {initializeDatabase};

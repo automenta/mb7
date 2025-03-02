@@ -1,6 +1,6 @@
 import {ErrorHandler} from '../core/error.js';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
-import { createAppMock } from './test-utils.js';
+import {createAppMock} from './test-utils.js';
 
 describe('ErrorHandler', () => {
     let app;

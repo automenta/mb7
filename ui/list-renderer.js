@@ -45,6 +45,7 @@ function renderList(items, container, updateNote, yMap) {
         }
     });
 }
+
 function syncNameWithYjs(nameSpan, yName, updateNote, itemId) {
     yName.observe(event => {
         if (!nameSpan.isSameNode(document.activeElement)) {

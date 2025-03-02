@@ -1,4 +1,4 @@
-import { vi } from 'vitest';
+import {vi} from 'vitest';
 
 export function createAppMock() {
     const app = {
@@ -13,7 +13,7 @@ export function createAppMock() {
         showNotification: vi.fn(),
         createNewObject: vi.fn(async (newNote) => {
             await app.db.save({id: "test-id", name: newNote.name, content: newNote.content});
-            return { name: 'Test Note', content: 'Test Content' }
+            return {name: 'Test Note', content: 'Test Content'}
         }),
         publishNoteToNostr: vi.fn(),
         nostr: {

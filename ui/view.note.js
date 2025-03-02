@@ -1,10 +1,11 @@
 import {Edit} from './edit/edit.js';
 import * as Y from 'yjs';
 
-import { NotesSidebar } from './note/note.sidebar.js';
-import { NoteDetails } from './note/note.details.js';
+import {NotesSidebar} from './note/note.sidebar.js';
+import {NoteDetails} from './note/note.details.js';
 
-import { GenericListComponent } from './generic-list.js';
+import {GenericListComponent} from './generic-list.js';
+
 export class NoteView extends HTMLElement {
     constructor(app) {
         super();
@@ -110,7 +111,7 @@ export class NoteView extends HTMLElement {
         return priorityLabel;
     }
 
-    async handleDeleteNote  (note) {
+    async handleDeleteNote(note) {
     }
 
     newTitleEdit() {
@@ -174,8 +175,8 @@ export class NoteView extends HTMLElement {
     }
 
     renderNoteItem(noteIdArray) { // Renamed from renderNObject to renderNoteItem, used by GenericListComponent, now receives noteId
-    const noteId = noteIdArray[0];
-    const li = document.createElement('li');
+        const noteId = noteIdArray[0];
+        const li = document.createElement('li');
         li.dataset.id = noteId;
         const nameElement = document.createElement('div');
         nameElement.style.fontWeight = 'bold';
@@ -188,7 +189,7 @@ export class NoteView extends HTMLElement {
             }
         });
 
-    this.app.db.get(noteId).then(note => {
+        this.app.db.get(noteId).then(note => {
             if (note) {
                 const yNoteMap = this.getYNoteMap(noteId);
                 if (yNoteMap) {
@@ -230,6 +231,7 @@ export class NoteView extends HTMLElement {
             this.el.removeChild(e);
         }, 3000);
     }
+
     updateNoteTitleDisplay() {
         if (this.selectedNote) {
             const titleInput = this.el.querySelector('.note-title-container input[type="text"]');

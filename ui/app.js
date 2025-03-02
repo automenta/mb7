@@ -1,4 +1,4 @@
-import { Matcher } from '../core/match.js';
+import {Matcher} from '../core/match.js';
 import {DB} from '../core/db.js';
 import {Nostr} from '../core/net.js';
 import {ErrorHandler} from '../core/error.js';
@@ -73,9 +73,9 @@ class App {
     prepareObjectForSaving(object) {
         if (!object.tags || !Array.isArray(object.tags))
             return;
-    
+
         if (!object.tags.every(tag => tag.name))
-            throw new Error('Tag name is required.');    
+            throw new Error('Tag name is required.');
     }
 
     async publishNoteToNostr(note) {
@@ -136,4 +136,5 @@ async function setupUI() {
     noteView.notesListComponent.disableObserver = false;
     contentView.render(); //TODO only when shown
 }
+
 export {App};

@@ -1,4 +1,4 @@
-import { NostrSignalingProvider } from './net/net.signaling';
+import {NostrSignalingProvider} from './net/net.signaling';
 
 export class WebRTCService {
     constructor(app, signalingStrategy, nostrRelays, nostrPrivateKey) {

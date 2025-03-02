@@ -1,4 +1,4 @@
-import { NotesToolbar } from './note.toolbar.js';
+import {NotesToolbar} from './note.toolbar.js';
 
 export class NotesSidebar extends HTMLElement {
     constructor(app, notesView) {
@@ -13,7 +13,7 @@ export class NotesSidebar extends HTMLElement {
         const addButton = document.createElement('button');
         addButton.textContent = 'Add Note';
         addButton.addEventListener('click', () => {
-            this.notesView.createNote({ name: 'New Note', content: '' });
+            this.notesView.createNote({name: 'New Note', content: ''});
         });
         this.el.appendChild(addButton);
 

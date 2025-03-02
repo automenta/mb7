@@ -40,9 +40,9 @@ export class Matcher {
     }
 
     matchTagData(tagData, text, event) {
-        console.log('matchTagData called with:', { tagData, text, event });
+        console.log('matchTagData called with:', {tagData, text, event});
         const {name, condition, value} = tagData;
-        console.log('tagData values:', { name, condition, value });
+        console.log('tagData values:', {name, condition, value});
         // TODO: Implement more sophisticated tag matching techniques
         const tagDef = getTagDefinition(name);
 

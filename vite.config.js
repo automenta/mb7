@@ -9,7 +9,7 @@ export default defineConfig({
         https: false,
         open: true,
         mimeTypes: {
-          'js': 'application/javascript'
+            'js': 'application/javascript'
         }
     }
 });

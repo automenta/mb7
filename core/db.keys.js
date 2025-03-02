@@ -1,6 +1,6 @@
 import * as NostrTools from 'nostr-tools';
-import { generateEncryptionKey } from './crypto';
-import { DB } from './db';
+import {generateEncryptionKey} from './crypto';
+import {DB} from './db';
 
 const generatePrivateKey = () => {
     const array = new Uint8Array(32);

@@ -1,8 +1,6 @@
 import {createElement} from '../utils';
 import {Tag} from '../tag.js'; // Import the new Tag component
-import {getNotesIndex, updateNotesIndex} from '../../core/db';
 import DOMPurify from 'dompurify';
-import { debounce } from '../utils';
 
 class EditorContentHandler {
     constructor(editor, autosuggest, yDoc, yText, yName, app) {
@@ -14,7 +12,7 @@ class EditorContentHandler {
         this.app = app;
         this.lastValidRange = null; // Store the last valid range within the editor for handling tag insertions
     }
- 
+
     insertLineBreak() {
         const selection = window.getSelection();
         if (!selection.rangeCount) return;

@@ -1,8 +1,5 @@
-import * as Y from 'yjs';
-import DOMPurify from 'dompurify';
-
 import {UnifiedOntology} from '../../core/ontology';
-import {DB, getNotesIndex, updateNotesIndex} from '../../core/db';
+import {DB} from '../../core/db';
 import {ErrorHandler} from '../../core/error';
 
 import {createElement, debounce} from '../utils';
@@ -25,7 +22,7 @@ class Edit {
         this.yName = this.yDoc.getText('name');
         this.app = app; // Store the app instance
 
-        this.el = createElement('div', { className: 'edit-view' });
+        this.el = createElement('div', {className: 'edit-view'});
 
         // Name input
         this.nameInput = this.createNameInput();
@@ -118,7 +115,7 @@ class Edit {
             case "ArrowUp":
                 event.preventDefault();
                 this.suggestionDropdown.moveSelection(event.key === "ArrowDown" ? 1 : -1);
-            break;
+                break;
             case "Enter":
                 event.preventDefault();
                 if (this.suggestionDropdown.getSelectedSuggestion()) {
@@ -134,7 +131,7 @@ class Edit {
         }
     }
 
-   setupEditorEvents() {
+    setupEditorEvents() {
         this.editorArea.addEventListener("keyup", (event) => this.handleEditorKeyUp(event));
         this.editorArea.addEventListener("click", (event) => this.handleEditorClick(event));
         this.editorArea.addEventListener("keydown", (event) => this.handleEditorKeyDown(event));
@@ -201,11 +198,12 @@ class Edit {
     }
 
     createSuggestion(tagData, span = null) {
-        return { displayText: tagData.name, tagData, span };
+        return {displayText: tagData.name, tagData, span};
     }
-matchesOntology(word) {
-    return Object.values(this.ontology).flat().some(tag => tag?.name?.toLowerCase().startsWith(word.toLowerCase()));
-}
+
+    matchesOntology(word) {
+        return Object.values(this.ontology).flat().some(tag => tag?.name?.toLowerCase().startsWith(word.toLowerCase()));
+    }
 }
 
 export {Edit};

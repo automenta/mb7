@@ -14,8 +14,8 @@ import * as Y from 'yjs'
 import {generateEncryptionKey} from './crypto';
 import {addFriend, removeFriend, updateFriendProfile} from './friend';
 import {saveSettings} from './settings';
-import { createDefaultObject } from './db.utils';
-import { loadKeys } from './db.keys';
+import {createDefaultObject} from './db.utils';
+import {loadKeys} from './db.keys';
 
 
 const DB_NAME = 'nostr-app-db';
