@@ -29,7 +29,7 @@ class Autosuggest {
             while ((match = wordRegex.exec(text)) !== null) {
                 if (this.editor.matchesOntology(match[0])) {
                     hasMatch = true;
-                     // Only need one match per word
+                    // Only need one match per word
                 }
             }
             if (hasMatch) this.wrapMatches(node);

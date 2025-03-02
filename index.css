@@ -1,3 +1,42 @@
+.note-title-container {
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid #ccc;
+}
+
+.note-details-container {
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid #ccc;
+}
+
+.note-content-area {
+    padding: 10px;
+}
+
+.note-tags-container {
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid #ccc;
+}
+
+.note-attachments-container {
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid #ccc;
+}
+
+.note-linked-nobjects-container {
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid #ccc;
+}
+
+.note-matches-replies-container {
+    padding: 10px;
+    border-bottom: 1px solid #ccc;
+}
+
 body.dark-mode {
     background-color: #333;
     color: #fff;

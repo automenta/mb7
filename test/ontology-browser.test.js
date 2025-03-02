@@ -1,6 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { OntologyBrowser } from '../ui/edit/ontology-browser.js';
-import { UnifiedOntology } from '../core/ontology.js';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
+import {OntologyBrowser} from '../ui/edit/ontology-browser.js';
+import {UnifiedOntology} from '../core/ontology.js';
 import {Tag} from "../ui/tag.js";
 
 describe('OntologyBrowser Component', () => {

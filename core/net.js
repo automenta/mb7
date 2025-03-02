@@ -161,7 +161,6 @@ export class Nostr {
     }
 
 
-
     async subscribeToFriends(relay) {
         try {
             const friendsObjectId = await this.app.db.getFriendsObjectId();
@@ -273,4 +272,5 @@ export class Nostr {
         } catch (error) {
             console.error("Error subscribing to pubkey:", error);
         }
-    }}
+    }
+}

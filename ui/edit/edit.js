@@ -22,6 +22,26 @@ class Edit {
         this.db = new DB(this.errorHandler);
         this.yDoc = new Y.Doc();
         this.yText = this.yDoc.getText('content');
+        this.yName = this.yDoc.getText('name');
+
+        this.el = document.createElement('div');
+        this.el.className = 'edit-view';
+
+        // Name input
+        this.nameInput = document.createElement('input');
+        this.nameInput.type = 'text';
+        this.nameInput.placeholder = 'Note Title';
+        this.el.appendChild(this.nameInput);
+
+        // Content editor
+        this.contentEditor = document.createElement('div');
+        this.contentEditor.className = 'content-editor';
+        this.contentEditor.contentEditable = 'true';
+        this.el.appendChild(this.contentEditor);
+
+        this.nameInput.addEventListener('input', () => {
+            this.setName(this.nameInput.value);
+        });
 
         this.editorArea = createElement("div", {contenteditable: "true", class: "editor-area"});
         const menu = createElement('div');
@@ -35,23 +55,77 @@ class Edit {
         this.ontologyBrowser = new OntologyBrowser(this, (tag) => this.contentHandler.insertTagAtSelection(tag));
         this.toolbar = new Toolbar(this);
 
-        const ontologyBrowserButton = createElement('button', {
-            textContent: 'Show Ontology',
-            class: 'toggle-ontology-button'
-        });
-        menu.append(this.toolbar.getElement(), ontologyBrowserButton, this.ontologyBrowser.getElement());
-        this.ontologyBrowser.getElement().style.display = 'none';
-
-        ontologyBrowserButton.addEventListener('click', () => {
-            const isVisible = this.ontologyBrowser.getElement().style.display !== 'none';
-            this.ontologyBrowser.getElement().style.display = isVisible ? 'none' : 'block';
-            ontologyBrowserButton.textContent = isVisible ? 'Show Ontology' : 'Hide Ontology';
-        });
         menu.append(this.toolbar.getElement(), this.ontologyBrowser.getElement());
 
         this.setupEditorEvents();
-        this.editorArea.focus();
-        this.loadYDoc();
+
+        this.loadYDoc().then(() => {
+            this.editorArea.focus();
+        });
+    }
+
+    setName(name) {
+        this.nameInput.value = name;
+        this.yDoc.transact(() => {
+            this.yName.delete(0, this.yName.length);
+            this.yName.insert(0, name);
+        });
+    }
+
+    setContent(html) {
+        this.yDoc.transact(() => {
+            this.yText.delete(0, this.yText.length);
+            this.yText.insert(0, html);
+        });
+
+        this.editorArea.innerHTML = DOMPurify.sanitize(html, {
+            ALLOWED_TAGS: ["br", "b", "i", "span", "u"],
+            ALLOWED_ATTR: ["class", "contenteditable", "tabindex", "id"]
+        });
+        this.editor.autosuggest.apply(); // Use content handler
+        this.db.saveYDoc(this.yText.toString(), this.yDoc);
+        this.updateNotesIndex();
+    }
+
+    getName() {
+        const firstLine = this.yText.toString().split('\n')[0];
+        return firstLine || 'Untitled Note';
+    }
+
+    findSuggestion(name) {
+        for (const cat in this.ontology) {
+            if (this.ontology[cat].instances) {
+                for (const t of this.ontology[cat].instances) {
+                    if (t.name === name) return {displayText: t.name, tagData: t};
+                }
+            } else if (this.ontology[cat].name === name) {
+                return {displayText: this.ontology[cat].name, tagData: this.ontology[cat]};
+            }
+        }
+        return null;
+    }
+
+    handleDropdownKeys(event) {
+        if (this.suggestionDropdown.el.style.display !== "block") return;
+        switch (event.key) {
+            case "ArrowDown":
+            case "ArrowUp":
+                event.preventDefault();
+                this.suggestionDropdown.moveSelection(event.key === "ArrowDown" ? 1 : -1);
+                break;
+            case "Enter":
+                event.preventDefault();
+                if (this.suggestionDropdown.getSelectedSuggestion()) {
+                    // Use content handler for consistency
+                    const suggestion = this.findSuggestion(this.suggestionDropdown.getSelectedSuggestion());
+                    if (suggestion) this.contentHandler.insertTagFromSuggestion(suggestion);
+                }
+                this.suggestionDropdown.hide();
+                break;
+            case "Escape":
+                this.suggestionDropdown.hide();
+                break;
+        }
     }
 
     async loadYDoc() {
@@ -131,7 +205,7 @@ class Edit {
                     }
                 }
             } else if (this.ontology[categoryName].name?.toLowerCase().startsWith(word)) {
-                suggestions.push({displayText: this.ontology[categoryName].name, tagData: this.ontology[categoryName], span});
+                suggestions.push({displayText: this.ontology[categoryName].name, tagData: this.ontology[categoryName]});
             }
         }
         const rect = span.getBoundingClientRect();
@@ -141,66 +215,6 @@ class Edit {
 
     matchesOntology(word) {
         return Object.values(this.ontology).flat().some(tag => tag?.name?.toLowerCase().startsWith(word.toLowerCase()));
-    }
-
-    getContent() {
-        return this.yText.toString();
-    }
-
-    setContent(html) {
-        this.yDoc.transact(() => {
-            this.yText.delete(0, this.yText.length);
-            this.yText.insert(0, html);
-        });
-
-        this.editorArea.innerHTML = DOMPurify.sanitize(html, {
-            ALLOWED_TAGS: ["br", "b", "i", "span", "u"],
-            ALLOWED_ATTR: ["class", "contenteditable", "tabindex", "id"]
-        });
-        this.editor.autosuggest.apply(); // Use content handler
-        this.db.saveYDoc(this.yText.toString(), this.yDoc);
-        this.updateNotesIndex();
-    }
-
-    getName() {
-        const firstLine = this.yText.toString().split('\n')[0];
-        return firstLine || 'Untitled Note';
-    }
-
-    findSuggestion(name) {
-        for (const cat in this.ontology) {
-            if (this.ontology[cat].instances) {
-                for (const t of this.ontology[cat].instances) {
-                    if (t.name === name) return {displayText: t.name, tagData: t};
-                }
-            } else if (this.ontology[cat].name === name) {
-                return {displayText: this.ontology[cat].name, tagData: this.ontology[cat]};
-            }
-        }
-        return null;
-    }
-
-    handleDropdownKeys(event) {
-        if (this.suggestionDropdown.el.style.display !== "block") return;
-        switch (event.key) {
-            case "ArrowDown":
-            case "ArrowUp":
-                event.preventDefault();
-                this.suggestionDropdown.moveSelection(event.key === "ArrowDown" ? 1 : -1);
-                break;
-            case "Enter":
-                event.preventDefault();
-                if (this.suggestionDropdown.getSelectedSuggestion()) {
-                    // Use content handler for consistency
-                    const suggestion = this.findSuggestion(this.suggestionDropdown.getSelectedSuggestion());
-                    if (suggestion) this.contentHandler.insertTagFromSuggestion(suggestion);
-                }
-                this.suggestionDropdown.hide();
-                break;
-            case "Escape":
-                this.suggestionDropdown.hide();
-                break;
-        }
     }
 }
 
