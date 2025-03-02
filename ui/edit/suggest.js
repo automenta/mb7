@@ -1,7 +1,7 @@
 class Autosuggest {
     constructor(editor) {
         this.editor = editor;
-        this.debouncedApply = debounce(this.apply.bind(this), 300);
+        this.debouncedApply = debounce(this.apply.bind(this), 100);
     }
 
     apply() {
@@ -29,7 +29,7 @@ class Autosuggest {
             while ((match = wordRegex.exec(text)) !== null) {
                 if (this.editor.matchesOntology(match[0])) {
                     hasMatch = true;
-                    break;  // Only need one match per word
+                     // Only need one match per word
                 }
             }
             if (hasMatch) this.wrapMatches(node);
@@ -61,7 +61,7 @@ class Autosuggest {
     }
 }
 
-import {createElement} from './utils.js';
+import {createElement} from '../utils.js';
 
 const debounce = (fn, delay) => {
     let timeoutId;

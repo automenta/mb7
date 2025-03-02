@@ -1,14 +1,19 @@
-import {Autosuggest} from './autosuggest.js';
-import {UnifiedOntology} from '../core/ontology.js';
-import DOMPurify from 'dompurify';
 import * as Y from 'yjs';
-import {DB, getNotesIndex, updateNotesIndex} from '../core/db';
-import {ErrorHandler} from '../core/error-handler.js';
-import {Toolbar} from './edit.toolbar.js';
-import {OntologyBrowser} from './ontology-browser.js';
-import {SuggestionDropdown} from './suggestion-dropdown.js';
-import {createElement, debounce} from './utils.js';
-import {EditorContentHandler} from './edit.content.js';
+import DOMPurify from 'dompurify';
+
+import {UnifiedOntology} from '../../core/ontology';
+import {DB, getNotesIndex, updateNotesIndex} from '../../core/db';
+import {ErrorHandler} from '../../core/error';
+
+import {createElement, debounce} from '../utils';
+
+import {OntologyBrowser} from './ontology-browser';
+
+import {Autosuggest} from './suggest';
+import {SuggestionDropdown} from './suggest.dropdown';
+
+import {EditorContentHandler} from './edit.content';
+import {Toolbar} from './edit.toolbar';
 
 class Edit {
     constructor() {
@@ -27,7 +32,7 @@ class Edit {
         this.editor = this;
         this.autosuggest = new Autosuggest(this);
         this.contentHandler = new EditorContentHandler(this, this.autosuggest);
-        this.ontologyBrowser = new OntologyBrowser(this.ontology, (tag) => this.contentHandler.insertTagAtSelection(tag));
+        this.ontologyBrowser = new OntologyBrowser(this, (tag) => this.contentHandler.insertTagAtSelection(tag));
         this.toolbar = new Toolbar(this);
 
         const ontologyBrowserButton = createElement('button', {
@@ -50,12 +55,16 @@ class Edit {
     }
 
     async loadYDoc() {
-        const yDoc = await this.db.getYDoc(this.yText.toString());
-        if (yDoc) {
-            this.yDoc.transact(() => {
-                this.yText.delete(0, this.yText.length);
-                this.yText.insert(0, yDoc.getText('content').toString())
-            })
+        try {
+            const yDoc = await this.db.getYDoc(this.yText.toString());
+            if (yDoc) {
+                this.yDoc.transact(() => {
+                    this.yText.delete(0, this.yText.length);
+                    this.yText.insert(0, yDoc.getText('content').toString())
+                })
+            }
+        } catch (error) {
+            console.error("Failed to load YDoc:", error);
         }
     }
 
@@ -113,11 +122,16 @@ class Edit {
     showSuggestionsForSpan(span) {
         const suggestions = [];
         const word = span.textContent.toLowerCase();
-        for (const category in this.ontology) {
-            for (const tag of this.ontology[category]) {
-                if (tag.name.toLowerCase().startsWith(word)) {
-                    suggestions.push({displayText: tag.name, tagData: tag, span});
+        for (const categoryName in this.ontology) {
+            const category = this.ontology[categoryName];
+            if (category.instances) {
+                for (const tag of category.instances) {
+                    if (tag.name.toLowerCase().startsWith(word)) {
+                        suggestions.push({displayText: tag.name, tagData: tag, span});
+                    }
                 }
+            } else if (this.ontology[categoryName].name?.toLowerCase().startsWith(word)) {
+                suggestions.push({displayText: this.ontology[categoryName].name, tagData: this.ontology[categoryName], span});
             }
         }
         const rect = span.getBoundingClientRect();
@@ -155,8 +169,12 @@ class Edit {
 
     findSuggestion(name) {
         for (const cat in this.ontology) {
-            for (const t of this.ontology[cat]) {
-                if (t.name === name) return {displayText: t.name, tagData: t};
+            if (this.ontology[cat].instances) {
+                for (const t of this.ontology[cat].instances) {
+                    if (t.name === name) return {displayText: t.name, tagData: t};
+                }
+            } else if (this.ontology[cat].name === name) {
+                return {displayText: this.ontology[cat].name, tagData: this.ontology[cat]};
             }
         }
         return null;

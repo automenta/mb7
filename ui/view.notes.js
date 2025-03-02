@@ -1,4 +1,4 @@
-import {Edit} from './edit.js';
+import {Edit} from './edit/edit';
 import * as Y from 'yjs';
 
 export class NotesView extends HTMLElement {
@@ -122,7 +122,13 @@ export class NotesView extends HTMLElement {
 
     renderNObject(note) {
         const li = document.createElement('li');
-        li.textContent = note.name + ': ' + note.content;
+        const nameElement = document.createElement('div');
+        nameElement.textContent = note.name;
+        nameElement.style.fontWeight = 'bold';
+        const contentElement = document.createElement('div');
+        contentElement.textContent = note.content;
+        li.appendChild(nameElement);
+        li.appendChild(contentElement);
         const deleteButton = document.createElement('button');
         deleteButton.textContent = 'Delete';
         deleteButton.addEventListener('click', () => this.handleDeleteNote(note));

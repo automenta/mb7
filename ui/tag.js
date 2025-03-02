@@ -1,177 +1,231 @@
 import {createElement} from './utils.js';
 
-const tagDataMap = new WeakMap();
+class TagRenderer {
+    constructor(tag) {
+        this.tag = tag;
+    }
 
-class Tag {
-    constructor(tagData) {
-        this.data = {...tagData, mode: tagData.mode || Object.keys(tagData.modes)[0]};
-        if (["number", "range"].includes(this.data.type)) {
-            if (this.data.value == null) this.data.value = 0;
-            if (this.data.mode === "is between") {
-                if (this.data.min == null) this.data.min = 0;
-                if (this.data.max == null) this.data.max = 0;
-            }
-        } else if (this.data.type === "list") {
-            if (this.data.value == null) this.data.value = (this.data.options && this.data.options.length) ? this.data.options[0] : "";
-        } else if (this.data.type === "color") {
-            if (!this.data.value) this.data.value = "#000000";
+    append() {
+    }
+}
+
+class Tag extends HTMLElement {
+    constructor(tagData, onUpdate) {
+        super();
+        this.data = this.normalizeTagData(tagData);
+        this.onUpdate = onUpdate;
+        this.tagDataMap = new WeakMap();
+        this.tagDataMap.set(this, this.data);
+
+        this.renderers = [
+            new TagMetadataRenderer(this),
+            new TagConditionRenderer(this),
+            new TagValueRenderer(this),
+            new TagRemoveButtonRenderer(this),
+        ];
+    }
+
+    connectedCallback() {
+        this.render();
+    }
+
+    normalizeTagData(tagData) {
+        const data = {
+            ...tagData,
+            condition: tagData.condition || Object.keys(tagData.conditions)[0],
+        };
+        const {type, condition} = data;
+        data.value ??= (type === "list") ? (data.options?.[0] || "") : (type === "color" ? "#000000" : "");
+        if (condition === "is between") {
+            data.min ??= 0;
+            data.max ??= 0;
         }
-        this.el = createElement("span", {class: "tag", contenteditable: "false"});
-        tagDataMap.set(this.el, this.data);
-        this.buildTag();
+        return data;
+    }
+
+    render() {
+        this.innerHTML = "";
+        this.renderers.forEach(renderer => renderer.append());
         this.updateAppearance();
     }
 
-    buildTag() {
-        this.el.innerHTML = "";
-        if (this.data.emoji) {
-            this.el.appendChild(createElement("span", {class: "tag-emoji"}, this.data.emoji + " "));
-        }
-        this.el.appendChild(document.createTextNode(this.data.name + " "));
-        const modeSelect = createElement("select");
-        Object.entries(this.data.modes).forEach(([value, label]) => {
-            modeSelect.appendChild(new Option(label, value));
-        });
-        modeSelect.value = this.data.mode;
-        modeSelect.addEventListener("change", () => {
-            this.data.mode = modeSelect.value;
-            this.buildTag();
-            this.updateAppearance();
-        });
-        this.el.appendChild(modeSelect);
-        this.buildEditingControls();
-        const rmBtn = createElement("span", {class: "remove-tag"}, "x");
-        rmBtn.addEventListener("click", e => {
-            e.stopPropagation();
-            this.el.remove();
-        });
-        this.el.appendChild(rmBtn);
-    }
-
-    buildEditingControls() {
-        const {type, mode, unit, value, min, max, options} = this.data;
-        if (["number", "range"].includes(type)) {
-            if (mode === "is") {
-                const inp = createElement("input", {type: "number", value: value ?? "", placeholder: "Value"});
-                inp.addEventListener("input", e => {
-                    const p = parseFloat(e.target.value);
-                    if (!isNaN(p)) this.data.value = p;
-                });
-                this.el.appendChild(inp);
-                if (unit) this.el.appendChild(createElement("span", {class: "unit-label"}, " " + unit));
-            } else if (mode === "is between") {
-                const inpMin = createElement("input", {type: "number", value: min ?? "", placeholder: "Min"});
-                inpMin.addEventListener("input", e => {
-                    const p = parseFloat(e.target.value);
-                    this.data.min = isNaN(p) ? 0 : p;
-                });
-                const inpMax = createElement("input", {type: "number", value: max ?? "", placeholder: "Max"});
-                inpMax.addEventListener("input", e => {
-                    const p = parseFloat(e.target.value);
-                    this.data.max = isNaN(p) ? 0 : p;
-                });
-                this.el.appendChild(inpMin);
-                this.el.appendChild(document.createTextNode(" and "));
-                this.el.appendChild(inpMax);
-                if (unit) this.el.appendChild(createElement("span", {class: "unit-label"}, " " + unit));
-            } else if (mode === "is below") {
-                const inp = createElement("input", {type: "number", value: max ?? "", placeholder: "Max"});
-                inp.addEventListener("input", e => {
-                    const p = parseFloat(e.target.value);
-                    this.data.max = isNaN(p) ? 0 : p;
-                });
-                this.el.appendChild(inp);
-                if (unit) this.el.appendChild(createElement("span", {class: "unit-label"}, " " + unit));
-            } else if (mode === "is above") {
-                const inp = createElement("input", {type: "number", value: min ?? "", placeholder: "Min"});
-                inp.addEventListener("input", e => {
-                    const p = parseFloat(e.target.value);
-                    this.data.min = isNaN(p) ? 0 : p;
-                });
-                this.el.appendChild(inp);
-                if (unit) this.el.appendChild(createElement("span", {class: "unit-label"}, " " + unit));
-            }
-        } else if (type === "time") {
-            if (mode === "is at") {
-                const inp = createElement("input", {type: "text", value: this.data.value ?? "", placeholder: "Time"});
-                inp.addEventListener("input", e => {
-                    this.data.value = e.target.value;
-                });
-                this.el.appendChild(inp);
-            } else if (mode === "is between") {
-                const inpMin = createElement("input", {
-                    type: "text",
-                    value: this.data.min ?? "",
-                    placeholder: "Start Time"
-                });
-                inpMin.addEventListener("input", e => {
-                    this.data.min = e.target.value;
-                });
-                const inpMax = createElement("input", {
-                    type: "text",
-                    value: this.data.max ?? "",
-                    placeholder: "End Time"
-                });
-                inpMax.addEventListener("input", e => {
-                    this.data.max = e.target.value;
-                });
-                this.el.appendChild(inpMin);
-                this.el.appendChild(document.createTextNode(" and "));
-                this.el.appendChild(inpMax);
-            } else if (mode === "is before") {
-                const inp = createElement("input", {type: "text", value: this.data.max ?? "", placeholder: "Before"});
-                inp.addEventListener("input", e => {
-                    this.data.max = e.target.value;
-                });
-                this.el.appendChild(inp);
-            } else if (mode === "is after") {
-                const inp = createElement("input", {type: "text", value: this.data.min ?? "", placeholder: "After"});
-                inp.addEventListener("input", e => {
-                    this.data.min = e.target.value;
-                });
-                this.el.appendChild(inp);
-            }
-        } else if (type === "color") {
-            const colorInput = createElement("input", {type: "color", value: this.data.value});
-            const preview = createElement("span", {class: "color-preview"});
-            preview.style.backgroundColor = this.data.value;
-            colorInput.addEventListener("input", e => {
-                this.data.value = e.target.value;
-                preview.style.backgroundColor = e.target.value;
-            });
-            this.el.appendChild(colorInput);
-            this.el.appendChild(preview);
-        } else if (type === "list") {
-            const sel = createElement("select");
-            (options || []).forEach(opt => sel.appendChild(new Option(opt, opt)));
-            sel.value = this.data.value;
-            sel.addEventListener("change", () => {
-                this.data.value = sel.value;
-            });
-            this.el.appendChild(sel);
-        } else if (type === "location") {
-            const locInp = createElement("input", {
-                type: "text",
-                value: this.data.value ? `${this.data.value.lat}, ${this.data.value.lng}` : "",
-                placeholder: "Lat, Lng"
-            });
-            locInp.addEventListener("input", e => {
-                const [latStr, lngStr] = e.target.value.split(",").map(s => s.trim());
-                const lat = parseFloat(latStr), lng = parseFloat(lngStr);
-                if (!isNaN(lat) && !isNaN(lng)) this.data.value = {lat, lng};
-            });
-            this.el.appendChild(locInp);
-        }
-    }
-
     updateAppearance() {
-        const nonConditional = ["is", "is at", "is one of"];
-        this.el.classList.toggle("conditional", !nonConditional.includes(this.data.mode));
+        this.classList.toggle("conditional", !(["is", "is at", "is one of"].includes(this.data.condition)));
     }
 
-    getElement() {
-        return this.el;
+    remove() {
+        this.parentNode.removeChild(this);
     }
 }
+
+class TagMetadataRenderer extends TagRenderer {
+    append() {
+        const {emoji, name} = this.tag.data;
+        this.tag.append(emoji ? createElement("span", {class: "tag-emoji"}, `${emoji} `) : "", name + " ");
+    }
+}
+
+class TagConditionRenderer extends TagRenderer {
+    append() {
+        const {conditions, condition} = this.tag.data;
+        const select = createElement("select", {
+            class: "tag-condition",
+            onchange: () => {
+                this.tag.data.condition = select.value;
+                this.tag.render();
+                this.tag.onUpdate?.();
+            },
+        });
+        for (const [value, label] of Object.entries(conditions)) {
+            select.add(new Option(label, value));
+        }
+        select.value = condition;
+        this.tag.append(select);
+    }
+}
+
+class NumberInputRenderer extends TagRenderer {
+    numberInput(ph, inputValue, onValueChange) {
+        const input = createElement("input", {
+            type: "number",
+            placeholder: ph,
+            value: inputValue,
+            oninput: (e) => onValueChange(parseFloat(e.target.value) || "")
+        });
+        this.tag.append(input);
+    }
+
+    append() {
+        const {unit, value, min, max} = this.tag.data;
+
+        switch (this.tag.data.condition) {
+            case "is":
+                this.numberInput("Value", value, v => this.tag.data.value = v);
+                break;
+            case "is between":
+                this.numberInput("Min", min, v => this.tag.data.min = v);
+                this.tag.append(" and ");
+                this.numberInput("Max", max, v => this.tag.data.max = v);
+                break;
+            case "is below":
+                this.numberInput("Max", max, v => this.tag.data.max = v);
+                break;
+            case "is above":
+                this.numberInput("Min", min, v => this.tag.data.min = v);
+                break;
+        }
+        if (unit) {
+            this.tag.append(createElement("span", {class: "unit-label"}, ` ${unit}`));
+        }
+    }
+}
+
+
+class TimeInputRenderer extends TagRenderer {
+    append() {
+        const {value, min, max} = this.tag.data;
+        const timeInput = (ph, val, onValueChange) => {
+            const input = createElement("input", {
+                type: "text",
+                placeholder: ph,
+                value: val,
+                oninput: (e) => onValueChange(e.target.value)
+            });
+            this.tag.append(input);
+        };
+
+        switch (this.tag.data.condition) {
+            case "is at":
+                timeInput("Time", value, v => this.tag.data.value = v);
+                break;
+            case "is between":
+                timeInput("Start Time", min, v => this.tag.data.min = v);
+                this.tag.append(" and ");
+                timeInput("End Time", max, v => this.tag.data.max = v);
+                break;
+            case "is before":
+                timeInput("Before", max, v => this.tag.data.max = v);
+                break;
+            case "is after":
+                timeInput("After", min, v => this.tag.data.min = v);
+                break;
+        }
+    }
+}
+
+class TagValueRenderer extends TagRenderer {
+    append() {
+        const {type, condition, options, value} = this.tag.data;
+
+        switch (type) {
+            case "number":
+            case "range":
+                new NumberInputRenderer(this.tag, this.tag.data, condition).append();
+                break;
+
+            case "list":
+                const select = createElement("select", {
+                    onchange: () => {
+                        this.tag.data.value = select.value;
+                        this.tag.onUpdate?.();
+                    }
+                });
+                (options || []).forEach(opt => select.add(new Option(opt, opt)));
+                select.value = value;
+                this.tag.append(select);
+                break;
+
+            case "color":
+                const colorInput = createElement("input", {
+                    type: "color", value: value, oninput: (e) => {
+                        this.tag.data.value = e.target.value;
+                        //preview.style.backgroundColor = e.target.value;
+                        this.tag.onUpdate?.();
+                    }
+                });
+                const preview = createElement("span", {class: "color-preview"});
+                preview.style.backgroundColor = value;
+                this.tag.append(colorInput, preview);
+                break;
+
+            case "location":
+                this.tag.append(createElement("input", {
+                    type: "text",
+                    placeholder: "Lat, Lng",
+                    value: this.tag.data.value ? `${this.tag.data.value.lat}, ${this.tag.data.value.lng}` : "",
+                    oninput: (e) => {
+                        const [latStr, lngStr] = e.target.value.split(",").map(s => s.trim());
+                        const lat = parseFloat(latStr);
+                        const lng = parseFloat(lngStr);
+                        this.tag.data.value = (!isNaN(lat) && !isNaN(lng)) ? {lat, lng} : null;
+                        this.tag.onUpdate?.();
+                    }
+                }));
+                break;
+
+            case "time":
+                new TimeInputRenderer(this.tag, this.tag.data, condition).append();
+                break;
+
+            default:
+                this.tag.append(createElement("span", {}, value));
+        }
+    }
+}
+
+class TagRemoveButtonRenderer extends TagRenderer {
+    append() {
+        const removeButton = createElement("span", {
+            class: "tag-remove", onclick: e => {
+                e.stopPropagation();
+                this.tag.remove();
+                this.tag.onUpdate?.();
+            }
+        }, "x");
+        this.tag.append(removeButton);
+    }
+}
+
+customElements.define('gra-tag', Tag);
 
 export {Tag};

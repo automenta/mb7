@@ -1,9 +1,9 @@
 import DOMPurify from 'dompurify';
 import {getEventHash, nip19, validateEvent, verifyEvent} from 'nostr-tools';
 import {getTagDefinition} from './ontology';
-import {NostrSignalingProvider} from './net.signaling';
-import {RelayManager} from './net.relays';
-import {EventHandler} from './net.events';
+import {NostrSignalingProvider} from './net/net.signaling';
+import {RelayManager} from './net/net.relays';
+import {EventHandler} from './net/net.events';
 
 const pubkeyRegex = /^[0-9a-fA-F]{64}$/;
 

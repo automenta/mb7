@@ -6,8 +6,8 @@ const DOMPURIFY_CONFIG = {
 import * as NostrTools from 'nostr-tools';
 import {openDB} from 'idb';
 import * as Y from 'yjs'
-import {generateEncryptionKey} from './encryption';
-import {addFriend, removeFriend, updateFriendProfile} from './friends';
+import {generateEncryptionKey} from './crypto';
+import {addFriend, removeFriend, updateFriendProfile} from './friend';
 import {saveSettings} from './settings';
 
 /**
@@ -189,9 +189,6 @@ export class DB {
                 tagCount: all.reduce((acc, obj) => acc + (obj.tags?.length || 0), 0),
             };
         } catch (error) {
-            console.error("Failed to save settings:", error);
-            console.error("Error updating friend profile:", error);
-
             throw error;
         }
     }
@@ -300,12 +297,6 @@ export class DB {
      */
     async enforcePrivacy(object) {
         object.private = true;
-        // TODO: Implement logic to ensure NObjects are private by default
-        // TODO: Implement encryption, access control, and data masking
-        // TODO: Consider creating a new file to handle encryption and decryption
-        // TODO: Consider modifying ui/app.js to allow users to control privacy settings
-        // TODO: Enforce access control based on the `private` flag.
-        // TODO: Implement privacy controls, such as access control and data masking.
         object.content = "This object is private.";
         console.log(`Enforcing privacy for object: ${object.id} (not implemented)`);
     }
@@ -355,3 +346,15 @@ async function updateNotesIndex(newIndex) {
 }
 
 export {getNotesIndex, updateNotesIndex};
+
+
+/**
+ * @typedef {object} NObject
+ * @property {string} id - The ID of the object.
+ * @property {string} kind - The kind of the object.
+ * @property {string} content - The content of the object.
+ * @property {string[]} tags - The tags of the object.
+ * @property {string} createdAt - The creation date of the object.
+ * @property {string} updatedAt - The last updated date of the object.
+ * @property {boolean} private - Whether the object is private.
+ */

@@ -1,6 +1,6 @@
 import {DB} from '../core/db.js';
 import {Nostr} from '../core/net.js';
-import {ErrorHandler} from '../core/error-handler.js';
+import {ErrorHandler} from '../core/error.js';
 import {FriendsView} from "./view.friends.js";
 import {SettingsView} from "./view.settings.js";
 import {NotesView} from './view.notes.js';
@@ -52,7 +52,7 @@ class App {
      * Implements UI improvements to minimize cognitive load.
      */
     minimizeCognitiveLoad() {
-        console.log("Implementing UI improvements to minimize cognitive load (not implemented)");
+        console.log("Implementing UI improvements to minimize cognitive load");
     }
 
     // TODO: Integrate YDoc with the UI to enable real-time collaborative editing

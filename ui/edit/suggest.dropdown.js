@@ -1,4 +1,6 @@
-class SuggestionDropdown {
+import {createElement} from '../utils.js';
+
+export class SuggestionDropdown {
     constructor() {
         this.el = createElement("div", {id: "suggestion-dropdown", class: "suggestion-dropdown"});
         document.body.append(this.el);
@@ -61,6 +63,3 @@ class SuggestionDropdown {
     }
 }
 
-import {createElement} from './utils.js';
-
-export {SuggestionDropdown};
