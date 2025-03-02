@@ -1,3 +1,4 @@
+import { Monitoring } from '../core/monitoring.js';
 import {Matcher} from '../core/match.js';
 import {DB} from '../core/db.js';
 import {Nostr} from '../core/net.js';
@@ -10,23 +11,33 @@ import {createMenuBar} from './menu-bar.js';
 import {NotificationManager} from './notification-manager.js';
 
 class App {
-    constructor() {
-        this.db = null;
-        this.nostr = null;
+    constructor(db, nostr) {
+        this.db = db;
+        this.nostr = nostr;
         this.selected = null;
         this.elements = {};
 
         this.elements.notificationArea = document.createElement('div');
         this.elements.notificationArea.id = 'notification-area';
         this.notificationManager = new NotificationManager(this);
+        this.monitoring = new Monitoring(this);
+        this.monitoring.start();
     }
 
-    async initialize() {
-        await DB.the();
-        this.errorHandler = new ErrorHandler(this);
-        this.db = new DB(this, this.errorHandler);
-        await this.initializeNostr();
-        this.matcher = new Matcher(this);
+    static async initialize(app) {
+        const errorHandler = new ErrorHandler(app);
+        const db = new DB(app, errorHandler);
+        await db.the();
+        const {
+            signalingStrategy = "nostr",
+            nostrRelays = "",
+            nostrPrivateKey = ""
+        } = await db.getSettings() || {};
+
+        const nostr = new Nostr(app, signalingStrategy, nostrRelays, nostrPrivateKey);
+        nostr.connect();
+        const matcher = new Matcher(app);
+        return {db, nostr, matcher, errorHandler};
     }
 
     async initializeNostr() {
@@ -48,15 +59,22 @@ class App {
     async createNewObject(newNote) {
         const id = "test-id";
         const newObject = {id: id, name: newNote.name, content: newNote.content};
-        if (!this.db) {
-            console.error('this.db is null in createNewObject');
-            return null;
-        }
         await this.db.save(newObject);
+        const that = this;
+        await that.publishNewObject(newObject);
         return newObject;
     }
 
     // TODO: Integrate YDoc with the UI to enable real-time collaborative editing
+
+    async publishNewObject(newObject) {
+        try {
+            await this.nostr.publish(newObject);
+            this.notificationManager.showNotification('Published to Nostr!', 'success');
+        } catch (error) {
+            this.errorHandler.handleError(error, 'Error publishing to Nostr');
+        }
+    }
 
     showView(view) {
         const mainContent = document.querySelector('main');
@@ -93,8 +111,11 @@ class App {
 }
 
 async function createApp() {
-    const app = new App();
-    await app.initialize();
+    const appDiv = document.getElementById('app');
+    const appData = await App.initialize(appDiv);
+    const app = new App(appData.db, appData.nostr);
+    app.matcher = appData.matcher;
+    app.errorHandler = appData.errorHandler;
     console.log('App.initialize() promise resolved');
     return app;
 }
@@ -110,12 +131,12 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 async function setupUI() {
-    const app = await createApp();
+    let app = await createApp();
 
-    const noteView = new NoteView(app);
-    noteView.notesListComponent.disableObserver = true;
-    const friendsView = new FriendsView(app);
-    const settingsView = new SettingsView(app);
+    const noteView = new NoteView(app, app.db, app.nostr);
+    //noteView.notesListComponent.disableObserver = true;
+    const friendsView = new FriendsView(app, app.db, app.nostr);
+    const settingsView = new SettingsView(app, app.db, app.nostr);
 
     const contentView = new ContentView();
 

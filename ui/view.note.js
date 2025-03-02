@@ -7,9 +7,11 @@ import {NoteDetails} from './note/note.details.js';
 import {GenericListComponent} from './generic-list.js';
 
 export class NoteView extends HTMLElement {
-    constructor(app) {
+    constructor(app, db, nostr) {
         super();
         this.app = app;
+        this.db = db;
+        this.nostr = nostr;
         const sidebar = this.sidebar = new NotesSidebar(app, this);
 
         this.yDoc = new Y.Doc();
@@ -23,7 +25,7 @@ export class NoteView extends HTMLElement {
         this.el.style.flexDirection = 'row';
         this.el.style.display = 'flex';
 
-        const noteDetails = new NoteDetails();
+        const noteDetails = new NoteDetails(this);
 
         const mainArea = document.createElement('div');
         mainArea.style.flex = '1';
@@ -43,13 +45,42 @@ export class NoteView extends HTMLElement {
         contentArea.style.padding = '10px';
         mainArea.appendChild(contentArea);
 
+        // TODO Area
+        const todoArea = document.createElement('div');
+        todoArea.className = 'note-todo-area';
+        todoArea.style.padding = '10px';
+        mainArea.appendChild(todoArea);
+
+        // Tag Area
+        const tagArea = document.createElement('div');
+        tagArea.className = 'note-tag-area';
+        tagArea.style.padding = '10px';
+        mainArea.appendChild(tagArea);
+
         mainArea.appendChild(this.newLinkedView());
         mainArea.appendChild(this.newMatchesView());
 
         this.el.appendChild(mainArea);
 
-        this.edit = new Edit(this.yDoc, this.app);
-        mainArea.appendChild(this.edit.el);
+        this.semanticEditor = new Edit(this.yDoc, this.app, null, null, null, this.app.getTagDefinition, this.app.schema);
+        mainArea.appendChild(this.semanticEditor.el);
+
+        // My Objects List
+        const myObjectsArea = document.createElement('div');
+        myObjectsArea.className = 'my-objects-area';
+        myObjectsArea.style.padding = '10px';
+        mainArea.appendChild(myObjectsArea);
+
+        const myObjectsTitle = document.createElement('h2');
+        myObjectsTitle.textContent = 'My Objects';
+        myObjectsArea.appendChild(myObjectsTitle);
+
+        const myObjectsList = document.createElement('ul');
+        myObjectsArea.appendChild(myObjectsList);
+
+        const createObjectButton = document.createElement('button');
+        createObjectButton.textContent = 'Create New Object';
+        myObjectsArea.appendChild(createObjectButton);
 
         // Initialize GenericListComponent for notes list
         this.notesListComponent = new GenericListComponent(this.renderNoteItem.bind(this), this.yNotesList);
@@ -106,9 +137,20 @@ export class NoteView extends HTMLElement {
     }
 
     newPriEdit() {
-        const priorityLabel = document.createElement('span');
-        priorityLabel.textContent = '🚩 Med';
-        return priorityLabel;
+        const prioritySelect = document.createElement('select');
+        prioritySelect.className = 'note-priority-select';
+        const priorities = ['High', 'Medium', 'Low'];
+        priorities.forEach(priority => {
+            const option = document.createElement('option');
+            option.value = priority;
+            option.textContent = priority;
+            prioritySelect.appendChild(option);
+        });
+        prioritySelect.addEventListener('change', async (event) => {
+            const priority = event.target.value;
+            await this.updateNotePriority(this.selectedNote.id, priority);
+        });
+        return prioritySelect;
     }
 
     async handleDeleteNote(note) {
@@ -138,12 +180,12 @@ export class NoteView extends HTMLElement {
         console.log('createNote function called');
         try {
             const timestamp = Date.now();
-            const newObject = await this.app.createNewObject({name: '', content: '', timestamp});
+            const newObject = await this.app.createNewObject({name: '', content: '', timestamp, private: true, tags: [], priority: 'Medium'});
             if (newObject) {
-                this.selectedNote = newObject;
                 await this.addNoteToList(newObject.id);
                 await this.notesListComponent.fetchDataAndRender();
                 this.showMessage('Saved');
+                this.edit.contentHandler.deserialize(newObject.content);
             } else {
                 console.error('Error creating note: newObject is null');
             }
@@ -184,8 +226,7 @@ export class NoteView extends HTMLElement {
         li.addEventListener('click', async () => {
             const note = await this.app.db.get(noteId);
             if (note) {
-                this.selectedNote = note;
-                this.edit.editorArea.innerHTML = note.content;
+                this.edit.contentHandler.deserialize(note.content);
             }
         });
 
@@ -198,7 +239,7 @@ export class NoteView extends HTMLElement {
                             nameElement.textContent = yNoteMap.get("name");
                         }
                         if (event.changes.keys.has("content")) {
-                            this.edit.editorArea.innerHTML = yNoteMap.get("content");
+                            this.edit.contentHandler.deserialize(yNoteMap.get("content"));
                         }
                     });
                     nameElement.textContent = note.name;
@@ -232,12 +273,54 @@ export class NoteView extends HTMLElement {
         }, 3000);
     }
 
+    async updateNotePrivacy(noteId, isPrivate) {
+        try {
+            const note = await this.app.db.get(noteId);
+            if (note) {
+                note.private = isPrivate;
+                await this.app.db.saveObject(note);
+                console.log(`Note ${noteId} privacy updated to ${isPrivate}`);
+            } else {
+                console.error(`Note ${noteId} not found`);
+            }
+        } catch (error) {
+            console.error('Error updating note privacy:', error);
+        }
+    }
+
+    async getNoteTags(noteId) {
+        try {
+            const note = await this.app.db.get(noteId);
+            if (note && note.tags) {
+                return note.tags;
+            } else {
+                return [];
+            }
+        } catch (error) {
+            console.error('Error getting note tags:', error);
+        }
+    }
+
     updateNoteTitleDisplay() {
         if (this.selectedNote) {
             const titleInput = this.el.querySelector('.note-title-container input[type="text"]');
             if (titleInput) {
                 titleInput.value = this.edit.yName.toString(); // Get name from Yjs
             }
+        }
+    }
+    async updateNotePriority(noteId, priority) {
+        try {
+            const note = await this.app.db.get(noteId);
+            if (note) {
+                note.priority = priority;
+                await this.app.db.saveObject(note);
+                console.log(`Note ${noteId} priority updated to ${priority}`);
+            } else {
+                console.error(`Note ${noteId} not found`);
+            }
+        } catch (error) {
+            console.error('Error updating note priority:', error);
         }
     }
 }

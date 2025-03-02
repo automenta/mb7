@@ -3,8 +3,11 @@ import * as NostrTools from 'nostr-tools'
 import {View} from "./view.js";
 
 export class SettingsView extends View {
-    constructor(app) {
+    constructor(app, db, nostr) {
         super(app, `<div id="settings-view" class="view"><h2>Settings</h2></div>`);
+        this.app = app;
+        this.db = db;
+        this.nostr = nostr;
     }
 
     build() {
@@ -81,7 +84,7 @@ export class SettingsView extends View {
         this.el.querySelector("#save-settings-btn").addEventListener("click", this.saveSettings.bind(this));
         this.el.querySelector("#clear-all-data-btn").addEventListener("click", () => {
             if (confirm("Are you sure you want to clear all data? This cannot be undone.")) {
-                this.app.db.deleteCurrentObject().then(() => {
+                this.db.deleteCurrentObject().then(() => {
                     this.app.showNotification("All data cleared.", "success");
                     window.location.reload();
                 });
@@ -91,10 +94,10 @@ export class SettingsView extends View {
     }
 
     async loadSettings() {
-        const settingsObject = await this.app.db.getSettings();
+        const settingsObject = await this.db.getSettings();
         if (settingsObject && settingsObject.tags) {
             let settings = {};
-            settingsObject.tags.forEach(tag => {
+            for (const tag of settingsObject.tags) {
                 if (tag[0] === "relays") {
                     settings.relays = tag[1];
                     this.el.querySelector("#relay-list").value = tag[1];
@@ -108,7 +111,6 @@ export class SettingsView extends View {
                 } else if (tag[0] === "profilePicture") {
                     settings.profilePicture = tag[1];
                     this.el.querySelector("#profile-picture").value = tag[1];
-                    this.updateProfileDisplay({name: settings.profileName, picture: settings.profilePicture});
                 } else if (tag[0] === "signalingStrategy") {
                     settings.signalingStrategy = tag[1];
                     this.el.querySelector("#signaling-strategy-select").value = tag[1];
@@ -117,9 +119,10 @@ export class SettingsView extends View {
                     this.el.querySelector("#nostr-relay-list").value = tag[1];
                 } else if (tag[0] === "nostrPrivateKey") {
                     settings.nostrPrivateKey = tag[1];
-                    this.el.querySelector("#nostr-private-key").value = tag[1];
+                    const decryptedKey = settingsObject.encrypted ? await decrypt(tag[1], window.keys.encryptionKey) : tag[1];
+                    this.el.querySelector("#nostr-private-key").value = decryptedKey;
                 }
-            });
+            }
         }
     }
 
@@ -139,11 +142,12 @@ export class SettingsView extends View {
             profilePicture: profilePicture,
             signalingStrategy: signalingStrategy,
             nostrRelays: nostrRelays,
-            nostrPrivateKey: nostrPrivateKey
+            nostrPrivateKey: await encrypt(nostrPrivateKey, window.keys.encryptionKey)
         };
 
-        await this.app.db.saveSettings(settings);
-        this.app.nostrClient?.setRelays(relays.split("\n").map(l => l.trim()).filter(Boolean));
+        settings.encrypted = true;
+        await this.db.saveSettings(settings);
+        this.nostr?.setRelays(relays.split("\n").map(l => l.trim()).filter(Boolean));
         this.updateProfileDisplay({name: profileName, picture: profilePicture});
         localStorage.setItem("dateFormat", dateFormat);
         this.app.showNotification("Settings saved.", "success");
@@ -151,8 +155,8 @@ export class SettingsView extends View {
 
     async generateKeyPair() {
         try {
-            let keys = await this.app.db.generateKeys();
-            await this.app.db.saveKeys(window.keys = keys);
+            let keys = await this.db.generateKeys();
+            await this.db.saveKeys(window.keys = keys);
             this.displayKeys();
             this.app.showNotification("Keys generated.", "success");
         } catch {
@@ -167,7 +171,7 @@ export class SettingsView extends View {
             if (!/^[0-9a-fA-F]{64}$/.test(privKey)) throw new Error("Invalid key format.");
             window.keys = {priv: privKey, pub: await NostrTools.getPublicKey(privKey)};
             this.displayKeys();
-            await this.app.db.saveKeys(window.keys);
+            await this.db.saveKeys(window.keys);
             this.app.showNotification("Key imported.", "success");
         } catch (err) {
             this.app.showNotification(`Error importing key: ${err.message}`, "error");
@@ -175,10 +179,9 @@ export class SettingsView extends View {
     }
 
     async exportKey() {
-        const loadedKeys = await this.app.db.loadKeys();
+        const loadedKeys = await this.db.loadKeys();
         if (!loadedKeys) {
             this.app.showNotification("No keys to export.", "error");
-            return;
         }
         try {
             await navigator.clipboard.writeText(JSON.stringify(loadedKeys, null, 2));

@@ -86,7 +86,7 @@ class EditorContentHandler {
         clonedEditor.querySelectorAll("gra-tag").forEach(tagEl => { // Updated selector
             const tagData = tagDataMap.get(tagEl);
             if (tagData) {
-                tagEl.replaceWith(`[TAG:${JSON.stringify(tagData)}]`);
+                tagEl.replaceWith(`[TAG:${tagData.name}]`);
             }
         });
         return clonedEditor.innerHTML.replace(/<br\s*\/?>/g, "\n");
@@ -103,11 +103,22 @@ class EditorContentHandler {
                 this.editor.editorArea.append(text.substring(lastIndex, match.index));
             }
             try {
-                const tagData = JSON.parse(match[1]);
-                const tag = new Tag(tagData, () => this.editor.autosuggest.apply());
-                this.editor.editorArea.append(tag);
+                const tagName = match[1];
+                const tagDefinition = this.editor.getTagDefinition(tagName);
+                if (tagDefinition) {
+                    try {
+                        const tag = new Tag(tagDefinition, () => this.editor.autosuggest.apply());
+                        this.editor.editorArea.append(tag);
+                    } catch (tagError) {
+                        console.error("Failed to create tag:", tagError);
+                        this.editor.editorArea.append(match[0]);
+                    }
+                } else {
+                    console.warn("Tag definition not found:", tagName);
+                    this.editor.editorArea.append(match[0]);
+                }
             } catch (error) {
-                console.warn("Failed to parse tag data:", error);
+                console.error("Failed to parse tag:", error);
                 this.editor.editorArea.append(match[0]);
             }
             lastIndex = tagRegex.lastIndex;

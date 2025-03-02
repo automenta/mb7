@@ -1,7 +1,3 @@
-import {UnifiedOntology} from '../../core/ontology';
-import {DB} from '../../core/db';
-import {ErrorHandler} from '../../core/error';
-
 import {createElement, debounce} from '../utils';
 
 import {OntologyBrowser} from './ontology-browser';
@@ -13,51 +9,30 @@ import {EditorContentHandler} from './edit.content';
 import {Toolbar} from './edit.toolbar';
 
 class Edit {
-    constructor(yDoc, app, errorHandler, db, autosuggest, contentHandler, ontologyBrowser, toolbar) {
-        this.ontology = UnifiedOntology;
-        this.errorHandler = errorHandler || new ErrorHandler(this);
-        this.db = db || new DB(this.errorHandler);
+    constructor(yDoc, autosuggest, contentHandler, ontologyBrowser, toolbar, getTagDefinition, schema) {
+        this.getTagDefinition = getTagDefinition;
+        this.schema = schema;
         this.yDoc = yDoc; // Use the passed Y.Doc instance
         this.yText = this.yDoc.getText('content');
-        this.yName = this.yDoc.getText('name');
-        this.app = app; // Store the app instance
-
         this.el = createElement('div', {className: 'edit-view'});
-
-        // Name input
-        this.nameInput = this.createNameInput();
-        this.el.appendChild(this.nameInput);
 
         this.editorArea = this.createEditorArea();
         this.el.appendChild(this.editorArea);
 
         this.setupEditorAreaEvents();
-        this.setupNameInputEvents();
 
         const menu = createElement('div');
         this.el.append(menu, this.editorArea);
 
         this.suggestionDropdown = new SuggestionDropdown();
-        this.editor = this;
         this.autosuggest = autosuggest || new Autosuggest(this);
-        this.contentHandler = contentHandler || new EditorContentHandler(this, this.autosuggest, this.yDoc, this.yText, this.yName, this.app);
+        this.contentHandler = contentHandler || new EditorContentHandler(this, this.autosuggest, this.yDoc, this.yText);
         this.ontologyBrowser = ontologyBrowser || new OntologyBrowser(this, (tag) => this.contentHandler.insertTagAtSelection(tag));
         this.toolbar = toolbar || new Toolbar(this);
 
         menu.append(this.toolbar.getElement(), this.ontologyBrowser.getElement());
 
         this.setupEditorEvents();
-
-        // this.loadYDoc().then(() => { // Remove loadYDoc call from constructor
-        //     this.editorArea.focus();
-        // });
-    }
-
-    createNameInput() {
-        return createElement('input', {
-            type: 'text',
-            placeholder: 'Note Title'
-        });
     }
 
     createEditorArea() {
@@ -73,34 +48,19 @@ class Edit {
         }, 300));
     }
 
-    setupNameInputEvents() {
-        this.nameInput.addEventListener('input', () => {
-            this.setName(this.nameInput.value);
-        });
-    }
-
-    setName(name) {
-        this.contentHandler.setName(name);
-        this.nameInput.value = name;
-    }
-
     setContent(html) {
         this.contentHandler.setContent(html);
     }
 
-    getName() {
-        const firstLine = this.yText.toString().split('\n')[0];
-        return firstLine || 'Untitled Note';
-    }
-
     findSuggestion(name) {
-        for (const cat in this.ontology) {
-            if (this.ontology[cat].instances) {
-                for (const t of this.ontology[cat].instances) {
+        const tagDefinition = this.getTagDefinition(name);
+        if (tagDefinition) {
+            if (tagDefinition.instances) {
+                for (const t of tagDefinition.instances) {
                     if (t.name === name) return {displayText: t.name, tagData: t};
                 }
-            } else if (this.ontology[cat].name === name) {
-                return {displayText: this.ontology[cat].name, tagData: this.ontology[cat]};
+            } else if (tagDefinition.name === name) {
+                return {displayText: tagDefinition.name, tagData: tagDefinition};
             }
         }
         return null;
@@ -139,7 +99,7 @@ class Edit {
 
     handleEditorKeyUp(event) {
         if (this.suggestionDropdown.el.style.display !== 'block') {
-            this.editor.autosuggest.apply();
+            this.autosuggest.apply();
         }
         this.updateLastValidRange();
     }
@@ -178,19 +138,6 @@ class Edit {
         const suggestions = [];
         const word = span.textContent.toLowerCase();
 
-        for (const categoryName in this.ontology) {
-            const category = this.ontology[categoryName];
-            if (category.instances) {
-                for (const tag of category.instances) {
-                    if (tag.name.toLowerCase().startsWith(word)) {
-                        suggestions.push(this.createSuggestion(tag, span));
-                    }
-                }
-            } else if (category.name?.toLowerCase().startsWith(word)) {
-                suggestions.push(this.createSuggestion(category));
-            }
-        }
-
         const rect = span.getBoundingClientRect();
         this.suggestionDropdown.show(suggestions, rect.left + window.scrollX, rect.bottom + window.scrollY, this.contentHandler.insertTagFromSuggestion.bind(this.contentHandler));
     }
@@ -198,10 +145,25 @@ class Edit {
     createSuggestion(tagData, span = null) {
         return {displayText: tagData.name, tagData, span};
     }
-
-    matchesOntology(word) {
-        return Object.values(this.ontology).flat().some(tag => tag?.name?.toLowerCase().startsWith(word.toLowerCase()));
+/**
+ * Checks if a word matches any tag name or condition in the ontology.
+ * @param {string} word The word to check.
+ * @returns {boolean} True if the word matches a tag name or condition, false otherwise.
+ */
+matchesOntology(word) {
+    const lowerWord = word.toLowerCase();
+    return false;
     }
+    /**
+     * Adds a tag to the note's content.
+     * @param {string} tag The tag to add.
+     */
+    addTag(tag) {
+        // Implement tag adding logic here
+        console.log('Adding tag:', tag);
+        this.contentHandler.insertTagAtSelection(tag);
+    }
+
 }
 
 export {Edit};

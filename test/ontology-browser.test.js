@@ -1,6 +1,6 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {OntologyBrowser} from '../ui/edit/ontology-browser.js';
-import {UnifiedOntology} from '../core/ontology.js';
+import {Ontology} from '../core/ontology.js';
 
 describe('OntologyBrowser Component', () => {
     let ontologyBrowser;
@@ -15,12 +15,12 @@ describe('OntologyBrowser Component', () => {
     });
 
     it('should render the categories and instances correctly', () => {
-        ontologyBrowser.render(UnifiedOntology);
+        ontologyBrowser.render(Ontology);
         const categoryDivs = document.querySelectorAll('.ontology-category');
         expect(categoryDivs.length).toBeGreaterThan(0);
 
-        for (const categoryName in UnifiedOntology) {
-            const category = UnifiedOntology[categoryName];
+        for (const categoryName in Ontology) {
+            const category = Ontology[categoryName];
             if (category.instances && Array.isArray(category.instances)) {
                 const h3Elements = document.querySelectorAll('.ontology-category h3');
                 let categoryDiv = null;
@@ -40,7 +40,7 @@ describe('OntologyBrowser Component', () => {
     });
 
     it('should call the onTagSelect callback when a tag instance is clicked', async () => {
-        ontologyBrowser.render(UnifiedOntology);
+        ontologyBrowser.render(Ontology);
         const tagInstance = document.querySelector('.ontology-instance');
         tagInstance.addEventListener('click', onTagSelect);
         tagInstance.dispatchEvent(new Event('click'));

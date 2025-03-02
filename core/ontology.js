@@ -1,4 +1,4 @@
-export const UnifiedOntology = {
+export const Ontology = {
     "location": {
         conditions: ["is", "contains", "near"],
         validate: (value, condition) => typeof value === "string" && value.length > 0,
@@ -161,8 +161,44 @@ export const UnifiedOntology = {
         instances: [
             {name: "List", type: "list", emoji: "🔖", options: [], conditions: {"is one of": "is one of"}}
         ]
-    }
+    },
+  "DueDate": {
+    conditions: ["is", "before", "after", "between"],
+    validate: (value, condition) => {
+      if (condition === "between") {
+        return isValidDate(value.start) && isValidDate(value.end);
+      }
+      return isValidDate(value);
+    },
+    serialize: (value) => {
+      if (typeof value === 'object' && value !== null) {
+        return { start: value.start, end: value.end };
+      }
+      return value;
+    },
+    deserialize: (value) => value,
+    instances: [
+      {
+        name: "DueDate",
+        emoji: "📅",
+        conditions: {
+          "is at": "is at",
+          "is between": "is between",
+          "is before": "is before",
+          "is after": "is after"
+        }
+      }
+    ]
+  }
+};
 
+const isValidDate = (dateString) => {
+  try {
+    const date = new Date(dateString);
+    return !isNaN(date.getTime());
+  } catch (error) {
+    return false;
+  }
 };
 
 const physicalInstances = [
@@ -188,7 +224,7 @@ const physicalInstances = [
     {name: "Color", emoji: "🎨", conditions: {is: "is"}}
 ];
 
-UnifiedOntology.Physical = {
+Ontology.Physical = {
     instances: physicalInstances
 };
 
@@ -201,7 +237,7 @@ const timeInstances = [
     }
 ];
 
-UnifiedOntology.Time2 = { // Renamed to avoid conflict with existing Time category
+Ontology.Time2 = { // Renamed to avoid conflict with existing Time category
     instances: timeInstances
 };
 
@@ -232,7 +268,7 @@ const emotionInstances = [
     }
 ];
 
-UnifiedOntology.Emotion.instances = emotionInstances;
+Ontology.Emotion.instances = emotionInstances;
 
 const businessInstances = [
     {
@@ -251,15 +287,15 @@ const businessInstances = [
     }
 ];
 
-UnifiedOntology.Business.instances = businessInstances;
+Ontology.Business.instances = businessInstances;
 
 const dataInstances = [
     {name: "List", type: "list", emoji: "🔖", options: [], conditions: {"is one of": "is one of"}}
 ];
 
-UnifiedOntology.Data.instances = dataInstances;
+Ontology.Data.instances = dataInstances;
 
 export const getTagDefinition = (name) => {
     // TODO: Add support for semantic information, such as synonyms, related concepts, and hierarchical relationships
-    return UnifiedOntology[name] || UnifiedOntology.string;
+    return Ontology[name] || Ontology.string;
 };

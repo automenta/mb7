@@ -22,11 +22,17 @@ describe('EventHandler', () => {
             expect(eventHandler.validateEventContent(event)).toBeFalsy(); // Use toBeFalsy for boolean coercion
         });
 
+        it('should return false if event content is invalid JSON', () => {
+            const event = {content: 'invalid json'};
+            expect(eventHandler.validateEventContent(event)).toBe(false);
+        });
+
         it('should return false if event content does not start with "{"', () => {
             const event = {content: 'invalid json'};
             expect(eventHandler.validateEventContent(event)).toBe(false);
         });
-    });
+    
+});
 
     describe('parseEventContent', () => {
         it('should parse valid JSON event content', async () => {

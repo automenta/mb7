@@ -3,6 +3,7 @@ const DOMPURIFY_CONFIG = {
     ALLOWED_TAGS: ["br", "b", "i", "span", "p", "strong", "em", "ul", "ol", "li", "a"],
     ALLOWED_ATTR: ["class", "contenteditable", "tabindex", "id", "aria-label"]
 };
+import DOMPurify from 'dompurify';
 import * as NostrTools from 'nostr-tools';
 import {openDB} from 'idb';
 import * as Y from 'yjs'
@@ -50,7 +51,13 @@ export class DB {
             upgrade(db, oldVersion, newVersion, transaction) {
                 console.log('onupgradeneeded triggered');
                 if (!db.objectStoreNames.contains(OBJECTS_STORE)) {
-                    db.createObjectStore(OBJECTS_STORE, {keyPath: 'id'});
+                    const objectStore = db.createObjectStore(OBJECTS_STORE, {keyPath: 'id'});
+                    objectStore.createIndex('kind', 'kind', {unique: false});
+                    objectStore.createIndex('content', 'content', {unique: false});
+                    objectStore.createIndex('tags', 'tags', {unique: false});
+                    objectStore.createIndex('createdAt', 'createdAt', {unique: false});
+                    objectStore.createIndex('updatedAt', 'updatedAt', {unique: false});
+                    objectStore.createIndex('private', 'private', {unique: false});
                 }
                 if (!db.objectStoreNames.contains(KEY_STORAGE)) {
                     db.createObjectStore(KEY_STORAGE);
@@ -100,6 +107,7 @@ export class DB {
             }
             return all.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         } catch (error) {
+            this.errorHandler.handleError(error, "Failed to get all objects", error);
             console.error("getAll failure:", error);
             throw error;
         }
@@ -118,7 +126,9 @@ export class DB {
             console.log("DB.get - result:", result);
             return result;
         } catch (error) {
-            this.errorHandler.handleError(error, "Failed to get object");
+            this.errorHandler.handleError(error, "Failed to get object", error);
+            console.error("Failed to get object:", error);
+            throw error;
         }
     }
 
@@ -131,12 +141,71 @@ export class DB {
                 console.error('Attempted to save an object without an `id`:', o);
                 throw new Error('Missing id property on object');
             }
+
+            // Data validation
+            if (typeof o.kind !== 'string') {
+                throw new Error('Kind must be a string');
+            }
+            if (typeof o.content !== 'string') {
+                this.errorHandler.handleError(new Error('Content must be a string'), "Failed to save object");
+                throw new Error('Content must be a string');
+            }
+            if (!Array.isArray(o.tags)) {
+                this.errorHandler.handleError(new Error('Tags must be an array'), "Failed to save object");
+                throw new Error('Tags must be an array');
+            }
+
+            // Data sanitization
+            o.content = DOMPurify.sanitize(o.content, DOMPURIFY_CONFIG);
+
+            // Deduplication
+            const existingObject = await this.get(o.id);
+            if (existingObject) {
+                if (JSON.stringify(existingObject) === JSON.stringify(o)) {
+                    console.log('Object has not been modified, skipping save');
+                    return o;
+                } else {
+                    console.log('Object with id ' + o.id + ' already exists, updating...');
+                }
+            }
+
             // TODO: Retrieve the user's encryption key instead of generating a new one.
             // TODO: Store the encryption key ID with the object.
             await DB.db.put(OBJECTS_STORE, o);
+
+            try {
+                // Yjs integration
+                if (o.kind === 'text') {
+                    // Operational Transformation (OT) for text-based NObjects
+                    console.log('Using OT for text-based NObject');
+
+                    // Get the YDoc for the object, create if it doesn't exist
+                    let yDoc = await this.getYDoc(o.id) || new Y.Doc();
+
+                    // Get the YText object from the YDoc
+                    const yText = yDoc.getText('content');
+
+                    // Apply the changes to the YText object within a transaction
+                    yDoc.transact(() => {
+                        yText.delete(0, yText.length);
+                        yText.insert(0, o.content);
+                    });
+
+                    // Save the YDoc
+                    await this.saveYDoc(o.id, yDoc);
+                } else {
+                    // Last-write-wins for other NObjects
+                    console.log('Using last-write-wins for non-text-based NObject');
+                }
+            } catch (error) {
+                this.errorHandler.handleError(error, "Failed to integrate with Yjs", error);
+                console.error("Failed to integrate with Yjs:", error);
+            }
+
             return o;
         } catch (error) {
-            this.errorHandler.handleError(error, "Failed to save object");
+            this.errorHandler.handleError(error, "Failed to save object", error);
+            console.error("Failed to save object:", error);
             throw error;
         }
     }
@@ -148,7 +217,8 @@ export class DB {
         try {
             await DB.db.delete(OBJECTS_STORE, id);
         } catch (error) {
-            this.errorHandler.handleError(error, "Failed to delete object");
+            this.errorHandler.handleError(error, "Failed to delete object", error);
+            console.error("Failed to delete object:", error);
             throw error;
         }
     }
@@ -161,7 +231,7 @@ export class DB {
             const all = await this.getAll();
             return all.slice(0, limit);
         } catch (error) {
-            this.handleDBError("Failed to get recent objects", error);
+            this.errorHandler.handleError("Failed to get recent objects", error);
             throw error;
         }
     }
@@ -193,7 +263,7 @@ export class DB {
         try {
             await addFriend(DB.db, FRIENDS_OBJECT_ID, friend);
         } catch (error) {
-            console.error("Failed to add friend:", error);
+            this.errorHandler.handleError("Failed to add friend:", error);
             throw error;
         }
     }
@@ -202,7 +272,7 @@ export class DB {
         try {
             await removeFriend(DB.db, FRIENDS_OBJECT_ID, pubkey);
         } catch (error) {
-            console.error("Failed to remove friend:", error);
+            this.errorHandler.handleError("Failed to remove friend:", error);
             throw error;
         }
     }
@@ -211,7 +281,7 @@ export class DB {
         try {
             await updateFriendProfile(DB.db, FRIENDS_OBJECT_ID, pubkey, name, picture);
         } catch (error) {
-            console.error("Failed to update friend profile:", error);
+            this.errorHandler.handleError("Failed to update friend profile:", error);
             throw error;
         }
     }
@@ -228,7 +298,7 @@ export class DB {
         try {
             await saveSettings(DB.db, SETTINGS_OBJECT_ID, settings);
         } catch (error) {
-            console.error("Failed to save settings:", error);
+            this.errorHandler.handleError("Failed to save settings:", error);
             throw error;
         }
     }
@@ -254,7 +324,7 @@ export class DB {
         try {
             await DB.db.delete(OBJECTS_STORE, note.id);
         } catch (error) {
-            console.error("Failed to delete object:", error);
+            this.errorHandler.handleError("Failed to delete object:", error);
             throw error;
         }
     }

@@ -126,7 +126,13 @@ export class EventHandler {
      * @returns {boolean} - True if the content is valid, false otherwise.
      */
     validateEventContent(event) {
-        return event.content && event.content.trim()[0] === "{";
+        if (!event.content) return false;
+        try {
+            JSON.parse(event.content);
+            return true;
+        } catch (e) {
+            return false;
+        }
     }
 
     /**
@@ -153,7 +159,7 @@ export class EventHandler {
         return {
             id: data.id,
             name: data.name,
-            content: DOMPurify.sanitize(data.content)
+            content: DOMPurify.sanitize(data.content, {ALLOWED_TAGS: [], ALLOWED_ATTR: []})
         };
     }
 

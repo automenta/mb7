@@ -2,11 +2,14 @@ import {createElement} from "./utils.js";
 import * as NostrTools from 'nostr-tools'
 import {View} from "./view.js";
 import {getTagDefinition} from "../core/ontology.js";
+import { generateEncryptionKey } from '../core/crypto.js';
 
 export class FriendsView extends View {
-    constructor(app) {
+    constructor(app, db, nostr) {
         super(app, `<div id="friends-view" class="view"><h2>Friends</h2></div>`);
         this.app = app;
+        this.db = db;
+        this.nostr = nostr
     }
 
     build() {
@@ -50,11 +53,24 @@ export class FriendsView extends View {
 
         try {
             const friend = {pubkey: pubkey};
-            await this.app.db.addFriend(friend);
-            this.app.showNotification(`Added friend: ${NostrTools.nip19.npubEncode(pubkey)}`, "success");
-            await this.app.nostrClient.subscribe([{kinds: [0], authors: [pubkey]}], {id: `friend-profile-${pubkey}`});
-            await this.loadFriends();
-            await this.app.nostrClient.connectToPeer(pubkey); // Connect immediately
+            await this.db.addFriend(friend);
+
+            // Secure Key Exchange
+            try {
+                const encryptionKey = await generateEncryptionKey();
+                // Send DM with the encryption key
+                const keyString = await webcrypto.subtle.exportKey("jwk", encryptionKey);
+                await this.nostr.sendDM(pubkey, `Encryption key: ${JSON.stringify(keyString)}`);
+
+                console.log('Generated encryption key for friend:', encryptionKey);
+
+                this.app.showNotification(`Added friend: ${NostrTools.nip19.npubEncode(pubkey)}`, "success");
+                await this.loadFriends();
+                await this.nostr.connectToPeer(pubkey); // Connect immediately
+            } catch (error) {
+                console.error("Error during key exchange:", error);
+                this.app.showNotification("Failed to exchange keys.", "error");
+            }
 
         } catch (error) {
             this.app.showNotification("Failed to add friend.", "error")
@@ -66,9 +82,9 @@ export class FriendsView extends View {
         let friendsObjectId;
         let friendsObject;
         try {
-            friendsObjectId = await this.app.db.getFriendsObjectId();
+            friendsObjectId = await this.db.getFriendsObjectId();
             console.log("friendsObjectId:", friendsObjectId);
-            friendsObject = await this.app.db.get(friendsObjectId);
+            friendsObject = await this.db.get(friendsObjectId);
             console.log("friendsObject:", friendsObject);
         } catch (error) {
             console.error("Error loading friends:", error);
@@ -108,8 +124,8 @@ export class FriendsView extends View {
 
     async removeFriend(pubkey) {
         try {
-            await this.app.db.removeFriend(pubkey);
-            await this.app.nostrClient.unsubscribe(`friend-profile-${pubkey}`);
+            await this.db.removeFriend(pubkey);
+            await this.nostr.unsubscribeToPubkey(`friend-profile-${pubkey}`);
             await this.loadFriends(); // Refresh list after removing.
         } catch (error) {
             this.app.showNotification("Failed to remove friend.", "error");
