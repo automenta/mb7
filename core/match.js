@@ -14,6 +14,10 @@ export class Matcher {
         });
     }
 
+    /**
+     * Matches an event against existing objects.
+     * @param {object} event - The event to match.
+     */
     async matchEvent(event) {
         const text = (event.content || "").toLowerCase();
         const matches = [];
@@ -39,6 +43,12 @@ export class Matcher {
         }
     }
 
+    /**
+     * Matches an event against a tag's data.
+     * @param {object} tagData - The tag data to match against.
+     * @param {string} text - The text to match.
+     * @param {object} event - The event to match.
+     */
     matchTagData(tagData, text, event) {
         console.log('matchTagData called with:', {tagData, text, event});
         const {name, condition, value} = tagData;
@@ -102,6 +112,12 @@ export class Matcher {
 
     /**
      * Enhances semantic matching using advanced techniques.
+     * @param {string} text - The text to match against.
+     * @param {object[]} objects - The objects to search.
+     * @returns {object[]} - The matching objects.
+     */
+    /**
+     * Enhances semantic matching using advanced techniques (not implemented).
      * @param {string} text - The text to match against.
      * @param {object[]} objects - The objects to search.
      * @returns {object[]} - The matching objects.

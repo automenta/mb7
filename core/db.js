@@ -17,6 +17,7 @@ import {addFriend, removeFriend, updateFriendProfile} from './friend';
 import {saveSettings} from './settings';
 import {createDefaultObject} from './db.utils';
 import {loadKeys} from './db.keys';
+import { encrypt, decrypt } from './crypto';
 
 
 const DB_NAME = 'nostr-app-db';
@@ -42,6 +43,9 @@ export class DB {
 
     /**
      * Initialize (or upgrade) the IndexedDB database using `idb`.
+     */
+    /**
+     * Initializes the IndexedDB database.
      */
     static async the() {
         if (this.db) return this.db;
@@ -91,6 +95,7 @@ export class DB {
 
     /**
      * Return all objects in the 'objects' store, sorted by createdAt descending.
+     * @param {string} filter - The filter to apply to the objects.
      */
     async getAll(filter = "") {
         try {
@@ -127,14 +132,15 @@ export class DB {
             console.log("DB.get - result:", result);
             return result;
         } catch (error) {
-            this.errorHandler.handleError(error, "Failed to get object", error);
-            console.error("Failed to get object:", error);
+            this.errorHandler.handleError(error, `Failed to get object with ID: ${id}`, error);
+            console.error(`Failed to get object with ID: ${id}`, error);
             throw error;
         }
     }
 
     /**
      * Create or update an object (must have an `id`).
+     * @param {object} o - The object to save.
      */
     async save(o) {
         try {
@@ -172,32 +178,28 @@ export class DB {
 
             // TODO: Retrieve the user's encryption key instead of generating a new one.
             // TODO: Store the encryption key ID with the object.
+            await this.enforcePrivacy(o);
             await DB.db.put(OBJECTS_STORE, o);
 
             try {
                 // Yjs integration
-                if (o.kind === 'text') {
-                    // Operational Transformation (OT) for text-based NObjects
-                    console.log('Using OT for text-based NObject');
+                // Operational Transformation (OT) for text-based NObjects
+                console.log('Using OT for text-based NObject');
 
-                    // Get the YDoc for the object, create if it doesn't exist
-                    let yDoc = await this.getYDoc(o.id) || new Y.Doc();
+                // Get the YDoc for the object, create if it doesn't exist
+                let yDoc = await this.getYDoc(o.id) || new Y.Doc();
 
-                    // Get the YText object from the YDoc
-                    const yText = yDoc.getText('content');
+                // Get the YText object from the YDoc
+                const yText = yDoc.getText('content');
 
-                    // Apply the changes to the YText object within a transaction
-                    yDoc.transact(() => {
-                        yText.delete(0, yText.length);
-                        yText.insert(0, o.content);
-                    });
+                // Apply the changes to the YText object within a transaction
+                yDoc.transact(() => {
+                    yText.delete(0, yText.length);
+                    yText.insert(0, o.content);
+                });
 
-                    // Save the YDoc
-                    await this.saveYDoc(o.id, yDoc);
-                } else {
-                    // Last-write-wins for other NObjects
-                    console.log('Using last-write-wins for non-text-based NObject');
-                }
+                // Save the YDoc
+                await this.saveYDoc(o.id, yDoc);
             } catch (error) {
                 this.errorHandler.handleError(error, "Failed to integrate with Yjs", error);
                 console.error("Failed to integrate with Yjs:", error);
@@ -205,8 +207,8 @@ export class DB {
 
             return o;
         } catch (error) {
-            this.errorHandler.handleError(error, "Failed to save object", error);
-            console.error("Failed to save object:", error);
+            this.errorHandler.handleError(error, `Failed to save object with ID: ${o.id}`, error);
+            console.error(`Failed to save object with ID: ${o.id}`, error);
             throw error;
         }
     }
@@ -218,8 +220,8 @@ export class DB {
         try {
             await DB.db.delete(OBJECTS_STORE, id);
         } catch (error) {
-            this.errorHandler.handleError(error, "Failed to delete object", error);
-            console.error("Failed to delete object:", error);
+            this.errorHandler.handleError(error, `Failed to delete object with ID: ${id}`, error);
+            console.error(`Failed to delete object with ID: ${id}`, error);
             throw error;
         }
     }
@@ -265,7 +267,7 @@ export class DB {
         try {
             await addFriend(DB.db, FRIENDS_OBJECT_ID, friend);
         } catch (error) {
-            this.errorHandler.handleError("Failed to add friend:", error);
+            this.errorHandler.handleError(`Failed to add friend: ${friend}`, error);
             throw error;
         }
     }
@@ -274,7 +276,7 @@ export class DB {
         try {
             await removeFriend(DB.db, FRIENDS_OBJECT_ID, pubkey);
         } catch (error) {
-            this.errorHandler.handleError("Failed to remove friend:", error);
+            this.errorHandler.handleError(`Failed to remove friend: ${pubkey}`, error);
             throw error;
         }
     }
@@ -283,7 +285,7 @@ export class DB {
         try {
             await updateFriendProfile(DB.db, FRIENDS_OBJECT_ID, pubkey, name, picture);
         } catch (error) {
-            this.errorHandler.handleError("Failed to update friend profile:", error);
+            this.errorHandler.handleError(`Failed to update friend profile: ${pubkey}`, error);
             throw error;
         }
     }
@@ -300,24 +302,35 @@ export class DB {
         try {
             await saveSettings(DB.db, SETTINGS_OBJECT_ID, settings);
         } catch (error) {
-            this.errorHandler.handleError("Failed to save settings:", error);
+            this.errorHandler.handleError(`Failed to save settings: ${settings}`, error);
             throw error;
         }
     }
 
     async saveYDoc(id, yDoc) {
-        const yDocData = Y.encodeStateAsUpdate(yDoc);
-        await DB.db.put(OBJECTS_STORE, {id: `${id}-ydoc`, yDocData: yDocData});
+        try {
+            const yDocData = Y.encodeStateAsUpdate(yDoc);
+            await DB.db.put(OBJECTS_STORE, {id: `${id}-ydoc`, yDocData: yDocData});
+       } catch (error) {
+            this.errorHandler.handleError(error, `Failed to save YDoc with ID: ${id}`, error);
+            console.error(`Failed to save YDoc with ID: ${id}`, error);
+        }
     }
 
     async getYDoc(id) {
         await DB.the();
-        const yDocObject = await DB.db.get(OBJECTS_STORE, `${id}-ydoc`);
-        if (yDocObject) {
-            const yDoc = new Y.Doc();
-            Y.applyUpdate(yDoc, yDocObject.yDocData);
-            return yDoc;
-        } else {
+        try {
+            const yDocObject = await DB.db.get(OBJECTS_STORE, `${id}-ydoc`);
+            if (yDocObject) {
+                const yDoc = new Y.Doc();
+                Y.applyUpdate(yDoc, yDocObject.yDocData);
+                return yDoc;
+            } else {
+                return null;
+            }
+        } catch (error) {
+            this.errorHandler.handleError(error, "Failed to get YDoc", error);
+            console.error("Failed to get YDoc:", error);
             return null;
         }
     }
@@ -354,11 +367,25 @@ export class DB {
     /**
      * Implements privacy controls to ensure NObjects are private by default.
      * @param {object} object - The NObject to apply privacy controls to.
+     * Enforces privacy by encrypting the object's content.
      */
     async enforcePrivacy(object) {
-        object.private = true;
-        object.content = "This object is private.";
-        console.log(`Enforcing privacy for object: ${object.id} (not implemented)`);
+        try {
+            const keys = await this.getKeys();
+            if (!keys || !keys.encryptionKey) {
+                console.warn("No encryption key found for user.");
+                return;
+            }
+
+            const encryptedData = await encrypt(object.content, keys.encryptionKey);
+            object.content = `ENCRYPTED:${encryptedData}`;
+            object.private = true;
+            // object.encryptionKeyId = keys.encryptionKey.id; // Store key ID if needed - encryptionKey object doesn't have id field
+            console.log(`Enforcing privacy for object: ${object.id}`);
+        } catch (error) {
+            this.errorHandler.handleError(error, "Failed to enforce privacy", error);
+            console.error("Failed to enforce privacy:", error);
+        }
     }
 }
 
