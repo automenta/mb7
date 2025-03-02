@@ -107,7 +107,7 @@ export class Matcher {
             const numValue = parseFloat(text); //Try to get a numeric value
             return !isNaN(lower) && !isNaN(upper) && !isNaN(numValue) && numValue >= lower && numValue <= upper;
         }
-        
+
         const conditionHandlers = {
             "matches regex": () => {
                 try {

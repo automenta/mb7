@@ -1,5 +1,5 @@
 import * as Y from 'yjs'
-import { Monitoring } from '../core/monitoring.js';
+import {Monitoring} from '../core/monitoring.js';
 import {Matcher} from '../core/match.js';
 import {DB} from '../core/db.js';
 import {Nostr} from '../core/net.js';
@@ -22,8 +22,9 @@ class App {
         this.elements.notificationArea.id = 'notification-area';
     }
 
-    static async initialize(app) {
-        const errorHandler = new ErrorHandler(app);
+    static async initialize(appDiv) {
+        const errorHandler = new ErrorHandler(appDiv);
+        const app = new App();
         const db = new DB(app, errorHandler);
         let signalingStrategy = "nostr"; // Provide a default value in case of error
         let nostrRelays = "";
@@ -40,7 +41,7 @@ class App {
         }
         console.log('db.getSettings() returned:', await db.getSettings());
 
-        const nostr = new Nostr(app, signalingStrategy, nostrRelays, nostrPrivateKey);
+        const nostr = new Nostr(app, signalingStrategy, nostrRelays, nostrPrivateKey, app.yDoc);
         nostr.connect();
         const matcher = new Matcher(app);
         app.yDoc = new Y.Doc();
@@ -48,9 +49,16 @@ class App {
         // Initialize NotificationManager and Monitoring here, after db is ready
         const notificationManager = new NotificationManager(app);
         const monitoring = new Monitoring(app);
-        console.log('App.initialize resolved with:', {db, nostr, matcher, errorHandler, notificationManager, monitoring});
+        console.log('App.initialize resolved with:', {
+            db,
+            nostr,
+            matcher,
+            errorHandler,
+            notificationManager,
+            monitoring
+        });
         monitoring.start();
-
+        app.db = db;
         return {db, nostr, matcher, errorHandler, notificationManager, monitoring};
     }
 
@@ -145,7 +153,7 @@ class App {
         }
     }
 }
-    
+
 async function createApp(appDiv) {
     const appData = await App.initialize(appDiv);
     console.log('Creating App instance with db:', appData.db, 'and nostr:', appData.nostr);

@@ -8,14 +8,11 @@ export class RelayManager {
         this.relayObjects = relayObjects;
         this.relayConnected = relayConnected;
         this.showNotification = showNotification;
-        this.relays = relays;
-        this.relayStatuses = relayStatuses;
-        this.relayObjects = relayObjects;
     }
 
     setRelays(relays) {
         this.disconnectFromAllRelays();
-        this.relays = relays;
+        this.relays = relays.map(relay => typeof relay === 'string' ? relay : relay.url);
         this.connect();
     }
 
@@ -36,6 +33,7 @@ export class RelayManager {
     }
 
     async connectToRelay(relayUrl) {
+        console.log('RelayManager.connectToRelay() called', relayUrl);
         if (this.relayStatuses[relayUrl]?.status === "connecting" || this.relayStatuses[relayUrl]?.status === "connected") {
             return;
         }
@@ -56,6 +54,7 @@ export class RelayManager {
     }
 
     async onOpen(relay) {
+        console.log('RelayManager.onOpen() called', relay.url);
         try {
             console.log("Connected to relay:", relay.url);
             this.relayStatuses[relay.url] = {status: "connected"};

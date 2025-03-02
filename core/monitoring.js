@@ -105,4 +105,4 @@ class Monitoring {
     }
 }
 
-export { Monitoring };
+export {Monitoring};

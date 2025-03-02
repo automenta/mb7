@@ -7,11 +7,10 @@ async function ingestNObject(event) {
     console.log('ingestNObject called with event:', event);
 }
 
-export { ingestNObject };
+export {ingestNObject};
 import DOMPurify from 'dompurify';
 import {getEventHash, nip19, validateEvent, verifyEvent} from 'nostr-tools';
 import {getTagDefinition} from './ontology';
-import {WebRTCService} from './net.webrtc';
 import {RelayManager} from './net/net.relays';
 import {EventHandler} from './net/net.events';
 
@@ -59,6 +58,7 @@ export class Nostr {
     }
 
     connect() {
+        console.log('Nostr.connect() called');
         this.relayManager.connect();
     }
 
@@ -229,17 +229,22 @@ export class Nostr {
 
 
     async relayConnected(relay) {
+        console.log('Nostr.relayConnected() called', relay);
         try {
             console.log("relayConnected: relay =", relay);
             const nostr = this;
+            console.log("relayConnected: relay.url =", relay.url);
+            const relayObject = this.relayObjects[relay.url];
+            console.log("relayConnected: relayObject =", relayObject);
+            console.log("relayConnected: window.keys =", window.keys);
             await this.subscribeToFriends(relay);
-            await relay.subscribe([{kinds: [30000], authors: [window.keys.pub]}], {
-                relay,
+            await relayObject.subscribe([{kinds: [30000], authors: [window.keys.pub]}], {
+                relay: relayObject,
                 id: `object-${relay.url}`,
                 onEvent: this.eventHandler.handleObjectEvent.bind(this.eventHandler)
             });
             await relay.subscribe([{kinds: [1]}], {
-                relay, id: `feed-${relay.url}`, onevent: (event) => {
+                relay: relayObject, id: `feed-${relay.url}`, onevent: (event) => {
                     nostr.onevent(event);
                 }
             });
@@ -264,6 +269,7 @@ export class Nostr {
     async subscribeToFriends(relay) {
         try {
             console.log("subscribeToFriends: this.app.db =", this.app.db);
+            console.log("subscribeToFriends: this.app.db.getFriendsObjectId =", this.app.db.getFriendsObjectId);
             const friendsObjectId = await this.app.db.getFriendsObjectId();
             if (!friendsObjectId) {
                 console.warn("No friends object id found.");

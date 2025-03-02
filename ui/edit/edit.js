@@ -145,15 +145,17 @@ class Edit {
     createSuggestion(tagData, span = null) {
         return {displayText: tagData.name, tagData, span};
     }
-/**
- * Checks if a word matches any tag name or condition in the ontology.
- * @param {string} word The word to check.
- * @returns {boolean} True if the word matches a tag name or condition, false otherwise.
- */
-matchesOntology(word) {
-    const lowerWord = word.toLowerCase();
-    return false;
+
+    /**
+     * Checks if a word matches any tag name or condition in the ontology.
+     * @param {string} word The word to check.
+     * @returns {boolean} True if the word matches a tag name or condition, false otherwise.
+     */
+    matchesOntology(word) {
+        const lowerWord = word.toLowerCase();
+        return false;
     }
+
     /**
      * Adds a tag to the note's content.
      * @param {string} tag The tag to add.

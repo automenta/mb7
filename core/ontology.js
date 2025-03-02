@@ -162,43 +162,43 @@ export const Ontology = {
             {name: "List", type: "list", emoji: "🔖", options: [], conditions: {"is one of": "is one of"}}
         ]
     },
-  "DueDate": {
-    conditions: ["is", "before", "after", "between"],
-    validate: (value, condition) => {
-      if (condition === "between") {
-        return isValidDate(value.start) && isValidDate(value.end);
-      }
-      return isValidDate(value);
-    },
-    serialize: (value) => {
-      if (typeof value === 'object' && value !== null) {
-        return { start: value.start, end: value.end };
-      }
-      return value;
-    },
-    deserialize: (value) => value,
-    instances: [
-      {
-        name: "DueDate",
-        emoji: "📅",
-        conditions: {
-          "is at": "is at",
-          "is between": "is between",
-          "is before": "is before",
-          "is after": "is after"
-        }
-      }
-    ]
-  }
+    "DueDate": {
+        conditions: ["is", "before", "after", "between"],
+        validate: (value, condition) => {
+            if (condition === "between") {
+                return isValidDate(value.start) && isValidDate(value.end);
+            }
+            return isValidDate(value);
+        },
+        serialize: (value) => {
+            if (typeof value === 'object' && value !== null) {
+                return {start: value.start, end: value.end};
+            }
+            return value;
+        },
+        deserialize: (value) => value,
+        instances: [
+            {
+                name: "DueDate",
+                emoji: "📅",
+                conditions: {
+                    "is at": "is at",
+                    "is between": "is between",
+                    "is before": "is before",
+                    "is after": "is after"
+                }
+            }
+        ]
+    }
 };
 
 const isValidDate = (dateString) => {
-  try {
-    const date = new Date(dateString);
-    return !isNaN(date.getTime());
-  } catch (error) {
-    return false;
-  }
+    try {
+        const date = new Date(dateString);
+        return !isNaN(date.getTime());
+    } catch (error) {
+        return false;
+    }
 };
 
 const physicalInstances = [

@@ -37,12 +37,8 @@ describe('NoteView', () => {
         vi.resetModules();
         // Delete the database before each test
         const {App} = await import('../ui/app.js');
-        const { DB } = await import('../core/db.js'); // Import the mocked DB class
-        const db = new DB(); // Create an instance of the mocked DB
         app = createAppMock();
-        app.db = db; // Assign the mocked DB instance to app.db
-        app.saveOrUpdateObject = app.createNewObject;
-        
+        app.saveOrUpdateObject = vi.fn().mockResolvedValue({});
         noteView = new NoteView(app);
         document.body.innerHTML = ''; // Clear the body
         document.body.appendChild(noteView.el);

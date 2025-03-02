@@ -31,8 +31,8 @@ describe('EventHandler', () => {
             const event = {content: 'invalid json'};
             expect(eventHandler.validateEventContent(event)).toBe(false);
         });
-    
-});
+
+    });
 
     describe('parseEventContent', () => {
         it('should parse valid JSON event content', async () => {
@@ -43,13 +43,7 @@ describe('EventHandler', () => {
 
         it('should return null if event content is invalid JSON', async () => {
             const event = {content: 'invalid json'};
-            let parsedContent = null;
-            try {
-                parsedContent = await eventHandler.parseEventContent(event);
-            } catch (error) {
-                // Expected
-            }
-            expect(parsedContent).toBe(null);
+            await expect(eventHandler.parseEventContent(event)).rejects.toThrow(SyntaxError);
         });
     });
 

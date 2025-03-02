@@ -146,7 +146,7 @@ export class EventHandler {
             return JSON.parse(event.content);
         } catch (error) {
             console.error("Error parsing event content:", error, "Content:", event.content);
-            return null;
+            throw error;
         }
     }
 

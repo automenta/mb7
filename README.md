@@ -30,18 +30,20 @@ Organize, prioritize, and grow thoughts into actionable results with real-time c
     - Crypto-signing ensures `NObject` integrity and provenance.
 
 ### App ###
-  **Notes**
-    - Semantic note-taking application
-    - Create, list, update, delete Note NObjects
-  **Friends**
-    - Buddy List w/ secure Direct Messaging, Status
-  **Settings**
-    - Profile editor, Network settings, etc...
-  **Content**
-    - Public network feed (Nostr messages, etc...)
-    - Analyzed, annotated, categorized, matched, etc...
+
+**Notes**
+- Semantic note-taking application
+- Create, list, update, delete Note NObjects
+**Friends**
+- Buddy List w/ secure Direct Messaging, Status
+**Settings**
+- Profile editor, Network settings, etc...
+**Content**
+- Public network feed (Nostr messages, etc...)
+- Analyzed, annotated, categorized, matched, etc...
 
 ### Code
+
 - Clear, complete, clean, compact, efficient, self-documenting ES6+ code.
 - Comments explain complex logic or design decisions
 - Use the latest JavaScript language features and APIs
@@ -50,6 +52,7 @@ Organize, prioritize, and grow thoughts into actionable results with real-time c
 - Combine related test cases
 
 ### UI Design
+
 - *Progressive Disclosure*: This was a recurring theme. Hiding complexity until it's needed (e.g., the "Edit Details"
   button, collapsible sections) is vital for a clean and intuitive UI.
 - *Consistency and Familiarity*: Using established UI patterns (like email-style replies, inline editing, common icons)

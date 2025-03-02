@@ -2,7 +2,8 @@ import {createElement} from "./utils.js";
 import * as NostrTools from 'nostr-tools'
 import {View} from "./view.js";
 import {getTagDefinition} from "../core/ontology.js";
-import { generateEncryptionKey } from '../core/crypto.js';
+import {generateEncryptionKey} from '../core/crypto.js';
+
 const PUBKEY_REGEX = /^[0-9a-fA-F]{64}$/;
 
 
@@ -154,4 +155,4 @@ export class FriendsView extends View {
             this.app.showNotification(`Error connecting to WebRTC peer: ${error.message}`, 'error');
         }
     }
-    }
+}

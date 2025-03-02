@@ -70,4 +70,4 @@ async function decrypt(data, key) {
     }
 }
 
-export { generateEncryptionKey, encrypt, decrypt };
+export {generateEncryptionKey, encrypt, decrypt};

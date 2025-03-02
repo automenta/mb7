@@ -1,5 +1,4 @@
-import {Tag} from '../tag.js';
-import { Ontology } from '../../core/ontology.js';
+import {Ontology} from '../../core/ontology.js';
 
 export class NoteDetails extends HTMLElement {
     constructor(noteView) {

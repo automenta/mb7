@@ -7,12 +7,11 @@ import * as NostrTools from 'nostr-tools';
 import {openDB} from 'idb';
 import * as Y from 'yjs'
 
-import {generateEncryptionKey} from './crypto';
+import {encrypt, generateEncryptionKey} from './crypto';
 import {addFriend, removeFriend, updateFriendProfile} from './friend';
 import {saveSettings} from './settings';
 import {createDefaultObject} from './db.utils';
 import {loadKeys} from './db.keys';
-import { encrypt, decrypt } from './crypto';
 
 const DB_NAME = 'nostr-app-db';
 const DB_VERSION = 2;
@@ -295,7 +294,7 @@ export class DB {
         try {
             const yDocData = Y.encodeStateAsUpdate(yDoc);
             await DB.db.put(OBJECTS_STORE, {id: `${id}-ydoc`, yDocData: yDocData});
-       } catch (error) {
+        } catch (error) {
             this.errorHandler.handleError(error, `Failed to save YDoc with ID: ${id}`, error);
             console.error(`Failed to save YDoc with ID: ${id}`, error);
         }

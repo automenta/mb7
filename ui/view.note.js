@@ -6,7 +6,7 @@ import {NoteDetails} from './note/note.details.js';
 
 import {GenericListComponent} from './generic-list.js';
 
-import { Ontology } from '../core/ontology.js';
+import {Ontology} from '../core/ontology.js';
 
 export class NoteView extends HTMLElement {
     constructor(app, db, nostr) {
@@ -214,10 +214,17 @@ export class NoteView extends HTMLElement {
 
     async createNote() {
         console.log('createNote function called');
-            console.log('app.saveOrUpdateObject called');
+        console.log('app.saveOrUpdateObject called');
         try {
             const timestamp = Date.now();
-            const newObject = await this.app.saveOrUpdateObject({name: '', content: '', timestamp, private: true, tags: [], priority: 'Medium'});
+            const newObject = await this.app.saveOrUpdateObject({
+                name: '',
+                content: '',
+                timestamp,
+                private: true,
+                tags: [],
+                priority: 'Medium'
+            });
             if (newObject) {
                 await this.addNoteToList(newObject.id);
                 await this.notesListComponent.fetchDataAndRender();
@@ -244,6 +251,8 @@ export class NoteView extends HTMLElement {
     }
 
     async addNoteToList(noteId) {
+        console.log('yDoc in addNoteToList:', this.yDoc);
+        console.log('yNotesList in addNoteToList:', this.yNotesList);
         this.yDoc.transact(() => {
             this.yNotesList.push([noteId]);
         });
@@ -347,6 +356,7 @@ export class NoteView extends HTMLElement {
             }
         }
     }
+
     async updateNotePriority(noteId, priority) {
         try {
             const note = await this.app.db.get(noteId);
@@ -373,7 +383,7 @@ export class NoteView extends HTMLElement {
             });
         });
     }
-    
+
     displayTagSuggestions(suggestions) {
 
         const tagArea = this.el.querySelector('.note-tag-area');

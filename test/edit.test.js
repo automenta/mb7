@@ -1,21 +1,24 @@
-import { describe, it, expect } from 'vitest';
-import { Edit } from '../ui/edit/edit';
-import { Ontology, getTagDefinition } from '../core/ontology';
+import {describe, expect, it} from 'vitest';
+import {Edit} from '../ui/edit/edit';
+import {Ontology} from '../core/ontology';
 
 describe('Edit Autosuggest', () => {
     it('should suggest tag names from ontology', () => {
         const yDoc = {
             getText: () => ({}) // Mock Y.Text
         }; // Mock Y.Doc
-        
+
         const getTagDefinition = (name) => Ontology[name]; // Mock getTagDefinition
-        
+
         class MockAutosuggest {
             constructor(edit) {
                 this.edit = edit;
             }
-            apply() {}
+
+            apply() {
+            }
         }
+
         const autosuggest = new MockAutosuggest(); // Mock Autosuggest
 
         class MockContentHandler {
@@ -23,6 +26,7 @@ describe('Edit Autosuggest', () => {
                 this.edit = edit;
             }
         }
+
         const contentHandler = new MockContentHandler(); // Mock ContentHandler
         const ontologyBrowser = {getElement: () => ({})}; // Mock OntologyBrowser
         const toolbar = {getElement: () => ({})}; // Mock Toolbar
