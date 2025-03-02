@@ -12,7 +12,6 @@ export class GenericListComponent extends UIComponent {
         // Observe Yjs array changes
         if (this.yArray) {
             this.yArray.observe(() => {
-                console.log('Yjs array observer triggered in GenericListComponent');
                 this.renderList();
             });
         }
@@ -22,13 +21,11 @@ export class GenericListComponent extends UIComponent {
 
     renderList() {
         this.listElement.innerHTML = ''; // Clear existing list
-        console.log("GenericListComponent - renderList called");
         const data = this.yArray.toArray();
         if (data.length === 0) {
             this.listElement.textContent = 'No items yet.';
         } else {
             data.forEach(item => { // item is noteId
-                console.log("GenericListComponent - renderItem - item:", item);
                 const listItem = document.createElement('li');
                 listItem.appendChild(this.renderItem(item)); // Pass only item (noteId)
                 this.listElement.appendChild(listItem);
@@ -37,7 +34,6 @@ export class GenericListComponent extends UIComponent {
     }
 
     async fetchDataAndRender() {
-        console.log('GenericListComponent.fetchDataAndRender called');
         await this.fetchData();
         this.renderList();
     }

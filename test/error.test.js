@@ -1,5 +1,6 @@
 import {ErrorHandler} from '../core/error.js';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+import { createAppMock } from './test-utils.js';
 
 describe('ErrorHandler', () => {
     let app;
@@ -7,11 +8,7 @@ describe('ErrorHandler', () => {
     let consoleErrorSpy;
 
     beforeEach(() => {
-        app = {
-            notificationManager: {
-                showNotification: vi.fn(),
-            },
-        };
+        app = createAppMock();
         errorHandler = new ErrorHandler(app);
         consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {
         });

@@ -40,7 +40,9 @@ export class Matcher {
     }
 
     matchTagData(tagData, text, event) {
+        console.log('matchTagData called with:', { tagData, text, event });
         const {name, condition, value} = tagData;
+        console.log('tagData values:', { name, condition, value });
         // TODO: Implement more sophisticated tag matching techniques
         const tagDef = getTagDefinition(name);
 
@@ -73,7 +75,8 @@ export class Matcher {
                 return false;
             }
         } else if (["is", "contains"].includes(condition)) {
-            return text.includes(value?.toLowerCase());
+            console.log('text', text, 'value', value);
+            return text?.toLowerCase().includes(value?.toLowerCase());
         } else if (["before", "after"].includes(condition)) {
             return checkTime(value);
         }

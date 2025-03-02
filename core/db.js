@@ -7,10 +7,10 @@ import * as NostrTools from 'nostr-tools';
 import {openDB} from 'idb';
 import * as Y from 'yjs'
 // Mock indexedDB for tests
-if (process.env.NODE_ENV === 'test') {
-    const FakeIndexedDB = require('fake-indexeddb').FakeIndexedDB;
-    global.indexedDB = new FakeIndexedDB();
-}
+//if (process.env.NODE_ENV === 'test') {
+//    const FakeIndexedDB = require('fake-indexeddb').FakeIndexedDB;
+//    global.indexedDB = new FakeIndexedDB();
+//}
 import {generateEncryptionKey} from './crypto';
 import {addFriend, removeFriend, updateFriendProfile} from './friend';
 import {saveSettings} from './settings';

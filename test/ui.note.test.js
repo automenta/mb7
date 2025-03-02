@@ -1,31 +1,32 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { NoteView } from '../ui/view.note.js';
+import { createAppMock } from './test-utils.js';
 
-import { vi } from 'vitest';
 
 
 
 vi.mock('../core/db.js', () => {
-  const db = {
-    get: vi.fn(),
-    save: vi.fn(),
-    delete: vi.fn(),
-  };
-  class MockDB {
-    constructor() {
-      this.the = vi.fn().mockResolvedValue(db);
-      this.getDefaultObject = vi.fn().mockResolvedValue({});
-    }
-    static the() { return Promise.resolve(db) }
-    static getDefaultObject() { return Promise.resolve({}) }
-    initializeKeys = vi.fn().mockResolvedValue({});
-    generateKeys = vi.fn().mockResolvedValue({});
-    getSettings = vi.fn().mockResolvedValue({}); // Mock getSettings
-  }
   return {
-    DB: MockDB,
-    loadKeys: vi.fn().mockResolvedValue({}),
-    generateKeys: vi.fn().mockResolvedValue({}),
+    DB: class {
+      constructor() {
+        this.get = vi.fn().mockResolvedValue({});
+        this.save = vi.fn().mockResolvedValue({});
+        this.delete = vi.fn().mockResolvedValue({});
+        this.getAll = vi.fn().mockResolvedValue([]);
+        this.initializeKeys = vi.fn().mockResolvedValue({});
+        this.generateKeys = vi.fn().mockResolvedValue({});
+        this.getSettings = vi.fn().mockResolvedValue({});
+        this.the = vi.fn().mockResolvedValue(this);
+        this.getDefaultObject = vi.fn().mockResolvedValue({});
+        this.initializeKeys = vi.fn().mockResolvedValue({});
+        this.generateKeys = vi.fn().mockResolvedValue({});
+        this.getSettings = vi.fn().mockResolvedValue({});
+        this.save = vi.fn().mockResolvedValue({});
+      }
+      static the() {
+        return Promise.resolve(this);
+      }
+    },
   };
 });
 
@@ -37,21 +38,18 @@ describe('NoteView', () => {
         vi.resetModules();
         // Delete the database before each test
         const {App} = await import('../ui/app.js');
-        app = new App();
-        
-        app.saveOrUpdateObject = vi.fn();
-        await app.initialize();
+        app = createAppMock();
+        app.saveOrUpdateObject = vi.fn().mockResolvedValue({});
         noteView = new NoteView(app);
         document.body.innerHTML = ''; // Clear the body
         document.body.appendChild(noteView.el);
-        console.log('NotesView initialized and appended to body');
     });
 
     it('should create a new note', async () => {
         const newNote = {name: 'Test Note', content: 'Test Content'};
-        await noteView.createNote(newNote);
+        await noteView.createNote();
 
         console.log('createNote called');
-        expect(app.saveOrUpdateObject).toHaveBeenCalled();
+        expect(app.db.save).toHaveBeenCalled();
     });
 });

@@ -1,13 +1,20 @@
 import {createElement} from '../utils';
 import {Tag} from '../tag.js'; // Import the new Tag component
+import {getNotesIndex, updateNotesIndex} from '../../core/db';
+import DOMPurify from 'dompurify';
+import { debounce } from '../utils';
 
 class EditorContentHandler {
-    constructor(editor, autosuggest) {
+    constructor(editor, autosuggest, yDoc, yText, yName, app) {
         this.editor = editor;
         this.autosuggest = autosuggest;
+        this.yDoc = yDoc;
+        this.yText = yText;
+        this.yName = yName;
+        this.app = app;
         this.lastValidRange = null; // Store the last valid range within the editor for handling tag insertions
     }
-
+ 
     insertLineBreak() {
         const selection = window.getSelection();
         if (!selection.rangeCount) return;
@@ -28,47 +35,44 @@ class EditorContentHandler {
 
     insertTagAtSelection(tag) {
         const editorArea = this.editor.editorArea;
-
-        // 1. Get the current selection, or use the last known valid range
         const selection = window.getSelection();
-        let range;
+        let range = this.getSelectionRange(editorArea, selection);
 
+        editorArea.focus();
+        this.restoreSelection(selection, range);
+
+        this.insertNodeAtRange(range, tag);
+
+        this.lastValidRange = range.cloneRange();  // Update the last valid range
+        this.autosuggest.apply(); // Refresh suggestions
+    }
+
+    getSelectionRange(editorArea, selection) {
+        let range;
         if (selection.rangeCount > 0 && editorArea.contains(selection.anchorNode)) {
-            // If there's a valid selection within the editor, use it
             range = selection.getRangeAt(0);
-            this.lastValidRange = range.cloneRange(); // Store this range as the last valid one
+            this.lastValidRange = range.cloneRange();
         } else if (this.lastValidRange) {
-            // If no current selection, but a valid range was previously stored, use that
             range = this.lastValidRange.cloneRange();
         } else {
-            // If no selection and no stored range, default to the end of the editor content
             range = document.createRange();
             range.selectNodeContents(editorArea);
-            range.collapse(false); // Collapse to the end
+            range.collapse(false);
         }
+        return range;
+    }
 
-        // 2. Ensure the editorArea has focus before manipulating selections
-        editorArea.focus();
-
-        // 3. Restore the selection based on the determined range - crucial to apply focus
+    restoreSelection(selection, range) {
         selection.removeAllRanges();
         selection.addRange(range);
+    }
 
-        // 4. Insert the tag at the current selection
-        range.deleteContents(); // Remove selected content, if any
-        range.insertNode(tag); // Insert the tag element
-
-        // 5. Adjust the cursor position after the inserted tag
-        range.setStartAfter(tag);
-        range.collapse(true); // Collapse to the new position
-
-        // 6. Update the selection with the new range
-        selection.removeAllRanges();
-        selection.addRange(range);
-        this.lastValidRange = range.cloneRange();  // Update the last valid range
-
-        // 7. Trigger autosuggest to update suggestions based on changes
-        this.autosuggest.apply(); // Refresh suggestions
+    insertNodeAtRange(range, node) {
+        range.deleteContents();
+        range.insertNode(node);
+        range.setStartAfter(node);
+        range.collapse(true);
+        this.restoreSelection(window.getSelection(), range);
     }
 
 
@@ -114,6 +118,41 @@ class EditorContentHandler {
         if (lastIndex < text.length) {
             this.editor.editorArea.append(text.substring(lastIndex));
         }
+    }
+
+    setName(name) {
+        this.yDoc.transact(() => {
+            this.yName.delete(0, this.yName.length);
+            this.yName.insert(0, name);
+        });
+    }
+
+    setContent(html) {
+        console.log('Edit.setContent called', html);
+        this.updateYjsContent(html);
+        this.editor.autosuggest.apply();
+        const text = this.serialize();
+        if (text.includes('[TAG:{"name":"Public"}')) {
+            this.app.publishNoteToNostr(this.app.selectedNote);
+        }
+    }
+
+    updateYjsContent(html) {
+        this.yDoc.transact(() => {
+            this.yText.delete(0, this.yText.length);
+            this.yText.insert(0, html);
+        });
+    }
+
+    sanitizeHTML(html) {
+        return DOMPurify.sanitize(html, {
+            ALLOWED_TAGS: ["br", "b", "i", "span", "u", "a"],
+            ALLOWED_ATTR: ["class", "contenteditable", "tabindex", "id", "href", "target"]
+        });
+    }
+
+    updateEditorArea(html) {
+        this.editor.editorArea.innerHTML = html;
     }
 }
 

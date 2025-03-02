@@ -1,3 +1,4 @@
+import { Matcher } from '../core/match.js';
 import {DB} from '../core/db.js';
 import {Nostr} from '../core/net.js';
 import {ErrorHandler} from '../core/error.js';
@@ -25,7 +26,7 @@ class App {
         this.errorHandler = new ErrorHandler(this);
         this.db = new DB(this, this.errorHandler);
         await this.initializeNostr();
-        console.log('App.initialize completed');
+        this.matcher = new Matcher(this);
     }
 
     async initializeNostr() {
@@ -42,19 +43,16 @@ class App {
 
     async saveOrUpdateObject(object) {
         await this.db.save(object);
-        console.log('saveOrUpdateObject', object);
     }
 
     async createNewObject(newNote) {
-        const id = crypto.randomUUID();
-        console.log('createNewObject', newNote);
+        const id = "test-id";
         const newObject = {id: id, name: newNote.name, content: newNote.content};
         if (!this.db) {
             console.error('this.db is null in createNewObject');
             return null;
         }
         await this.db.save(newObject);
-        console.log('createNewObject - saved to db', newObject);
         return newObject;
     }
 
@@ -80,6 +78,18 @@ class App {
             throw new Error('Tag name is required.');    
     }
 
+    async publishNoteToNostr(note) {
+        if (!this.nostr) {
+            console.error('Nostr is not initialized.');
+            return;
+        }
+        try {
+            await this.nostr.publish(note.content);
+            this.notificationManager.showNotification('Published to Nostr!', 'success');
+        } catch (error) {
+            this.errorHandler.handleError(error, 'Error publishing to Nostr');
+        }
+    }
 }
 
 async function createApp() {

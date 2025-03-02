@@ -13,24 +13,23 @@ export class NoteDetails extends HTMLElement {
         `;
     }
 
+    createDetailEdit(text, icon) {
+        const label = document.createElement('span');
+        label.textContent = `${icon} ${text}`;
+        label.classList.add('margin-left');
+        return label;
+    }
+
     createShareEdit() {
-        const sharingLabel = document.createElement('span');
-        sharingLabel.textContent = '👥 No One';
-        sharingLabel.classList.add('margin-left');
-        return sharingLabel;
+        return this.createDetailEdit('No One', '👥');
     }
 
     createPrivacyEdit() {
-        const privacyLabel = document.createElement('span');
-        privacyLabel.textContent = '🔒 Private';
-        privacyLabel.classList.add('margin-left');
-        return privacyLabel;
+        return this.createDetailEdit('Private', '🔒');
     }
 
     createPriorityEdit() {
-        const priorityLabel = document.createElement('span');
-        priorityLabel.textContent = '🚩 Med';
-        return priorityLabel;
+        return this.createDetailEdit('Med', '🚩');
     }
 
     createTagsSection() {

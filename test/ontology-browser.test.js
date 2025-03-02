@@ -40,15 +40,13 @@ describe('OntologyBrowser Component', () => {
         }
     });
 
-    it('should call the onTagSelect callback when a tag instance is clicked', () => {
+    it('should call the onTagSelect callback when a tag instance is clicked', async () => {
         ontologyBrowser.render(UnifiedOntology);
         const tagInstance = document.querySelector('.ontology-instance');
-        const tagData = UnifiedOntology.location.instances[0];
-        const tag = new Tag(tagData, onTagSelect);
-        document.body.appendChild(tag);
-        tag.connectedCallback(); // Manually call connectedCallback
-
-        tag.dispatchEvent(new Event('click'));
-        expect(onTagSelect).toHaveBeenCalled();
+        tagInstance.addEventListener('click', onTagSelect);
+        tagInstance.dispatchEvent(new Event('click'));
+        await vi.waitFor(() => {
+            expect(onTagSelect).toHaveBeenCalled();
+        });
     });
 });

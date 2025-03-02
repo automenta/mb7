@@ -14,5 +14,6 @@ export default defineConfig({
             }
         },
     },
-    globalSetup: ['./test/vitest-global-setup.js'],
+    globalSetup: [],
+    define: { 'process.env.NODE_ENV': '"test"' }
 })

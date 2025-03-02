@@ -1,2 +1,2 @@
-import * as fakeIndexedDB from 'fake-indexeddb';
-global.indexedDB = fakeIndexedDB;
+const fakeIndexedDB = require('fake-indexeddb');
+global.indexedDB = new fakeIndexedDB.FakeIndexedDB();

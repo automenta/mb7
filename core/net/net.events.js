@@ -74,28 +74,6 @@ export class EventHandler {
         }
     }
 
-    async handleObjectEvent(event) {
-        try {
-            if (!event.content || event.content.trim()[0] !== "{") return;
-            const data = JSON.parse(event.content);
-            if (!data.id) return;
-
-            const existingObj = await this.app.db.get(data.id);
-            const nobj = {
-                ...existingObj,
-                id: data.id,
-                name: data.name,
-                content: DOMPurify.sanitize(data.content),
-                tags: this.extractTagsFromEvent(event),
-                createdAt: existingObj?.createdAt || (event.created_at * 1000),
-                updatedAt: event.created_at * 1000,
-            };
-            await this.app.db.save(nobj);
-        } catch (error) {
-            console.error("Parsing error", error);
-        }
-    }
-
     extractTagsFromEvent(event) {
         const tags = [];
         for (const tag of event.tags) {
@@ -117,6 +95,87 @@ export class EventHandler {
             }
         }
         return tags;
+    }
+
+    /**
+     * Handles incoming object events (kind 30000).
+     * @param {object} event - The Nostr event.
+     */
+    async handleObjectEvent(event) {
+        try {
+            // Validate event content
+            if (!this.validateEventContent(event)) return;
+
+            // Parse event content
+            const data = await this.parseEventContent(event);
+            if (!data) return;
+
+            // Extract NObject data
+            const nobjData = this.extractNObjectData(data);
+
+            // Create or update NObject
+            await this.createOrUpdateNObject(event, nobjData);
+        } catch (error) {
+            console.error("Error handling object event:", error);
+        }
+    }
+
+    /**
+     * Validates that the event content is not empty and starts with a "{" character.
+     * @param {object} event - The Nostr event.
+     * @returns {boolean} - True if the content is valid, false otherwise.
+     */
+    validateEventContent(event) {
+        return event.content && event.content.trim()[0] === "{";
+    }
+
+    /**
+     * Parses the event content as JSON.
+     * @param {object} event - The Nostr event.
+     * @returns {object} - The parsed JSON data, or null if an error occurred.
+     */
+    async parseEventContent(event) {
+        try {
+            console.log("Parsing event content:", event.content);
+            return JSON.parse(event.content);
+        } catch (error) {
+            console.error("Error parsing event content:", error, "Content:", event.content);
+            return null;
+        }
+    }
+
+    /**
+     * Extracts the id, name, and content properties from the parsed data.
+     * @param {object} data - The parsed JSON data.
+     * @returns {object} - An object containing the id, name, and content properties.
+     */
+    extractNObjectData(data) {
+        return {
+            id: data.id,
+            name: data.name,
+            content: DOMPurify.sanitize(data.content)
+        };
+    }
+
+    /**
+     * Creates a new NObject or updates an existing one in the database.
+     * @param {object} event - The Nostr event.
+     * @param {object} data - The NObject data.
+     */
+    async createOrUpdateNObject(event, data) {
+        if (!data.id) return;
+
+        const existingObj = await this.app.db.get(data.id);
+        const nobj = {
+            ...existingObj,
+            id: data.id,
+            name: data.name,
+            content: data.content,
+            tags: this.extractTagsFromEvent(event),
+            createdAt: existingObj?.createdAt || (event.created_at * 1000),
+            updatedAt: event.created_at * 1000,
+        };
+        await this.app.db.save(nobj);
     }
 
     async handleEvent(event) {

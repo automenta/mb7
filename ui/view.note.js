@@ -31,7 +31,7 @@ export class NoteView extends HTMLElement {
 
         this.el.appendChild(sidebar.render());
 
-        mainArea.appendChild(this.createTitleEdit());
+        mainArea.appendChild(this.newTitleEdit());
 
         // Details
         mainArea.appendChild(noteDetails.render());
@@ -42,8 +42,8 @@ export class NoteView extends HTMLElement {
         contentArea.style.padding = '10px';
         mainArea.appendChild(contentArea);
 
-        mainArea.appendChild(this.createLinkedView());
-        mainArea.appendChild(this.createMatchesView());
+        mainArea.appendChild(this.newLinkedView());
+        mainArea.appendChild(this.newMatchesView());
 
         this.el.appendChild(mainArea);
 
@@ -80,10 +80,6 @@ export class NoteView extends HTMLElement {
 
     /** TODO dynamically refresh when the list or the item name changes */
     /** Removed - using GenericListComponent */
-    newNotesList() {
-        // Removed - using GenericListComponent
-    }
-
     newAddButton() {
         const addButton = document.createElement('button');
         addButton.textContent = 'Add';
@@ -93,48 +89,6 @@ export class NoteView extends HTMLElement {
         return addButton;
     }
 
-    newLinkedView() {
-        const linkedNObjectsContainer = document.createElement('div');
-        linkedNObjectsContainer.className = 'note-linked-nobjects-container';
-        linkedNObjectsContainer.style.padding = '10px';
-
-        const linkedNObject = document.createElement('span');
-        linkedNObject.textContent = '🔗 Idea: UI Design';
-        linkedNObjectsContainer.appendChild(linkedNObject);
-
-        const addLinkedNObjectButton = document.createElement('button');
-        addLinkedNObjectButton.textContent = '[+ Link]';
-        addLinkedNObjectButton.style.marginLeft = '10px';
-        linkedNObjectsContainer.appendChild(addLinkedNObjectButton);
-        return linkedNObjectsContainer;
-    }
-
-    newMatchesView() {
-        const matchesRepliesContainer = document.createElement('div');
-        matchesRepliesContainer.className = 'note-matches-replies-container';
-        matchesRepliesContainer.style.padding = '10px';
-
-        const matchesRepliesHeader = document.createElement('div');
-        matchesRepliesHeader.textContent = '💬 Matches & Replies (3) 🔽';
-        matchesRepliesContainer.appendChild(matchesRepliesHeader);
-
-        const aliceReply = document.createElement('div');
-        aliceReply.textContent = '> Alice (10m): I like the direction...';
-        matchesRepliesContainer.appendChild(aliceReply);
-
-        const bobReply = document.createElement('div');
-        bobReply.textContent = '> Bob (30m): +1 on minimalist... [🔗 Design Resources]';
-        matchesRepliesContainer.appendChild(bobReply);
-
-        const systemMatch = document.createElement('div');
-        systemMatch.textContent = '> System (2h): Match: "UI/UX Best Practices" [💡 UI/UX Best Practices]';
-        matchesRepliesContainer.appendChild(systemMatch);
-
-        const showAllLink = document.createElement('a');
-        showAllLink.textContent = '[ Show all ]';
-        matchesRepliesContainer.appendChild(showAllLink);
-        return matchesRepliesContainer;
-    }
 
     newShareEdit() {
         const sharingLabel = document.createElement('span');
@@ -156,55 +110,42 @@ export class NoteView extends HTMLElement {
         return priorityLabel;
     }
 
-    newTitleEdit() {
-        const c = document.createElement('div');
-        c.className = 'note-title-container';
-        c.style.padding = '10px';
-
-        const titleInput = document.createElement('input');
-        titleInput.type = 'text';
-        titleInput.placeholder = 'My Current Note Title';
-        titleInput.style.marginLeft = '5px';
-
-        // Bind input to Yjs
-        titleInput.addEventListener('input', (e) => {
-            console.log('Title input changed:', e.target.value);
-            this.yDoc.transact(() => {
-                this.yName.delete(0, this.yName.length);
-                this.yName.insert(0, e.target.value);
-                console.log('Yjs name updated to:', this.yName.toString());
-            });
-        });
-
-        // Observe Yjs changes
-        this.yName.observe(event => {
-            console.log('Yjs name changed:', this.yName.toString());
-            titleInput.value = this.yName.toString();
-        });
-
-        c.appendChild(titleInput);
-        return c;
+    async handleDeleteNote  (note) {
     }
 
-    handleDeleteNote = async (note) => {
-        await this.deleteNote(note);
+    newTitleEdit() {
+        const titleInput = document.createElement('input');
+        titleInput.type = 'text';
+        titleInput.placeholder = 'Note Title';
+        titleInput.className = 'note-title-input';
+        return titleInput;
+    }
+
+    newLinkedView() {
+        const linkedView = document.createElement('div');
+        linkedView.textContent = 'Linked View';
+        return linkedView;
+    }
+
+    newMatchesView() {
+        const matchesView = document.createElement('div');
+        matchesView.textContent = 'Matches View';
+        return matchesView;
     }
 
     async createNote() {
-        console.log("createNote - start");
+        console.log('createNote function called');
         try {
             const timestamp = Date.now();
             const newObject = await this.app.createNewObject({name: '', content: '', timestamp});
             if (newObject) {
                 this.selectedNote = newObject;
                 await this.addNoteToList(newObject.id);
-                console.log("createNote - newObject.id after addNoteToList:", newObject.id);
                 this.notesListComponent.fetchDataAndRender();
                 this.showMessage('Saved');
             } else {
                 console.error('Error creating note: newObject is null');
             }
-            console.log("createNote - end");
         } catch (error) {
             console.error('Error creating note:', error);
         }
@@ -224,10 +165,7 @@ export class NoteView extends HTMLElement {
 
     async addNoteToList(noteId) {
         this.yDoc.transact(() => {
-            console.log("noteId in addNoteToList:", noteId, typeof noteId);
-            console.log("noteId type in addNoteToList before push:", typeof noteId);
             this.yNotesList.push([noteId]);
-            console.log("noteId type in addNoteToList after push:", typeof this.yNotesList.get(this.yNotesList.length - 1)[0]);
         });
     }
 
@@ -236,9 +174,7 @@ export class NoteView extends HTMLElement {
     }
 
     renderNoteItem(noteIdArray) { // Renamed from renderNObject to renderNoteItem, used by GenericListComponent, now receives noteId
-        console.log("renderNoteItem - noteIdArray:", noteIdArray);
     const noteId = noteIdArray[0];
-        console.log("renderNoteItem - noteId:", noteId);
     const li = document.createElement('li');
         li.dataset.id = noteId;
         const nameElement = document.createElement('div');
@@ -248,26 +184,22 @@ export class NoteView extends HTMLElement {
             const note = await this.app.db.get(noteId);
             if (note) {
                 this.selectedNote = note;
+                this.edit.editorArea.innerHTML = note.content;
             }
         });
 
-        console.log("renderNoteItem - before db.get:", noteId);
     this.app.db.get(noteId).then(note => {
-            console.log("renderNoteItem - after db.get - then:", noteId);
-    console.log("renderNoteItem - noteId:", noteId, typeof noteId);
-            console.log("renderNoteItem - db.get result:", note);
             if (note) {
-                 console.log("getYNoteMap returned:", yNoteMap, "for noteId:", noteId);
                 const yNoteMap = this.getYNoteMap(noteId);
                 if (yNoteMap) {
                     yNoteMap.observe((event) => {
                         if (event.changes.keys.has("name")) {
-                            console.log("Yjs name observer triggered in renderNoteItem for noteId:", noteId);
                             nameElement.textContent = yNoteMap.get("name");
-                             console.log("Yjs name observer triggered in renderNoteItem for noteId:", noteId, yNoteMap.get("name"));
+                        }
+                        if (event.changes.keys.has("content")) {
+                            this.edit.editorArea.innerHTML = yNoteMap.get("content");
                         }
                     });
-                    console.log("Initial name in renderNoteItem:", note.name, "for noteId:", noteId);
                     nameElement.textContent = note.name;
                 }
                 li.classList.add('note-list-item'); // Add a CSS class for styling
@@ -305,64 +237,6 @@ export class NoteView extends HTMLElement {
                 titleInput.value = this.edit.yName.toString(); // Get name from Yjs
             }
         }
-    }
-
-    createTitleEdit() {
-        const c = document.createElement('div');
-        c.className = 'note-title-container';
-        c.style.padding = '10px';
-
-        const titleInput = document.createElement('input');
-        titleInput.type = 'text';
-        titleInput.placeholder = 'My Current Note Title';
-        titleInput.style.marginLeft = '5px';
-
-        c.appendChild(titleInput);
-        return c;
-    }
-
-    createLinkedView() {
-        const linkedNObjectsContainer = document.createElement('div');
-        linkedNObjectsContainer.className = 'note-linked-nobjects-container';
-        linkedNObjectsContainer.style.padding = '10px';
-
-        const linkedNObject = document.createElement('span');
-        linkedNObject.textContent = '🔗 Idea: UI Design';
-        linkedNObjectsContainer.appendChild(linkedNObject);
-
-        const addLinkedNObjectButton = document.createElement('button');
-        addLinkedNObjectButton.textContent = '[+ Link]';
-        addLinkedNObjectButton.style.marginLeft = '10px';
-        linkedNObjectsContainer.appendChild(addLinkedNObjectButton);
-        return linkedNObjectsContainer;
-    }
-
-    createMatchesView() {
-        const matchesRepliesContainer = document.createElement('div');
-        matchesRepliesContainer.className = 'note-matches-replies-container';
-        matchesRepliesContainer.style.padding = '10px';
-
-        const matchesRepliesHeader = document.createElement('div');
-        matchesRepliesHeader.textContent = '💬 Matches & Replies (3) 🔽';
-        matchesRepliesContainer.appendChild(matchesRepliesHeader);
-
-        const aliceReply = document.createElement('div');
-        aliceReply.textContent = '> Alice (10m): I like the direction...';
-        matchesRepliesContainer.appendChild(aliceReply);
-
-        const bobReply = document.createElement('div');
-        bobReply.textContent = '> Bob (30m): +1 on minimalist... [🔗 Design Resources]';
-        matchesRepliesContainer.appendChild(bobReply);
-
-        const systemMatch = document.createElement('div');
-        systemMatch.textContent = '> System (2h): Match: "UI/UX Best Practices" [💡 UI/UX Best Practices]';
-        matchesRepliesContainer.appendChild(systemMatch);
-
-        const showAllLink = document.createElement('a');
-        showAllLink.textContent = '[ Show all ]';
-        matchesRepliesContainer.appendChild(showAllLink);
-
-        return matchesRepliesContainer;
     }
 }
 
