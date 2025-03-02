@@ -51,17 +51,19 @@ class Monitoring {
 
     async storeMetrics() {
         // Store the metrics as NObjects
+        const timestamp = Date.now();
+        const monitoringData = {
+            kind: 'monitoring',
+            name: 'Monitoring Data',
+            content: JSON.stringify(this.metrics),
+            timestamp,
+            private: true,
+            tags: [],
+            priority: 'Medium',
+        };
+        console.log("Monitoring data:", monitoringData);
         try {
-            const timestamp = Date.now();
-            const newObject = await this.app.createNewObject({
-                kind: 'monitoring',
-                name: 'Monitoring Data',
-                content: JSON.stringify(this.metrics),
-                timestamp,
-                private: true,
-                tags: [],
-                priority: 'Medium',
-            });
+            const newObject = await this.app.saveOrUpdateObject(monitoringData);
             if (newObject) {
                 console.log('Monitoring data stored as NObject:', newObject.id);
             } else {

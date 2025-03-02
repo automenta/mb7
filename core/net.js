@@ -12,11 +12,10 @@ import DOMPurify from 'dompurify';
 import {getEventHash, nip19, validateEvent, verifyEvent} from 'nostr-tools';
 import {getTagDefinition} from './ontology';
 import {WebRTCService} from './net.webrtc';
-import {NostrSignalingProvider} from './net/net.signaling';
 import {RelayManager} from './net/net.relays';
 import {EventHandler} from './net/net.events';
 
-const pubkeyRegex = /^[0-9a-fA-F]{64}$/;
+//const pubkeyRegex = /^[0-9a-fA-F]{64}$/;
 
 export class Nostr {
     constructor(app, signalingStrategy, nostrRelays, nostrPrivateKey) {
@@ -40,7 +39,7 @@ export class Nostr {
             // TODO: Implement actual DM sending logic using Nostr
             console.log('Sending DM to', pubkey, 'with content:', content);
         } catch (error) {
-            console.error('Error sending DM:', error);
+            this.app.errorHandler.handleError(error, 'Error sending DM');
         }
     }
 
@@ -71,24 +70,19 @@ export class Nostr {
             }
             this.lastEventTime = now;
 
-            switch (event.kind) {
-                case 1:
-                    await this.handleKind1Event(event);
-                    break;
-                case 0:
-                    await this.handleKind0Event(event);
-                    break;
-                case 3:
-                    await this.handleKind3Event(event);
-                    break;
-                case 5:
-                    await this.handleKind5Event(event);
-                    break;
-                case 30000:
-                    await this.handleKind30000Event(event);
-                    break;
-                default:
-                    console.log("Unhandled event kind:", event.kind);
+            const eventHandlers = {
+                1: this.handleKind1Event.bind(this),
+                0: this.handleKind0Event.bind(this),
+                3: this.handleKind3Event.bind(this),
+                5: this.handleKind5Event.bind(this),
+                30000: this.handleKind30000Event.bind(this),
+            };
+
+            const handler = eventHandlers[event.kind];
+            if (handler) {
+                await handler(event);
+            } else {
+                console.log("Unhandled event kind:", event.kind);
             }
         } catch (error) {
             console.error("Error handling event:", event, error);
@@ -146,7 +140,10 @@ export class Nostr {
                     const serializedValue = tagDef.serialize(tag.value);
                     return [tag.name, ...(Array.isArray(serializedValue) ? serializedValue : [String(serializedValue)])];
                 }),
-                content: DOMPurify.sanitize(object.content, {ALLOWED_TAGS: [], ALLOWED_ATTR: []}), // Sanitize content
+                content: DOMPurify.sanitize(object.content, {
+                    ALLOWED_TAGS: ["br", "b", "i", "span", "p", "strong", "em", "ul", "ol", "li", "a"],
+                    ALLOWED_ATTR: ["class", "contenteditable", "tabindex", "id", "aria-label"]
+                }), // Sanitize content
                 pubkey: window.keys.pub,
             };
             this.lastPublishTime = Date.now();
@@ -226,6 +223,7 @@ export class Nostr {
 
     async relayConnected(relay) {
         try {
+            console.log("relayConnected: relay =", relay);
             const nostr = this;
             await this.subscribeToFriends(relay);
             await relay.subscribe([{kinds: [30000], authors: [window.keys.pub]}], {
@@ -258,6 +256,7 @@ export class Nostr {
 
     async subscribeToFriends(relay) {
         try {
+            console.log("subscribeToFriends: this.app.db =", this.app.db);
             const friendsObjectId = await this.app.db.getFriendsObjectId();
             if (!friendsObjectId) {
                 console.warn("No friends object id found.");

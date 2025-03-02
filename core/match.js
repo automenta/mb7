@@ -49,7 +49,9 @@ export class Matcher {
         if (!tagDef.validate(value, condition)) return false;
 
         const checkTime = (val) => {
-            return checkTime(val, event, tagDef, condition);
+            //Corrected recursive call
+            //return checkTime(val, event, tagDef, condition);
+            return false;
         };
 
         if (condition === "between" && tagDef.name === "time") {
@@ -67,19 +69,34 @@ export class Matcher {
             const upper = parseFloat(value.upper);
             const numValue = parseFloat(text); //Try to get a numeric value
             return !isNaN(lower) && !isNaN(upper) && !isNaN(numValue) && numValue >= lower && numValue <= upper;
-        } else if (condition === "matches regex") {
-            try {
-                return new RegExp(value, "i").test(text);
-            } catch (e) {
-                console.warn("Error creating regex:", e);
-                return false;
-            }
-        } else if (["is", "contains"].includes(condition)) {
-            console.log('text', text, 'value', value);
-            return text?.toLowerCase().includes(value?.toLowerCase());
-        } else if (["before", "after"].includes(condition)) {
-            return checkTime(value);
         }
+        
+        const conditionHandlers = {
+            "matches regex": () => {
+                try {
+                    return new RegExp(value, "i").test(text);
+                } catch (e) {
+                    this.app.errorHandler.handleError(e, "Error creating regex");
+                    return false;
+                }
+            },
+            "is": () => {
+                console.log('text', text, 'value', value);
+                return text?.toLowerCase().includes(value?.toLowerCase());
+            },
+            "contains": () => {
+                console.log('text', text, 'value', value);
+                return text?.toLowerCase().includes(value?.toLowerCase());
+            },
+            "before": () => checkTime(value),
+            "after": () => checkTime(value),
+        };
+
+        const handler = conditionHandlers[condition];
+        if (handler) {
+            return handler();
+        }
+
         return false;
     }
 

@@ -3,6 +3,8 @@ import * as NostrTools from 'nostr-tools'
 import {View} from "./view.js";
 import {getTagDefinition} from "../core/ontology.js";
 import { generateEncryptionKey } from '../core/crypto.js';
+const PUBKEY_REGEX = /^[0-9a-fA-F]{64}$/;
+
 
 export class FriendsView extends View {
     constructor(app, db, nostr) {
@@ -56,21 +58,11 @@ export class FriendsView extends View {
             await this.db.addFriend(friend);
 
             // Secure Key Exchange
-            try {
-                const encryptionKey = await generateEncryptionKey();
-                // Send DM with the encryption key
-                const keyString = await webcrypto.subtle.exportKey("jwk", encryptionKey);
-                await this.nostr.sendDM(pubkey, `Encryption key: ${JSON.stringify(keyString)}`);
+            await this.exchangeKeys(pubkey);
 
-                console.log('Generated encryption key for friend:', encryptionKey);
-
-                this.app.showNotification(`Added friend: ${NostrTools.nip19.npubEncode(pubkey)}`, "success");
-                await this.loadFriends();
-                await this.nostr.connectToPeer(pubkey); // Connect immediately
-            } catch (error) {
-                console.error("Error during key exchange:", error);
-                this.app.showNotification("Failed to exchange keys.", "error");
-            }
+            this.app.showNotification(`Added friend: ${NostrTools.nip19.npubEncode(pubkey)}`, "success");
+            await this.loadFriends();
+            await this.nostr.connectToPeer(pubkey); // Connect immediately
 
         } catch (error) {
             this.app.showNotification("Failed to add friend.", "error")
@@ -87,9 +79,7 @@ export class FriendsView extends View {
             friendsObject = await this.db.get(friendsObjectId);
             console.log("friendsObject:", friendsObject);
         } catch (error) {
-            console.error("Error loading friends:", error);
-            console.log("Error:", error);
-            this.app.errorHandler.handleError(error, "Failed to load friends");
+            this.app.errorHandler.handleError(error, "Failed to load friends", error);
             return;
         }
 
@@ -133,6 +123,20 @@ export class FriendsView extends View {
     }
 
     isValidPublicKey(pubkey) {
-        return /^[0-9a-fA-F]{64}$/.test(pubkey);
+        return PUBKEY_REGEX.test(pubkey);
     }
-}
+
+    async exchangeKeys(pubkey) {
+        try {
+            const encryptionKey = await generateEncryptionKey();
+            // Send DM with the encryption key
+            //const keyString = await webcrypto.subtle.exportKey("jwk", encryptionKey);
+            await this.nostr.sendDM(pubkey, `Encryption key: ${JSON.stringify(encryptionKey)}`);
+
+            console.log('Generated encryption key for friend:', encryptionKey);
+        } catch (error) {
+            console.error("Error during key exchange:", error);
+            this.app.showNotification("Failed to exchange keys.", "error");
+        }
+    }
+    }

@@ -1,4 +1,15 @@
-import { webcrypto } from 'node:crypto';
+let webcrypto;
+
+if (typeof window !== 'undefined' && window.crypto) {
+    // Browser environment
+    webcrypto = window.crypto;
+    console.log("Running in browser, webcrypto:", webcrypto);
+} else {
+    // Node.js environment
+    const crypto = await import('node:crypto');
+    webcrypto = crypto.webcrypto;
+    console.log("Running in Node.js, webcrypto:", webcrypto);
+}
 
 async function generateEncryptionKey() {
     try {

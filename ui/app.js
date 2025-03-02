@@ -19,55 +19,62 @@ class App {
 
         this.elements.notificationArea = document.createElement('div');
         this.elements.notificationArea.id = 'notification-area';
-        this.notificationManager = new NotificationManager(this);
-        this.monitoring = new Monitoring(this);
-        this.monitoring.start();
     }
 
     static async initialize(app) {
         const errorHandler = new ErrorHandler(app);
         const db = new DB(app, errorHandler);
-        await db.the();
-        const {
-            signalingStrategy = "nostr",
-            nostrRelays = "",
-            nostrPrivateKey = ""
-        } = await db.getSettings() || {};
+        const dbInstance = await DB.the();
+        try {
+            let {
+                signalingStrategy = "nostr",
+                nostrRelays = "",
+                nostrPrivateKey = ""
+            } = (await db.getSettings()) || {};
+        } catch (error) {
+            console.error('Error getting settings from db:', error);
+            signalingStrategy = "nostr"; // Provide a default value in case of error
+            nostrRelays = "";
+            nostrPrivateKey = "";
+        }
+        console.log('db.getSettings() returned:', await db.getSettings());
 
         const nostr = new Nostr(app, signalingStrategy, nostrRelays, nostrPrivateKey);
         nostr.connect();
         const matcher = new Matcher(app);
-        return {db, nostr, matcher, errorHandler};
-    }
 
-    async initializeNostr() {
-        await this.db.initializeKeys();
-        const {
-            signalingStrategy = "nostr",
-            nostrRelays = "",
-            nostrPrivateKey = ""
-        } = await this.db.getSettings() || {};
+        // Initialize NotificationManager and Monitoring here, after db is ready
+        const notificationManager = new NotificationManager(app);
+        const monitoring = new Monitoring(app);
+        console.log('App.initialize resolved with:', {db, nostr, matcher, errorHandler, notificationManager, monitoring});
+        monitoring.start();
 
-        this.nostr = new Nostr(this, signalingStrategy, nostrRelays, nostrPrivateKey);
-        this.nostr.connect();
+        return {db, nostr, matcher, errorHandler, notificationManager, monitoring};
     }
 
     async saveOrUpdateObject(object) {
-        await this.db.save(object);
-    }
+        console.log('saveOrUpdateObject called with object:', object);
 
-    async createNewObject(newNote) {
-        const id = "test-id";
-        const newObject = {id: id, name: newNote.name, content: newNote.content};
-        await this.db.save(newObject);
-        const that = this;
-        await that.publishNewObject(newObject);
-        return newObject;
+        if (!object || !object.id) {
+            console.error('Object must have an id');
+            return null;
+        }
+
+        const newObject = {id: object.id, name: object.name, content: object.content};
+        try {
+            await this.db.save(newObject);
+            await this.publishNewObject(newObject);
+            return newObject;
+        } catch (error) {
+            this.errorHandler.handleError(error, 'Error saving or publishing object');
+            return null;
+        }
     }
 
     // TODO: Integrate YDoc with the UI to enable real-time collaborative editing
 
     async publishNewObject(newObject) {
+        console.log('publishNewObject called with newObject:', newObject);
         try {
             await this.nostr.publish(newObject);
             this.notificationManager.showNotification('Published to Nostr!', 'success');
@@ -92,31 +99,40 @@ class App {
         if (!object.tags || !Array.isArray(object.tags))
             return;
 
-        if (!object.tags.every(tag => tag.name))
-            throw new Error('Tag name is required.');
+        const invalidTag = object.tags.find(tag => !tag.name);
+        if (invalidTag) {
+            throw new Error(`Tag name is required. Invalid tag: ${JSON.stringify(invalidTag)}`);
+        }
     }
 
     async publishNoteToNostr(note) {
+        console.log('publishNoteToNostr called with note:', note);
         if (!this.nostr) {
             console.error('Nostr is not initialized.');
             return;
         }
         try {
-            await this.nostr.publish(note.content);
-            this.notificationManager.showNotification('Published to Nostr!', 'success');
+            await this.nostr.publish(note);
+            this.showNotification('Published to Nostr!', 'success');
         } catch (error) {
             this.errorHandler.handleError(error, 'Error publishing to Nostr');
         }
     }
-}
 
-async function createApp() {
-    const appDiv = document.getElementById('app');
+    showNotification(message, type) {
+        this.notificationManager.showNotification(message, type);
+    }
+}
+    
+async function createApp(appDiv) {
     const appData = await App.initialize(appDiv);
+    console.log('Creating App instance with db:', appData.db, 'and nostr:', appData.nostr);
     const app = new App(appData.db, appData.nostr);
     app.matcher = appData.matcher;
     app.errorHandler = appData.errorHandler;
     console.log('App.initialize() promise resolved');
+    app.notificationManager = appData.notificationManager;
+    app.monitoring = appData.monitoring;
     return app;
 }
 
@@ -131,10 +147,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 async function setupUI() {
-    let app = await createApp();
+    const appDiv = document.getElementById('app');
+    let app = await createApp(appDiv);
 
     const noteView = new NoteView(app, app.db, app.nostr);
-    //noteView.notesListComponent.disableObserver = true;
     const friendsView = new FriendsView(app, app.db, app.nostr);
     const settingsView = new SettingsView(app, app.db, app.nostr);
 
@@ -143,14 +159,11 @@ async function setupUI() {
     const menubar = createMenuBar(app, noteView, friendsView, settingsView, contentView);
     const mainContent = createAppMainContent();
 
-    const appDiv = document.getElementById('app');
     appDiv.appendChild(menubar);
     appDiv.appendChild(mainContent);
     appDiv.appendChild(app.elements.notificationArea);
 
-    const defaultView =
-        //noteView;
-        contentView;
+    const defaultView = noteView;
 
     app.showView(defaultView);
 

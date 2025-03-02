@@ -111,6 +111,7 @@ export class DB {
             console.error("getAll failure:", error);
             throw error;
         }
+
     }
 
     /**
@@ -247,6 +248,7 @@ export class DB {
                 tagCount: all.reduce((acc, obj) => acc + (obj.tags?.length || 0), 0),
             };
         } catch (error) {
+            this.errorHandler.handleError("Failed to get object stats", error);
             throw error;
         }
     }
