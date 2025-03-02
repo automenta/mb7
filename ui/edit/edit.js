@@ -16,13 +16,14 @@ import {EditorContentHandler} from './edit.content';
 import {Toolbar} from './edit.toolbar';
 
 class Edit {
-    constructor() {
+    constructor(yDoc, app) {
         this.ontology = UnifiedOntology;
         this.errorHandler = new ErrorHandler(this);
         this.db = new DB(this.errorHandler);
-        this.yDoc = new Y.Doc();
+        this.yDoc = yDoc; // Use the passed Y.Doc instance
         this.yText = this.yDoc.getText('content');
         this.yName = this.yDoc.getText('name');
+        this.app = app; // Store the app instance
 
         this.el = document.createElement('div');
         this.el.className = 'edit-view';
@@ -32,22 +33,21 @@ class Edit {
         this.nameInput.type = 'text';
         this.nameInput.placeholder = 'Note Title';
         this.el.appendChild(this.nameInput);
+        
+        this.editorArea = createElement("div", {contenteditable: "true", class: "editor-area"});
 
-        // Content editor
-        this.contentEditor = document.createElement('div');
-        this.contentEditor.className = 'content-editor';
-        this.contentEditor.contentEditable = 'true';
-        this.el.appendChild(this.contentEditor);
+        this.editorArea.className = 'content-editor';
+        this.editorArea.contentEditable = 'true';
+        this.el.appendChild(this.editorArea);
 
-        this.contentEditor.addEventListener('input', debounce(() => {
-            this.setContent(this.contentEditor.innerHTML);
+        this.editorArea.addEventListener('input', debounce(() => {
+            this.setContent(this.editorArea.innerHTML);
         }, 300));
 
         this.nameInput.addEventListener('input', () => {
             this.setName(this.nameInput.value);
         });
 
-        this.editorArea = createElement("div", {contenteditable: "true", class: "editor-area"});
         const menu = createElement('div');
         this.el = createElement('div');
         this.el.append(menu, this.editorArea);
@@ -63,35 +63,50 @@ class Edit {
 
         this.setupEditorEvents();
 
-        this.loadYDoc().then(() => {
-            this.editorArea.focus();
-        });
+        // this.loadYDoc().then(() => { // Remove loadYDoc call from constructor
+        //     this.editorArea.focus();
+        // });
     }
 
     setName(name) {
         this.nameInput.value = name;
-        console.log('setName called', name);
+        console.log('Edit.setName called', name);
         this.yDoc.transact(() => {
             this.yName.delete(0, this.yName.length);
             this.yName.insert(0, name);
         });
+        if (this.app.selectedNote) { // Save to DB when note is selected
+            this.app.selectedNote.name = name;
+            // this.app.saveOrUpdateObject(this.app.selectedNote); // Remove redundant save
+        }
     }
 
     setContent(html) {
-        console.log('setContent called', html);
+        console.log('Edit.setContent called', html);
         this.yDoc.transact(() => {
             this.yText.delete(0, this.yText.length);
             this.yText.insert(0, html);
         });
 
         this.editorArea.innerHTML = DOMPurify.sanitize(html, {
-            ALLOWED_TAGS: ["br", "b", "i", "span", "u"],
-            ALLOWED_ATTR: ["class", "contenteditable", "tabindex", "id"]
+            ALLOWED_TAGS: ["br", "b", "i", "span", "u", "a"],
+            ALLOWED_ATTR: ["class", "contenteditable", "tabindex", "id", "href", "target"]
         });
         this.editor.autosuggest.apply(); // Use content handler
-        this.db.saveYDoc(this.yText.toString(), this.yDoc);
+        if (this.app.selectedNote) { // Save to DB when note is selected
+            this.app.selectedNote.content = html;
+            // this.app.saveOrUpdateObject(this.app.selectedNote); // Remove redundant save
+        }
         this.updateNotesIndex();
+        this.debouncedSaveYDoc();
     }
+
+    debouncedSaveYDoc = debounce(() => {
+        if (this.app.selectedNote) {
+            this.app.db.saveYDoc(this.app.selectedNote.id, this.yDoc);
+            console.log('YDoc saved to DB');
+        }
+    }, 1000);
 
     getName() {
         const firstLine = this.yText.toString().split('\n')[0];
@@ -134,19 +149,19 @@ class Edit {
         }
     }
 
-    async loadYDoc() {
-        try {
-            const yDoc = await this.db.getYDoc(this.yText.toString());
-            if (yDoc) {
-                this.yDoc.transact(() => {
-                    this.yText.delete(0, this.yText.length);
-                    this.yText.insert(0, yDoc.getText('content').toString())
-                })
-            }
-        } catch (error) {
-            console.error("Failed to load YDoc:", error);
-        }
-    }
+    // async loadYDoc() { // Removed loadYDoc - content will be set from NoteView
+    //     try {
+    //         const yDoc = await this.db.getYDoc(this.yText.toString());
+    //         if (yDoc) {
+    //             this.yDoc.transact(() => {
+    //                 this.yText.delete(0, this.yText.length);
+    //                 this.yText.insert(0, yDoc.getText('content').toString())
+    //             })
+    //         }
+    //     } catch (error) {
+    //         console.error("Failed to load YDoc:", error);
+    //     }
+    // }
 
     async updateNotesIndex() {
         try {

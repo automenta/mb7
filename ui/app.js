@@ -13,13 +13,11 @@ class App {
         this.db = null;
         this.nostr = null;
         this.selected = null;
-        this.notificationManager = new NotificationManager();
         this.elements = {};
 
         this.elements.notificationArea = document.createElement('div');
         this.elements.notificationArea.id = 'notification-area';
-
-        this.initialize();
+        this.notificationManager = new NotificationManager(this);
     }
 
     async initialize() {
@@ -27,6 +25,7 @@ class App {
         this.errorHandler = new ErrorHandler(this);
         this.db = new DB(this, this.errorHandler);
         await this.initializeNostr();
+        console.log('App.initialize completed');
     }
 
     async initializeNostr() {
@@ -46,11 +45,16 @@ class App {
         console.log('saveOrUpdateObject', object);
     }
 
-    async createNewObject(editView, newNote) {
+    async createNewObject(newNote) {
         const id = crypto.randomUUID();
-        console.log('createNewObject', editView, newNote);
+        console.log('createNewObject', newNote);
         const newObject = {id: id, name: newNote.name, content: newNote.content};
+        if (!this.db) {
+            console.error('this.db is null in createNewObject');
+            return null;
+        }
         await this.db.save(newObject);
+        console.log('createNewObject - saved to db', newObject);
         return newObject;
     }
 
@@ -78,6 +82,13 @@ class App {
 
 }
 
+async function createApp() {
+    const app = new App();
+    await app.initialize();
+    console.log('App.initialize() promise resolved');
+    return app;
+}
+
 function createAppMainContent() {
     const mainContent = document.createElement('main');
     mainContent.className = 'main-content';
@@ -89,9 +100,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 async function setupUI() {
-    const app = new App();
+    const app = await createApp();
 
     const noteView = new NoteView(app);
+    noteView.notesListComponent.disableObserver = true;
     const friendsView = new FriendsView(app);
     const settingsView = new SettingsView(app);
 
@@ -105,11 +117,13 @@ async function setupUI() {
     appDiv.appendChild(mainContent);
     appDiv.appendChild(app.elements.notificationArea);
 
-    const defaultView = 
+    const defaultView =
         //noteView;
         contentView;
 
     app.showView(defaultView);
+
+    noteView.notesListComponent.disableObserver = false;
     contentView.render(); //TODO only when shown
 }
 export {App};

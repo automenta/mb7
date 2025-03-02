@@ -46,6 +46,7 @@ export class DB {
         if (this.db)
             return this.db;
 
+        console.log("DB.the - opening database");
         this.db = await openDB(DB_NAME, DB_VERSION, {
             upgrade(db, oldVersion, newVersion, transaction) {
                 console.log('onupgradeneeded triggered');
@@ -119,7 +120,10 @@ export class DB {
             if (!DB.db)
                 await DB.the();
 
-            return await DB.db.get(OBJECTS_STORE, id);
+            console.log("DB.get - id:", id);
+            const result = await DB.db.get(OBJECTS_STORE, id);
+            console.log("DB.get - result:", result);
+            return result;
         } catch (error) {
             this.errorHandler.handleError(error, "Failed to get object");
         }

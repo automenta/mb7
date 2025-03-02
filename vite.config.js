@@ -7,6 +7,9 @@ export default defineConfig({
     ],
     server: {
         https: false,
-        open: true
+        open: true,
+        mimeTypes: {
+          'js': 'application/javascript'
+        }
     }
 });
