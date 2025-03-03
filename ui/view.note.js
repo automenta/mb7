@@ -41,6 +41,13 @@ export class NoteView extends HTMLElement {
         mainArea.appendChild(this.newTitleEdit());
 
         // Details
+        this.privacyContainer = this.createPrivacyContainer();
+        this.privacyLabel = this.createPrivacyLabel();
+        this.privacyCheckbox = this.createPrivacyCheckbox();
+
+        this.privacyContainer.appendChild(this.privacyLabel);
+        this.privacyContainer.appendChild(this.privacyCheckbox);
+
         mainArea.appendChild(this.newPrivacyEdit());
         mainArea.appendChild(noteDetails.render());
 
@@ -142,37 +149,13 @@ export class NoteView extends HTMLElement {
     }
 
     newPrivacyEdit() {
-        const privacyContainer = this.createPrivacyContainer();
-        const privacyLabel = this.createPrivacyLabel();
-        const privacyCheckbox = this.createPrivacyCheckbox();
-
-        privacyContainer.appendChild(privacyLabel);
-        privacyContainer.appendChild(privacyCheckbox);
-
-        return privacyContainer;
+        return this.privacyContainer;
     }
 
     createPrivacyContainer() {
         const privacyContainer = document.createElement('div');
         privacyContainer.className = 'privacy-container';
         return privacyContainer;
-    }
-
-    createPrivacyLabel() {
-        const privacyLabel = document.createElement('label');
-        privacyLabel.textContent = 'Private:';
-        return privacyLabel;
-    }
-
-    createPrivacyCheckbox() {
-        const privacyCheckbox = document.createElement('input');
-        privacyCheckbox.type = 'checkbox';
-        privacyCheckbox.className = 'privacy-checkbox';
-        privacyCheckbox.addEventListener('change', async (event) => {
-            const isPrivate = event.target.checked;
-            await this.updateNotePrivacy(this.selectedNote.id, isPrivate);
-        });
-        return privacyCheckbox;
     }
 
     newPriEdit() {
