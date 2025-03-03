@@ -30,7 +30,9 @@ export class SettingsView extends View {
         this.settingsForm = new GenericForm(Ontology.Settings, yDoc, 'settings');
         const formElement = await this.settingsForm.build();
         this.el.append(formElement);
+    }
 
+    async bindEvents() {
         // Word2Vec Model Path Input
         const word2vecLabel = createElement("label", {for: "word2vecModelPath"}, "Word2Vec Model Path");
         const word2vecInput = createElement("input", {
@@ -39,11 +41,9 @@ export class SettingsView extends View {
             name: "word2vecModelPath",
             value: this.app.settings?.word2vecModelPath || './core/word2vec.model'
         });
-        formElement.appendChild(word2vecLabel);
-        formElement.appendChild(word2vecInput);
-    }
+        this.el.appendChild(word2vecLabel);
+        this.el.appendChild(word2vecInput);
 
-    async bindEvents() {
         await this.settingsForm.bindEvents();
     }
 }
