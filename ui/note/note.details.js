@@ -84,44 +84,12 @@ export class NoteDetails extends HTMLElement {
     }
 
     createTagsSection() {
+        return this.createTagsSection();
+    }
+
+    createTagsSection() {
         const tagsContainer = document.createElement('div');
         tagsContainer.className = 'note-tags-container';
-
-        const tagInput = document.createElement('input');
-        tagInput.setAttribute('list', 'tag-suggestions');
-        tagInput.className = 'tag-select';
-        tagInput.placeholder = 'Enter a tag';
-
-        const datalist = document.createElement('datalist');
-        datalist.id = 'tag-suggestions';
-
-        // Get tag names from UnifiedOntology and sort them alphabetically
-        const tagNames = Object.keys(Ontology).sort();
-
-        // Add tag names as options
-        tagNames.forEach(tag => {
-            const option = document.createElement('option');
-            option.value = tag;
-            datalist.appendChild(option);
-        });
-
-        tagsContainer.appendChild(tagInput);
-        tagsContainer.appendChild(datalist);
-
-        const addTagButton = document.createElement('button');
-        addTagButton.textContent = '[+Tag]';
-        addTagButton.classList.add('margin-left');
-        tagsContainer.appendChild(addTagButton);
-
-        addTagButton.addEventListener('click', async () => {
-            const tagName = tagInput.value.trim();
-            if (tagName) {
-                await this.addTagToNote(tagName);
-                tagInput.value = '';
-                tagInput.focus(); // Focus on the tag input after adding a tag
-            }
-        });
-
         return tagsContainer;
     }
 
@@ -155,7 +123,6 @@ export class NoteDetails extends HTMLElement {
             ${this.createPriorityEdit().outerHTML}
             ${this.createPrivacyEdit().outerHTML}
             ${this.createShareEdit().outerHTML}
-            ${this.createTagsSection().outerHTML}
             <ul class="note-tag-list"></ul>
         `;
         return this.el;
