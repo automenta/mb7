@@ -55,7 +55,7 @@ class App {
         const notificationManager = new NotificationManager();
         const monitoring = new Monitoring();
         await monitoring.start();
-        return {db, nostr, matcher, errorHandler, notificationManager, monitoring, yDoc};
+        return {db, nostr, matcher, errorHandler, notificationManager, monitoring};
     }
 
     async saveObject(object) {
