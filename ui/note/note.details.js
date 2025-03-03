@@ -150,13 +150,6 @@ export class NoteDetails extends HTMLElement {
         }
     }
 
-    async addTagToNote(tagName) {
-        if (!tagName) {
-            return;
-        }
-        await this.createTag(tagName);
-    }
-
     render() {
         this.el.innerHTML = `
             ${this.createPriorityEdit().outerHTML}
@@ -167,7 +160,6 @@ export class NoteDetails extends HTMLElement {
         `;
         return this.el;
     }
-}
 
 if (!customElements.get('note-details')) {
     customElements.define('note-details', NoteDetails);
