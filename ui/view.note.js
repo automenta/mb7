@@ -112,7 +112,6 @@ export class NoteView extends HTMLElement {
     /** TODO dynamically refresh when the list or the item name changes */
     /** Removed - using GenericListComponent */
     newAddButton() {
-        const addButton = document.createElement('button');
         addButton.textContent = 'Add';
         addButton.addEventListener('click', async () => {
             await this.createNote();
