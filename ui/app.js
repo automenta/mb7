@@ -9,6 +9,7 @@ import {SettingsView} from "./view.settings.js";
 import {NoteView as NoteView} from './view.note.js';
 import {ContentView} from "./ui-manager.js";
 import {createMenuBar} from './menu-bar.js';
+import { v4 as uuidv4 } from 'uuid';
 import {NotificationManager} from './notification-manager.js';
 
 /**
@@ -179,6 +180,20 @@ function initializeViews(app) {
     const friendsView = new FriendsView(app, app.db, app.nostr);
     const settingsView = new SettingsView(app, app.db, app.nostr);
     const contentView = new ContentView(app);
+
+    noteView.createNote = async () => {
+        const newNote = {
+            id: uuidv4(),
+            name: 'New Note',
+            content: '',
+            tags: [],
+            isPersistentQuery: false,
+            private: false
+        };
+        await app.saveObject(newNote);
+        noteView.loadNotes();
+    };
+
     return {noteView, friendsView, settingsView, contentView};
 }
 
@@ -197,7 +212,7 @@ function setupDefaultView(app, noteView, contentView) {
     app.showView(defaultView);
 
     noteView.notesListComponent.disableObserver = false;
-    contentView.render(); // TODO only when shown
+    contentView.render();
 }
 
 export {App};
