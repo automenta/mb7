@@ -23,26 +23,28 @@ export class NoteDetails extends HTMLElement {
     }
 
     createPrivacyEdit() {
-        const container = document.createElement('div');
-        container.className = 'privacy-container';
+        if (!this.privacyContainer) {
+            this.privacyContainer = document.createElement('div');
+            this.privacyContainer.className = 'privacy-container';
 
-        const label = document.createElement('label');
-        label.textContent = 'Private ';
-        container.appendChild(label);
+            const label = document.createElement('label');
+            label.textContent = 'Private ';
+            this.privacyContainer.appendChild(label);
 
-        const toggle = document.createElement('input');
-        toggle.type = 'checkbox';
-        toggle.checked = true; // Default to private
-        label.appendChild(toggle);
+            this.privacyCheckbox = document.createElement('input');
+            this.privacyCheckbox.type = 'checkbox';
+            this.privacyCheckbox.checked = true; // Default to private
+            label.appendChild(this.privacyCheckbox);
 
-        toggle.addEventListener('change', () => {
-            const noteId = this.noteView.selectedNote.id;
-            const isPrivate = toggle.checked;
-            this.noteView.updateNotePrivacy(noteId, isPrivate);
-        });
+            this.privacyCheckbox.addEventListener('change', () => {
+                const noteId = this.noteView.selectedNote.id;
+                const isPrivate = this.privacyCheckbox.checked;
+                this.noteView.updateNotePrivacy(noteId, isPrivate);
+            });
 
-        container.appendChild(label);
-        return container;
+            this.privacyContainer.appendChild(label);
+        }
+        return this.privacyContainer;
     }
 
     async handleTagRemoved(event) {
