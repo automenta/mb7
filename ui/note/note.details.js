@@ -125,10 +125,7 @@ export class NoteDetails extends HTMLElement {
         return tagsContainer;
     }
 
-    async addTagToNote(tagName) {
-        if (!tagName) {
-            return;
-        }
+    async createTag(tagName) {
         const noteId = this.noteView.selectedNote.id;
         const newTag = {
             name: tagName,
@@ -151,6 +148,13 @@ export class NoteDetails extends HTMLElement {
                 this.noteView.showMessage('Tag already exists', 'warning');
             }
         }
+    }
+
+    async addTagToNote(tagName) {
+        if (!tagName) {
+            return;
+        }
+        await this.createTag(tagName);
     }
 
     render() {

@@ -58,7 +58,7 @@ class App {
         return {db, nostr, matcher, errorHandler, notificationManager, monitoring, yDoc};
     }
 
-    async saveOrUpdateObject(object) {
+    async saveObject(object) {
         if (!object || !object.id) {
             this.errorHandler.handleError(new Error('Object must have an id'), 'Validation error saving object');
             return null;
