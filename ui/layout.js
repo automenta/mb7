@@ -5,7 +5,7 @@ function createAppMainContent() {
     return mainContent;
 }
 
-function createLayout(app, appDiv, noteView, friendsView, settingsView, contentView, ) {
+function createLayout(app, appDiv, noteView, friendsView, settingsView, contentView) {
     const menubar = createMenuBar(app, noteView, friendsView, settingsView, contentView);
     const mainContent = createAppMainContent();
 

@@ -167,7 +167,7 @@ async function setupUI() {
     const appDiv = document.getElementById('app');
     const {app} = await createApp(appDiv);
     const {noteView, friendsView, settingsView, contentView} = initializeViews(app);
-    const {menubar, mainContent} = createLayout(app, appDiv, noteView, friendsView, settingsView, contentView, appDiv, app);
+    const {menubar, mainContent} = createLayout(app, appDiv, noteView, friendsView, settingsView, contentView);
 
     setupDefaultView(app, noteView, contentView);
 
