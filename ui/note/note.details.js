@@ -87,52 +87,23 @@ export class NoteDetails extends HTMLElement {
         tagsContainer.appendChild(addTagButton);
 
         this.renderTags(tagsContainer);
-        addTagButton.addEventListener('click', () => {
-            this.addTagToNote(tagInput.value, tagsContainer);
+
+        addTagButton.addEventListener('click', async () => {
+            const tagName = tagInput.value.trim();
+            if (tagName) {
+                await this.addTagToNote(tagName);
+                tagInput.value = '';
+            }
         });
 
         return tagsContainer;
     }
 
     clearTagInput() {
-        const tagInput = this.tagArea.querySelector('.note-tag-input');
-        tagInput.value = '';
     }
 
     createTagArea() {
-        const tagArea = document.createElement('div');
-        tagArea.className = 'note-tag-area';
-
-        const tagInput = document.createElement('input');
-        tagInput.type = 'text';
-        tagInput.placeholder = 'Add a tag';
-        tagInput.className = 'note-tag-input';
-
-        const addTagButton = document.createElement('button');
-        addTagButton.textContent = '[+ Tag]';
-        addTagButton.classList.add('margin-left');
-
-        tagArea.appendChild(tagInput);
-        tagArea.appendChild(addTagButton);
-
-        const clearTagButton = document.createElement('button');
-        clearTagButton.textContent = '[x Clear]';
-        clearTagButton.classList.add('margin-left');
-        tagArea.appendChild(clearTagButton);
-
-        addTagButton.addEventListener('click', async () => {
-            const tagName = tagInput.value.trim();
-            if (tagName) {
-                await this.addTagToNote(tagName);
-                this.clearTagInput(); // Clear the input after adding the tag
-            }
-        });
-
-        clearTagButton.addEventListener('click', () => {
-            this.clearTagInput();
-        });
-
-        return tagArea;
+        return document.createElement('div');
     }
 
     renderTags(tagsContainer) {
@@ -142,16 +113,19 @@ export class NoteDetails extends HTMLElement {
         const noteId = this.noteView.selectedNote.id;
         this.noteView.getNoteTags(noteId).then(tags => {
             tags.forEach(tagData => {
-                const tagElement = document.createElement('gra-tag');
-                tagElement.data = tagData;
+                const tagElement = document.createElement('span');
+                tagElement.className = 'tag-item';
+                const tagDefinition = this.noteView.app.getTagDefinition(tagData.name);
+                const emoji = tagDefinition && tagDefinition.instances && tagDefinition.instances[0] ? tagDefinition.instances[0].emoji : '';
+                tagElement.innerHTML = `<span>${emoji} ${tagData.name}</span><button class="remove-tag">x</button>`;
                 tagsContainer.appendChild(tagElement);
             });
         });
     }
 
-    async addTagToNote(tagName, tagsContainer) {
+    async addTagToNote(tagName) {
         if (!tagName) {
-            return; // Don't add tag if no tag is selected
+            return;
         }
         const noteId = this.noteView.selectedNote.id;
         const newTag = {
@@ -163,7 +137,8 @@ export class NoteDetails extends HTMLElement {
         if (note) {
             note.tags.push(newTag);
             await this.noteView.app.db.saveObject(note, false);
-            this.renderTags(tagsContainer);
+            this.renderTags(this.el.querySelector('.note-tags-container'));
+            this.noteView.showMessage('Tag added');
         }
     }
 
