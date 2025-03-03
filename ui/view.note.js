@@ -422,7 +422,6 @@ export class NoteView extends HTMLElement {
         if (prioritySelect) {
             prioritySelect.value = note.priority;
         }
-        this.displayTags(note.id);
     }
 
     renderMyObjectItem(objectId) {

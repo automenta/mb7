@@ -13,9 +13,8 @@ export class NoteDetails extends HTMLElement {
             ${this.createPrivacyEdit().outerHTML}
             ${this.createShareEdit().outerHTML}
             ${this.createTagsSection().outerHTML}
+            <ul class="note-tag-list"></ul>
         `;
-
-        this.tagArea = this.createTagArea();
     }
 
     createDetailEdit(text, icon) {
@@ -86,41 +85,16 @@ export class NoteDetails extends HTMLElement {
         addTagButton.classList.add('margin-left');
         tagsContainer.appendChild(addTagButton);
 
-        this.renderTags(tagsContainer);
-
         addTagButton.addEventListener('click', async () => {
             const tagName = tagInput.value.trim();
             if (tagName) {
                 await this.addTagToNote(tagName);
                 tagInput.value = '';
+                tagInput.focus(); // Focus on the tag input after adding a tag
             }
         });
 
         return tagsContainer;
-    }
-
-    clearTagInput() {
-    }
-
-    createTagArea() {
-        return document.createElement('div');
-    }
-
-    renderTags(tagsContainer) {
-        if (!this.noteView.selectedNote) {
-            return;
-        }
-        const noteId = this.noteView.selectedNote.id;
-        this.noteView.getNoteTags(noteId).then(tags => {
-            tags.forEach(tagData => {
-                const tagElement = document.createElement('span');
-                tagElement.className = 'tag-item';
-                const tagDefinition = this.noteView.app.getTagDefinition(tagData.name);
-                const emoji = tagDefinition && tagDefinition.instances && tagDefinition.instances[0] ? tagDefinition.instances[0].emoji : '';
-                tagElement.innerHTML = `<span>${emoji} ${tagData.name}</span><button class="remove-tag">x</button>`;
-                tagsContainer.appendChild(tagElement);
-            });
-        });
     }
 
     async addTagToNote(tagName) {
@@ -137,17 +111,18 @@ export class NoteDetails extends HTMLElement {
         if (note) {
             note.tags.push(newTag);
             await this.noteView.app.db.saveObject(note, false);
-            this.renderTags(this.el.querySelector('.note-tags-container'));
+            this.noteView.displayTags(noteId); // Update tag display in NoteView
             this.noteView.showMessage('Tag added');
         }
     }
 
-     render() {
-         this.el.innerHTML = `
+    render() {
+        this.el.innerHTML = `
             ${this.createPriorityEdit().outerHTML}
             ${this.createPrivacyEdit().outerHTML}
             ${this.createShareEdit().outerHTML}
             ${this.createTagsSection().outerHTML}
+            <ul class="note-tag-list"></ul>
         `;
         return this.el;
     }
