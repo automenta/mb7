@@ -144,12 +144,6 @@ async function createApp(appDiv) {
     return {app, db: appData.db, nostr: appData.nostr};
 }
 
-function createAppMainContent() {
-    const mainContent = document.createElement('main');
-    mainContent.className = 'main-content';
-    return mainContent;
-}
-
 /**
  * Sets up the UI after the DOM is loaded.
  * Initializes the app, creates views, and adds them to the DOM.
