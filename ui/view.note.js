@@ -589,27 +589,4 @@ export class NoteView extends HTMLElement {
 
 if (!customElements.get('notes-view')) {
     customElements.define('notes-view', NoteView);
-                return;
-            }
-            const noteId = this.selectedNote.id;
-            const note = await this.app.db.get(noteId);
-            if (note) {
-                if (!note.tags) {
-                    note.tags = [];
-                }
-                note.tags.push({name: tagName, value: tagValue, condition: tagCondition});
-                await this.app.db.saveObject(note, false);
-                this.displayTags(noteId);
-                this.editor.contentHandler.insertTagAtSelection(tagName); // Update editor content
-            } else {
-                console.error('Note not found');
-            }
-        } catch (error) {
-            console.error('Error adding tag to note:', error);
-        }
-    }
-}
-
-if (!customElements.get('notes-view')) {
-    customElements.define('notes-view', NoteView);
 }
