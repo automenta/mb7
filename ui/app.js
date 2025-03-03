@@ -175,6 +175,12 @@ async function setupUI() {
     const {menubar, mainContent} = createLayout(app, appDiv, noteView, friendsView, settingsView, contentView, app);
 
     setupDefaultView(app, noteView, contentView);
+
+    // Create a default note if no notes exist
+    const notes = await app.db.getAll();
+    if (notes.length === 0) {
+        await app.createDefaultNote(app.db);
+    }
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
