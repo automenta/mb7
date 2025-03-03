@@ -160,6 +160,7 @@ export class NoteDetails extends HTMLElement {
         `;
         return this.el;
     }
+}
 
 if (!customElements.get('note-details')) {
     customElements.define('note-details', NoteDetails);
