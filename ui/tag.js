@@ -36,7 +36,16 @@ class Tag extends HTMLElement {
         removeButton.addEventListener('click', () => this.remove());
         this.el.appendChild(removeButton);
 
+        if (!this.tagDefinition.validate(this.value, this.condition)) {
+            this.el.classList.add('invalid');
+            this.el.title = 'Invalid tag value'; // Add tooltip
+        }
+
         this.appendChild(this.el);
+    }
+
+    isValid() {
+        return this.tagDefinition.validate(this.value, this.condition);
     }
 
     getValue() {

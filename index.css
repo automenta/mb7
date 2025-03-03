@@ -296,6 +296,11 @@ a:hover {
     margin-left: 2px;
 }
 
+.tag.invalid {
+    background-color: #ffebee; /* Light red */
+    border-color: #ef9a9a; /* Light red border */
+}
+
 #suggestion-dropdown {
     position: absolute;
     display: none;

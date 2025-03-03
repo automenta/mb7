@@ -137,13 +137,21 @@ export class NoteDetails extends HTMLElement {
         };
         const note = await this.noteView.app.db.get(noteId);
         if (note) {
-            note.tags.push(newTag);
-            await this.noteView.app.db.save(note, false);
-            this.noteView.displayTags(noteId); // Update tag display in NoteView
-            this.noteView.showMessage('Tag added');
+            // Check if the tag already exists
+            const tagExists = note.tags.some(tag =>
+                tag.name === newTag.name && tag.value === newTag.value && tag.condition === newTag.condition
+            );
+
+            if (!tagExists) {
+                note.tags.push(newTag);
+                await this.noteView.app.db.save(note, false);
+                this.noteView.displayTags(noteId); // Update tag display in NoteView
+                this.noteView.showMessage('Tag added');
+            } else {
+                this.noteView.showMessage('Tag already exists', 'warning');
+            }
         }
     }
-    //TODO: move to tag.js
 
     render() {
         this.el.innerHTML = `

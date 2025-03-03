@@ -43,11 +43,25 @@ class TagInput extends HTMLElement {
 
         // Add datalist for suggestions
         const datalist = createElement('datalist', { id: `tag-suggestions-${this.tagDefinition.name}` });
-        this.tagDefinition.suggestions?.forEach(suggestion => {
-            const option = createElement('option', { value: suggestion });
-            datalist.appendChild(option);
-        });
         this.appendChild(datalist);
+
+        this.updateSuggestions = (inputValue) => {
+            datalist.innerHTML = ''; // Clear existing suggestions
+            const filteredSuggestions = this.tagDefinition.suggestions?.filter(suggestion =>
+                suggestion.toLowerCase().startsWith(inputValue.toLowerCase())
+            ) || [];
+            filteredSuggestions.forEach(suggestion => {
+                const option = createElement('option', { value: suggestion });
+                datalist.appendChild(option);
+            });
+        };
+
+        inputElement.addEventListener('input', (e) => {
+            this.updateSuggestions(e.target.value);
+        });
+
+        this.updateSuggestions(''); // Initial population
+
     }
 
     handleInputChange(newValue) {
@@ -58,6 +72,7 @@ class TagInput extends HTMLElement {
         } else {
             // Handle validation error (e.g., display an error message)
             console.error('Invalid tag value:', newValue);
+            // Optionally, provide visual feedback to the user (e.g., highlight the input field).
         }
     }
 }
