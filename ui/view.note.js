@@ -339,8 +339,8 @@ export class NoteView extends HTMLElement {
                 const note = await this.app.db.get(noteId);
                 if (note) {
                     // Deselect previously selected note
-                    if (this.selectedNote) {
-                        const previousSelected = this.el.querySelector(this.selectedNote.id ? \`.note-list-item[data-id="\${this.selectedNote.id}"]\` : null);
+                    if (this.selectedNote && this.selectedNote.id) {
+                        const previousSelected = this.el.querySelector(\`.note-list-item[data-id="\${this.selectedNote.id}"]\`);
                         if (previousSelected) {
                             previousSelected.classList.remove('selected');
                         }
@@ -486,43 +486,67 @@ export class NoteView extends HTMLElement {
         this.getNoteTags(noteId).then(tags => {
             tags.forEach(tag => {
                 const tagItem = document.createElement('li');
+                tagItem.className = 'tag-item'; // Add a class for styling
                 const tagDefinition = this.app.getTagDefinition(tag.name);
                 const emoji = tagDefinition && tagDefinition.instances && tagDefinition.instances[0] ? tagDefinition.instances[0].emoji : '';
-                tagItem.textContent = `${emoji} ${tag.name}`;
+                tagItem.innerHTML = `<span>${emoji} ${tag.name}</span><button class="remove-tag">x</button>`; // Use innerHTML for button
+                tagItem.querySelector('.remove-tag').addEventListener('click', async (event) => {
+                    event.stopPropagation(); // Prevent note selection
+                    await this.removeTagFromNote(noteId, tag.name);
+                });
                 tagList.appendChild(tagItem);
             });
         });
     }
 
-    displayTagSuggestions(suggestions) {
-
-        const tagArea = this.el.querySelector('.note-tag-area');
-        let suggestionsList = tagArea.querySelector('.note-tag-suggestions');
-        if (!suggestionsList) {
-            suggestionsList = document.createElement('ul');
-            suggestionsList.className = 'note-tag-suggestions';
-            tagArea.appendChild(suggestionsList);
+    async removeTagFromNote(noteId, tagName) {
+        try {
+            const note = await this.app.db.get(noteId);
+            if (note) {
+                note.tags = note.tags.filter(tag => tag.name !== tagName);
+                await this.app.db.saveObject(note, false);
+                this.displayTags(noteId);
+            } else {
+                console.error('Note not found');
+            }
+        } catch (error) {
+            console.error('Error removing tag from note:', error);
         }
-        while (suggestionsList.firstChild) {
-            suggestionsList.removeChild(suggestionsList.firstChild);
-        }
-        suggestions.forEach(suggestion => {
-            const suggestionItem = document.createElement('li');
-            suggestionItem.textContent = suggestion;
-            suggestionItem.addEventListener('click', () => {
-                const tagInput = this.el.querySelector('.note-tag-input');
-                tagInput.value = suggestion;
-                this.addTagToNote(suggestion);
-                while (suggestionsList.firstChild) {
-                    suggestionsList.removeChild(suggestionsList.firstChild);
-                }
-            });
-            suggestionsList.appendChild(suggestionItem);
-        });
     }
+
+    // displayTagSuggestions(suggestions) {
+    //
+    //     const tagArea = this.el.querySelector('.note-tag-area');
+    //     let suggestionsList = tagArea.querySelector('.note-tag-suggestions');
+    //     if (!suggestionsList) {
+    //         suggestionsList = document.createElement('ul');
+    //         suggestionsList.className = 'note-tag-suggestions';
+    //         tagArea.appendChild(suggestionsList);
+    //     }
+    //     while (suggestionsList.firstChild) {
+    //         suggestionsList.removeChild(suggestionsList.firstChild);
+    //     }
+    //     suggestions.forEach(suggestion => {
+    //         const suggestionItem = document.createElement('li');
+    //         suggestionItem.textContent = suggestion;
+    //         suggestionItem.addEventListener('click', () => {
+    //             const tagInput = this.el.querySelector('.note-tag-input');
+    //             tagInput.value = suggestion;
+    //             this.addTagToNote(suggestion);
+    //             while (suggestionsList.firstChild) {
+    //                 suggestionsList.removeChild(suggestionsList.firstChild);
+    //             }
+    //         });
+    //         suggestionsList.appendChild(suggestionItem);
+    //     });
+    // }
 
     async addTagToNote(tagName) {
         try {
+            if (!this.selectedNote || !this.selectedNote.id) {
+                console.error('No note selected');
+                return;
+            }
             const noteId = this.selectedNote.id;
             const note = await this.app.db.get(noteId);
             if (note) {
