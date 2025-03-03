@@ -408,3 +408,8 @@ a:hover {
 .note-list-item button:hover {
     background-color: #800;
 }
+
+.note-list-item.selected {
+    background-color: #f0f0f0; /* A slightly darker background */
+    border: 1px solid #ccc; /* A more visible border */
+}
