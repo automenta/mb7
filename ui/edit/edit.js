@@ -14,7 +14,8 @@ import {Toolbar} from './edit.toolbar';
  * Manages the editor area, autosuggestions, ontology browser, and toolbar.
  */
 class Edit {
-    constructor(yDoc, autosuggest, contentHandler, ontologyBrowser, toolbar, getTagDefinition, schema) {
+    constructor(note, yDoc, autosuggest, contentHandler, ontologyBrowser, toolbar, getTagDefinition, schema) {
+        this.note = note;
         this.getTagDefinition = getTagDefinition;
         this.schema = schema;
         this.yDoc = yDoc; // Use the passed Y.Doc instance
