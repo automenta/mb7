@@ -20,7 +20,11 @@ export const renderTagCloud = (app, el) => {
         const tagCloud = el.querySelector("#tag-cloud");
         tagCloud.innerHTML = Object.entries(tagCounts)
             .sort(([, countA], [, countB]) => countB - countA)
-            .map(([tagName, count]) => `<span style="font-size:${10 + count * 2}px; margin-right:5px;">${tagName}</span>`).join('');
+            .map(renderTag).join('');
+
+        function renderTag([tagName, count]) {
+            return `<span style="font-size:${10 + count * 2}px; margin-right:5px;">${tagName}</span>`;
+        }
     });
 };
 
@@ -55,16 +59,12 @@ async function fetchNostrFeed(relayUrl) {
             };
 
             connection.onmessage = (event) => {
-                const data = JSON.parse(event.data);
-                if (data[0] === "EVENT") {
-                    const subId = data[1];
-                    const event = data[2];
-                    const eventContent = event.content;
-                    const pubkey = event.pubkey;
-                    const createdAt = event.created_at;
+                const [type, subId, eventData] = JSON.parse(event.data);
+                if (type === "EVENT") {
+                    const { content: eventContent, pubkey, created_at: createdAt } = eventData;
                     const formattedDate = formatDate(createdAt * 1000); // Convert seconds to milliseconds
                     feedHTML += `<p><strong>${pubkey}</strong> - ${formattedDate}: ${eventContent}</p>`;
-                } else if (data[0] === "NOTICE") {
+                } else if (type === "NOTICE") {
                     //console.log("NOTICE:", data[1]);
                 } else {
                     //console.log("Unknown message type:", data);

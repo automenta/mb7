@@ -161,7 +161,7 @@ document.addEventListener("DOMContentLoaded", async () => {
  */
 async function setupUI() {
     const appDiv = document.getElementById('app');
-    let {app, db, nostr} = await createApp(appDiv);
+    const {app, db, nostr} = await createApp(appDiv);
     const {noteView, friendsView, settingsView, contentView} = initializeViews(app, db, nostr);
     const {menubar, mainContent} = createLayout(app, appDiv, noteView, friendsView, settingsView, contentView);
 
