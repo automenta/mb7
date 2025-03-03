@@ -338,13 +338,19 @@ export class NoteView extends HTMLElement {
             try {
                 const note = await this.app.db.get(noteId);
                 if (note) {
+                    // Deselect previously selected note
+                    if (this.selectedNote) {
+                        const previousSelected = this.el.querySelector(\`.note-list-item[data-id="\${this.selectedNote.id}"]\`);
+                        if (previousSelected) {
+                            previousSelected.classList.remove('selected');
+                        }
+                    }
+
                     this.selectedNote = note;
                     this.populateNoteDetails(note);
                     this.edit.contentHandler.deserialize(note.content);
 
-                    // Add 'selected' class to the clicked list item and remove from others
-                    const listItems = this.el.querySelectorAll('#notesList li');
-                    listItems.forEach(item => item.classList.remove('selected'));
+                    // Add 'selected' class to the clicked list item
                     li.classList.add('selected');
                 }
             } catch (error) {
