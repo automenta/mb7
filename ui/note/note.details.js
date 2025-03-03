@@ -84,10 +84,6 @@ export class NoteDetails extends HTMLElement {
     }
 
     createTagsSection() {
-        return this.createTagsSection();
-    }
-
-    createTagsSection() {
         const tagsContainer = document.createElement('div');
         tagsContainer.className = 'note-tags-container';
         return tagsContainer;

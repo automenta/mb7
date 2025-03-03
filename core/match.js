@@ -365,38 +365,43 @@ export class Matcher {
         }
 
         if (validWordCount > 0) {
-            for (let i = 0; i < 100; i++) {
+            for (let i = 0; i < vectorSize; i++) {
                 textEmbedding[i] /= validWordCount;
             }
         }
 
-        // Calculate the cosine similarity between the text embedding and the object content embeddings
-        const similarityThreshold = 0.7;
-        const matches = objects.filter(obj => {
+        const matches = [];
+        for (const obj of objects) {
             const tokenizedContent = wordTokenizer.tokenize(obj.content);
-            let contentEmbedding = new Array(100).fill(0);
+            let contentEmbedding = new Array(vectorSize).fill(0);
             let validContentWordCount = 0;
 
             for (const token of tokenizedContent) {
-                if (word2vec.getVector(token)) {
+                const vector = word2vec.getVector(token);
+                if (vector) {
                     validContentWordCount++;
-                    for (let i = 0; i < 100; i++) {
-                        contentEmbedding[i] += word2vec.getVector(token)[i];
+                    for (let i = 0; i < vectorSize; i++) {
+                        contentEmbedding[i] += vector[i];
                     }
                 }
             }
 
             if (validContentWordCount > 0) {
-                for (let i = 0; i < 100; i++) {
+                for (let i = 0; i < vectorSize; i++) {
                     contentEmbedding[i] /= validContentWordCount;
                 }
             }
 
             const similarity = this.cosineSimilarity(textEmbedding, contentEmbedding);
-            return similarity > similarityThreshold;
-        });
+            if (similarity > similarityThreshold) {
+                matches.push({obj, similarity});
+            }
+        }
 
-        return matches;
+        // Sort matches by similarity
+        matches.sort((a, b) => b.similarity - a.similarity);
+
+        return matches.map(match => match.obj);
     }
 
     cosineSimilarity(vecA, vecB) {
@@ -413,7 +418,7 @@ export class Matcher {
         if (magnitudeA && magnitudeB) {
             return dotProduct / (magnitudeA * magnitudeB);
         } else {
-            return 0;
+            return dotProduct / (magnitudeA * magnitudeB);
         }
     }
 }
