@@ -170,11 +170,6 @@ export class Matcher {
 
         return false;
     }
-import Fuse from 'fuse.js';
-import { formatDate } from '../ui/content-view-renderer.js';
-import { nip19 } from 'nostr-tools';
-import { getTagDefinition, Ontology } from './ontology';
-import natural from 'natural';
 
 export class Matcher {
     constructor(app) {
