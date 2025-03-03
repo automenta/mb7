@@ -60,29 +60,26 @@ export class NoteDetails extends HTMLElement {
         const tagsContainer = document.createElement('div');
         tagsContainer.className = 'note-tags-container';
 
-        const tagSelect = document.createElement('select');
-        tagSelect.className = 'tag-select';
+        const tagInput = document.createElement('input');
+        tagInput.setAttribute('list', 'tag-suggestions');
+        tagInput.className = 'tag-select';
+        tagInput.placeholder = 'Enter a tag';
+
+        const datalist = document.createElement('datalist');
+        datalist.id = 'tag-suggestions';
 
         // Get tag names from UnifiedOntology and sort them alphabetically
         const tagNames = Object.keys(Ontology).sort();
-
-        // Add a placeholder option
-        const placeholderOption = document.createElement('option');
-        placeholderOption.value = '';
-        placeholderOption.textContent = 'Select a tag';
-        placeholderOption.disabled = true;
-        placeholderOption.selected = true;
-        tagSelect.appendChild(placeholderOption);
 
         // Add tag names as options
         tagNames.forEach(tag => {
             const option = document.createElement('option');
             option.value = tag;
-            option.textContent = tag;
-            tagSelect.appendChild(option);
+            datalist.appendChild(option);
         });
 
-        tagsContainer.appendChild(tagSelect);
+        tagsContainer.appendChild(tagInput);
+        tagsContainer.appendChild(datalist);
 
         const addTagButton = document.createElement('button');
         addTagButton.textContent = '[+ Tag]';
@@ -91,7 +88,7 @@ export class NoteDetails extends HTMLElement {
 
         this.renderTags(tagsContainer);
         addTagButton.addEventListener('click', () => {
-            this.addTagToNote(tagSelect.value, tagsContainer);
+            this.addTagToNote(tagInput.value, tagsContainer);
         });
 
         return tagsContainer;

@@ -306,11 +306,13 @@ export class NoteView extends HTMLElement {
                 this.showMessage('Saved');
                 this.edit.contentHandler.deserialize(newObject.content);
                 this.focusTitleInput();
-                this.editor.editorArea.focus();
+                // Set focus to the editor area after focusing the title input
+                setTimeout(() => {
+                    this.editor.editorArea.focus();
+                }, 0);
             } else {
                 console.error('Error creating note: newObject is null');
             }
-            console.timeEnd('createNote');
         } catch (error) {
             console.error('Error creating note:', error);
         }
