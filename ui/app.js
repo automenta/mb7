@@ -216,6 +216,8 @@ function initializeViews(app) {
         noteView.loadNotes();
     };
 
+export {App};
+
 function createLayout(app, appDiv, noteView, friendsView, settingsView, contentView, ) {
     const menubar = createMenuBar(app, noteView, friendsView, settingsView, contentView);
     const mainContent = createAppMainContent();
@@ -225,5 +227,3 @@ function createLayout(app, appDiv, noteView, friendsView, settingsView, contentV
     appDiv.appendChild(app.elements.notificationArea);
     return {menubar, mainContent};
 }
-
-export {App};
