@@ -11,6 +11,16 @@ class Tag extends HTMLElement {
         this.render();
     }
 
+    remove() {
+        const event = new CustomEvent('tag-removed', {
+            detail: { tag: this }, // Pass the tag instance itself
+            bubbles: true, // Allow the event to bubble up the DOM tree
+            composed: true // Allow the event to cross the shadow DOM boundary
+        });
+        this.dispatchEvent(event);
+        this.remove(); // Remove the tag from the DOM
+    }
+
     render() {
         this.innerHTML = '';
 

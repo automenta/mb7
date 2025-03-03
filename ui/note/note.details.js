@@ -8,6 +8,8 @@ export class NoteDetails extends HTMLElement {
         this.el = document.createElement('div');
         this.el.className = 'note-details-container';
 
+        this.el.addEventListener('tag-removed', this.handleTagRemoved.bind(this));
+
         this.el.innerHTML = `
             ${this.createPriorityEdit().outerHTML}
             ${this.createPrivacyEdit().outerHTML}
@@ -49,6 +51,24 @@ export class NoteDetails extends HTMLElement {
 
         container.appendChild(label);
         return container;
+    }
+
+    async handleTagRemoved(event) {
+        const tagToRemove = event.detail.tag;
+        const noteId = this.noteView.selectedNote.id;
+
+        const note = await this.noteView.app.db.get(noteId);
+        if (note) {
+            // Find the index of the tag to remove
+            const tagIndex = note.tags.findIndex(tag => tag.name === tagToRemove.tagDefinition.name && tag.value === tagToRemove.value && tagToRemove.condition === tagToRemove.condition);
+
+            if (tagIndex > -1) {
+                note.tags.splice(tagIndex, 1); // Remove the tag from the array
+                await this.noteView.app.db.save(note, false); // Save the updated note
+                this.noteView.displayTags(noteId); // Update tag display in NoteView
+                this.noteView.showMessage('Tag removed');
+            }
+        }
     }
 
     createPriorityEdit() {
@@ -110,11 +130,12 @@ export class NoteDetails extends HTMLElement {
         const note = await this.noteView.app.db.get(noteId);
         if (note) {
             note.tags.push(newTag);
-            await this.noteView.app.db.saveObject(note, false);
+            await this.noteView.app.db.save(note, false);
             this.noteView.displayTags(noteId); // Update tag display in NoteView
             this.noteView.showMessage('Tag added');
         }
     }
+    //TODO: move to tag.js
 
     render() {
         this.el.innerHTML = `
