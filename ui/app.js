@@ -141,7 +141,7 @@ async function createApp(appDiv) {
     console.log('Creating App instance with db:', appData.db, 'and nostr:', appData.nostr);
     const app = new App(appData.db, appData.nostr, appData.matcher, appData.errorHandler, appData.notificationManager, appData.monitoring);
     console.log('App.initialize() promise resolved');
-    return {app, db: appData.db, nostr: appData.nostr};
+    return {app};
 }
 
 /**
@@ -150,7 +150,7 @@ async function createApp(appDiv) {
  */
 async function setupUI() {
     const appDiv = document.getElementById('app');
-    const {app, db, nostr} = await createApp(appDiv);
+    const {app} = await createApp(appDiv);
     const {noteView, friendsView, settingsView, contentView} = initializeViews(app);
     const {menubar, mainContent} = createLayout(app, appDiv, noteView, friendsView, settingsView, contentView);
 
