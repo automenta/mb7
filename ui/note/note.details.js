@@ -89,12 +89,13 @@ export class NoteDetails extends HTMLElement {
         return tagsContainer;
     }
 
-    async createTag(tagName) {
+    async createTag(tagName, tagValue = '', tagCondition = 'is') {
         const noteId = this.noteView.selectedNote.id;
         const newTag = {
             name: tagName,
             type: 'text',
-            value: ''
+            value: tagValue,
+            condition: tagCondition
         };
         const note = await this.noteView.app.db.get(noteId);
         if (note) {

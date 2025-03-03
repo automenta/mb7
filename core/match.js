@@ -347,18 +347,25 @@ export class Matcher {
         const Word2Vec = natural.Word2Vec;
         const word2vec = new Word2Vec();
 
-        word2vec.loadModel('./core/word2vec.model', () => {
+        const modelPath = this.app.settings?.word2vecModelPath || './core/word2vec.model';
+        const vectorSize = 100; // Define vector size
+        const similarityThreshold = 0.7;
+
+        word2vec.loadModel(modelPath, () => {
             console.log("Word2Vec model loaded");
+        }, (error) => {
+            this.app.errorHandler.handleError(error, "Error loading Word2Vec model");
         });
 
         // Calculate the average word embedding for the text
-        let textEmbedding = new Array(100).fill(0);
+        let textEmbedding = new Array(vectorSize).fill(0);
         let validWordCount = 0;
         for (const token of tokenizedText) {
-            if (word2vec.getVector(token)) {
+            const vector = word2vec.getVector(token);
+            if (vector) {
                 validWordCount++;
-                for (let i = 0; i < 100; i++) {
-                    textEmbedding[i] += word2vec.getVector(token)[i];
+                for (let i = 0; i < vectorSize; i++) {
+                    textEmbedding[i] += vector[i];
                 }
             }
         }

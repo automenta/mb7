@@ -140,6 +140,7 @@ async function createApp(appDiv) {
     const appData = await App.initialize(appDiv);
     console.log('Creating App instance with db:', appData.db, 'and nostr:', appData.nostr);
     const app = new App(appData.db, appData.nostr, appData.matcher, appData.errorHandler, appData.notificationManager, appData.monitoring);
+    app.settings = await app.db.getSettings();
     console.log('App.initialize() promise resolved');
     return {app};
 }
