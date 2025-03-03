@@ -47,10 +47,6 @@ class Edit {
         // Save function
         this.save = (object) => {
             const isPersistentQuery = this.persistentQueryCheckbox.checked;
-            this.app.db.saveObject(object, isPersistentQuery);
-        };
-        this.save = (object) => {
-            const isPersistentQuery = this.persistentQueryCheckbox.checked;
             this.app.db.saveObject(object, isPersistentQuery).catch(error => this.app.errorHandler.handleError(error, "Failed to save object"));
         };
     }
