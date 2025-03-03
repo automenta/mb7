@@ -33,6 +33,8 @@ export class NoteDetails extends HTMLElement {
 
             this.privacyCheckbox = document.createElement('input');
             this.privacyCheckbox.type = 'checkbox';
+            this.privacyCheckbox.className = 'privacy-checkbox';
+            this.privacyCheckbox.type = 'checkbox';
             this.privacyCheckbox.checked = true; // Default to private
             label.appendChild(this.privacyCheckbox);
 
