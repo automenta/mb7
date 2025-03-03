@@ -11,6 +11,7 @@ import {ContentView} from "./ui-manager.js";
 import {createMenuBar} from './menu-bar.js';
 import { v4 as uuidv4 } from 'uuid';
 import {NotificationManager} from './notification-manager.js';
+import { createAppMainContent } from './layout.js';
 
 /**
  * The main application class.
@@ -200,7 +201,7 @@ function initializeViews(app) {
 
 function createLayout(app, appDiv, noteView, friendsView, settingsView, contentView, ) {
     const menubar = createMenuBar(app, noteView, friendsView, settingsView, contentView);
-    const mainContent = app.createAppMainContent();
+    const mainContent = createAppMainContent();
 
     appDiv.appendChild(menubar);
     appDiv.appendChild(mainContent);
@@ -208,12 +209,8 @@ function createLayout(app, appDiv, noteView, friendsView, settingsView, contentV
     return {menubar, mainContent};
 }
 
-function setupDefaultView(app, noteView, contentView) {
-    const defaultView = noteView;
-    app.showView(defaultView);
+export {App};
 
     noteView.notesListComponent.disableObserver = false;
     contentView.render();
 }
-
-export {App};
