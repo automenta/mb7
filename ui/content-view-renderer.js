@@ -10,7 +10,7 @@ export const dateISO = () => formatISO(new Date());
 export const renderRecentActivity = async (app, el) => {
     const recent = await app.db.getRecent(5);
     const recentActivity = el.querySelector("#recent-activity");
-    recentActivity.innerHTML = recent.map(obj => `<p><strong>${obj.name}</strong> - Updated: ${formatDate(obj.updatedAt)}</p>`).join('');
+    recentActivity.innerHTML = recent.map(obj => `<p><strong>${obj.name}</strong> - Updated: ${formatDate(obj.updatedAt)}</p>`).join("");
 };
 
 export const renderTagCloud = (app, el) => {
