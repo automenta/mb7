@@ -40,120 +40,14 @@ class TagInput extends HTMLElement {
         });
 
         this.appendChild(inputElement);
-    }
-}
 
-customElements.define('tag-input', TagInput);
-
-export {TagInput};
-import { createElement } from './utils';
-import { ConditionSelector } from './condition-selector';
-
-class TagInput extends HTMLElement {
-    constructor(tagDefinition, value, condition, onChange) {
-        super();
-        this.tagDefinition = tagDefinition;
-        this.value = value;
-        this.condition = condition;
-        this.onChange = onChange;
-        this.render();
-    }
-
-    render() {
-        this.innerHTML = '';
-
-        // Condition Selector
-        const conditionSelector = new ConditionSelector(
-            this.tagDefinition,
-            this.condition,
-            (newCondition) => {
-                this.condition = newCondition;
-                this.onChange(this.value, this.condition);
-            }
-        );
-        this.appendChild(conditionSelector);
-
-        const uiType = this.tagDefinition.ui?.type || 'text';
-        let inputElement;
-
-        switch (uiType) {
-            case 'text':
-                inputElement = createElement('input', {
-                    type: 'text',
-                    value: this.value,
-                    oninput: (e) => {
-                        this.handleInputChange(e.target.value);
-                    }
-                });
-                break;
-            case 'number':
-                inputElement = createElement('input', {
-                    type: 'number',
-                    value: this.value,
-                    oninput: (e) => {
-                        this.handleInputChange(e.target.value);
-                    }
-                });
-                break;
-            case 'select':
-                inputElement = createElement('select', {
-                    onchange: (e) => {
-                        this.handleInputChange(e.target.value);
-                    }
-                }, this.tagDefinition.ui.options.map(option => createElement('option', {value: option}, option)));
-                break;
-            case 'color':
-                inputElement = createElement('input', {
-                    type: 'color',
-                    value: this.value,
-                    oninput: (e) => {
-                        this.handleInputChange(e.target.value);
-                    }
-                });
-                break;
-            // Add more cases for other UI types (select, date, etc.)
-            default:
-                inputElement = createElement('input', {
-                    type: 'text',
-                    value: this.value,
-                    oninput: (e) => {
-                        this.handleInputChange(e.target.value);
-                    }
-                });
-                break;
-            case 'select':
-                inputElement = createElement('select', {
-                    onchange: (e) => {
-                        this.handleInputChange(e.target.value);
-                    }
-                });
-                this.tagDefinition.ui.options.forEach(option => {
-                    const optionElement = createElement('option', {value: option}, option);
-                    inputElement.appendChild(optionElement);
-                });
-                break;
-            case 'color':
-                inputElement = createElement('input', {
-                    type: 'color',
-                    value: this.value,
-                    oninput: (e) => {
-                        this.handleInputChange(e.target.value);
-                    }
-                });
-                break;
-            // Add more cases for other UI types (select, date, etc.)
-            default:
-                inputElement = createElement('input', {
-                    type: 'text',
-                    value: this.value,
-                    oninput: (e) => {
-                        this.handleInputChange(e.target.value);
-                    }
-                });
-                break;
-            }
-
-        this.appendChild(inputElement);
+        // Add datalist for suggestions
+        const datalist = createElement('datalist', { id: `tag-suggestions-${this.tagDefinition.name}` });
+        this.tagDefinition.suggestions?.forEach(suggestion => {
+            const option = createElement('option', { value: suggestion });
+            datalist.appendChild(option);
+        });
+        this.appendChild(datalist);
     }
 
     handleInputChange(newValue) {
