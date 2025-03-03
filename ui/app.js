@@ -152,6 +152,7 @@ async function createApp(appDiv) {
  * Initializes the app, creates views, and adds them to the DOM.
  */
 async function setupUI() {
+    document.title = "Netention"; // Set the document title
     const appDiv = document.getElementById('app');
     const {app} = await createApp(appDiv);
     const {noteView, friendsView, settingsView, contentView} = initializeViews(app);
