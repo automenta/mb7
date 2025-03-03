@@ -335,9 +335,20 @@ export class NoteView extends HTMLElement {
         li.appendChild(deleteButton);
 
         li.addEventListener('click', async () => {
-            const note = await this.app.db.get(noteId);
-            if (note) {
-                this.edit.contentHandler.deserialize(note.content);
+            try {
+                const note = await this.app.db.get(noteId);
+                if (note) {
+                    this.selectedNote = note;
+                    this.populateNoteDetails(note);
+                    this.edit.contentHandler.deserialize(note.content);
+
+                    // Add 'selected' class to the clicked list item and remove from others
+                    const listItems = this.el.querySelectorAll('#notesList li');
+                    listItems.forEach(item => item.classList.remove('selected'));
+                    li.classList.add('selected');
+                }
+            } catch (error) {
+                this.app.errorHandler.handleError(error, 'Error selecting note');
             }
         });
 
@@ -364,6 +375,23 @@ export class NoteView extends HTMLElement {
         this.displayTags(noteId);
 
         return li;
+    }
+
+    populateNoteDetails(note) {
+        const titleInput = this.el.querySelector('.note-title-input');
+        const privacyCheckbox = this.el.querySelector('.privacy-checkbox');
+        const prioritySelect = this.el.querySelector('.note-priority-select');
+
+        if (titleInput) {
+            titleInput.value = note.name;
+        }
+        if (privacyCheckbox) {
+            privacyCheckbox.checked = note.private;
+        }
+        if (prioritySelect) {
+            prioritySelect.value = note.priority;
+        }
+        this.displayTags(note.id);
     }
 
     renderMyObjectItem(objectId) {
