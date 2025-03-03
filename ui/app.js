@@ -211,6 +211,5 @@ function createLayout(app, appDiv, noteView, friendsView, settingsView, contentV
 
 export {App};
 
-    noteView.notesListComponent.disableObserver = false;
-    contentView.render();
-}
+noteView.notesListComponent.disableObserver = false;
+contentView.render();
