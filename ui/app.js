@@ -135,29 +135,6 @@ class App {
     }
 }
 
-async function setupUI() {
-    document.title = "Netention"; // Set the document title
-    const appDiv = document.getElementById('app');
-    const {app} = await createApp(appDiv);
-    const {noteView, friendsView, settingsView, contentView} = initializeViews(app);
-    const {menubar, mainContent} = createLayout(app, appDiv, noteView, friendsView, settingsView, contentView, app);
-
-    setupDefaultView(app, noteView, contentView);
-
-    // Create a default note if no notes exist
-    let notes;
-    try {
-        notes = await app.db.getAll();
-        if (notes.length === 0) {
-            await app.createDefaultNote(app.db);
-        }
-    } catch (error) {
-        app.errorHandler.handleError(error, 'Error loading notes or creating default note');
-    }
-
-    noteView.notesListComponent.disableObserver = false;
-    contentView.render();
-}
 
 async function createApp(appDiv) {
     const appData = await App.initialize(appDiv);
