@@ -60,14 +60,22 @@ export class NoteDetails extends HTMLElement {
         const note = await this.noteView.app.db.get(noteId);
         if (note) {
             // Find the index of the tag to remove
-            const tagIndex = note.tags.findIndex(tag => tag.name === tagToRemove.tagDefinition.name && tag.value === tagToRemove.value && tagToRemove.condition === tagToRemove.condition);
+            const tagIndex = note.tags.findIndex(tag =>
+                tag.name === tagToRemove.tagDefinition.name &&
+                tag.value === tagToRemove.value &&
+                tag.condition === tagToRemove.condition
+            );
 
             if (tagIndex > -1) {
                 note.tags.splice(tagIndex, 1); // Remove the tag from the array
                 await this.noteView.app.db.save(note, false); // Save the updated note
                 this.noteView.displayTags(noteId); // Update tag display in NoteView
                 this.noteView.showMessage('Tag removed');
+            } else {
+                console.warn('Tag not found in note:', tagToRemove);
             }
+        } else {
+            console.warn('Note not found:', noteId);
         }
     }
 
@@ -101,7 +109,7 @@ export class NoteDetails extends HTMLElement {
         tagsContainer.appendChild(datalist);
 
         const addTagButton = document.createElement('button');
-        addTagButton.textContent = '[+ Tag]';
+        addTagButton.textContent = '[+Tag]';
         addTagButton.classList.add('margin-left');
         tagsContainer.appendChild(addTagButton);
 

@@ -13,32 +13,30 @@ class Tag extends HTMLElement {
 
     remove() {
         const event = new CustomEvent('tag-removed', {
-            detail: { tag: this }, // Pass the tag instance itself
-            bubbles: true, // Allow the event to bubble up the DOM tree
-            composed: true // Allow the event to cross the shadow DOM boundary
+            detail: { tag: this },
+            bubbles: true,
+            composed: true
         });
         this.dispatchEvent(event);
-        this.remove(); // Remove the tag from the DOM
+        this.el.remove();
     }
 
     render() {
-        this.innerHTML = '';
+        this.el = document.createElement('div');
+        this.el.className = 'tag';
 
-        const tagInput = new TagInput(
-            this.tagDefinition,
-            this.value,
-            this.condition,
-            (newValue, newCondition) => {
-                this.value = newValue;
-                this.condition = newCondition;
-                this.onTagUpdate(this); // Pass the Tag component itself
-            }
-        );
-        this.appendChild(tagInput);
+        if (this.tagDefinition.conditions && this.tagDefinition.conditions.length) {
+            this.el.classList.add('conditional');
+        }
 
-        // Display the tag's value (you can customize this)
         const display = createElement('span', {}, `${this.tagDefinition.name}: ${this.value}`);
-        this.appendChild(display);
+        this.el.appendChild(display);
+
+        const removeButton = createElement('span', { className: 'remove-tag' }, 'x');
+        removeButton.addEventListener('click', () => this.remove());
+        this.el.appendChild(removeButton);
+
+        this.appendChild(this.el);
     }
 
     getValue() {
@@ -54,6 +52,8 @@ class Tag extends HTMLElement {
     }
 }
 
-customElements.define('data-tag', Tag);
+if (!customElements.get('data-tag')) {
+    customElements.define('data-tag', Tag);
+}
 
 export { Tag };
