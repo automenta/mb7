@@ -1,25 +1,26 @@
-export async function saveSettings(db, settingsObjectId, settings) {
-    // TODO: Consider using a more flexible and scalable approach for storing settings data
-    let settingsObject = await db.getDefaultObject(settingsObjectId);
+export async function saveSettings(db, settings) {
+    const settingsObjectId = 'settings'; // Use a constant ID for the settings object
 
-    settingsObject.tags = [];
-
-    const settingsMap = {
-        relays: settings.relays,
-        dateFormat: settings.dateFormat,
-        profileName: settings.profileName,
-        profilePicture: settings.profilePicture,
+    const settingsObject = {
+        id: settingsObjectId,
+        name: "Settings",
+        tags: [
+            ['objectType', 'Settings'], // Use the "Settings" type from the Ontology
+            ['encrypted', 'true'],
+            ['visibility', 'private'],
+            ['isPersistentQuery', 'false'],
+            ['relays', settings.relays],
+            ['dateFormat', settings.dateFormat],
+            ['profileName', settings.profileName],
+            ['profilePicture', settings.profilePicture],
+            ['signalingStrategy', settings.signalingStrategy],
+            ['webrtcNostrRelays', settings.webrtcNostrRelays],
+            ['privateKey', settings.nostrPrivateKey]
+        ]
     };
 
-    for (const [key, value] of Object.entries(settingsMap)) {
-        if (value) {
-            settingsObject.tags.push([key, value]);
-        }
-    }
-
-    settingsObject.updatedAt = new Date().toISOString();
     try {
-        await db.put(OBJECTS_STORE, settingsObject);
+        await db.saveOrUpdateObject(settingsObject);
     } catch (error) {
         console.error("Failed to save settings:", error);
         console.error("Error updating friend profile:", error);

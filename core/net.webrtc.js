@@ -16,8 +16,10 @@ export class WebRTCService {
     async connectWebRTC(peerId, isInitiator) {
         let signalingProvider;
         try {
+            let relays = this.nostrRelays;
             if (this.signalingStrategy === "nostr") {
-                signalingProvider = new NostrSignalingProvider(this.nostrRelays.split("\n").map(l => l.trim()).filter(Boolean), this.nostrPrivateKey, this.app);
+                 relays = this.app.settings.webrtcNostrRelays || this.nostrRelays;
+                signalingProvider = new NostrSignalingProvider(relays.split("\n").map(l => l.trim()).filter(Boolean), this.nostrPrivateKey, this.app);
             } else {
                 console.error("WebRTC signaling server not implemented");
                 this.app.showNotification("WebRTC signaling server not implemented", "error");

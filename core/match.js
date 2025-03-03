@@ -1,7 +1,8 @@
 import Fuse from 'fuse.js';
 import {formatDate} from '../ui/content-view-renderer.js';
 import {nip19} from 'nostr-tools';
-import {getTagDefinition} from './ontology';
+import {getTagDefinition, Ontology} from './ontology';
+import natural from 'natural';
 
 export class Matcher {
     constructor(app) {
@@ -76,11 +77,13 @@ export class Matcher {
      * @param {string} text - The text to match.
      * @param {object} event - The event to match.
      */
-    matchTagData(tagData, text, event) {
+    async matchTagData(tagData, text, event) {
         console.log('matchTagData called with:', {tagData, text, event});
         const {name, condition, value} = tagData;
         console.log('tagData values:', {name, condition, value});
-        // TODO: Implement more sophisticated tag matching techniques
+        // Implement more sophisticated tag matching techniques
+        // TODO: Explore using stemming or lemmatization to normalize words
+        // TODO: Consider using a thesaurus to expand the search terms
         const tagDef = getTagDefinition(name);
 
         if (!tagDef.validate(value, condition)) return false;
@@ -134,6 +137,25 @@ export class Matcher {
             return handler();
         }
 
+        // Enhance semantic matching
+        const matches = await this.enhanceSemanticMatching(text, [event]);
+        if (matches.length > 0) {
+            // Suggest relevant tags based on the matches
+            const keywords = matches[0].keywords;
+            if (keywords && keywords.length > 0) {
+                console.log("Suggesting tags based on keywords:", keywords);
+                // Get the tag definitions from the ontology
+                const tagDefinitions = Object.values(Ontology);
+
+                // Filter the tag definitions based on the keywords
+                const suggestedTags = tagDefinitions.filter(tagDefinition =>
+                    keywords.some(keyword => tagDefinition.name?.toLowerCase().includes(keyword.toLowerCase()))
+                );
+
+                console.log("Suggested tags:", suggestedTags);
+            }
+        }
+
         return false;
     }
 
@@ -143,17 +165,82 @@ export class Matcher {
      * @param {object[]} objects - The objects to search.
      * @returns {object[]} - The matching objects.
      */
-    /**
-     * Enhances semantic matching using advanced techniques (not implemented).
-     * @param {string} text - The text to match against.
-     * @param {object[]} objects - The objects to search.
-     * @returns {object[]} - The matching objects.
-     */
     async enhanceSemanticMatching(text, objects) {
-        // TODO: Implement enhanced semantic matching logic here
-        // TODO: Explore word embeddings or knowledge graphs for semantic matching
-        // TODO: Consider updating core/ontology.js to support semantic information
-        console.log(`Performing enhanced semantic matching for text: ${text} (not implemented)`);
-        return objects.filter(obj => obj.content.includes(text)); // Placeholder
+        // Load pre-trained word embeddings (GloVe)
+        const WordTokenizer = natural.WordTokenizer;
+        const wordTokenizer = new WordTokenizer();
+
+        const tokenizedText = wordTokenizer.tokenize(text);
+
+        const Word2Vec = natural.Word2Vec;
+        const word2vec = new Word2Vec();
+
+        word2vec.loadModel('./core/word2vec.model', () => {
+            console.log("Word2Vec model loaded");
+        });
+
+        // Calculate the average word embedding for the text
+        let textEmbedding = new Array(100).fill(0);
+        let validWordCount = 0;
+        for (const token of tokenizedText) {
+            if (word2vec.getVector(token)) {
+                validWordCount++;
+                for (let i = 0; i < 100; i++) {
+                    textEmbedding[i] += word2vec.getVector(token)[i];
+                }
+            }
+        }
+
+        if (validWordCount > 0) {
+            for (let i = 0; i < 100; i++) {
+                textEmbedding[i] /= validWordCount;
+            }
+        }
+
+        // Calculate the cosine similarity between the text embedding and the object content embeddings
+        const similarityThreshold = 0.7;
+        const matches = objects.filter(obj => {
+            const tokenizedContent = wordTokenizer.tokenize(obj.content);
+            let contentEmbedding = new Array(100).fill(0);
+            let validContentWordCount = 0;
+
+            for (const token of tokenizedContent) {
+                if (word2vec.getVector(token)) {
+                    validContentWordCount++;
+                    for (let i = 0; i < 100; i++) {
+                        contentEmbedding[i] += word2vec.getVector(token)[i];
+                    }
+                }
+            }
+
+            if (validContentWordCount > 0) {
+                for (let i = 0; i < 100; i++) {
+                    contentEmbedding[i] /= validContentWordCount;
+                }
+            }
+
+            const similarity = this.cosineSimilarity(textEmbedding, contentEmbedding);
+            return similarity > similarityThreshold;
+        });
+
+        return matches;
+    }
+
+    cosineSimilarity(vecA, vecB) {
+        let dotProduct = 0;
+        let magnitudeA = 0;
+        let magnitudeB = 0;
+        for (let i = 0; i < vecA.length; i++) {
+            dotProduct += vecA[i] * vecB[i];
+            magnitudeA += vecA[i] * vecA[i];
+            magnitudeB += vecB[i] * vecB[i];
+        }
+        magnitudeA = Math.sqrt(magnitudeA);
+        magnitudeB = Math.sqrt(magnitudeB);
+        if (magnitudeA && magnitudeB) {
+            return dotProduct / (magnitudeA * magnitudeB);
+        } else {
+            return 0;
+        }
     }
 }

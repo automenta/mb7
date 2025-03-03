@@ -1,11 +1,9 @@
 import {createElement} from "./utils.js";
 import * as NostrTools from 'nostr-tools'
 import {View} from "./view.js";
-import {getTagDefinition} from "../core/ontology.js";
 import {generateEncryptionKey} from '../core/crypto.js';
 
 const PUBKEY_REGEX = /^[0-9a-fA-F]{64}$/;
-
 
 export class FriendsView extends View {
     constructor(app, db, nostr) {
@@ -37,6 +35,22 @@ export class FriendsView extends View {
             }
         });
         this.loadFriends(); // Load friends on initialization
+        this.el.querySelectorAll(".send-dm").forEach(button => button.addEventListener("click", (e) => this.sendDM(button.dataset.pubkey)));
+    }
+
+    async sendDM(pubkey) {
+        const textInput = this.el.querySelector(`#dm-text-${pubkey}`);
+        const text = textInput.value.trim();
+        if (!text) return;
+
+        try {
+            await this.nostr.sendDM(pubkey, text);
+            textInput.value = ''; // Clear the input after sending
+            this.app.showNotification(`Sent DM to ${NostrTools.nip19.npubEncode(pubkey)}`, "success");
+        } catch (error) {
+            console.error("Error sending DM:", error);
+            this.app.showNotification("Failed to send DM.", "error");
+        }
     }
 
     async addFriend() {
@@ -60,8 +74,27 @@ export class FriendsView extends View {
         }
 
         try {
-            const friend = {pubkey: pubkey};
-            await this.db.addFriend(friend);
+            const friendObjectId = `friend-${pubkey}`;
+
+            // Fetch name and picture here, before creating the friendObject
+            // For now, set them to empty strings, but this is where you'd
+            // want to integrate with a profile service or similar.
+            const name = "";
+            const picture = "";
+
+            const friendObject = {
+                id: friendObjectId,
+                name: "Friend",
+                tags: [
+                    ['objectType', 'People'],
+                    ['visibility', 'private'],
+                    ['isPersistentQuery', 'false'],
+                    ['pubkey', pubkey],
+                    ['profileName', name],
+                    ['profilePicture', picture]
+                ]
+            };
+            await this.app.saveOrUpdateObject(friendObject);
 
             // Secure Key Exchange
             await this.exchangeKeys(pubkey);
@@ -77,50 +110,65 @@ export class FriendsView extends View {
 
     async loadFriends() {
         console.log("FriendsView.loadFriends called");
-        let friendsObjectId;
-        let friendsObject;
-        try {
-            friendsObjectId = await this.db.getFriendsObjectId();
-            console.log("friendsObjectId:", friendsObjectId);
-            friendsObject = await this.db.get(friendsObjectId);
-            console.log("friendsObject:", friendsObject);
-        } catch (error) {
-            this.app.errorHandler.handleError(error, "Failed to load friends", error);
-            return;
+        const friendsListObjectId = 'friendsList';
+        let friendsListObject = await this.db.get(friendsListObjectId);
+
+        if (!friendsListObject) {
+            friendsListObject = {
+                id: friendsListObjectId,
+                name: "Friends List",
+                friends: [],
+                private: true,
+                isPersistentQuery: false
+            };
+            await this.app.saveOrUpdateObject(friendsListObject);
         }
 
         const friendsList = this.el.querySelector("#friends-list");
-        while (friendsList.firstChild) {
-            friendsList.removeChild(friendsList.firstChild);
-        }
+        friendsList.innerHTML = ""; // Clear existing list
 
-        if (!friendsObject || !friendsObject.tags) {
-            friendsList.innerHTML = "<p>No friends found.</p>";
-            return;
-        }
+        if (friendsListObject && friendsListObject.friends) {
+            for (const friendObjectId of friendsListObject.friends) {
+                try {
+                    // Load the Friend NObject from the database
+                    const friendObject = await this.db.get(friendObjectId);
 
-        const peopleTagDefinition = getTagDefinition("People");
+                    // Display the friend
+                    if (friendObject) {
+                        let pubkey, profileName, profilePicture;
 
-        friendsObject.tags.forEach(tag => {
-            if (tag[0] === "People") {
-                const pubkey = tag[1];
-                const name = tag[2] || "";
-                const picture = tag[3] || "";
+                        for (const tag of friendObject.tags) {
+                            if (tag[0] === 'pubkey') {
+                                pubkey = tag[1];
+                            } else if (tag[0] === 'profileName') {
+                                profileName = tag[1];
+                            } else if (tag[0] === 'profilePicture') {
+                                profilePicture = tag[1];
+                            }
+                        }
 
-                const npub = NostrTools.nip19.npubEncode(pubkey);
-                const displayName = name ? `${name} (${npub})` : npub;
-                const profilePictureHTML = picture ? `<img src="${picture}" alt="Profile Picture" style="width: 24px; height: 24px; border-radius: 50%; margin-right: 8px;">` : '';
-                const li = createElement('li');
-                li.innerHTML = `${profilePictureHTML}${displayName} <button class="remove-friend" data-pubkey="${pubkey}">Remove</button> <button class="connect-webrtc" data-pubkey="${pubkey}">Connect WebRTC</button>`;
-                friendsList.append(li);
+                        const npub = NostrTools.nip19.npubEncode(pubkey);
+                        const displayName = profileName || npub; // Use profileName if available, otherwise npub
+                        const li = createElement('li');
+                        li.innerHTML = `${displayName} <button class="remove-friend" data-pubkey="${pubkey}">Remove</button> <button class="connect-webrtc" data-pubkey="${pubkey}">Connect WebRTC</button>
+                                            <input type="text" id="dm-text-${pubkey}" placeholder="Enter message">
+                                            <button class="send-dm" data-pubkey="${pubkey}">Send DM</button>`;
+                        friendsList.append(li);
+                    }
+                } catch (error) {
+                    console.error("Error loading friend:", error);
+                    this.app.showNotification("Failed to load friend.", "error");
+                }
             }
-        });
+        } else {
+            friendsList.innerHTML = "<p>No friends found.</p>";
+        }
         this.el.querySelectorAll(".remove-friend").forEach(button => button.addEventListener("click", (e) => this.removeFriend(button.dataset.pubkey)));
     }
 
     async removeFriend(pubkey) {
         try {
-            await this.db.removeFriend(pubkey);
+            //await this.db.removeFriend(pubkey);
             await this.nostr.unsubscribeToPubkey(`friend-profile-${pubkey}`);
             await this.loadFriends(); // Refresh list after removing.
         } catch (error) {

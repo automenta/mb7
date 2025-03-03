@@ -1,15 +1,15 @@
 import {UIComponent} from './view.js';
 
 export class GenericListComponent extends UIComponent {
-    constructor(renderItem, yArray) {
+    constructor(renderer, yArray) {
         super('<ul></ul>'); // Use a ul as the base template
-        this.renderItem = renderItem;
+        this.renderer = renderer;
         this.yArray = yArray;
         this.listElement = this.el.querySelector('ul'); // Get the ul element
 
         this.renderList = this.renderList.bind(this);
 
-        // Observe Yjs array changes
+         // Observe Yjs array changes
         if (this.yArray) {
             this.yArray.observe(() => {
                 this.renderList();
@@ -26,8 +26,7 @@ export class GenericListComponent extends UIComponent {
             this.listElement.textContent = 'No items yet.';
         } else {
             data.forEach(item => { // item is noteId
-                const listItem = document.createElement('li');
-                listItem.appendChild(this.renderItem(item)); // Pass only item (noteId)
+                const listItem = this.renderer.createListItem(item); // Use the renderer.createListItem function
                 this.listElement.appendChild(listItem);
             });
         }

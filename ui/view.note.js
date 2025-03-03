@@ -7,6 +7,7 @@ import {NoteDetails} from './note/note.details.js';
 import {GenericListComponent} from './generic-list.js';
 
 import {Ontology} from '../core/ontology.js';
+import { NoteListRenderer } from './note/note-list-item-renderer.js';
 
 export class NoteView extends HTMLElement {
     constructor(app, db, nostr) {
@@ -21,6 +22,7 @@ export class NoteView extends HTMLElement {
         this.yMap = this.yDoc.getMap('notes');
         this.yName = this.yDoc.getText('name');
         this.yNotesList = this.yDoc.getArray('notesList'); // Yjs array for notes list
+        this.yMyObjectsList = this.yDoc.getArray('myObjectsList'); // Yjs array for my objects list
 
         this.el = document.createElement('div');
         this.el.className = 'notes-view';
@@ -65,10 +67,7 @@ export class NoteView extends HTMLElement {
         tagInput.className = 'note-tag-input';
         tagInput.addEventListener('input', () => {
             const value = tagInput.value;
-            console.log('Ontology:', Ontology);
             const suggestions = Object.keys(Ontology).filter(tag => tag.toLowerCase().startsWith(value.toLowerCase()));
-            console.log('Suggestions array:', suggestions);
-            // Display suggestions (omitted for brevity)
             this.displayTagSuggestions(suggestions);
         });
 
@@ -85,8 +84,8 @@ export class NoteView extends HTMLElement {
 
         this.el.appendChild(mainArea);
 
-        this.semanticEditor = new Edit(this.yDoc, this.app, null, null, null, this.app.getTagDefinition, this.app.schema);
-        mainArea.appendChild(this.semanticEditor.el);
+        this.editor = new Edit(this.yDoc, this.app, null, null, null, this.app.getTagDefinition, this.app.schema);
+        mainArea.appendChild(this.editor.el);
 
         // My Objects List
         const myObjectsArea = document.createElement('div');
@@ -98,15 +97,16 @@ export class NoteView extends HTMLElement {
         myObjectsTitle.textContent = 'My Objects';
         myObjectsArea.appendChild(myObjectsTitle);
 
-        const myObjectsList = document.createElement('ul');
-        myObjectsArea.appendChild(myObjectsList);
+        this.myObjectsListComponent = new GenericListComponent(this.renderMyObjectItem.bind(this), this.yMyObjectsList);
+        myObjectsArea.appendChild(this.myObjectsListComponent.el);
 
         const createObjectButton = document.createElement('button');
         createObjectButton.textContent = 'Create New Object';
         myObjectsArea.appendChild(createObjectButton);
+        this.noteListRenderer = NoteListRenderer;
 
         // Initialize GenericListComponent for notes list
-        this.notesListComponent = new GenericListComponent(this.renderNoteItem.bind(this), this.yNotesList);
+        this.notesListComponent = new GenericListComponent(this.noteListRenderer, this.yNotesList);
         sidebar.elements.notesList.replaceWith(this.notesListComponent.el);
         sidebar.el.insertBefore(this.newAddButton(), this.notesListComponent.el);
         this.selectedNote = null;
@@ -153,13 +153,29 @@ export class NoteView extends HTMLElement {
     }
 
     newPrivacyEdit() {
+        const privacyContainer = this.createPrivacyContainer();
+        const privacyLabel = this.createPrivacyLabel();
+        const privacyCheckbox = this.createPrivacyCheckbox();
+
+        privacyContainer.appendChild(privacyLabel);
+        privacyContainer.appendChild(privacyCheckbox);
+
+        return privacyContainer;
+    }
+
+    createPrivacyContainer() {
         const privacyContainer = document.createElement('div');
         privacyContainer.className = 'privacy-container';
+        return privacyContainer;
+    }
 
+    createPrivacyLabel() {
         const privacyLabel = document.createElement('label');
         privacyLabel.textContent = 'Private:';
-        privacyContainer.appendChild(privacyLabel);
+        return privacyLabel;
+    }
 
+    createPrivacyCheckbox() {
         const privacyCheckbox = document.createElement('input');
         privacyCheckbox.type = 'checkbox';
         privacyCheckbox.className = 'privacy-checkbox';
@@ -167,19 +183,14 @@ export class NoteView extends HTMLElement {
             const isPrivate = event.target.checked;
             await this.updateNotePrivacy(this.selectedNote.id, isPrivate);
         });
-        privacyContainer.appendChild(privacyCheckbox);
-
-        return privacyContainer;
+        return privacyCheckbox;
     }
 
     newPriEdit() {
-        const prioritySelect = document.createElement('select');
-        prioritySelect.className = 'note-priority-select';
+        const prioritySelect = this.createPrioritySelect();
         const priorities = ['High', 'Medium', 'Low'];
         priorities.forEach(priority => {
-            const option = document.createElement('option');
-            option.value = priority;
-            option.textContent = priority;
+            const option = this.createPriorityOption(priority);
             prioritySelect.appendChild(option);
         });
         prioritySelect.addEventListener('change', async (event) => {
@@ -189,43 +200,98 @@ export class NoteView extends HTMLElement {
         return prioritySelect;
     }
 
+    createPrioritySelect() {
+        const prioritySelect = document.createElement('select');
+        prioritySelect.className = 'note-priority-select';
+        return prioritySelect;
+    }
+
+    createPriorityOption(priority) {
+        const option = document.createElement('option');
+        option.value = priority;
+        option.textContent = priority;
+        return option;
+    }
+
     async handleDeleteNote(note) {
+        try {
+            if (note) {
+                await this.app.db.delete(note.id);
+                this.yDoc.transact(() => {
+                    const index = this.yNotesList.toArray().findIndex(item => item[0] === note.id);
+                    if (index !== -1) {
+                        this.yNotesList.delete(index);
+                    }
+                });
+                await this.notesListComponent.fetchDataAndRender();
+                this.showMessage('Deleted');
+            }
+        } catch (error) {
+            console.error('Error deleting note:', error);
+        }
     }
 
     newTitleEdit() {
+        return this.createTitleInput();
+    }
+
+    createTitleInput() {
         const titleInput = document.createElement('input');
         titleInput.type = 'text';
         titleInput.placeholder = 'Note Title';
         titleInput.className = 'note-title-input';
+        titleInput.addEventListener('input', () => {
+            this.yDoc.transact(() => {
+                this.yName.insert(0, titleInput.value);
+            });
+        });
         return titleInput;
     }
 
     newLinkedView() {
-        const linkedView = document.createElement('div');
-        linkedView.textContent = 'Linked View';
-        return linkedView;
+        return this.createTextView('Linked View');
     }
 
     newMatchesView() {
-        const matchesView = document.createElement('div');
-        matchesView.textContent = 'Matches View';
-        return matchesView;
+        return this.createTextView('Matches View');
+    }
+
+    createTextView(text) {
+        const view = document.createElement('div');
+        view.textContent = text;
+        return view;
     }
 
     async createNote() {
-        console.log('createNote function called');
-        console.log('app.saveOrUpdateObject called');
         try {
             const timestamp = Date.now();
+            // Log the state of this.editor and this.editor.contentHandler
+            console.log('createNote function called');
+            console.log('app.saveOrUpdateObject called');
+            console.log("createNote: this.editor", this.editor);
+            if (this.editor) {
+                console.log("createNote: this.editor.contentHandler", this.editor.contentHandler);
+            }
+
             const newObject = await this.app.saveOrUpdateObject({
-                name: '',
+                id: timestamp.toString(),
+                name: 'New Note',
                 content: '',
-                timestamp,
                 private: true,
                 tags: [],
-                priority: 'Medium'
+                priority: 'Medium',
+                isPersistentQuery: false
             });
             if (newObject) {
+                const yNoteMap = this.getYNoteMap(newObject.id);
+                if (!yNoteMap) {
+                    this.yDoc.transact(() => {
+                        const newYNoteMap = new Y.Map();
+                        newYNoteMap.set('name', 'New Note');
+                        newYNoteMap.set('content', '');
+                        this.yMap.set(newObject.id, newYNoteMap);
+                    });
+                }
                 await this.addNoteToList(newObject.id);
                 await this.notesListComponent.fetchDataAndRender();
                 this.showMessage('Saved');
@@ -253,9 +319,13 @@ export class NoteView extends HTMLElement {
     async addNoteToList(noteId) {
         console.log('yDoc in addNoteToList:', this.yDoc);
         console.log('yNotesList in addNoteToList:', this.yNotesList);
-        this.yDoc.transact(() => {
-            this.yNotesList.push([noteId]);
-        });
+        try {
+            this.yDoc.transact(() => {
+                this.yNotesList.push([noteId]);
+            });
+        } catch (error) {
+            console.error("Yjs error:", error);
+        }
     }
 
     render() {
@@ -269,6 +339,17 @@ export class NoteView extends HTMLElement {
         const nameElement = document.createElement('div');
         nameElement.style.fontWeight = 'bold';
         li.appendChild(nameElement);
+        const deleteButton = document.createElement('button');
+        deleteButton.textContent = 'Delete';
+        deleteButton.addEventListener('click', async (event) => {
+            event.stopPropagation(); // Prevent note selection
+            const note = await this.app.db.get(noteId);
+            if (note) {
+                await this.handleDeleteNote(note);
+            }
+        });
+        li.appendChild(deleteButton);
+
         li.addEventListener('click', async () => {
             const note = await this.app.db.get(noteId);
             if (note) {
@@ -288,9 +369,9 @@ export class NoteView extends HTMLElement {
                             this.edit.contentHandler.deserialize(yNoteMap.get("content"));
                         }
                     });
-                    nameElement.textContent = note.name;
+                    nameElement.textContent = yNoteMap.get("name") || note.name;
                 }
-                li.classList.add('note-list-item'); // Add a CSS class for styling
+                li.classList.add('note-list-item');
                 nameElement.classList.add('note-name');
             } else {
                 nameElement.textContent = 'Error loading note - DEBUG';
@@ -300,6 +381,12 @@ export class NoteView extends HTMLElement {
 
         return li;
     }
+    renderMyObjectItem(objectId) {
+        const li = document.createElement('li');
+        li.textContent = objectId;
+        return li;
+    }
+
 
     getYNoteMap(noteId) {
         return this.yMap.get(noteId);
@@ -325,7 +412,7 @@ export class NoteView extends HTMLElement {
             const note = await this.app.db.get(noteId);
             if (note) {
                 note.private = isPrivate;
-                await this.app.db.saveObject(note);
+                await this.app.db.saveObject(note, false);
                 console.log(`Note ${noteId} privacy updated to ${isPrivate}`);
             } else {
                 console.error(`Note ${noteId} not found`);
@@ -350,9 +437,9 @@ export class NoteView extends HTMLElement {
 
     updateNoteTitleDisplay() {
         if (this.selectedNote) {
-            const titleInput = this.el.querySelector('.note-title-container input[type="text"]');
+            const titleInput = this.el.querySelector('.note-title-input');
             if (titleInput) {
-                titleInput.value = this.edit.yName.toString(); // Get name from Yjs
+                titleInput.value = this.yName.toString(); // Get name from Yjs
             }
         }
     }
@@ -362,7 +449,7 @@ export class NoteView extends HTMLElement {
             const note = await this.app.db.get(noteId);
             if (note) {
                 note.priority = priority;
-                await this.app.db.saveObject(note);
+                await this.app.db.saveObject(note, false);
                 console.log(`Note ${noteId} priority updated to ${priority}`);
             } else {
                 console.error(`Note ${noteId} not found`);
@@ -378,7 +465,9 @@ export class NoteView extends HTMLElement {
         this.getNoteTags(noteId).then(tags => {
             tags.forEach(tag => {
                 const tagItem = document.createElement('li');
-                tagItem.textContent = tag.name;
+                const tagDefinition = this.app.getTagDefinition(tag.name);
+                const emoji = tagDefinition && tagDefinition.instances && tagDefinition.instances[0] ? tagDefinition.instances[0].emoji : '';
+                tagItem.textContent = `${emoji} ${tag.name}`;
                 tagList.appendChild(tagItem);
             });
         });
@@ -400,10 +489,31 @@ export class NoteView extends HTMLElement {
             suggestionItem.addEventListener('click', () => {
                 const tagInput = this.el.querySelector('.note-tag-input');
                 tagInput.value = suggestion;
+                this.addTagToNote(suggestion);
                 suggestionsList.innerHTML = ''; // Clear suggestions after selection
             });
             suggestionsList.appendChild(suggestionItem);
         });
+    }
+
+    async addTagToNote(tagName) {
+        try {
+            const noteId = this.selectedNote.id;
+            const note = await this.app.db.get(noteId);
+            if (note) {
+                if (!note.tags) {
+                    note.tags = [];
+                }
+                note.tags.push({ name: tagName });
+                await this.app.db.saveObject(note, false);
+                this.displayTags(noteId);
+                this.edit.contentHandler.insertTagAtSelection(tagName); // Update editor content
+            } else {
+                console.error('Note not found');
+            }
+        } catch (error) {
+            console.error('Error adding tag to note:', error);
+        }
     }
 }
 

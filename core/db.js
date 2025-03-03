@@ -45,6 +45,7 @@ export class DB {
                     objectStore.createIndex('createdAt', 'createdAt', {unique: false});
                     objectStore.createIndex('updatedAt', 'updatedAt', {unique: false});
                     objectStore.createIndex('private', 'private', {unique: false});
+                    objectStore.createIndex('isPersistentQuery', 'isPersistentQuery', {unique: false});
                 }
                 if (!db.objectStoreNames.contains(KEY_STORAGE)) {
                     db.createObjectStore(KEY_STORAGE);
@@ -124,15 +125,16 @@ export class DB {
     /**
      * Create or update an object (must have an `id`).
      * @param {object} o - The object to save.
+     * @param {boolean} isPersistentQuery - Whether the object is a persistent query.
      */
-    async save(o) {
+    async save(o, isPersistentQuery) {
         try {
             if (!o.id) {
                 console.error('Attempted to save an object without an `id`:', o);
                 throw new Error('Missing id property on object');
             }
 
-            // Data validation
+            // Data validation - ensure the object has the correct data types
             if (typeof o.kind !== 'string') {
                 throw new Error('Kind must be a string');
             }
@@ -145,10 +147,10 @@ export class DB {
                 throw new Error('Tags must be an array');
             }
 
-            // Data sanitization
+            // Data sanitization - prevent XSS attacks
             o.content = DOMPurify.sanitize(o.content, DOMPURIFY_CONFIG);
 
-            // Deduplication
+            // Deduplication - skip saving if the object hasn't changed
             const existingObject = await this.get(o.id);
             if (existingObject) {
                 if (JSON.stringify(existingObject) === JSON.stringify(o)) {
@@ -161,11 +163,13 @@ export class DB {
 
             // TODO: Retrieve the user's encryption key instead of generating a new one.
             // TODO: Store the encryption key ID with the object.
+            // Enforce privacy by encrypting the object's content
+            o.isPersistentQuery = isPersistentQuery;
             await this.enforcePrivacy(o);
             await DB.db.put(OBJECTS_STORE, o);
 
             try {
-                // Yjs integration
+                // Yjs integration - enables collaborative editing and offline support
                 // Operational Transformation (OT) for text-based NObjects
                 console.log('Using OT for text-based NObject');
 
@@ -277,8 +281,9 @@ export class DB {
         return SETTINGS_OBJECT_ID;
     }
 
-    async getSettings() {
-        return DB.getDefaultObject(SETTINGS_OBJECT_ID);
+   async getSettings(yDoc) {
+        let settings = await DB.getDefaultObject(SETTINGS_OBJECT_ID);
+        return settings;
     }
 
     async saveSettings(settings) {
@@ -351,6 +356,8 @@ export class DB {
      * Implements privacy controls to ensure NObjects are private by default.
      * @param {object} object - The NObject to apply privacy controls to.
      * Enforces privacy by encrypting the object's content.
+     *
+     * This function encrypts the object's content to ensure privacy.
      */
     async enforcePrivacy(object) {
         try {
@@ -370,47 +377,33 @@ export class DB {
             console.error("Failed to enforce privacy:", error);
         }
     }
+
+    /**
+     * Executes persistent queries and notifies the user of any new matches.
+     */
+    async executePersistentQueries() {
+        try {
+            const persistentQueries = await this.getAll().filter(obj => obj.isPersistentQuery === true);
+
+            for (const query of persistentQueries) {
+                const matches = await this.app.matcher.findMatches(query);
+
+                if (matches.length > 0) {
+                    //dedupe matches
+                    const uniqueMatches = [...new Set(matches.map(m => m.id))].map(id => matches.find(m => m.id === id));
+
+                    this.app.showNotification(
+                        `Match in ${uniqueMatches.length} object(s) for persistent query <em>${query.name}</em>:<br>${uniqueMatches.map(m => `<em>${m.name}</em> (updated ${formatDate(m.updatedAt)})`).join("<br>")}`
+                    );
+                }
+            }
+        } catch (error) {
+            this.errorHandler.handleError(error, "Failed to execute persistent queries", error);
+            console.error("Failed to execute persistent queries:", error);
+        }
+    }
 }
 
-const generatePrivateKey = () => {
-    const array = new Uint8Array(32);
-    window.crypto.getRandomValues(array);
-    return Array.from(array)
-        .map((b) => b.toString(16).padStart(2, "0"))
-        .join("");
-};
-
-/**
- * Generate a new private/public key pair and persist it in the DB.
- */
-export async function generateKeys() {
-    const priv = generatePrivateKey();
-    const pub = NostrTools.getPublicKey(priv);
-    const encryptionKey = await generateEncryptionKey();
-    const newKeys = {priv, pub, encryptionKey};
-    await DB.db.put(KEY_STORAGE, newKeys, KEY_STORAGE);
-    return newKeys;
-}
-
-async function getNotesIndex() {
-    const index = await DB.getDefaultObject(NOTES_INDEX_ID);
-    return index.tags || [];
-}
-
-async function updateNotesIndex(newIndex) {
-    await DB.db.put(OBJECTS_STORE, {id: NOTES_INDEX_ID, tags: newIndex});
-}
-
-export {getNotesIndex, updateNotesIndex};
-
-
-/**
- * @typedef {object} NObject
- * @property {string} id - The ID of the object.
- * @property {string} kind - The kind of the object.
- * @property {string} content - The content of the object.
- * @property {string[]} tags - The tags of the object.
- * @property {string} createdAt - The creation date of the object.
- * @property {string} updatedAt - The last updated date of the object.
- * @property {boolean} private - Whether the object is private.
- */
+setInterval(() => {
+    DB.the().then(db => db.executePersistentQueries());
+}, 60000); // Run every minute

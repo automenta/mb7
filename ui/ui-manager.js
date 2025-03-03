@@ -1,18 +1,15 @@
 import {UIComponent, View} from "./view.js";
 import {renderNetworkStatus, renderNostrFeed} from "./content-view-renderer.js";
 
+/**
+ * Manages the main content area of the application.
+ */
 class ContentView extends View {
     constructor() {
         super();
         this.elements = {};
         this.el = document.createElement('div');
         this.el.id = 'content-view';
-    }
-
-
-    render() {
-        this.build();
-        this.bindEvents();
     }
 
     build() {
@@ -34,19 +31,5 @@ class ContentView extends View {
     }
 }
 
-class MainContent extends UIComponent {
-    constructor() {
-        super();
-        this.el = document.createElement('main');
-        this.el.id = 'main-content';
-        this.currentView = null;
-    }
 
-    showView(view) {
-        this.el.innerHTML = '';
-        this.el.append(view.el);
-        this.currentView = view;
-    }
-}
-
-export {ContentView, MainContent};
+export {ContentView};

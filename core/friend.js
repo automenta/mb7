@@ -1,62 +1,77 @@
 export async function addFriend(db, friendsObjectId, friend) {
     try {
-        const friendsObject = await db.getDefaultObject(friendsObjectId);
-        const existingFriendIndex = friendsObject.tags.findIndex(
-            (tag) => tag[0] === 'People' && tag[1] === friend.pubkey
-        );
+        const friendsListObject = await db.getDefaultObject(friendsObjectId);
 
-        if (existingFriendIndex === -1) {
-            friendsObject.tags.push(['People', friend.pubkey, friend.name, friend.picture]);
-            friendsObject.updatedAt = new Date().toISOString();
-            await db.put(OBJECTS_STORE, friendsObject);
+        // Create a new Friend NObject
+        const friendObjectId = `friend-${friend.pubkey}`;
+        const friendObject = {
+            id: friendObjectId,
+            name: "Friend",
+            tags: [
+                ['objectType', 'People'], // Use the "People" type from the Ontology
+                ['visibility', 'private'],
+                ['isPersistentQuery', 'false'],
+                ['pubkey', friend.pubkey],
+                ['profileName', friend.name],
+                ['profilePicture', friend.picture]
+            ]
+        };
+
+        await db.saveOrUpdateObject(friendObject);
+
+        // Add the friend NObject's ID to the friends list
+        if (!friendsListObject.friends) {
+            friendsListObject.friends = [];
+        }
+        if (!friendsListObject.friends.includes(friendObjectId)) {
+            friendsListObject.friends.push(friendObjectId);
+            friendsListObject.updatedAt = new Date().toISOString();
+            await db.put(OBJECTS_STORE, friendsListObject);
         }
     } catch (error) {
-        console.error("Failed to save settings:", error);
-        console.error("Error updating friend profile:", error);
-
-
+        console.error("Error adding friend:", error);
         throw error;
     }
 }
 
 export async function removeFriend(db, friendsObjectId, pubkey) {
     try {
-        const friendsObject = await db.getDefaultObject(friendsObjectId);
-        const friendIndex = friendsObject.tags.findIndex(
-            (tag) => tag[0] === 'People' && tag[1] === pubkey
-        );
+        const friendsListObject = await db.getDefaultObject(friendsObjectId);
+        const friendObjectId = `friend-${pubkey}`;
 
-        if (friendIndex !== -1) {
-            friendsObject.tags.splice(friendIndex, 1);
-            friendsObject.updatedAt = new Date().toISOString();
-            await db.put(OBJECTS_STORE, friendsObject);
+        // Remove the friend NObject's ID from the friends list
+        if (friendsListObject.friends && friendsListObject.friends.includes(friendObjectId)) {
+            friendsListObject.friends = friendsListObject.friends.filter(id => id !== friendObjectId);
+            friendsListObject.updatedAt = new Date().toISOString();
+            await db.put(OBJECTS_STORE, friendsListObject);
         }
+
+        // Optionally delete the friend NObject (if you don't want to keep a history)
+        // await db.deleteObject(friendObjectId);
+
     } catch (error) {
-        console.error("Failed to save settings:", error);
-        console.error("Error updating friend profile:", error);
-
-
+        console.error("Error removing friend:", error);
         throw error;
     }
 }
 
 export async function updateFriendProfile(db, friendsObjectId, pubkey, name, picture) {
     try {
-        const friendsObject = await db.getDefaultObject(friendsObjectId);
-        const friendIndex = friendsObject.tags.findIndex(
-            (tag) => tag[0] === 'People' && tag[1] === pubkey
-        );
+        const friendObjectId = `friend-${pubkey}`;
+        const friendObject = await db.get(friendObjectId);
 
-        if (friendIndex !== -1) {
-            friendsObject.tags[friendIndex][2] = name;
-            friendsObject.tags[friendIndex][3] = picture;
-            friendsObject.updatedAt = new Date().toISOString();
-            await db.put(OBJECTS_STORE, friendsObject);
+        if (friendObject) {
+            friendObject.tags = [
+                ['pubkey', friendObject.tags[0][1]],
+                ['profileName', name],
+                ['profilePicture', picture]
+            ];
+            friendObject.updatedAt = new Date().toISOString();
+            await db.saveOrUpdateObject(friendObject);
+        } else {
+            console.warn(`Friend object not found: ${friendObjectId}`);
         }
     } catch (error) {
-        console.error("Failed to save settings:", error);
-        console.error("Error updating friend profile:", error);
-
         console.error("Error updating friend profile:", error);
         throw error;
     }

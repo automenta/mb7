@@ -135,17 +135,13 @@ export class Nostr {
                 throw new Error('Object cannot be null or undefined');
             }
 
-            if (typeof object.content !== 'string') {
-                throw new Error('Object content must be a string');
-            }
-
             const event = {
                 kind: 1,
                 created_at: Math.floor(Date.now() / 1000),
                 tags: object.tags.map(tag => {
-                    const tagDef = getTagDefinition(tag.name);
-                    const serializedValue = tagDef.serialize(tag.value);
-                    return [tag.name, ...(Array.isArray(serializedValue) ? serializedValue : [String(serializedValue)])];
+                    const tagDef = getTagDefinition(tag[0]);
+                    const serializedValue = tagDef.serialize(tag[1]);
+                    return [tag[0], ...(Array.isArray(serializedValue) ? serializedValue : [String(serializedValue)])];
                 }),
                 content: DOMPurify.sanitize(object.content, {
                     ALLOWED_TAGS: ["br", "b", "i", "span", "p", "strong", "em", "ul", "ol", "li", "a"],

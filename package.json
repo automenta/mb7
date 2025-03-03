@@ -31,6 +31,7 @@
     "jquery": "^3.7.1",
     "lodash": "^4.17.21",
     "nanoid": "^5.1.2",
+    "natural": "^8.0.1",
     "nostr-tools": "^2.10.4",
     "y-indexeddb": "^9.0.12",
     "y-webrtc": "^10.3.0",

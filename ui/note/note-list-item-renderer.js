@@ -34,18 +34,6 @@ function createListItem(item, updateNote, yMap) {
     return li;
 }
 
-function renderList(items, container, updateNote, yMap) {
-    container.textContent = items?.length === 0 ? 'No notes yet.' : '';
-    if (items?.length === 0) return;
-
-    container.innerHTML = '';
-    items.forEach(item => {
-        if (item) {
-            container.appendChild(createListItem(item, updateNote, yMap));
-        }
-    });
-}
-
 function syncNameWithYjs(nameSpan, yName, updateNote, itemId) {
     yName.observe(event => {
         if (!nameSpan.isSameNode(document.activeElement)) {
@@ -63,4 +51,9 @@ function syncNameWithYjs(nameSpan, yName, updateNote, itemId) {
     });
 }
 
-export {renderList};
+const NoteListRenderer = {
+    createListItem: createListItem,
+    syncNameWithYjs: syncNameWithYjs
+};
+
+export { NoteListRenderer };

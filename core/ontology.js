@@ -3,10 +3,7 @@ export const Ontology = {
         conditions: ["is", "contains", "near"],
         validate: (value, condition) => typeof value === "string" && value.length > 0,
         serialize: (value) => value,
-        deserialize: (value) => value,
-        instances: [
-            {name: "Location", emoji: "📍", conditions: {"is at": "is at", "is within": "is within"}}
-        ]
+        deserialize: (value) => value
     },
     "time": {
         conditions: ["is", "before", "after", "between"],
@@ -17,20 +14,8 @@ export const Ontology = {
             return isValidDate(parseISO(value));
         },
         serialize: (value) => typeof value === 'object' && value !== null ?
-            {start: formatISO(parseISO(value.start)), end: formatISO(parseISO(value.end))} : formatISO(parseISO(value)),
-        deserialize: (value) => value,
-        instances: [
-            {
-                name: "Time",
-                emoji: "⏰",
-                conditions: {
-                    "is at": "is at",
-                    "is between": "is between",
-                    "is before": "is before",
-                    "is after": "is after"
-                }
-            }
-        ]
+            { start: formatISO(parseISO(value.start)), end: formatISO(parseISO(value.end)) } : formatISO(parseISO(value)),
+        deserialize: (value) => value
     },
     "string": {
         conditions: ["is", "contains", "matches regex"],
@@ -49,49 +34,17 @@ export const Ontology = {
         },
         serialize: (value) => {
             if (typeof value === 'object' && value !== null) {
-                return {lower: String(value.lower), upper: String(value.upper)};
+                return { lower: String(value.lower), upper: String(value.upper) };
             }
             return String(value)
         },
-        deserialize: (value) => value, // Could also convert back to number if needed
-        instances: [
-            {
-                name: "Mass",
-                unit: "kg",
-                emoji: "⚖️",
-                conditions: {is: "is", "is between": "is between", "is below": "is below", "is above": "is above"}
-            },
-            {
-                name: "Length",
-                unit: "m",
-                emoji: "📏",
-                conditions: {is: "is", "is between": "is between", "is below": "is below", "is above": "is above"}
-            },
-            {
-                name: "Temperature",
-                unit: "°C",
-                emoji: "🌡️",
-                conditions: {is: "is", "is between": "is between", "is below": "is below", "is above": "is above"}
-            },
-            {
-                name: "Revenue",
-                unit: "USD",
-                emoji: "💰",
-                conditions: {is: "is", "is between": "is between", "is below": "is below", "is above": "is above"}
-            }
-        ]
+        deserialize: (value) => value
     },
     "People": {
         conditions: ["is"],
         type: "object",
-        properties: {
-            pubkey: {type: "string", required: true},
-            name: {type: "string"},
-            picture: {type: "string"}
-        },
         validate: (value, condition) => {
-            return typeof value === 'object' &&
-                typeof value.pubkey === 'string' && value.pubkey.length === 64;
+            return typeof value === 'object';
         },
         serialize: (value) => value,
         deserialize: (value) => value
@@ -99,12 +52,6 @@ export const Ontology = {
     "Settings": {
         conditions: ["is"],
         type: "object",
-        properties: {
-            relays: {type: "string", required: false},
-            dateFormat: {type: "string", required: false},
-            profileName: {type: "string", required: false},
-            profilePicture: {type: "string", required: false}
-        },
         validate: (value, condition) => {
             return typeof value === 'object';
         },
@@ -112,55 +59,33 @@ export const Ontology = {
         deserialize: (value) => value
     },
     "Emotion": {
-        instances: [
-            {
-                name: "Happiness",
-                type: "range",
-                emoji: "😊",
-                min: 0,
-                max: 10,
-                conditions: {is: "is", "is between": "is between", "is below": "is below", "is above": "is above"}
-            },
-            {
-                name: "Sadness",
-                type: "range",
-                emoji: "😢",
-                min: 0,
-                max: 10,
-                conditions: {is: "is", "is between": "is between", "is below": "is below", "is above": "is above"}
-            },
-            {
-                name: "Anger",
-                type: "range",
-                emoji: "😡",
-                min: 0,
-                max: 10,
-                conditions: {is: "is", "is between": "is between", "is below": "is below", "is above": "is above"}
+        conditions: ["is", "is between", "is below", "is above"],
+        validate: (value, condition) => {
+            if (condition === "is between") {
+                return !isNaN(parseFloat(value.lower)) && isFinite(value.lower) &&
+                    !isNaN(parseFloat(value.upper)) && isFinite(value.upper);
             }
-        ]
+            return !isNaN(parseFloat(value)) && isFinite(value);
+        },
+        serialize: (value) => {
+            if (typeof value === 'object' && value !== null) {
+                return { lower: String(value.lower), upper: String(value.upper) };
+            }
+            return String(value)
+        },
+        deserialize: (value) => value
     },
     "Business": {
-        instances: [
-            {
-                name: "Product",
-                type: "list",
-                emoji: "📦",
-                options: ["Software", "Hardware", "Service"],
-                conditions: {"is one of": "is one of"}
-            },
-            {
-                name: "Customer",
-                type: "list",
-                emoji: "👥",
-                options: ["B2B", "B2C", "Government"],
-                conditions: {"is one of": "is one of"}
-            }
-        ]
+        conditions: ["is one of"],
+        validate: (value, condition) => typeof value === "string",
+        serialize: (value) => value,
+        deserialize: (value) => value
     },
     "Data": {
-        instances: [
-            {name: "List", type: "list", emoji: "🔖", options: [], conditions: {"is one of": "is one of"}}
-        ]
+        conditions: ["is one of"],
+        validate: (value, condition) => Array.isArray(value),
+        serialize: (value) => value,
+        deserialize: (value) => value
     },
     "DueDate": {
         conditions: ["is", "before", "after", "between"],
@@ -172,130 +97,77 @@ export const Ontology = {
         },
         serialize: (value) => {
             if (typeof value === 'object' && value !== null) {
-                return {start: value.start, end: value.end};
+                return { start: value.start, end: value.end };
             }
             return value;
         },
+        deserialize: (value) => value
+    },
+    "List": {
+        conditions: ["is"],
+        type: "list",
+        validate: (value, condition) => Array.isArray(value),
+        serialize: (value) => value,
+        deserialize: (value) => value
+    },
+    "Settings": {
+        conditions: ["is"],
+        type: "object",
+        tags: {
+            relays: { type: "string", required: false },
+            webrtcNostrRelays: { type: "string", required: false },
+            privateKey: { type: "string", required: false },
+            dateFormat: { type: "string", required: false },
+            profileName: { type: "string", required: false },
+            profilePicture: { type: "string", required: false },
+            signalingStrategy: { type: "string", required: false }
+        },
+        validate: (value, condition) => typeof value === 'object',
+        serialize: (value) => value,
         deserialize: (value) => value,
-        instances: [
-            {
-                name: "DueDate",
-                emoji: "📅",
-                conditions: {
-                    "is at": "is at",
-                    "is between": "is between",
-                    "is before": "is before",
-                    "is after": "is after"
-                }
-            }
-        ]
     }
+};
+
+Ontology.Note = {
+    conditions: ["is"],
+    type: "object",
+    validate: (value, condition) => {
+        return typeof value === 'object';
+    },
+    serialize: (value) => value,
+    deserialize: (value) => value
+};
+
+Ontology.Event = {
+    conditions: ["is"],
+    type: "object",
+    validate: (value, condition) => {
+        return typeof value === 'object';
+    },
+    serialize: (value) => value,
+    deserialize: (value) => value
+};
+
+Ontology.Relay = {
+    conditions: ["is"],
+    type: "object",
+    validate: (value, condition) => {
+        return typeof value === 'object';
+    },
+    serialize: (value) => value,
+    deserialize: (value) => value
 };
 
 const isValidDate = (dateString) => {
     try {
-        const date = new Date(dateString);
-        return !isNaN(date.getTime());
+        return !isNaN(new Date(dateString).getTime());
     } catch (error) {
         return false;
     }
 };
 
-const physicalInstances = [
-    {
-        name: "Mass",
-        unit: "kg",
-        emoji: "⚖️",
-        conditions: {is: "is", "is between": "is between", "is below": "is below", "is above": "is above"}
-    },
-    {
-        name: "Length",
-        unit: "m",
-        emoji: "📏",
-        conditions: {is: "is", "is between": "is between", "is below": "is below", "is above": "is above"}
-    },
-    {
-        name: "Temperature",
-        unit: "°C",
-        emoji: "🌡️",
-        conditions: {is: "is", "is between": "is between", "is below": "is below", "is above": "is above"}
-    },
-    {name: "Location", emoji: "📍", conditions: {"is at": "is at", "is within": "is within"}},
-    {name: "Color", emoji: "🎨", conditions: {is: "is"}}
-];
-
-Ontology.Physical = {
-    instances: physicalInstances
-};
-
-
-const timeInstances = [
-    {
-        name: "Time",
-        emoji: "⏰",
-        conditions: {"is at": "is at", "is between": "is between", "is before": "is before", "is after": "is after"}
-    }
-];
-
-Ontology.Time2 = { // Renamed to avoid conflict with existing Time category
-    instances: timeInstances
-};
-
-const emotionInstances = [
-    {
-        name: "Happiness",
-        type: "range",
-        emoji: "😊",
-        min: 0,
-        max: 10,
-        conditions: {is: "is", "is between": "is between", "is below": "is below", "is above": "is above"}
-    },
-    {
-        name: "Sadness",
-        type: "range",
-        emoji: "😢",
-        min: 0,
-        max: 10,
-        conditions: {is: "is", "is between": "is between", "is below": "is below", "is above": "is above"}
-    },
-    {
-        name: "Anger",
-        type: "range",
-        emoji: "😡",
-        min: 0,
-        max: 10,
-        conditions: {is: "is", "is between": "is between", "is below": "is below", "is above": "is above"}
-    }
-];
-
-Ontology.Emotion.instances = emotionInstances;
-
-const businessInstances = [
-    {
-        name: "Product",
-        type: "list",
-        emoji: "📦",
-        options: ["Software", "Hardware", "Service"],
-        conditions: {"is one of": "is one of"}
-    },
-    {
-        name: "Customer",
-        type: "list",
-        emoji: "👥",
-        options: ["B2B", "B2C", "Government"],
-        conditions: {"is one of": "is one of"}
-    }
-];
-
-Ontology.Business.instances = businessInstances;
-
-const dataInstances = [
-    {name: "List", type: "list", emoji: "🔖", options: [], conditions: {"is one of": "is one of"}}
-];
-
-Ontology.Data.instances = dataInstances;
-
 export const getTagDefinition = (name) => {
+    console.log("getTagDefinition called with name:", name);
     // TODO: Add support for semantic information, such as synonyms, related concepts, and hierarchical relationships
     return Ontology[name] || Ontology.string;
 };

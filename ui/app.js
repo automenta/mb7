@@ -11,6 +11,10 @@ import {ContentView} from "./ui-manager.js";
 import {createMenuBar} from './menu-bar.js';
 import {NotificationManager} from './notification-manager.js';
 
+/**
+ * The main application class.
+ * Manages the database, Nostr connection, and UI.
+ */
 class App {
     constructor(db, nostr) {
         this.db = db;
@@ -31,11 +35,19 @@ class App {
         let nostrPrivateKey = "";
 
         try {
-            let {
-                signalingStrategy = "nostr",
-                nostrRelays = "",
-                nostrPrivateKey = ""
-            } = (await db.getSettings()) || {};
+            const settingsObject = await db.getSettings();
+
+            if (settingsObject && settingsObject.tags) {
+                for (const tag of settingsObject.tags) {
+                    if (tag[0] === 'signalingStrategy') {
+                        signalingStrategy = tag[1] || "nostr";
+                    } else if (tag[0] === 'relays') {
+                        nostrRelays = tag[1] || "";
+                    } else if (tag[0] === 'privateKey') {
+                        nostrPrivateKey = tag[1] || "";
+                    }
+                }
+            }
         } catch (error) {
             console.error('Error getting settings from db:', error);
         }
@@ -70,9 +82,10 @@ class App {
             return null;
         }
 
-        const newObject = {id: object.id, name: object.name, content: object.content, private: object.private};
+        const newObject = {id: object.id, name: object.name, content: object.content, tags: object.tags || []};
+        newObject.tags.push(['visibility', object.private ? 'private' : 'public']);
         try {
-            await this.db.save(newObject);
+            await this.db.save(newObject, object.isPersistentQuery);
             const matches = await this.matcher.findMatches(newObject);
             await this.publishNewObject(newObject);
             this.publishMatches(matches);
@@ -83,11 +96,12 @@ class App {
         }
     }
 
-    // TODO: Integrate YDoc with the UI to enable real-time collaborative editing
+    // Integrate YDoc with the UI to enable real-time collaborative editing
 
     async publishNewObject(newObject) {
         console.log('publishNewObject called with newObject:', newObject);
-        if (!newObject.private) {
+        const visibilityTag = newObject.tags.find(tag => tag[0] === 'visibility');
+        if (!visibilityTag || visibilityTag[1] !== 'private') {
             try {
                 await this.nostr.publish(newObject);
                 this.notificationManager.showNotification('Published to Nostr!', 'success');
@@ -176,29 +190,45 @@ document.addEventListener("DOMContentLoaded", async () => {
     await setupUI();
 });
 
+/**
+ * Sets up the UI after the DOM is loaded.
+ * Initializes the app, creates views, and adds them to the DOM.
+ */
 async function setupUI() {
     const appDiv = document.getElementById('app');
     let app = await createApp(appDiv);
 
+    const {noteView, friendsView, settingsView, contentView} = initializeViews(app);
+
+    const {menubar, mainContent} = createLayout(app, appDiv, noteView, friendsView, settingsView, contentView);
+
+    setupDefaultView(app, noteView, contentView);
+}
+
+function initializeViews(app) {
     const noteView = new NoteView(app, app.db, app.nostr);
     const friendsView = new FriendsView(app, app.db, app.nostr);
     const settingsView = new SettingsView(app, app.db, app.nostr);
-
     const contentView = new ContentView();
+    return {noteView, friendsView, settingsView, contentView};
+}
 
+function createLayout(app, appDiv, noteView, friendsView, settingsView, contentView) {
     const menubar = createMenuBar(app, noteView, friendsView, settingsView, contentView);
     const mainContent = createAppMainContent();
 
     appDiv.appendChild(menubar);
     appDiv.appendChild(mainContent);
     appDiv.appendChild(app.elements.notificationArea);
+    return {menubar, mainContent};
+}
 
+function setupDefaultView(app, noteView, contentView) {
     const defaultView = noteView;
-
     app.showView(defaultView);
 
     noteView.notesListComponent.disableObserver = false;
-    contentView.render(); //TODO only when shown
+    contentView.render(); // TODO only when shown
 }
 
 export {App};

@@ -10,6 +10,7 @@ export async function createDefaultObject(db, id, kind = 30000) {
         tags: [],
         createdAt: now,
         updatedAt: now,
+        isPersistentQuery: false,
     };
     await db.put('objects', object);
     return object;

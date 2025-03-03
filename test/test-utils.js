@@ -20,7 +20,9 @@ export function createAppMock() {
         },
         publishNoteToNostr: vi.fn(async (note) => {
             app.nostr.publish(note.content);
-        })
+        }),
+        getTagDefinition: vi.fn(),
+        schema: {}
     };
     return app;
 }
