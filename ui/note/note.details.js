@@ -138,7 +138,7 @@ export class NoteDetails extends HTMLElement {
         });
     }
 
-    async addTagToNote(tagName) {
+    async addTagToNote(tagName, tagsContainer) {
         if (!tagName) {
             return; // Don't add tag if no tag is selected
         }
@@ -151,8 +151,8 @@ export class NoteDetails extends HTMLElement {
         const note = await this.noteView.app.db.get(noteId);
         if (note) {
             note.tags.push(newTag);
-            await this.noteView.app.db.put(note);
-            this.renderTags(document.querySelector('.note-tags-container'));
+            await this.noteView.app.db.saveObject(note, false);
+            this.renderTags(tagsContainer);
         }
     }
 
