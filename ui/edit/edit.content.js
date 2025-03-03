@@ -87,10 +87,10 @@ class EditorContentHandler {
         clonedEditor.querySelectorAll("gra-tag").forEach(tagEl => { // Updated selector
             const tagData = tagDataMap.get(tagEl);
             if (tagData) {
-                tagEl.replaceWith(`[TAG:${tagData.name}]`);
+                tagEl.replaceWith(`[TAG:${JSON.stringify(tagData)}]`);
             }
         });
-        return clonedEditor.innerHTML.replace(/<br\s*\/?>/g, "\n");
+        return clonedEditor.innerHTML.replace(/<br\s*\/?>/g, "\\n");
     }
 
     deserialize(text) {
@@ -102,6 +102,7 @@ class EditorContentHandler {
         while ((match = tagRegex.exec(text)) !== null) {
             if (match.index > lastIndex) {
                 this.editor.editorArea.append(text.substring(lastIndex, match.index));
+                lastIndex = match.index;
             }
             try {
                 const tagName = match[1];
