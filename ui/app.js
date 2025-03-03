@@ -150,10 +150,6 @@ function createAppMainContent() {
     return mainContent;
 }
 
-document.addEventListener("DOMContentLoaded", async () => {
-    await setupUI();
-});
-
 /**
  * Sets up the UI after the DOM is loaded.
  * Initializes the app, creates views, and adds them to the DOM.
@@ -167,6 +163,10 @@ async function setupUI() {
     setupDefaultView(app, noteView, contentView);
 }
 
+document.addEventListener("DOMContentLoaded", async () => {
+    await setupUI();
+});
+
 function initializeViews(app, db, nostr) {
     const noteView = new NoteView(app, db, nostr);
     const friendsView = new FriendsView(app, db, nostr);
@@ -177,7 +177,7 @@ function initializeViews(app, db, nostr) {
 
 function createLayout(app, appDiv, noteView, friendsView, settingsView, contentView) {
     const menubar = createMenuBar(app, noteView, friendsView, settingsView, contentView);
-    const mainContent = createAppMainContent();
+    const mainContent = app.createAppMainContent();
 
     appDiv.appendChild(menubar);
     appDiv.appendChild(mainContent);
