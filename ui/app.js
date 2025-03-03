@@ -44,24 +44,16 @@ class App {
             nostrRelays = settingsTags.find(tag => tag[0] === 'relays')?.[1] || "";
             nostrPrivateKey = settingsTags.find(tag => tag[0] === 'privateKey')?.[1] || "";
         } catch (error) {
-            console.error('Error getting settings from db:', error);
+            errorHandler.handleError(error, 'Error getting settings from db');
         }
-        const nostr = new Nostr(signalingStrategy, nostrRelays, nostrPrivateKey);
+        const nostr = new Nostr(this, signalingStrategy, nostrRelays, nostrPrivateKey);
         nostr.connect();
-        const matcher = new Matcher();
+        const matcher = new Matcher(this);
         const yDoc = new Y.Doc();
 
         // Initialize NotificationManager and Monitoring here, after db is ready
         const notificationManager = new NotificationManager();
         const monitoring = new Monitoring();
-        //console.log('App.initialize resolved with:', {
-        //    db,
-        //    nostr,
-        //    matcher,
-        //    errorHandler,
-        //    notificationManager,
-        //    monitoring,
-        //});
         await monitoring.start();
         return {db, nostr, matcher, errorHandler, notificationManager, monitoring, yDoc};
     }
@@ -77,7 +69,7 @@ class App {
         try {
             await this.db.save(newObject, object.isPersistentQuery);
             const matches = await this.matcher.findMatches(newObject);
-            await this.publishNewObject(newObject);
+            await this.publishObject(newObject);
             await this.publishMatches(matches);
             return newObject;
         } catch (error) {
@@ -86,22 +78,21 @@ class App {
         }
     }
 
-    // Integrate YDoc with the UI to enable real-time collaborative editing
+    async publishObject(object) {
+        console.log('publishObject called with object:', object);
+        const visibilityTag = object.tags.find(tag => tag[0] === 'visibility');
+        const isPrivate = visibilityTag && visibilityTag[1] === 'private';
 
-    async publishNewObject(newObject) {
-        console.log('publishNewObject called with newObject:', newObject);
-        const visibilityTag = newObject.tags.find(tag => tag[0] === 'visibility');
-        if (!visibilityTag || visibilityTag[1] !== 'private') {
-            try {
-                await this.nostr.publish(newObject);
-                this.notificationManager.showNotification('Published to Nostr!', 'success');
-            } catch (error) {
-                if (visibilityTag && visibilityTag[1] === 'private') {
-                    this.errorHandler.handleError(error, 'Cannot publish private object to Nostr');
-                } else {
-                    this.errorHandler.handleError(error, 'Error publishing to Nostr');
-                }
-            }
+        if (isPrivate) {
+            console.log('Object is private, not publishing to Nostr.');
+            return;
+        }
+
+        try {
+            await this.nostr.publish(object);
+            this.showNotification('Published to Nostr!', 'success');
+        } catch (error) {
+            this.errorHandler.handleError(error, 'Error publishing to Nostr');
         }
     }
 
@@ -122,20 +113,6 @@ class App {
         const invalidTag = object.tags.find(tag => !tag.name);
         if (invalidTag) {
             throw new Error(`Tag name is required. Invalid tag: ${JSON.stringify(invalidTag)}`);
-        }
-    }
-
-    async publishNoteToNostr(note) {
-        console.log('publishNoteToNostr called with note:', note);
-        if (!this.nostr) {
-            console.error('Nostr is not initialized.');
-            return;
-        }
-        try {
-            await this.nostr.publish(note);
-            this.showNotification('Published to Nostr!', 'success');
-        } catch (error) {
-            this.errorHandler.handleError(error, 'Error publishing to Nostr');
         }
     }
 
