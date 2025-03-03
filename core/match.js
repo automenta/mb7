@@ -433,7 +433,7 @@ export class Matcher {
         if (magnitudeA && magnitudeB) {
             return dotProduct / (magnitudeA * magnitudeB);
         } else {
-            return dotProduct / (magnitudeA * magnitudeB);
+            return 0;
         }
     }
 }
