@@ -100,15 +100,11 @@ export class NoteView extends HTMLElement {
         this.selectedNote = null;
     }
 
-    newPriEdit() {
-
     createPrivacyContainer() {
         const privacyContainer = document.createElement('div');
         privacyContainer.className = 'privacy-container';
         return privacyContainer;
     }
-
-    newPriEdit() {
 
     createPrioritySelect() {
         const prioritySelect = document.createElement('select');
