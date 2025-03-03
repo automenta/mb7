@@ -583,12 +583,12 @@ export class NoteView extends HTMLElement {
             }
         } catch (error) {
             console.error('Error adding tag to note:', error);
-        } catch (error) {
-            console.error('Error adding tag to note:', error);
-    async addTagToNote(tagName, tagValue = '', tagCondition = 'is') {
-        try {
-            if (!this.selectedNote || !this.selectedNote.id) {
-                console.error('No note selected');
+        }
+    }
+}
+
+if (!customElements.get('notes-view')) {
+    customElements.define('notes-view', NoteView);
                 return;
             }
             const noteId = this.selectedNote.id;
