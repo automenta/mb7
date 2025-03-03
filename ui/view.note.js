@@ -229,6 +229,15 @@ export class NoteView extends HTMLElement {
         return titleInput;
     }
 
+    updateNoteTitleDisplay() {
+        if (this.selectedNote) {
+            const titleInput = this.el.querySelector('.note-title-input');
+            if (titleInput) {
+                titleInput.value = this.selectedNote.name; // Get name from selectedNote
+            }
+        }
+    }
+
     newLinkedView() {
         return this.createTextView('Linked View');
     }
