@@ -90,10 +90,13 @@ export class Matcher {
         if (!tagDef.validate(value, condition)) return false;
 
         const checkTime = (val) => {
-            //Corrected recursive call
-            //return checkTime(val, event, tagDef, condition);
             return false;
         };
+
+        const stemmer = natural.PorterStemmer;
+        const tokenizer = new natural.WordTokenizer();
+        const Analyzer = natural.SentimentAnalyzer;
+        const analyzer = new Analyzer("English", stemmer, "afinn");
 
         if (condition === "between" && tagDef.name === "time") {
             try {
