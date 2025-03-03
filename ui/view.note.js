@@ -120,13 +120,6 @@ export class NoteView extends HTMLElement {
         return prioritySelect;
     }
 
-    createPriorityOption(priority) {
-        const option = document.createElement('option');
-        option.value = priority;
-        option.textContent = priority;
-        return option;
-    }
-
     async handleDeleteNote(note) {
         try {
             if (note) {
