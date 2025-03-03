@@ -89,8 +89,25 @@ export class NoteDetails extends HTMLElement {
         this.el.innerHTML = `
             ${this.createPriorityEdit().outerHTML}
             ${this.createPrivacyEdit().outerHTML}
+            ${this.createPrivacyEdit().outerHTML}
+            <div class="tag-input-container">
+                <input type="text" class="new-tag-input" placeholder="Add a tag"/>
+                <button class="add-tag-button">Add Tag</button>
+            </div>
             <ul class="note-tag-list"></ul>
         `;
+
+        const addTagButton = this.el.querySelector('.add-tag-button');
+        const newTagInput = this.el.querySelector('.new-tag-input');
+
+        addTagButton.addEventListener('click', () => {
+            const tagName = newTagInput.value.trim();
+            if (tagName) {
+                this.createTag(tagName);
+                newTagInput.value = '';
+            }
+        });
+
         return this.el;
     }
 }

@@ -512,9 +512,12 @@ export class NoteView extends HTMLElement {
                 const tagItem = document.createElement('li');
                 tagItem.className = 'tag-item'; // Add a class for styling
                 const tagDefinition = this.app.getTagDefinition(tag.name);
-                const tagElement = new Tag(tagDefinition, tag.value, tag.condition);
-                tagItem.appendChild(tagElement.el);
-                tagElement.render();
+                const tagInput = new TagInput(tagDefinition, tag.value, (newValue) => {
+                    // Handle tag value change
+                    console.log('Tag value changed:', newValue);
+                    this.updateTagValue(noteId, tag.name, newValue);
+                });
+                tagItem.appendChild(tagInput);
                 tagList.appendChild(tagItem);
             });
         });
