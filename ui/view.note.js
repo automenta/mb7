@@ -349,7 +349,7 @@ export class NoteView extends HTMLElement {
                 const note = await this.app.db.get(noteId);
                 if (note) {
                     // Deselect previously selected note
-                    if (this.selectedNote && this.selectedNote.id) {
+                    if (this.selectedNote?.id) {
                         const previousSelected = this.el.querySelector(\`.note-list-item[data-id="\${this.selectedNote.id}"]\`);
                         if (previousSelected) {
                             previousSelected.classList.remove('selected');
