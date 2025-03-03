@@ -1,3 +1,5 @@
+import {createElement} from '../utils.js';
+
 class Autosuggest {
     constructor(editor) {
         this.editor = editor;
@@ -67,8 +69,6 @@ class Autosuggest {
         );
     }
 }
-
-import {createElement} from '../utils.js';
 
 const debounce = (fn, delay) => {
     let timeoutId;

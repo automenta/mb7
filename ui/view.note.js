@@ -512,12 +512,9 @@ export class NoteView extends HTMLElement {
                 const tagItem = document.createElement('li');
                 tagItem.className = 'tag-item'; // Add a class for styling
                 const tagDefinition = this.app.getTagDefinition(tag.name);
-                const emoji = tagDefinition && tagDefinition.instances && tagDefinition.instances[0] ? tagDefinition.instances[0].emoji : '';
-                tagItem.innerHTML = `<span>${emoji} ${tag.name}</span><button class="remove-tag">x</button>`; // Use innerHTML for button
-                tagItem.querySelector('.remove-tag').addEventListener('click', async (event) => {
-                    event.stopPropagation(); // Prevent note selection
-                    await this.removeTagFromNote(noteId, tag.name);
-                });
+                const tagElement = new Tag(tagDefinition, tag.value, tag.condition);
+                tagItem.appendChild(tagElement.el);
+                tagElement.render();
                 tagList.appendChild(tagItem);
             });
         });
