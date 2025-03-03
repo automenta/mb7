@@ -76,9 +76,6 @@ export class NoteView extends HTMLElement {
         // Tag List
         const tagList = document.createElement('ul');
         tagList.className = 'note-tag-list';
-        tagArea.appendChild(tagList);
-        mainArea.appendChild(tagArea);
-
         mainArea.appendChild(this.newLinkedView());
         mainArea.appendChild(this.newMatchesView());
 
