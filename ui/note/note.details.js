@@ -113,9 +113,12 @@ export class NoteDetails extends HTMLElement {
         tagArea.appendChild(tagInput);
         tagArea.appendChild(addTagButton);
 
-        addTagButton.addEventListener('click', () => {
-            this.addTagToNote(tagInput.value);
-            tagInput.value = ''; // Clear the input after adding the tag
+        addTagButton.addEventListener('click', async () => {
+            const tagName = tagInput.value.trim();
+            if (tagName) {
+                await this.addTagToNote(tagName);
+                tagInput.value = ''; // Clear the input after adding the tag
+            }
         });
 
         return tagArea;
