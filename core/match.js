@@ -186,23 +186,24 @@ export class Matcher {
 
         const Word2Vec = natural.Word2Vec;
         this.word2vec = this.word2vec || new Word2Vec();
-
         const modelPath = this.app.settings?.word2vecModelPath || './core/word2vec.model';
         const vectorSize = 100;
         const similarityThreshold = 0.7;
 
-        if (!this.word2vecModelLoaded) {
-            if (this.loadingWord2VecModel) return; // Prevent multiple loading attempts
-
+        if (!this.word2vecModelLoaded && !this.loadingWord2VecModel) {
             this.loadingWord2VecModel = true;
+            this.app.showNotification('Loading Word2Vec model...', 'info'); // Show loading notification
+
             this.word2vec.loadModel(modelPath, () => {
                 console.log("Word2Vec model loaded");
                 this.word2vecModelLoaded = true;
                 this.loadingWord2VecModel = false;
+                this.app.showNotification('Word2Vec model loaded.', 'success'); // Show loaded notification
             }, (error) => {
                 this.app.errorHandler.handleError(error, "Error loading Word2Vec model");
                 this.word2vecModelLoaded = false;
                 this.loadingWord2VecModel = false;
+                this.app.showNotification('Error loading Word2Vec model.', 'error'); // Show error notification
             });
         }
 
@@ -275,10 +276,10 @@ export class Matcher {
         }
         magnitudeA = Math.sqrt(magnitudeA);
         magnitudeB = Math.sqrt(magnitudeB);
-        if (magnitudeA && magnitudeB) {
-            return dotProduct / (magnitudeA * magnitudeB);
-        } else {
+        // Handle edge case of zero vectors
+        if (magnitudeA === 0 || magnitudeB === 0) {
             return 0;
         }
+        return dotProduct / (magnitudeA * magnitudeB);
     }
 }

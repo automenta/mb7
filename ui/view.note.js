@@ -98,8 +98,6 @@ export class NoteView extends HTMLElement {
         sidebar.elements.notesList.replaceWith(this.notesListComponent.el);
         sidebar.el.insertBefore(this.newAddButton(), this.notesListComponent.el);
         this.selectedNote = null;
-
-        this.loadInitialNotes(); // Load initial notes
     }
 
     newPrivacyEdit() {
