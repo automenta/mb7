@@ -31,7 +31,7 @@ class Edit {
 
         // Add persistent query checkbox
         this.persistentQueryCheckbox = createElement('input', {type: 'checkbox', id: 'persistentQueryCheckbox'});
-        const persistentQueryLabel = createElement('label', {htmlFor: 'persistentQueryCheckbox'}, 'Persistent Query');
+        const persistentQueryLabel = createElement('label', {htmlFor: 'persistentQueryCheckbox'}, 'Save as Persistent Query');
         const persistentQueryContainer = createElement('div', { className: 'persistent-query-container' });
         persistentQueryContainer.append(persistentQueryLabel, this.persistentQueryCheckbox);
         menu.append(persistentQueryContainer);
