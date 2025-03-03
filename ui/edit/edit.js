@@ -197,7 +197,7 @@ class Edit {
                 console.log('Tag updated:', updatedTag.getValue(), updatedTag.getCondition());
             }
         );
-
-        this.app.noteView.addTagToNote(tagName);
+    }
+}
 
 export { Edit };
