@@ -107,11 +107,19 @@ export class NoteView extends HTMLElement {
                 await this.notesListComponent.fetchDataAndRender(); // Re-render the list
             } else {
                 console.log("No notes found in database on initial load.");
+                this.showNoNotesMessage();
                 await this.createNote(); // Create default note if no notes exist
             }
         } catch (error) {
             console.error("Error loading initial notes:", error);
         }
+    }
+
+    showNoNotesMessage() {
+        const message = document.createElement('div');
+        message.textContent = 'No notes found. Click "Add" to create a new note.';
+        message.className = 'no-notes-message';
+        this.sidebar.elements.notesList.replaceWith(message);
     }
 
     /** TODO dynamically refresh when the list or the item name changes */
@@ -231,6 +239,13 @@ export class NoteView extends HTMLElement {
         return titleInput;
     }
 
+    focusTitleInput() {
+        const titleInput = this.el.querySelector('.note-title-input');
+        if (titleInput) {
+            titleInput.focus();
+        }
+    }
+
     updateNoteTitleDisplay() {
         if (this.selectedNote) {
             const titleInput = this.el.querySelector('.note-title-input');
@@ -290,6 +305,8 @@ export class NoteView extends HTMLElement {
                 await this.notesListComponent.fetchDataAndRender();
                 this.showMessage('Saved');
                 this.edit.contentHandler.deserialize(newObject.content);
+                this.focusTitleInput();
+                this.editor.editorArea.focus();
             } else {
                 console.error('Error creating note: newObject is null');
             }

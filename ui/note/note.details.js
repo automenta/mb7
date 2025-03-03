@@ -97,6 +97,11 @@ export class NoteDetails extends HTMLElement {
         return tagsContainer;
     }
 
+    clearTagInput() {
+        const tagInput = this.tagArea.querySelector('.note-tag-input');
+        tagInput.value = '';
+    }
+
     createTagArea() {
         const tagArea = document.createElement('div');
         tagArea.className = 'note-tag-area';
@@ -113,12 +118,21 @@ export class NoteDetails extends HTMLElement {
         tagArea.appendChild(tagInput);
         tagArea.appendChild(addTagButton);
 
+        const clearTagButton = document.createElement('button');
+        clearTagButton.textContent = '[x Clear]';
+        clearTagButton.classList.add('margin-left');
+        tagArea.appendChild(clearTagButton);
+
         addTagButton.addEventListener('click', async () => {
             const tagName = tagInput.value.trim();
             if (tagName) {
                 await this.addTagToNote(tagName);
-                tagInput.value = ''; // Clear the input after adding the tag
+                this.clearTagInput(); // Clear the input after adding the tag
             }
+        });
+
+        clearTagButton.addEventListener('click', () => {
+            this.clearTagInput();
         });
 
         return tagArea;

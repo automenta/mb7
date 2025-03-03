@@ -414,6 +414,12 @@ a:hover {
     border: 1px solid #ccc; /* A more visible border */
 }
 
+.no-notes-message {
+    padding: 10px;
+    font-style: italic;
+    color: #888;
+}
+
 .note-list-item.selected {
     background-color: #f0f0f0; /* A slightly darker background */
     border: 1px solid #ccc; /* A more visible border */

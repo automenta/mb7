@@ -56,10 +56,11 @@ class Edit {
     }
 
     createEditorArea() {
-        return createElement('div', {
+        const editorArea = createElement('div', {
             contenteditable: "true",
             className: "editor-area"
         });
+        return editorArea;
     }
 
     setupEditorAreaEvents() {
