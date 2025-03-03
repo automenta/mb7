@@ -148,7 +148,7 @@ export class Nostr {
             return await this.publishEvent(event);
         } catch (error) {
             console.error("Error publishing object:", error);
-            this.app.showNotification(`Error publishing object: ${error.message}`, "error");
+            this.app.showNotification(`Error in publish: ${error.message}`, "error");
             throw error;
         }
     }
@@ -161,7 +161,7 @@ export class Nostr {
             return event;
         } catch (error) {
             console.error("Failed to publish event", error);
-            this.app.showNotification(`Failed to publish event: ${error.message}`, "error");
+            this.app.showNotification(`Failed to publish event in publishEvent: ${error.message}`, "error");
             throw error;
         }
     }
@@ -207,7 +207,7 @@ export class Nostr {
                 throw error;
             } catch (error) {
                 console.error("Error publishing raw event:", error);
-                this.app.errorHandler.handleError(error, 'Error publishing raw event');
+                this.app.errorHandler.handleError(error, 'Error publishing raw event in publishRawEvent');
                 throw error;
             }
         } catch (error) {
@@ -239,6 +239,7 @@ export class Nostr {
             });
         } catch (error) {
             console.error("Error in relayConnected:", error);
+            this.app.showNotification(`Error in relayConnected: ${error.message}`, "error");
         }
     }
 
@@ -251,6 +252,7 @@ export class Nostr {
             }
         } catch (error) {
             console.error("Error connecting to peer:", error);
+            this.app.showNotification(`Error in connectToPeer: ${error.message}`, "error");
         }
     }
 
@@ -268,6 +270,7 @@ export class Nostr {
             });
         } catch (error) {
             console.error("Error subscribing to friends:", error);
+            this.app.showNotification(`Error in subscribeToFriends: ${error.message}`, "error");
         }
     }
 
@@ -282,6 +285,7 @@ export class Nostr {
             });
         } catch (error) {
             console.error("Error subscribing to pubkey:", error);
+            this.app.showNotification(`Error in subscribeToPubkey: ${error.message}`, "error");
         }
     }
 }
