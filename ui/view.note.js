@@ -72,7 +72,7 @@ export class NoteView extends HTMLElement {
 
         this.el.appendChild(mainArea);
 
-        this.editor = new Edit(this.selectedNote, this.yDoc, this.app, null, null, null, this.app.getTagDefinition, this.app.schema);
+        this.editor = new Edit(this.selectedNote, this.yDoc, this.app, null, null, null, this.app.getTagDefinition, this.schema);
         mainArea.appendChild(this.editor.el);
 
         // My Objects List

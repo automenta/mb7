@@ -20,7 +20,7 @@ class Edit {
         this.schema = schema;
         this.yDoc = yDoc; // Use the passed Y.Doc instance
         this.yText = this.yDoc.getText('content');
-        this.el = createElement('div', {className: 'edit-view'});
+        this.el = createElement('div', { className: 'edit-view' });
 
         this.editorArea = this.createEditorArea();
         this.el.appendChild(this.editorArea);
