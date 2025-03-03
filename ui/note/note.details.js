@@ -9,14 +9,6 @@ export class NoteDetails extends HTMLElement {
         this.el.className = 'note-details-container';
 
         this.el.addEventListener('tag-removed', this.handleTagRemoved.bind(this));
-
-        this.el.innerHTML = `
-            ${this.createPriorityEdit().outerHTML}
-            ${this.createPrivacyEdit().outerHTML}
-            ${this.createShareEdit().outerHTML}
-            ${this.createTagsSection().outerHTML}
-            <ul class="note-tag-list"></ul>
-        `;
     }
 
     createDetailEdit(text, icon) {
@@ -90,36 +82,13 @@ export class NoteDetails extends HTMLElement {
     }
 
     async createTag(tagName, tagValue = '', tagCondition = 'is') {
-        const noteId = this.noteView.selectedNote.id;
-        const newTag = {
-            name: tagName,
-            type: 'text',
-            value: tagValue,
-            condition: tagCondition
-        };
-        const note = await this.noteView.app.db.get(noteId);
-        if (note) {
-            // Check if the tag already exists
-            const tagExists = note.tags.some(tag =>
-                tag.name === newTag.name && tag.value === newTag.value && tag.condition === newTag.condition
-            );
-
-            if (!tagExists) {
-                note.tags.push(newTag);
-                await this.noteView.app.db.save(note, false);
-                this.noteView.displayTags(noteId); // Update tag display in NoteView
-                this.noteView.showMessage('Tag added');
-            } else {
-                this.noteView.showMessage('Tag already exists', 'warning');
-            }
-        }
+        this.noteView.addTagToNote(tagName, tagValue, tagCondition);
     }
 
     render() {
         this.el.innerHTML = `
             ${this.createPriorityEdit().outerHTML}
             ${this.createPrivacyEdit().outerHTML}
-            ${this.createShareEdit().outerHTML}
             <ul class="note-tag-list"></ul>
         `;
         return this.el;

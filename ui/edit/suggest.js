@@ -59,8 +59,13 @@ class Autosuggest {
         range.setEnd(node, startIndex + length);
         const rect = range.getBoundingClientRect();
 
+        // Filter suggestions based on partial matches
+        const filteredSuggestions = suggestions.filter(suggestion =>
+            suggestion.displayText.toLowerCase().startsWith(word.toLowerCase())
+        );
+
         this.editor.suggestionDropdown.show(
-            suggestions,
+            filteredSuggestions,
             rect.left + window.scrollX,
             rect.bottom + window.scrollY,
             (suggestion) => {
