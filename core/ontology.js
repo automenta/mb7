@@ -122,7 +122,8 @@ export const Ontology = {
             dateFormat: {type: "string", required: false},
             profileName: {type: "string", required: false},
             profilePicture: {type: "string", required: false},
-            signalingStrategy: {type: "string", required: false}
+            signalingStrategy: {type: "string", required: false},
+            word2vecModelPath: {type: "string", required: false}
         },
         validate: (value, condition) => typeof value === 'object',
         serialize: (value) => value,

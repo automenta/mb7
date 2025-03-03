@@ -562,7 +562,7 @@ export class NoteView extends HTMLElement {
     //     });
     // }
 
-    async addTagToNote(tagName) {
+    async addTagToNote(tagName, tagValue = '', tagCondition = 'is') {
         try {
             if (!this.selectedNote || !this.selectedNote.id) {
                 console.error('No note selected');
@@ -574,7 +574,7 @@ export class NoteView extends HTMLElement {
                 if (!note.tags) {
                     note.tags = [];
                 }
-                note.tags.push({name: tagName});
+                note.tags.push({name: tagName, value: tagValue, condition: tagCondition});
                 await this.app.db.saveObject(note, false);
                 this.displayTags(noteId);
                 this.edit.contentHandler.insertTagAtSelection(tagName); // Update editor content
