@@ -127,7 +127,7 @@ export const Ontology = {
         },
         validate: (value, condition) => typeof value === 'object',
         serialize: (value) => value,
-        deserialize: (value) => value,
+        deserialize: (value) => value
     }
 };
 
