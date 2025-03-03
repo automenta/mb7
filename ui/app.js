@@ -49,7 +49,6 @@ class App {
         const nostr = new Nostr(this, signalingStrategy, nostrRelays, nostrPrivateKey);
         nostr.connect();
         const matcher = new Matcher(this);
-        const yDoc = new Y.Doc();
 
         // Initialize NotificationManager and Monitoring here, after db is ready
         const notificationManager = new NotificationManager();
