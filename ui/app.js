@@ -58,24 +58,6 @@ class App {
         return {db, nostr, matcher, errorHandler, notificationManager, monitoring};
     }
 
-    async createDefaultNote(db) {
-        try {
-            const timestamp = Date.now();
-            const newObject = await db.save({
-                id: timestamp.toString(),
-                name: 'New Note',
-                content: '',
-                private: true,
-                tags: [],
-                priority: 'Medium',
-                isPersistentQuery: false
-            });
-            console.log('Created default note:', newObject);
-        } catch (error) {
-            this.errorHandler.handleError(error, 'Error creating default note');
-        }
-    }
-
     async saveObject(object) {
         if (!object || !object.id) {
             this.errorHandler.handleError(new Error('Object must have an id'), 'Validation error saving object');
