@@ -18,20 +18,15 @@ export class OntologyBrowser {
             const instancesDiv = createElement("div", {class: "ontology-instances"});
 
             if (category.instances && Array.isArray(category.instances)) {
-                category.instances.forEach(tagData => {
-                    const tagElement = document.createElement('span');
-                    tagElement.classList.add('ontology-instance');
-                    tagElement.textContent = `${tagData.emoji || ""} ${tagData.name}`;
-                    tagElement.onclick = () => this.onTagSelect(new Tag(tagData, this.onTagSelect));
-                    instancesDiv.append(tagElement);
+                category.instances.forEach(instance => {
+                    const instanceButton = createElement("button", {
+                       title: `Add tag ${instance.name}`,
+                        onclick: () => {
+                            this.onTagSelect(instance.name);
+                        }
+                    }, instance.name);
+                    instancesDiv.append(instanceButton);
                 });
-            } else {
-                // Render the category itself as a tag
-                const tagElement = document.createElement('span');
-                tagElement.classList.add('ontology-instance');
-                tagElement.textContent = `${category.emoji || ""} ${categoryName}`;
-                tagElement.onclick = () => this.onTagSelect(new Tag(category, this.onTagSelect));
-                instancesDiv.append(tagElement);
             }
 
             categoryDiv.append(instancesDiv);

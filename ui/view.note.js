@@ -223,9 +223,11 @@ export class NoteView extends HTMLElement {
         titleInput.className = 'note-title-input';
         titleInput.addEventListener('input', () => {
             this.yDoc.transact(() => {
-                this.yName.insert(0, titleInput.value);
+                this.yName.delete(0, this.yName.length); // Clear existing content
+                this.yName.insert(0, titleInput.value); // Insert new content
             });
         });
+
         return titleInput;
     }
 
