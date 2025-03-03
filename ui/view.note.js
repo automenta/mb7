@@ -102,26 +102,6 @@ export class NoteView extends HTMLElement {
         this.loadInitialNotes(); // Load initial notes
     }
 
-    async loadInitialNotes() {
-        try {
-            const notes = await this.app.db.getAll();
-            if (notes && notes.length > 0) {
-                this.yDoc.transact(() => {
-                    notes.forEach(note => {
-                        this.yNotesList.push([note.id]);
-                    });
-                });
-                await this.notesListComponent.fetchDataAndRender(); // Re-render the list
-            } else {
-                console.log("No notes found in database on initial load.");
-                this.showNoNotesMessage();
-                await this.createNote(); // Create default note if no notes exist
-            }
-        } catch (error) {
-            console.error("Error loading initial notes:", error);
-        }
-    }
-
     showNoNotesMessage() {
         const message = document.createElement('div');
         message.textContent = 'No notes found. Click "Add" to create a new note.';

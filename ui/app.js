@@ -54,7 +54,33 @@ class App {
         const notificationManager = new NotificationManager();
         const monitoring = new Monitoring();
         await monitoring.start();
+
+        // Create default note if no notes exist
+        const notes = await db.getAll();
+        if (!notes || notes.length === 0) {
+            console.log("No notes found in database on initial load. Creating default note.");
+            await this.createDefaultNote(db);
+        }
+
         return {db, nostr, matcher, errorHandler, notificationManager, monitoring};
+    }
+
+    async createDefaultNote(db) {
+        try {
+            const timestamp = Date.now();
+            const newObject = await db.save({
+                id: timestamp.toString(),
+                name: 'New Note',
+                content: '',
+                private: true,
+                tags: [],
+                priority: 'Medium',
+                isPersistentQuery: false
+            });
+            console.log('Created default note:', newObject);
+        } catch (error) {
+            this.errorHandler.handleError(error, 'Error creating default note');
+        }
     }
 
     async saveObject(object) {
