@@ -121,6 +121,36 @@ class TagInput extends HTMLElement {
                     }
                 });
                 break;
+            case 'select':
+                inputElement = createElement('select', {
+                    onchange: (e) => {
+                        this.handleInputChange(e.target.value);
+                    }
+                });
+                this.tagDefinition.ui.options.forEach(option => {
+                    const optionElement = createElement('option', {value: option}, option);
+                    inputElement.appendChild(optionElement);
+                });
+                break;
+            case 'color':
+                inputElement = createElement('input', {
+                    type: 'color',
+                    value: this.value,
+                    oninput: (e) => {
+                        this.handleInputChange(e.target.value);
+                    }
+                });
+                break;
+            // Add more cases for other UI types (select, date, etc.)
+            default:
+                inputElement = createElement('input', {
+                    type: 'text',
+                    value: this.value,
+                    oninput: (e) => {
+                        this.handleInputChange(e.target.value);
+                    }
+                });
+                break;
             }
 
         this.appendChild(inputElement);

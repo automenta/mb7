@@ -60,22 +60,6 @@ export class NoteView extends HTMLElement {
         const tagArea = document.createElement('div');
         tagArea.className = 'note-tag-area';
         tagArea.style.padding = '10px';
-        // Tag Input
-        const tagInput = document.createElement('input');
-        tagInput.type = 'text';
-        tagInput.placeholder = 'Add a tag';
-        tagInput.className = 'note-tag-input';
-        tagInput.addEventListener('input', () => {
-            const value = tagInput.value;
-            const suggestions = Object.keys(Ontology).filter(tag => tag.toLowerCase().startsWith(value.toLowerCase()));
-            this.displayTagSuggestions(suggestions);
-        });
-
-        tagArea.appendChild(tagInput);
-
-        // Tag List
-        const tagList = document.createElement('ul');
-        tagList.className = 'note-tag-list';
         mainArea.appendChild(this.newLinkedView());
         mainArea.appendChild(this.newMatchesView());
 

@@ -162,22 +162,6 @@ class Edit {
         return {displayText: tagData.name, tagData, span};
     }
 
-    createTagInput(tagName) {
-        const tagDefinition = this.getTagDefinition(tagName);
-        if (!tagDefinition) {
-            console.error('Tag definition not found:', tagName);
-            return null;
-        }
-
-        const tagValue = ''; // Initial value
-        const tagInput = new TagInput(tagDefinition, tagValue, (newValue) => {
-            // Handle tag value change
-            console.log('Tag value changed:', newValue);
-        });
-
-        return tagInput;
-    }
-
     /**
      * Checks if a word matches any tag name or condition in the ontology.
      */
@@ -190,10 +174,26 @@ class Edit {
      * Adds a tag to the note's content.
      */
     addTag(tagName) {
-        const tagInput = this.createTagInput(tagName);
-        if (tagInput) {
-            this.editorArea.appendChild(tagInput);
+        const tagDefinition = this.getTagDefinition(tagName);
+        if (!tagDefinition) {
+            console.error('Tag definition not found:', tagName);
+            return;
         }
+
+        const initialValue = '';
+        const initialCondition = tagDefinition.conditions[0]; // Default condition
+
+        const tagComponent = new Tag(
+            tagDefinition,
+            initialValue,
+            initialCondition,
+            (updatedTag) => {
+                // Handle tag update (e.g., save to database)
+                console.log('Tag updated:', updatedTag.getValue(), updatedTag.getCondition());
+            }
+        );
+
+        this.editorArea.appendChild(tagComponent);
     }
 }
 
