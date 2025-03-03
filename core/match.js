@@ -3,6 +3,7 @@ import {formatDate} from '../ui/content-view-renderer.js';
 import {nip19} from 'nostr-tools';
 import {getTagDefinition, Ontology} from './ontology';
 import natural from 'natural';
+import {format, formatISO, isValid as isValidDate, parseISO} from "date-fns";
 
 export class Matcher {
     constructor(app) {
@@ -121,15 +122,35 @@ export class Matcher {
                 }
             },
             "is": () => {
-                console.log('text', text, 'value', value);
-                return text?.toLowerCase().includes(value?.toLowerCase());
+                const stemmedText = stemmer.stem(text).toLowerCase();
+                const stemmedValue = stemmer.stem(value).toLowerCase();
+                return stemmedText.includes(stemmedValue);
             },
             "contains": () => {
-                console.log('text', text, 'value', value);
-                return text?.toLowerCase().includes(value?.toLowerCase());
+                const stemmedText = stemmer.stem(text).toLowerCase();
+                const stemmedValue = stemmer.stem(value).toLowerCase();
+                return stemmedText.includes(stemmedValue);
             },
-            "before": () => checkTime(value),
-            "after": () => checkTime(value),
+            "before": () => {
+                try {
+                    const eventDate = new Date(event.created_at * 1000);
+                    const tagDate = parseISO(value);
+                    return isValidDate(tagDate) && eventDate < tagDate;
+                } catch (e) {
+                    console.error("Error parsing date:", e);
+                    return false;
+                }
+            },
+            "after": () => {
+                try {
+                    const eventDate = new Date(event.created_at * 1000);
+                    const tagDate = parseISO(value);
+                    return isValidDate(tagDate) && eventDate > tagDate;
+                } catch (e) {
+                    console.error("Error parsing date:", e);
+                    return false;
+                }
+            },
         };
 
         const handler = conditionHandlers[condition];
@@ -138,110 +159,13 @@ export class Matcher {
         }
 
         // Enhance semantic matching
-        const matches = this.enhanceSemanticMatching(text, [event]);
-        if (matches.length > 0) {
-            // Suggest relevant tags based on the matches
-            const keywords = matches[0].keywords;
-            if (keywords && keywords.length > 0) {
-                console.log("Suggesting tags based on keywords:", keywords);
-                // Get the tag definitions from the ontology
-                const tagDefinitions = Object.values(Ontology);
+        const stemmedText = stemmer.stem(text);
+        const tokenizedText = tokenizer.tokenize(stemmedText);
+        const sentimentScore = analyzer.getSentiment(tokenizedText);
 
-                // Filter the tag definitions based on the keywords
-                const suggestedTags = tagDefinitions.filter(tagDefinition =>
-                    keywords.some(keyword => tagDefinition.name?.toLowerCase().includes(keyword.toLowerCase()))
-                );
-
-                console.log("Suggested tags:", suggestedTags);
-            }
-        }
+        console.log(`Sentiment score for text "${text}": ${sentimentScore}`);
 
         return false;
-    }
-
-    /**
-     * Enhances semantic matching using advanced techniques.
-     * @param {string} text - The text to match against.
-     * @param {object[]} objects - The objects to search.
-     * @returns {object[]} - The matching objects.
-     */
-    async enhanceSemanticMatching(text, objects) {
-        // Load pre-trained word embeddings (GloVe)
-        const WordTokenizer = natural.WordTokenizer;
-        const wordTokenizer = new WordTokenizer();
-
-        const tokenizedText = wordTokenizer.tokenize(text);
-
-        const Word2Vec = natural.Word2Vec;
-        const word2vec = new Word2Vec();
-
-        word2vec.loadModel('./core/word2vec.model', () => {
-            console.log("Word2Vec model loaded");
-        });
-
-        // Calculate the average word embedding for the text
-        let textEmbedding = new Array(100).fill(0);
-        let validWordCount = 0;
-        for (const token of tokenizedText) {
-            if (word2vec.getVector(token)) {
-                validWordCount++;
-                for (let i = 0; i < 100; i++) {
-                    textEmbedding[i] += word2vec.getVector(token)[i];
-                }
-            }
-        }
-
-        if (validWordCount > 0) {
-            for (let i = 0; i < 100; i++) {
-                textEmbedding[i] /= validWordCount;
-            }
-        }
-
-        // Calculate the cosine similarity between the text embedding and the object content embeddings
-        const similarityThreshold = 0.7;
-        const matches = objects.filter(obj => {
-            const tokenizedContent = wordTokenizer.tokenize(obj.content);
-            let contentEmbedding = new Array(100).fill(0);
-            let validContentWordCount = 0;
-
-            for (const token of tokenizedContent) {
-                if (word2vec.getVector(token)) {
-                    validContentWordCount++;
-                    for (let i = 0; i < 100; i++) {
-                        contentEmbedding[i] += word2vec.getVector(token)[i];
-                    }
-                }
-            }
-
-            if (validContentWordCount > 0) {
-                for (let i = 0; i < 100; i++) {
-                    contentEmbedding[i] /= validContentWordCount;
-                }
-            }
-
-            const similarity = this.cosineSimilarity(textEmbedding, contentEmbedding);
-            return similarity > similarityThreshold;
-        });
-
-        return matches;
-    }
-
-    cosineSimilarity(vecA, vecB) {
-        let dotProduct = 0;
-        let magnitudeA = 0;
-        let magnitudeB = 0;
-        for (let i = 0; i < vecA.length; i++) {
-            dotProduct += vecA[i] * vecB[i];
-            magnitudeA += vecA[i] * vecA[i];
-            magnitudeB += vecB[i] * vecB[i];
-        }
-        magnitudeA = Math.sqrt(magnitudeA);
-        magnitudeB = Math.sqrt(magnitudeB);
-        if (magnitudeA && magnitudeB) {
-            return dotProduct / (magnitudeA * magnitudeB);
-        } else {
-            return 0;
-        }
     }
 }
 import Fuse from 'fuse.js';
