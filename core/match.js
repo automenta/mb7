@@ -345,23 +345,32 @@ export class Matcher {
         const tokenizedText = wordTokenizer.tokenize(text);
 
         const Word2Vec = natural.Word2Vec;
-        const word2vec = new Word2Vec();
+        this.word2vec = this.word2vec || new Word2Vec();
 
         const modelPath = this.app.settings?.word2vecModelPath || './core/word2vec.model';
         const vectorSize = 100; // Define vector size
         const similarityThreshold = 0.7;
 
-        word2vec.loadModel(modelPath, () => {
-            console.log("Word2Vec model loaded");
-        }, (error) => {
-            this.app.errorHandler.handleError(error, "Error loading Word2Vec model");
-        });
+        if (!this.word2vecModelLoaded) {
+            this.word2vec.loadModel(modelPath, () => {
+                console.log("Word2Vec model loaded");
+                this.word2vecModelLoaded = true;
+            }, (error) => {
+                this.app.errorHandler.handleError(error, "Error loading Word2Vec model");
+                this.word2vecModelLoaded = false;
+            });
+        }
+
+        if (!this.word2vecModelLoaded) {
+            console.warn("Word2Vec model not loaded, skipping semantic matching.");
+            return [];
+        }
 
         // Calculate the average word embedding for the text
         let textEmbedding = new Array(vectorSize).fill(0);
         let validWordCount = 0;
         for (const token of tokenizedText) {
-            const vector = word2vec.getVector(token);
+            const vector = this.word2vec.getVector(token);
             if (vector) {
                 validWordCount++;
                 for (let i = 0; i < vectorSize; i++) {
@@ -383,7 +392,7 @@ export class Matcher {
             let validContentWordCount = 0;
 
             for (const token of tokenizedContent) {
-                const vector = word2vec.getVector(token);
+                const vector = this.word2vec.getVector(token);
                 if (vector) {
                     validContentWordCount++;
                     for (let i = 0; i < vectorSize; i++) {
