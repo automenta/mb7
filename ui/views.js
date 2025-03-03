@@ -10,19 +10,6 @@ function initializeViews(app) {
     const settingsView = new SettingsView(app, app.db, app.nostr);
     const contentView = new ContentView(app);
 
-    noteView.createNote = async () => {
-        const newNote = {
-            id: uuidv4(),
-            name: 'New Note',
-            content: '',
-            tags: [],
-            isPersistentQuery: false,
-            private: false
-        };
-        await app.saveObject(newNote);
-        noteView.loadNotes();
-    };
-
     return {noteView, friendsView, settingsView, contentView};
 }
 

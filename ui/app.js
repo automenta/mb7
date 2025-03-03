@@ -133,6 +133,19 @@ class App {
             this.errorHandler.handleError(error, 'Error publishing to Nostr');
         }
     }
+
+    async createNote() {
+        const newNote = {
+            id: uuidv4(),
+            name: 'New Note',
+            content: '',
+            tags: [],
+            isPersistentQuery: false,
+            private: false
+        };
+        await this.saveObject(newNote);
+        return newNote;
+    }
 }
 
 
