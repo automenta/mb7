@@ -27,37 +27,44 @@ class Autosuggest {
             let hasMatch = false;
             let match;
             while ((match = wordRegex.exec(text)) !== null) {
-                if (this.editor.matchesOntology(match[0])) {
+                const word = match[0];
+                if (this.editor.matchesOntology(word)) {
                     hasMatch = true;
-                    // Only need one match per word
+                    this.showSuggestions(word, node, match.index, match[0].length);
                 }
             }
-            if (hasMatch) this.wrapMatches(node);
         }
     }
 
-    wrapMatches(textNode) {
-        const text = textNode.nodeValue;
-        const fragment = document.createDocumentFragment();
-        let lastIndex = 0;
-        const regex = /\b[a-zA-Z]{3,}\b/g; // Create regex here to reset lastIndex
+    showSuggestions(word, node, startIndex, length) {
+        const tagDefinition = this.editor.getTagDefinition(word);
+        if (!tagDefinition) return;
 
-        let match;
-        while ((match = regex.exec(text)) !== null) {
-            const [start, end] = [match.index, regex.lastIndex];
+        const suggestions = [];
+        if (tagDefinition.instances) {
+            tagDefinition.instances.forEach(instance => {
+                suggestions.push(this.editor.createSuggestion(instance));
+            });
+        } else {
+            suggestions.push(this.editor.createSuggestion(tagDefinition));
+        }
 
-            if (start > lastIndex) {
-                fragment.append(text.substring(lastIndex, start));
+        if (suggestions.length === 0) return;
+
+        // Calculate position for the dropdown
+        const range = document.createRange();
+        range.setStart(node, startIndex);
+        range.setEnd(node, startIndex + length);
+        const rect = range.getBoundingClientRect();
+
+        this.editor.suggestionDropdown.show(
+            suggestions,
+            rect.left + window.scrollX,
+            rect.bottom + window.scrollY,
+            (suggestion) => {
+                this.editor.contentHandler.insertTagFromSuggestion(suggestion);
             }
-            fragment.append(createElement("span", {class: "autosuggest"}, match[0]));
-            lastIndex = end;
-        }
-
-        if (lastIndex < text.length) {
-            fragment.append(text.substring(lastIndex));
-        }
-
-        textNode.replaceWith(fragment);
+        );
     }
 }
 
