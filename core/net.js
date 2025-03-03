@@ -4,7 +4,6 @@
  */
 async function ingestNObject(event) {
     // TODO: Implement Nostr ingestion logic here.
-    console.log('ingestNObject called with event:', event);
 }
 
 export {ingestNObject};
@@ -43,7 +42,6 @@ export class Nostr {
                 pubkey: window.keys.pub,
             };
             await this.publishEvent(event);
-            console.log('Sending DM to', pubkey, 'with content:', content);
         } catch (error) {
             this.app.errorHandler.handleError(error, 'Error sending DM');
         }
@@ -58,21 +56,18 @@ export class Nostr {
     }
 
     connect() {
-        console.log('Nostr.connect() called');
         this.relayManager.connect();
     }
 
     async onEvent(event) {
         try {
             if (!validateEvent(event) || !verifyEvent(event)) {
-                console.warn("Invalid event received:", event);
                 return;
             }
 
             // Implement rate limiting
             const now = Date.now();
             if (this.lastEventTime && now - this.lastEventTime < 100) {
-                console.warn("Rate limit exceeded. Ignoring event.");
                 return;
             }
             this.lastEventTime = now;
@@ -182,7 +177,6 @@ export class Nostr {
                 const maxRetries = 3;
                 for (let i = 0; i < maxRetries; i++) {
                     const delay = Math.pow(2, i) * 1000; // Exponential backoff: 1s, 2s, 4s
-                    console.log(`Retrying publishRawEvent in ${delay}ms (attempt ${i + 1}/${maxRetries})`);
                     await new Promise(resolve => setTimeout(resolve, delay));
                     try {
                         // Retry publishing
@@ -199,7 +193,6 @@ export class Nostr {
                                     this.app.showNotification(`Failed to publish to ${relayUrl}: ${reason}.`, "warning");
                                 });
                             } else {
-                                console.warn(`Trying to publish to a disconnected relay ${relay.url}`);
                             }
                         }
                         // If publishing is successful, exit the retry loop
@@ -225,9 +218,9 @@ export class Nostr {
 
 
     async relayConnected(relay) {
-        console.log('Nostr.relayConnected() called', relay);
         try {
-            console.log("relayConnected: relay =", relay);
+            console.log(`Relay status before update: ${this.relayStatuses[relay.url]}`);
+
             const nostr = this;
             console.log("relayConnected: relay.url =", relay.url);
             const relayObject = this.relayObjects[relay.url];
@@ -264,11 +257,8 @@ export class Nostr {
 
     async subscribeToFriends(relay) {
         try {
-            console.log("subscribeToFriends: this.app.db =", this.app.db);
-            console.log("subscribeToFriends: this.app.db.getFriendsObjectId =", this.app.db.getFriendsObjectId);
             const friendsObjectId = await this.app.db.getFriendsObjectId();
             if (!friendsObjectId) {
-                console.warn("No friends object id found.");
                 return;
             }
             await relay.subscribe([{kinds: [30000], ids: [friendsObjectId]}], {

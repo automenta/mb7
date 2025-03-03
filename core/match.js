@@ -138,7 +138,7 @@ export class Matcher {
         }
 
         // Enhance semantic matching
-        const matches = await this.enhanceSemanticMatching(text, [event]);
+        const matches = this.enhanceSemanticMatching(text, [event]);
         if (matches.length > 0) {
             // Suggest relevant tags based on the matches
             const keywords = matches[0].keywords;

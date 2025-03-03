@@ -16,9 +16,13 @@ import {NotificationManager} from './notification-manager.js';
  * Manages the database, Nostr connection, and UI.
  */
 class App {
-    constructor(db, nostr) {
+    constructor(db, nostr, matcher, errorHandler, notificationManager, monitoring) {
         this.db = db;
         this.nostr = nostr;
+        this.matcher = matcher;
+        this.errorHandler = errorHandler;
+        this.notificationManager = notificationManager;
+        this.monitoring = monitoring;
         this.selected = null;
         this.elements = {};
 
@@ -28,57 +32,43 @@ class App {
 
     static async initialize(appDiv) {
         const errorHandler = new ErrorHandler(appDiv);
-        const app = new App();
-        const db = new DB(app, errorHandler);
+        const db = new DB(errorHandler);
         let signalingStrategy = "nostr"; // Provide a default value in case of error
         let nostrRelays = "";
         let nostrPrivateKey = "";
 
         try {
-            const settingsObject = await db.getSettings();
-
-            if (settingsObject && settingsObject.tags) {
-                for (const tag of settingsObject.tags) {
-                    if (tag[0] === 'signalingStrategy') {
-                        signalingStrategy = tag[1] || "nostr";
-                    } else if (tag[0] === 'relays') {
-                        nostrRelays = tag[1] || "";
-                    } else if (tag[0] === 'privateKey') {
-                        nostrPrivateKey = tag[1] || "";
-                    }
-                }
-            }
+            const settingsObject = await db.getSettings() || {};
+            const settingsTags = settingsObject.tags || [];
+            signalingStrategy = settingsTags.find(tag => tag[0] === 'signalingStrategy')?.[1] || "nostr";
+            nostrRelays = settingsTags.find(tag => tag[0] === 'relays')?.[1] || "";
+            nostrPrivateKey = settingsTags.find(tag => tag[0] === 'privateKey')?.[1] || "";
         } catch (error) {
             console.error('Error getting settings from db:', error);
         }
-        console.log('db.getSettings() returned:', await db.getSettings());
-
-        const nostr = new Nostr(app, signalingStrategy, nostrRelays, nostrPrivateKey, app.yDoc);
+        const nostr = new Nostr(signalingStrategy, nostrRelays, nostrPrivateKey);
         nostr.connect();
-        const matcher = new Matcher(app);
-        app.yDoc = new Y.Doc();
+        const matcher = new Matcher();
+        const yDoc = new Y.Doc();
 
         // Initialize NotificationManager and Monitoring here, after db is ready
-        const notificationManager = new NotificationManager(app);
-        const monitoring = new Monitoring(app);
-        console.log('App.initialize resolved with:', {
-            db,
-            nostr,
-            matcher,
-            errorHandler,
-            notificationManager,
-            monitoring
-        });
-        monitoring.start();
-        app.db = db;
-        return {db, nostr, matcher, errorHandler, notificationManager, monitoring};
+        const notificationManager = new NotificationManager();
+        const monitoring = new Monitoring();
+        //console.log('App.initialize resolved with:', {
+        //    db,
+        //    nostr,
+        //    matcher,
+        //    errorHandler,
+        //    notificationManager,
+        //    monitoring,
+        //});
+        await monitoring.start();
+        return {db, nostr, matcher, errorHandler, notificationManager, monitoring, yDoc};
     }
 
     async saveOrUpdateObject(object) {
-        console.log('saveOrUpdateObject called with object:', object);
-
         if (!object || !object.id) {
-            console.error('Object must have an id');
+            this.errorHandler.handleError(new Error('Object must have an id'), 'Validation error saving object');
             return null;
         }
 
@@ -88,7 +78,7 @@ class App {
             await this.db.save(newObject, object.isPersistentQuery);
             const matches = await this.matcher.findMatches(newObject);
             await this.publishNewObject(newObject);
-            this.publishMatches(matches);
+            await this.publishMatches(matches);
             return newObject;
         } catch (error) {
             this.errorHandler.handleError(error, 'Error saving or publishing object');
@@ -106,7 +96,11 @@ class App {
                 await this.nostr.publish(newObject);
                 this.notificationManager.showNotification('Published to Nostr!', 'success');
             } catch (error) {
-                this.errorHandler.handleError(error, 'Error publishing to Nostr');
+                if (visibilityTag && visibilityTag[1] === 'private') {
+                    this.errorHandler.handleError(error, 'Cannot publish private object to Nostr');
+                } else {
+                    this.errorHandler.handleError(error, 'Error publishing to Nostr');
+                }
             }
         }
     }
@@ -124,9 +118,7 @@ class App {
     }
 
     prepareObjectForSaving(object) {
-        if (!object.tags || !Array.isArray(object.tags))
-            return;
-
+        if (!object.tags || !Array.isArray(object.tags)) return;
         const invalidTag = object.tags.find(tag => !tag.name);
         if (invalidTag) {
             throw new Error(`Tag name is required. Invalid tag: ${JSON.stringify(invalidTag)}`);
@@ -163,7 +155,7 @@ class App {
                 this.showNotification('Published match to Nostr!', 'success');
             }
         } catch (error) {
-            this.errorHandler.handleError(error, 'Error publishing match to Nostr');
+            this.errorHandler.handleError(error, 'Error publishing to Nostr');
         }
     }
 }
@@ -171,13 +163,9 @@ class App {
 async function createApp(appDiv) {
     const appData = await App.initialize(appDiv);
     console.log('Creating App instance with db:', appData.db, 'and nostr:', appData.nostr);
-    const app = new App(appData.db, appData.nostr);
-    app.matcher = appData.matcher;
-    app.errorHandler = appData.errorHandler;
+    const app = new App(appData.db, appData.nostr, appData.matcher, appData.errorHandler, appData.notificationManager, appData.monitoring);
     console.log('App.initialize() promise resolved');
-    app.notificationManager = appData.notificationManager;
-    app.monitoring = appData.monitoring;
-    return app;
+    return {app, db: appData.db, nostr: appData.nostr};
 }
 
 function createAppMainContent() {
@@ -196,20 +184,18 @@ document.addEventListener("DOMContentLoaded", async () => {
  */
 async function setupUI() {
     const appDiv = document.getElementById('app');
-    let app = await createApp(appDiv);
-
-    const {noteView, friendsView, settingsView, contentView} = initializeViews(app);
-
+    let {app, db, nostr} = await createApp(appDiv);
+    const {noteView, friendsView, settingsView, contentView} = initializeViews(app, db, nostr);
     const {menubar, mainContent} = createLayout(app, appDiv, noteView, friendsView, settingsView, contentView);
 
     setupDefaultView(app, noteView, contentView);
 }
 
-function initializeViews(app) {
-    const noteView = new NoteView(app, app.db, app.nostr);
-    const friendsView = new FriendsView(app, app.db, app.nostr);
-    const settingsView = new SettingsView(app, app.db, app.nostr);
-    const contentView = new ContentView();
+function initializeViews(app, db, nostr) {
+    const noteView = new NoteView(app, db, nostr);
+    const friendsView = new FriendsView(app, db, nostr);
+    const settingsView = new SettingsView(app, db, nostr);
+    const contentView = new ContentView(app);
     return {noteView, friendsView, settingsView, contentView};
 }
 

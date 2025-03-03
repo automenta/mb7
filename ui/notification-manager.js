@@ -3,8 +3,7 @@ import Notification from './notification.js';
 const NOTIFICATION_DURATION = 4000;
 
 export class NotificationManager {
-    constructor(app) {
-        this.app = app;
+    constructor() {
         this.notificationQueue = [];
         this.notificationTimeout = null;
     }
@@ -35,7 +34,7 @@ export class NotificationManager {
 
     async animateAndRemoveNotification(notification) {
         await notification.animateOut();
-        notification.remove();
+        await notification.remove();
         await this.showNextNotification();
     }
 }

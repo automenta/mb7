@@ -13,16 +13,6 @@ import {Toolbar} from './edit.toolbar';
  * Manages the editor area, autosuggestions, ontology browser, and toolbar.
  */
 class Edit {
-    /**
-     * Constructs a new Edit instance.
-     * @param {Y.Doc} yDoc The Y.Doc instance.
-     * @param {Autosuggest} autosuggest The autosuggest instance.
-     * @param {EditorContentHandler} contentHandler The content handler instance.
-     * @param {OntologyBrowser} ontologyBrowser The ontology browser instance.
-     * @param {Toolbar} toolbar The toolbar instance.
-     * @param {function} getTagDefinition The function to get tag definitions.
-     * @param {object} schema The schema.
-     */
     constructor(yDoc, autosuggest, contentHandler, ontologyBrowser, toolbar, getTagDefinition, schema) {
         this.getTagDefinition = getTagDefinition;
         this.schema = schema;
@@ -39,8 +29,8 @@ class Edit {
         this.el.append(menu, this.editorArea);
 
         // Add persistent query checkbox
-        this.persistentQueryCheckbox = createElement('input', { type: 'checkbox', id: 'persistentQueryCheckbox' });
-        const persistentQueryLabel = createElement('label', { htmlFor: 'persistentQueryCheckbox' }, 'Persistent Query');
+        this.persistentQueryCheckbox = createElement('input', {type: 'checkbox', id: 'persistentQueryCheckbox'});
+        const persistentQueryLabel = createElement('label', {htmlFor: 'persistentQueryCheckbox'}, 'Persistent Query');
         menu.append(persistentQueryLabel, this.persistentQueryCheckbox);
 
         this.suggestionDropdown = new SuggestionDropdown();
@@ -53,17 +43,13 @@ class Edit {
 
         this.setupEditorEvents();
 
-       // Save function
-       this.save = (object) => {
-           const isPersistentQuery = this.persistentQueryCheckbox.checked;
-           this.app.db.saveObject(object, isPersistentQuery);
-       }
+        // Save function
+        this.save = (object) => {
+            const isPersistentQuery = this.persistentQueryCheckbox.checked;
+            this.app.db.saveObject(object, isPersistentQuery);
+        }
     }
 
-    /**
-     * Creates the editor area.
-     * @returns {HTMLDivElement} The editor area element.
-     */
     createEditorArea() {
         return createElement('div', {
             contenteditable: "true",
@@ -71,9 +57,6 @@ class Edit {
         });
     }
 
-    /**
-     * Sets up the editor area events.
-     */
     setupEditorAreaEvents() {
         this.editorArea.addEventListener('input', debounce(() => {
             this.setContent(this.editorArea.innerHTML);
@@ -105,7 +88,7 @@ class Edit {
             case "ArrowUp":
                 event.preventDefault();
                 this.suggestionDropdown.moveSelection(event.key === "ArrowDown" ? 1 : -1);
-            break;
+                break;
             case "Enter":
                 event.preventDefault();
                 if (this.suggestionDropdown.getSelectedSuggestion()) {
@@ -180,21 +163,14 @@ class Edit {
 
     /**
      * Checks if a word matches any tag name or condition in the ontology.
-     * @param {string} word The word to check.
-     * @returns {boolean} True if the word matches a tag name or condition, false otherwise.
      */
     matchesOntology(word) {
-        const lowerWord = word.toLowerCase();
         const tagDefinition = this.getTagDefinition(word);
-        if (tagDefinition) {
-            return true;
-        }
-        return false;
+        return !!tagDefinition;
     }
 
     /**
      * Adds a tag to the note's content.
-     * @param {string} tag The tag to add.
      */
     addTag(tag) {
         // Implement tag adding logic here

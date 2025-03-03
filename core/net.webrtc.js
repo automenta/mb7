@@ -18,7 +18,7 @@ export class WebRTCService {
         try {
             let relays = this.nostrRelays;
             if (this.signalingStrategy === "nostr") {
-                 relays = this.app.settings.webrtcNostrRelays || this.nostrRelays;
+                relays = this.app.settings.webrtcNostrRelays || this.nostrRelays;
                 signalingProvider = new NostrSignalingProvider(relays.split("\n").map(l => l.trim()).filter(Boolean), this.nostrPrivateKey, this.app);
             } else {
                 console.error("WebRTC signaling server not implemented");
@@ -68,10 +68,8 @@ export class WebRTCService {
                 //Data Channel
                 const dataChannel = peerConnection.createDataChannel("dataChannel");
                 dataChannel.onopen = () => {
-                    console.log("Data channel is open");
                 }
                 dataChannel.onmessage = (event) => {
-                    console.log("Received Message", event.data);
                 };
 
                 // Yjs provider
@@ -99,6 +97,5 @@ export class WebRTCService {
      */
     handleWebRTCMessage(event) {
         // TODO: Process incoming WebRTC message
-        console.log(`Received WebRTC message: ${event.data} (not implemented)`);
     }
 }

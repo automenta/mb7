@@ -69,7 +69,6 @@ export async function updateFriendProfile(db, friendsObjectId, pubkey, name, pic
             friendObject.updatedAt = new Date().toISOString();
             await db.saveOrUpdateObject(friendObject);
         } else {
-            console.warn(`Friend object not found: ${friendObjectId}`);
         }
     } catch (error) {
         console.error("Error updating friend profile:", error);

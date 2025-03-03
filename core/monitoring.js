@@ -8,14 +8,12 @@ class Monitoring {
 
     async start() {
         // Initialize monitoring system
-        console.log('Starting monitoring system');
         this.initializeMetrics();
         this.startCollectingMetrics();
     }
 
     async stop() {
         // Stop monitoring system
-        console.log('Stopping monitoring system');
         clearInterval(this.metricsInterval);
     }
 
@@ -61,11 +59,10 @@ class Monitoring {
             tags: [],
             priority: 'Medium',
         };
-        console.log("Monitoring data:", monitoringData);
         try {
             const newObject = await this.app.saveOrUpdateObject(monitoringData);
             if (newObject) {
-                console.log('Monitoring data stored as NObject:', newObject.id);
+                //console.log('Monitoring data stored as NObject:', newObject.id);
             } else {
                 console.error('Error storing monitoring data: newObject is null');
             }

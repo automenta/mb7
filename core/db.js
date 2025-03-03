@@ -1,13 +1,33 @@
+async function upgradeDatabase(db, oldVersion, newVersion, transaction) {
+    console.log('onupgradeneeded triggered');
+    if (!db.objectStoreNames.contains(OBJECTS_STORE)) {
+        const objectStore = db.createObjectStore(OBJECTS_STORE, {keyPath: 'id'});
+        objectStore.createIndex('kind', 'kind', {unique: false});
+        objectStore.createIndex('content', 'content', {unique: false});
+        objectStore.createIndex('tags', 'tags', {unique: false});
+        objectStore.createIndex('createdAt', 'createdAt', {unique: false});
+        objectStore.createIndex('updatedAt', 'updatedAt', {unique: false});
+        objectStore.createIndex('private', 'private', {unique: false});
+        objectStore.createIndex('isPersistentQuery', 'isPersistentQuery', {unique: false});
+    }
+    if (!db.objectStoreNames.contains(KEY_STORAGE)) {
+        db.createObjectStore(KEY_STORAGE);
+    }
+    const objectStore = transaction.objectStore(OBJECTS_STORE);
+    if (!objectStore.indexNames.contains('content')) {
+        objectStore.createIndex('content', 'content', {unique: false});
+    }
+}
+
 const DOMPURIFY_CONFIG = {
     ALLOWED_TAGS: ["br", "b", "i", "span", "p", "strong", "em", "ul", "ol", "li", "a"],
     ALLOWED_ATTR: ["class", "contenteditable", "tabindex", "id", "aria-label"]
 };
 import DOMPurify from 'dompurify';
-import * as NostrTools from 'nostr-tools';
 import {openDB} from 'idb';
 import * as Y from 'yjs'
 
-import {encrypt, generateEncryptionKey} from './crypto';
+import {encrypt} from './crypto';
 import {addFriend, removeFriend, updateFriendProfile} from './friend';
 import {saveSettings} from './settings';
 import {createDefaultObject} from './db.utils';
@@ -35,26 +55,7 @@ export class DB {
 
         console.log("DB.the - opening database");
         this.db = await openDB(DB_NAME, DB_VERSION, {
-            upgrade(db, oldVersion, newVersion, transaction) {
-                console.log('onupgradeneeded triggered');
-                if (!db.objectStoreNames.contains(OBJECTS_STORE)) {
-                    const objectStore = db.createObjectStore(OBJECTS_STORE, {keyPath: 'id'});
-                    objectStore.createIndex('kind', 'kind', {unique: false});
-                    objectStore.createIndex('content', 'content', {unique: false});
-                    objectStore.createIndex('tags', 'tags', {unique: false});
-                    objectStore.createIndex('createdAt', 'createdAt', {unique: false});
-                    objectStore.createIndex('updatedAt', 'updatedAt', {unique: false});
-                    objectStore.createIndex('private', 'private', {unique: false});
-                    objectStore.createIndex('isPersistentQuery', 'isPersistentQuery', {unique: false});
-                }
-                if (!db.objectStoreNames.contains(KEY_STORAGE)) {
-                    db.createObjectStore(KEY_STORAGE);
-                }
-                const objectStore = transaction.objectStore(OBJECTS_STORE);
-                if (!objectStore.indexNames.contains('content')) {
-                    objectStore.createIndex('content', 'content', {unique: false});
-                }
-            },
+            upgrade: upgradeDatabase,
         });
         await DB.getDefaultObject(FRIENDS_OBJECT_ID);
         await DB.getDefaultObject(SETTINGS_OBJECT_ID);
@@ -66,6 +67,24 @@ export class DB {
 
         let object = await DB.db.get(OBJECTS_STORE, id);
         return object ? object : await createDefaultObject(DB.db, id);
+    }
+
+    /**
+     * Validates the data of an object.
+     * @param {object} o - The object to validate.
+     */
+    async validateObjectData(o) {
+        if (typeof o.kind !== 'string') {
+            throw new Error('Kind must be a string');
+        }
+        if (typeof o.content !== 'string') {
+            this.errorHandler.handleError(new Error('Content must be a string'), "Failed to save object");
+            throw new Error('Content must be a string');
+        }
+        if (!Array.isArray(o.tags)) {
+            this.errorHandler.handleError(new Error('Tags must be an array'), "Failed to save object");
+            throw new Error('Tags must be an array');
+        }
     }
 
     async initializeKeys() {
@@ -105,6 +124,7 @@ export class DB {
 
     /**
      * Get a single object by its ID.
+     * @param {string} filter - The filter to apply to the objects.
      */
     async get(id) {
         try {
@@ -134,18 +154,7 @@ export class DB {
                 throw new Error('Missing id property on object');
             }
 
-            // Data validation - ensure the object has the correct data types
-            if (typeof o.kind !== 'string') {
-                throw new Error('Kind must be a string');
-            }
-            if (typeof o.content !== 'string') {
-                this.errorHandler.handleError(new Error('Content must be a string'), "Failed to save object");
-                throw new Error('Content must be a string');
-            }
-            if (!Array.isArray(o.tags)) {
-                this.errorHandler.handleError(new Error('Tags must be an array'), "Failed to save object");
-                throw new Error('Tags must be an array');
-            }
+            await this.validateObjectData(o);
 
             // Data sanitization - prevent XSS attacks
             o.content = DOMPurify.sanitize(o.content, DOMPURIFY_CONFIG);
@@ -234,7 +243,7 @@ export class DB {
             const all = await this.getAll();
             return {
                 objectCount: all.length,
-                tagCount: all.reduce((acc, obj) => acc + (obj.tags?.length || 0), 0),
+                tagCount: all.reduce((acc, obj) => acc + (obj.tags?.length || 0), 0)
             };
         } catch (error) {
             this.errorHandler.handleError("Failed to get object stats", error);
@@ -281,7 +290,7 @@ export class DB {
         return SETTINGS_OBJECT_ID;
     }
 
-   async getSettings(yDoc) {
+    async getSettings(yDoc) {
         let settings = await DB.getDefaultObject(SETTINGS_OBJECT_ID);
         return settings;
     }
@@ -363,7 +372,6 @@ export class DB {
         try {
             const keys = await this.getKeys();
             if (!keys || !keys.encryptionKey) {
-                console.warn("No encryption key found for user.");
                 return;
             }
 

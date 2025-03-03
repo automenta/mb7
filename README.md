@@ -32,13 +32,14 @@ Organize, prioritize, and grow thoughts into actionable results with real-time c
 ### App ###
 
 **Notes**
+
 - Semantic note-taking application
 - Create, list, update, delete Note NObjects
-**Friends**
+  **Friends**
 - Buddy List w/ secure Direct Messaging, Status
-**Settings**
+  **Settings**
 - Profile editor, Network settings, etc...
-**Content**
+  **Content**
 - Public network feed (Nostr messages, etc...)
 - Analyzed, annotated, categorized, matched, etc...
 

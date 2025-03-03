@@ -5,11 +5,11 @@ export class GenericListComponent extends UIComponent {
         super('<ul></ul>'); // Use a ul as the base template
         this.renderer = renderer;
         this.yArray = yArray;
-        this.listElement = this.el.querySelector('ul'); // Get the ul element
+        this.listElement = this.el; // Get the ul element
 
         this.renderList = this.renderList.bind(this);
 
-         // Observe Yjs array changes
+        // Observe Yjs array changes
         if (this.yArray) {
             this.yArray.observe(() => {
                 this.renderList();
@@ -30,15 +30,5 @@ export class GenericListComponent extends UIComponent {
                 this.listElement.appendChild(listItem);
             });
         }
-    }
-
-    async fetchDataAndRender() {
-        await this.fetchData();
-        this.renderList();
-    }
-
-    async fetchData() {
-        // Placeholder for fetching data if needed
-        return [];
     }
 }

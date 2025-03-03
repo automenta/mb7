@@ -1,5 +1,3 @@
-const NOTIFICATION_DURATION = 4000;
-
 class Notification {
     constructor(message, type = "info") {
         this.message = message;
@@ -24,7 +22,8 @@ class Notification {
     createElement() {
         const e = document.createElement('div');
         e.className = `notification ${this.type}`;
-        e.innerHTML = `${this.icon} ${this.message}`;
+        e.innerHTML = `<span class="notification-icon">${this.icon}</span>
+                         <span class="notification-message">${this.message}</span>`;
         e.style.right = '-300px';
         e.style.opacity = 0;
         return e;
@@ -46,10 +45,6 @@ class Notification {
             right: '-300px',
             opacity: 0
         }, {duration: 300, fill: 'forwards'});
-    }
-
-    animate(properties, options) {
-        return this.element.animate(properties, options);
     }
 
     remove() {

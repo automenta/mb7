@@ -14,7 +14,7 @@ export const Ontology = {
             return isValidDate(parseISO(value));
         },
         serialize: (value) => typeof value === 'object' && value !== null ?
-            { start: formatISO(parseISO(value.start)), end: formatISO(parseISO(value.end)) } : formatISO(parseISO(value)),
+            {start: formatISO(parseISO(value.start)), end: formatISO(parseISO(value.end))} : formatISO(parseISO(value)),
         deserialize: (value) => value
     },
     "string": {
@@ -34,22 +34,13 @@ export const Ontology = {
         },
         serialize: (value) => {
             if (typeof value === 'object' && value !== null) {
-                return { lower: String(value.lower), upper: String(value.upper) };
+                return {lower: String(value.lower), upper: String(value.upper)};
             }
             return String(value)
         },
         deserialize: (value) => value
     },
     "People": {
-        conditions: ["is"],
-        type: "object",
-        validate: (value, condition) => {
-            return typeof value === 'object';
-        },
-        serialize: (value) => value,
-        deserialize: (value) => value
-    },
-    "Settings": {
         conditions: ["is"],
         type: "object",
         validate: (value, condition) => {
@@ -69,7 +60,7 @@ export const Ontology = {
         },
         serialize: (value) => {
             if (typeof value === 'object' && value !== null) {
-                return { lower: String(value.lower), upper: String(value.upper) };
+                return {lower: String(value.lower), upper: String(value.upper)};
             }
             return String(value)
         },
@@ -97,7 +88,7 @@ export const Ontology = {
         },
         serialize: (value) => {
             if (typeof value === 'object' && value !== null) {
-                return { start: value.start, end: value.end };
+                return {start: value.start, end: value.end};
             }
             return value;
         },
@@ -114,13 +105,13 @@ export const Ontology = {
         conditions: ["is"],
         type: "object",
         tags: {
-            relays: { type: "string", required: false },
-            webrtcNostrRelays: { type: "string", required: false },
-            privateKey: { type: "string", required: false },
-            dateFormat: { type: "string", required: false },
-            profileName: { type: "string", required: false },
-            profilePicture: { type: "string", required: false },
-            signalingStrategy: { type: "string", required: false }
+            relays: {type: "string", required: false},
+            webrtcNostrRelays: {type: "string", required: false},
+            privateKey: {type: "string", required: false},
+            dateFormat: {type: "string", required: false},
+            profileName: {type: "string", required: false},
+            profilePicture: {type: "string", required: false},
+            signalingStrategy: {type: "string", required: false}
         },
         validate: (value, condition) => typeof value === 'object',
         serialize: (value) => value,
@@ -167,7 +158,6 @@ const isValidDate = (dateString) => {
 };
 
 export const getTagDefinition = (name) => {
-    console.log("getTagDefinition called with name:", name);
     // TODO: Add support for semantic information, such as synonyms, related concepts, and hierarchical relationships
     return Ontology[name] || Ontology.string;
 };

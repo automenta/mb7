@@ -1,4 +1,3 @@
-import {createElement} from "./utils.js";
 import {View} from "./view.js";
 import {GenericForm} from "./generic-form.js";
 import {Ontology} from "../core/ontology.js";
@@ -12,18 +11,20 @@ export class SettingsView extends View {
     }
 
     async build() {
-        this.el.innerHTML = "";
-         const settingsObjectId = 'settings';
+        while (this.el.firstChild) {
+            this.el.removeChild(this.el.firstChild);
+        }
+        const settingsObjectId = 'settings';
         let settingsObject = await this.db.get(settingsObjectId);
         let yDoc = await this.db.getYDoc(settingsObjectId);
 
-        if (!yDoc){
-             settingsObject = {
+        if (!yDoc) {
+            settingsObject = {
                 id: settingsObjectId,
                 name: "Settings",
             };
-           await this.db.saveObject(settingsObject);
-           yDoc = new Y.Doc()
+            await this.db.saveObject(settingsObject);
+            yDoc = new Y.Doc()
         }
 
         this.settingsForm = new GenericForm(Ontology.Settings, yDoc, 'settings');
@@ -32,6 +33,6 @@ export class SettingsView extends View {
     }
 
     async bindEvents() {
-        this.settingsForm.bindEvents();
+        await this.settingsForm.bindEvents();
     }
 }

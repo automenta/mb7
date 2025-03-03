@@ -33,6 +33,8 @@ export class RelayManager {
     }
 
     async connectToRelay(relayUrl) {
+        console.log("RelayManager.connectToRelay() called");
+
         console.log('RelayManager.connectToRelay() called', relayUrl);
         if (this.relayStatuses[relayUrl]?.status === "connecting" || this.relayStatuses[relayUrl]?.status === "connected") {
             return;
@@ -76,7 +78,11 @@ export class RelayManager {
     async onClose(relay) {
         try {
             console.log("Disconnected from relay:", relay.url);
-            this.relayStatuses[relay.url].status = "disconnected";
+            console.log("Relay status before update:", this.relayStatuses[relay.url]);
+            if (this.relayStatuses[relay.url]) {
+                this.relayStatuses[relay.url].status = "disconnected";
+            }
+            console.log("Relay status after update:", this.relayStatuses[relay.url]);
         } catch (error) {
             console.error("Error handling close:", error);
         }
@@ -85,6 +91,8 @@ export class RelayManager {
     async disconnectFromAllRelays() {
         try {
             for (const relayUrl in this.relayObjects) {
+                console.log('disconnectFromAllRelays - relayUrl:', relayUrl);
+                console.log('disconnectFromAllRelays - relay:', this.relayObjects[relayUrl]);
                 await this.relayObjects[relayUrl].close();
             }
             this.relayStatuses = {};

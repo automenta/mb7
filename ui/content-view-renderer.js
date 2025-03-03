@@ -28,7 +28,7 @@ export const renderTagCloud = (app, el) => {
 export const renderNostrFeed = async (app, el) => {
     const feedEl = el.querySelector('#nostr-feed');
     try {
-        const relayUrl = 'wss://relay.damus.io'; // Replace with actual relay URL
+        const relayUrl = localStorage.getItem('nostrRelayUrl') || 'wss://relay.damus.io'; // Use localStorage for relay URL
         feedEl.innerHTML = await fetchNostrFeed(relayUrl);
     } catch (error) {
         console.error('Error fetching Nostr feed:', error);
@@ -48,24 +48,26 @@ async function fetchNostrFeed(relayUrl) {
         ];
 
         const connection = new WebSocket(relayUrl);
-
+        let feedHTML = '';
         return new Promise((resolve, reject) => {
             connection.onopen = () => {
-                console.log("WebSocket connection opened");
                 connection.send(JSON.stringify(sub));
             };
 
-            let feedHTML = '';
             connection.onmessage = (event) => {
                 const data = JSON.parse(event.data);
                 if (data[0] === "EVENT") {
                     const subId = data[1];
-                    const eventContent = data[2].content;
-                    feedHTML += `<p>[${subId}] ${eventContent}</p>`;
+                    const event = data[2];
+                    const eventContent = event.content;
+                    const pubkey = event.pubkey;
+                    const createdAt = event.created_at;
+                    const formattedDate = formatDate(createdAt * 1000); // Convert seconds to milliseconds
+                    feedHTML += `<p><strong>${pubkey}</strong> - ${formattedDate}: ${eventContent}</p>`;
                 } else if (data[0] === "NOTICE") {
-                    console.log("NOTICE:", data[1]);
+                    //console.log("NOTICE:", data[1]);
                 } else {
-                    console.log("Unknown message type:", data);
+                    //console.log("Unknown message type:", data);
                 }
             };
 
@@ -77,6 +79,8 @@ async function fetchNostrFeed(relayUrl) {
             connection.onclose = () => {
                 resolve(feedHTML);
             };
+        }).finally(() => {
+            connection.close();
         });
     } catch (error) {
         console.error('Error fetching Nostr feed:', error);

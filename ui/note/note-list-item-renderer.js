@@ -56,4 +56,4 @@ const NoteListRenderer = {
     syncNameWithYjs: syncNameWithYjs
 };
 
-export { NoteListRenderer };
+export {NoteListRenderer};

@@ -1,5 +1,4 @@
 import {createElement} from "./utils.js";
-import * as Y from 'yjs'
 
 export class GenericForm {
     constructor(schema, yDoc, objectId) {
@@ -26,7 +25,6 @@ export class GenericForm {
                         type: "text",
                         id: property,
                         name: property,
-                        //value: object[property] || ""
                     });
                     break;
                 case "number":
@@ -34,7 +32,6 @@ export class GenericForm {
                         type: "number",
                         id: property,
                         name: property,
-                        //value: object[property] || ""
                     });
                     break;
                 case "boolean":
@@ -42,7 +39,6 @@ export class GenericForm {
                         type: "checkbox",
                         id: property,
                         name: property,
-                        //checked: object[property] || false
                     });
                     break;
                 default:
@@ -50,7 +46,6 @@ export class GenericForm {
                         type: "text",
                         id: property,
                         name: property,
-                        //value: object[property] || ""
                     });
             }
 
@@ -58,15 +53,21 @@ export class GenericForm {
             input.addEventListener('change', () => {
                 const value = input.value;
 
-                 // Validate the input using the Ontology
+                // Validate the input using the Ontology
                 if (this.schema.properties[property] && this.schema.validate) {
                     const isValid = this.schema.validate({[property]: value}, 'is');
                     if (!isValid) {
-                        alert(`Invalid input for ${property}`);
+                        //alert(`Invalid input for ${property}`);
+                        this.el.dispatchEvent(new CustomEvent('notify', {
+                            detail: {
+                                message: `Invalid input for ${property}`,
+                                type: 'error'
+                            }
+                        }));
                         return;
                     }
                 }
-                this.yMap.set(property, value)
+                this.yMap.set(property, value);
             })
 
             if (this.yMap.has(property)) {

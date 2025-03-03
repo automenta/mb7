@@ -7,7 +7,7 @@ import {NoteDetails} from './note/note.details.js';
 import {GenericListComponent} from './generic-list.js';
 
 import {Ontology} from '../core/ontology.js';
-import { NoteListRenderer } from './note/note-list-item-renderer.js';
+import {NoteListRenderer} from './note/note-list-item-renderer.js';
 
 export class NoteView extends HTMLElement {
     constructor(app, db, nostr) {
@@ -263,6 +263,7 @@ export class NoteView extends HTMLElement {
     }
 
     async createNote() {
+        console.time('createNote');
         try {
             const timestamp = Date.now();
             // Log the state of this.editor and this.editor.contentHandler
@@ -273,7 +274,7 @@ export class NoteView extends HTMLElement {
                 console.log("createNote: this.editor.contentHandler", this.editor.contentHandler);
             }
 
-            const newObject = await this.app.saveOrUpdateObject({
+            const newObject = await this.app.db.save({
                 id: timestamp.toString(),
                 name: 'New Note',
                 content: '',
@@ -282,6 +283,7 @@ export class NoteView extends HTMLElement {
                 priority: 'Medium',
                 isPersistentQuery: false
             });
+            console.timeEnd('createNote');
             if (newObject) {
                 const yNoteMap = this.getYNoteMap(newObject.id);
                 if (!yNoteMap) {
@@ -299,6 +301,7 @@ export class NoteView extends HTMLElement {
             } else {
                 console.error('Error creating note: newObject is null');
             }
+            console.timeEnd('createNote');
         } catch (error) {
             console.error('Error creating note:', error);
         }
@@ -381,6 +384,7 @@ export class NoteView extends HTMLElement {
 
         return li;
     }
+
     renderMyObjectItem(objectId) {
         const li = document.createElement('li');
         li.textContent = objectId;
@@ -461,7 +465,9 @@ export class NoteView extends HTMLElement {
 
     displayTags(noteId) {
         const tagList = this.el.querySelector('.note-tag-list');
-        tagList.innerHTML = ''; // Clear existing tags
+        while (tagList.firstChild) {
+            tagList.removeChild(tagList.firstChild);
+        }
         this.getNoteTags(noteId).then(tags => {
             tags.forEach(tag => {
                 const tagItem = document.createElement('li');
@@ -482,7 +488,9 @@ export class NoteView extends HTMLElement {
             suggestionsList.className = 'note-tag-suggestions';
             tagArea.appendChild(suggestionsList);
         }
-        suggestionsList.innerHTML = ''; // Clear existing suggestions
+        while (suggestionsList.firstChild) {
+            suggestionsList.removeChild(suggestionsList.firstChild);
+        }
         suggestions.forEach(suggestion => {
             const suggestionItem = document.createElement('li');
             suggestionItem.textContent = suggestion;
@@ -490,7 +498,9 @@ export class NoteView extends HTMLElement {
                 const tagInput = this.el.querySelector('.note-tag-input');
                 tagInput.value = suggestion;
                 this.addTagToNote(suggestion);
-                suggestionsList.innerHTML = ''; // Clear suggestions after selection
+                while (suggestionsList.firstChild) {
+                    suggestionsList.removeChild(suggestionsList.firstChild);
+                }
             });
             suggestionsList.appendChild(suggestionItem);
         });
@@ -504,7 +514,7 @@ export class NoteView extends HTMLElement {
                 if (!note.tags) {
                     note.tags = [];
                 }
-                note.tags.push({ name: tagName });
+                note.tags.push({name: tagName});
                 await this.app.db.saveObject(note, false);
                 this.displayTags(noteId);
                 this.edit.contentHandler.insertTagAtSelection(tagName); // Update editor content

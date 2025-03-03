@@ -33,7 +33,6 @@ describe('Edit Autosuggest', () => {
         const schema = {}; // Mock Schema
 
         const edit = new Edit(yDoc, autosuggest, contentHandler, ontologyBrowser, toolbar, getTagDefinition, schema);
-        edit.getTagDefinition = getTagDefinition;
 
         edit.matchesOntology = (word) => {
             return Object.keys(Ontology).some(tagName => tagName.toLowerCase() === word.toLowerCase());

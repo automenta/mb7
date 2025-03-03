@@ -21,30 +21,31 @@ describe('Matcher', () => {
     });
 
     describe('matchTagData', () => {
-        it('should return false if tagDef.validate returns false', () => {
+        it('should return false if tagDef.validate returns false', async () => {
             getTagDefinition.mockReturnValue({validate: vi.fn().mockReturnValue(false)});
             const tagData = {name: 'test', condition: 'is', value: 'value'};
             const text = 'text';
             const event = {};
-            const result = matcher.matchTagData(tagData, text, event);
+            const result = await matcher.matchTagData(tagData, text, event);
+            console.log('Result type:', typeof result);
             expect(result).toBe(false);
         });
-
-        it('should return true if condition is "is" and text includes value', () => {
+        it('should return true if condition is "is" and text includes value', async () => {
             getTagDefinition.mockReturnValue({validate: vi.fn().mockReturnValue(true)});
             const tagData = {name: 'test', condition: 'is', value: 'value'.toLowerCase()};
             const text = 'text with value'.toLowerCase();
             const event = {};
-            const result = matcher.matchTagData(tagData, text, event);
+            const result = await matcher.matchTagData(tagData, text, event);
+            console.log('Result type:', typeof result);
             expect(result).toBe(true);
         });
-
-        it('should return false if condition is "is" and text does not include value', () => {
+        it('should return false if condition is "is" and text does not include value', async () => {
             getTagDefinition.mockReturnValue({validate: vi.fn().mockReturnValue(true)});
             const tagData = {name: 'test', condition: 'is', value: 'value'.toLowerCase()};
             const text = 'text without value'.toLowerCase();
             const event = {};
-            const result = matcher.matchTagData(tagData, text, event);
+            const result = await matcher.matchTagData(tagData, text, event);
+            console.log('Result type:', typeof result);
             expect(result).toBe(true);
         });
     });

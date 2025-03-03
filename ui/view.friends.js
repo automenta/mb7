@@ -14,7 +14,9 @@ export class FriendsView extends View {
     }
 
     build() {
-        this.el.innerHTML = "";
+        while (this.el.firstChild) {
+            this.el.removeChild(this.el.firstChild);
+        }
         const input = createElement("input", {
             type: "text",
             id: "friend-pubkey",
@@ -24,7 +26,10 @@ export class FriendsView extends View {
         const h3 = createElement("h3", {}, "Your Friends");
         const ul = createElement("ul", {id: "friends-list"});
 
-        this.el.append(input, button, h3, ul);
+        this.el.appendChild(input);
+        this.el.appendChild(button);
+        this.el.appendChild(h3);
+        this.el.appendChild(ul);
     }
 
     bindEvents() {
@@ -55,6 +60,7 @@ export class FriendsView extends View {
 
     async addFriend() {
         let pubkey = this.el.querySelector("#friend-pubkey").value.trim();
+        console.log('addFriend called');
         if (!pubkey) return;
 
         // Check if input is an npub and decode to hex
@@ -94,16 +100,22 @@ export class FriendsView extends View {
                     ['profilePicture', picture]
                 ]
             };
+            console.log('Friend added successfully');
+            console.log('Friend added successfully');
             await this.app.saveOrUpdateObject(friendObject);
 
             // Secure Key Exchange
+            console.log('Key exchange initiated');
             await this.exchangeKeys(pubkey);
+            console.log('Key exchange initiated');
 
             this.app.showNotification(`Added friend: ${NostrTools.nip19.npubEncode(pubkey)}`, "success");
             await this.loadFriends();
             await this.nostr.connectToPeer(pubkey); // Connect immediately
+            console.error('Failed to add friend:', error);
 
         } catch (error) {
+            console.error('Failed to add friend:', error);
             this.app.showNotification("Failed to add friend.", "error")
         }
     }
@@ -125,7 +137,9 @@ export class FriendsView extends View {
         }
 
         const friendsList = this.el.querySelector("#friends-list");
-        friendsList.innerHTML = ""; // Clear existing list
+        while (friendsList.firstChild) {
+            friendsList.removeChild(friendsList.firstChild);
+        }
 
         if (friendsListObject && friendsListObject.friends) {
             for (const friendObjectId of friendsListObject.friends) {
@@ -150,10 +164,33 @@ export class FriendsView extends View {
                         const npub = NostrTools.nip19.npubEncode(pubkey);
                         const displayName = profileName || npub; // Use profileName if available, otherwise npub
                         const li = createElement('li');
-                        li.innerHTML = `${displayName} <button class="remove-friend" data-pubkey="${pubkey}">Remove</button> <button class="connect-webrtc" data-pubkey="${pubkey}">Connect WebRTC</button>
-                                            <input type="text" id="dm-text-${pubkey}" placeholder="Enter message">
-                                            <button class="send-dm" data-pubkey="${pubkey}">Send DM</button>`;
-                        friendsList.append(li);
+                        const removeButton = createElement('button', {
+                            class: 'remove-friend',
+                            'data-pubkey': pubkey
+                        }, 'Remove');
+                        const connectButton = createElement('button', {
+                            class: 'connect-webrtc',
+                            'data-pubkey': pubkey
+                        }, 'Connect WebRTC');
+                        const dmInput = createElement('input', {
+                            type: 'text',
+                            id: `dm-text-${pubkey}`,
+                            placeholder: 'Enter message'
+                        });
+                        const sendDmButton = createElement('button', {
+                            class: 'send-dm',
+                            'data-pubkey': pubkey
+                        }, 'Send DM');
+
+                        li.append(document.createTextNode(displayName + ' '));
+                        li.appendChild(removeButton);
+                        li.append(document.createTextNode(' '));
+                        li.appendChild(connectButton);
+                        li.append(document.createTextNode(' '));
+                        li.appendChild(dmInput);
+                        li.append(document.createTextNode(' '));
+                        li.appendChild(sendDmButton);
+                        friendsList.appendChild(li);
                     }
                 } catch (error) {
                     console.error("Error loading friend:", error);
@@ -161,7 +198,8 @@ export class FriendsView extends View {
                 }
             }
         } else {
-            friendsList.innerHTML = "<p>No friends found.</p>";
+            const p = createElement('p', {}, 'No friends found.');
+            friendsList.appendChild(p);
         }
         this.el.querySelectorAll(".remove-friend").forEach(button => button.addEventListener("click", (e) => this.removeFriend(button.dataset.pubkey)));
     }
@@ -185,10 +223,14 @@ export class FriendsView extends View {
             const encryptionKey = await generateEncryptionKey();
             // Send DM with the encryption key
             //const keyString = await webcrypto.subtle.exportKey("jwk", encryptionKey);
+            console.log('Generated encryption key for friend:', encryptionKey);
             await this.nostr.sendDM(pubkey, `Encryption key: ${JSON.stringify(encryptionKey)}`);
+            console.error('Error during key exchange:', error);
 
             console.log('Generated encryption key for friend:', encryptionKey);
+            console.log('Generated encryption key for friend:', encryptionKey);
         } catch (error) {
+            console.error('Error during key exchange:', error);
             console.error("Error during key exchange:", error);
             this.app.showNotification("Failed to exchange keys.", "error");
         }
