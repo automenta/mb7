@@ -29,7 +29,8 @@ class Tag extends HTMLElement {
             this.el.classList.add('conditional');
         }
 
-        const display = createElement('span', {}, `${this.tagDefinition.name}: ${this.value}`);
+        const icon = this.tagDefinition.ui?.icon || '🏷️';
+        const display = createElement('span', {}, `${icon} ${this.tagDefinition.name}: ${this.value}`);
         this.el.appendChild(display);
 
         const removeButton = createElement('span', { className: 'remove-tag' }, 'x');

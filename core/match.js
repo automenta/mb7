@@ -188,16 +188,21 @@ export class Matcher {
         this.word2vec = this.word2vec || new Word2Vec();
 
         const modelPath = this.app.settings?.word2vecModelPath || './core/word2vec.model';
-        const vectorSize = 100; // Define vector size
+        const vectorSize = 100;
         const similarityThreshold = 0.7;
 
         if (!this.word2vecModelLoaded) {
+            if (this.loadingWord2VecModel) return; // Prevent multiple loading attempts
+
+            this.loadingWord2VecModel = true;
             this.word2vec.loadModel(modelPath, () => {
                 console.log("Word2Vec model loaded");
                 this.word2vecModelLoaded = true;
+                this.loadingWord2VecModel = false;
             }, (error) => {
                 this.app.errorHandler.handleError(error, "Error loading Word2Vec model");
                 this.word2vecModelLoaded = false;
+                this.loadingWord2VecModel = false;
             });
         }
 

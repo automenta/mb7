@@ -28,15 +28,7 @@ class TagInput extends HTMLElement {
         }
 
         inputElement.addEventListener('input', (e) => {
-            const newValue = e.target.value;
-            // Validate the new value using tagDefinition.validate
-            if (this.tagDefinition.validate(newValue, 'is')) { // Assuming 'is' is the default condition
-                this.value = newValue;
-                this.onChange(newValue);
-            } else {
-                // Handle validation error
-                console.error('Invalid tag value:', newValue);
-            }
+            this.handleInputChange(e.target.value);
         });
 
         this.appendChild(inputElement);
@@ -66,14 +58,11 @@ class TagInput extends HTMLElement {
     }
 
     handleInputChange(newValue) {
-        // Validate the new value using tagDefinition.validate
-        if (this.tagDefinition.validate(newValue, this.condition)) {
+        if (this.tagDefinition.validate(newValue, 'is')) {
             this.value = newValue;
-            this.onChange(this.value, this.condition);
+            this.onChange(newValue);
         } else {
-            // Handle validation error (e.g., display an error message)
             console.error('Invalid tag value:', newValue);
-            // Optionally, provide visual feedback to the user (e.g., highlight the input field).
         }
     }
 }
