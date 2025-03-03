@@ -3,7 +3,12 @@ export const Ontology = {
         conditions: ["is", "contains", "near"],
         validate: (value, condition) => typeof value === "string" && value.length > 0,
         serialize: (value) => value,
-        deserialize: (value) => value
+        deserialize: (value) => value,
+        ui: {
+            type: "text", // or "map", "location-picker", etc.
+            placeholder: "Enter a location",
+            icon: "📍"
+        }
     },
     "time": {
         conditions: ["is", "before", "after", "between"],
@@ -38,7 +43,13 @@ export const Ontology = {
             }
             return String(value)
         },
-        deserialize: (value) => value
+        deserialize: (value) => value,
+        ui: {
+            type: "number",
+            unit: "meters",
+            min: 0,
+            max: 100
+        }
     },
     "People": {
         conditions: ["is"],

@@ -1,4 +1,5 @@
 import {createElement, debounce} from '../utils';
+import {TagInput} from '../tag-input';
 
 import {OntologyBrowser} from './ontology-browser';
 
@@ -47,7 +48,7 @@ class Edit {
         this.save = (object) => {
             const isPersistentQuery = this.persistentQueryCheckbox.checked;
             this.app.db.saveObject(object, isPersistentQuery);
-        }
+        };
     }
 
     createEditorArea() {
@@ -161,6 +162,22 @@ class Edit {
         return {displayText: tagData.name, tagData, span};
     }
 
+    createTagInput(tagName) {
+        const tagDefinition = this.getTagDefinition(tagName);
+        if (!tagDefinition) {
+            console.error('Tag definition not found:', tagName);
+            return null;
+        }
+
+        const tagValue = ''; // Initial value
+        const tagInput = new TagInput(tagDefinition, tagValue, (newValue) => {
+            // Handle tag value change
+            console.log('Tag value changed:', newValue);
+        });
+
+        return tagInput;
+    }
+
     /**
      * Checks if a word matches any tag name or condition in the ontology.
      */
@@ -172,12 +189,12 @@ class Edit {
     /**
      * Adds a tag to the note's content.
      */
-    addTag(tag) {
-        // Implement tag adding logic here
-        console.log('Adding tag:', tag);
-        this.contentHandler.insertTagAtSelection(tag);
+    addTag(tagName) {
+        const tagInput = this.createTagInput(tagName);
+        if (tagInput) {
+            this.editorArea.appendChild(tagInput);
+        }
     }
-
 }
 
 export {Edit};
