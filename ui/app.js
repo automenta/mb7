@@ -134,10 +134,10 @@ class App {
         }
     }
 
-    async createNote() {
+    async createNote(name = 'New Note') {
         const newNote = {
             id: uuidv4(),
-            name: 'New Note',
+            name: name,
             content: '',
             tags: [],
             isPersistentQuery: false,
@@ -194,15 +194,7 @@ function initializeViews(app) {
     const contentView = new ContentView(app);
 
     noteView.createNote = async () => {
-        const newNote = {
-            id: uuidv4(),
-            name: 'New Note',
-            content: '',
-            tags: [],
-            isPersistentQuery: false,
-            private: false
-        };
-        await app.saveObject(newNote);
+        const newNote = await app.createNote();
         noteView.loadNotes();
     };
 
