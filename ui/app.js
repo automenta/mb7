@@ -151,7 +151,7 @@ async function createApp(appDiv) {
 async function setupUI() {
     const appDiv = document.getElementById('app');
     const {app, db, nostr} = await createApp(appDiv);
-    const {noteView, friendsView, settingsView, contentView} = initializeViews(app, db, nostr);
+    const {noteView, friendsView, settingsView, contentView} = initializeViews(app);
     const {menubar, mainContent} = createLayout(app, appDiv, noteView, friendsView, settingsView, contentView);
 
     setupDefaultView(app, noteView, contentView);
@@ -161,10 +161,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     await setupUI();
 });
 
-function initializeViews(app, db, nostr) {
-    const noteView = new NoteView(app, db, nostr);
-    const friendsView = new FriendsView(app, db, nostr);
-    const settingsView = new SettingsView(app, db, nostr);
+function initializeViews(app) {
+    const noteView = new NoteView(app, app.db, app.nostr);
+    const friendsView = new FriendsView(app, app.db, app.nostr);
+    const settingsView = new SettingsView(app, app.db, app.nostr);
     const contentView = new ContentView(app);
     return {noteView, friendsView, settingsView, contentView};
 }
