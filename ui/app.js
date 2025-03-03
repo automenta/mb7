@@ -4,14 +4,10 @@ import {Matcher} from '../core/match.js';
 import {DB} from '../core/db.js';
 import {Nostr} from '../core/net.js';
 import {ErrorHandler} from '../core/error.js';
-import {FriendsView} from "./view.friends.js";
-import {SettingsView} from "./view.settings.js";
-import {NoteView as NoteView} from './view.note.js';
-import {ContentView} from "./ui-manager.js";
 import {createMenuBar} from './menu-bar.js';
-import { v4 as uuidv4 } from 'uuid';
-import {NotificationManager} from './notification-manager.js';
+import { NotificationManager } from './notification-manager.js';
 import { createAppMainContent } from './layout.js';
+import { initializeViews } from './views.js';
 
 /**
  * The main application class.
@@ -195,9 +191,6 @@ function initializeViews(app) {
         await app.saveObject(newNote);
         noteView.loadNotes();
     };
-
-    return {noteView, friendsView, settingsView, contentView};
-}
 
 function createLayout(app, appDiv, noteView, friendsView, settingsView, contentView, ) {
     const menubar = createMenuBar(app, noteView, friendsView, settingsView, contentView);
