@@ -340,7 +340,7 @@ export class NoteView extends HTMLElement {
                 if (note) {
                     // Deselect previously selected note
                     if (this.selectedNote) {
-                        const previousSelected = this.el.querySelector(\`.note-list-item[data-id="\${this.selectedNote.id}"]\`);
+                        const previousSelected = this.el.querySelector(this.selectedNote.id ? \`.note-list-item[data-id="\${this.selectedNote.id}"]\` : null);
                         if (previousSelected) {
                             previousSelected.classList.remove('selected');
                         }
