@@ -14,6 +14,8 @@ export class NoteDetails extends HTMLElement {
             ${this.createShareEdit().outerHTML}
             ${this.createTagsSection().outerHTML}
         `;
+
+        this.tagArea = this.createTagArea();
     }
 
     createDetailEdit(text, icon) {
@@ -91,7 +93,32 @@ export class NoteDetails extends HTMLElement {
         addTagButton.addEventListener('click', () => {
             this.addTagToNote(tagSelect.value);
         });
+
         return tagsContainer;
+    }
+
+    createTagArea() {
+        const tagArea = document.createElement('div');
+        tagArea.className = 'note-tag-area';
+
+        const tagInput = document.createElement('input');
+        tagInput.type = 'text';
+        tagInput.placeholder = 'Add a tag';
+        tagInput.className = 'note-tag-input';
+
+        const addTagButton = document.createElement('button');
+        addTagButton.textContent = '[+ Tag]';
+        addTagButton.classList.add('margin-left');
+
+        tagArea.appendChild(tagInput);
+        tagArea.appendChild(addTagButton);
+
+        addTagButton.addEventListener('click', () => {
+            this.addTagToNote(tagInput.value);
+            tagInput.value = ''; // Clear the input after adding the tag
+        });
+
+        return tagArea;
     }
 
     renderTags(tagsContainer) {
@@ -126,7 +153,14 @@ export class NoteDetails extends HTMLElement {
         }
     }
 
-    render() {
+     render() {
+         this.el.innerHTML = `
+            ${this.createPriorityEdit().outerHTML}
+            ${this.createPrivacyEdit().outerHTML}
+            ${this.createShareEdit().outerHTML}
+            ${this.createTagsSection().outerHTML}
+            ${this.tagArea.outerHTML}
+        `;
         return this.el;
     }
 }
