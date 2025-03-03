@@ -91,7 +91,7 @@ export class NoteDetails extends HTMLElement {
 
         this.renderTags(tagsContainer);
         addTagButton.addEventListener('click', () => {
-            this.addTagToNote(tagSelect.value);
+            this.addTagToNote(tagSelect.value, tagsContainer);
         });
 
         return tagsContainer;
