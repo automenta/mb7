@@ -140,14 +140,6 @@ export class NoteView extends HTMLElement {
         return addButton;
     }
 
-
-    newShareEdit() {
-        const sharingLabel = document.createElement('span');
-        sharingLabel.textContent = '👥 No One';
-        sharingLabel.style.marginLeft = '10px';
-        return sharingLabel;
-    }
-
     newPrivacyEdit() {
         return this.privacyContainer;
     }
