@@ -102,23 +102,6 @@ export class NoteView extends HTMLElement {
         this.loadInitialNotes(); // Load initial notes
     }
 
-    showNoNotesMessage() {
-        const message = document.createElement('div');
-        message.textContent = 'No notes found. Click "Add" to create a new note.';
-        message.className = 'no-notes-message';
-        this.sidebar.elements.notesList.replaceWith(message);
-    }
-
-    /** TODO dynamically refresh when the list or the item name changes */
-    /** Removed - using GenericListComponent */
-    newAddButton() {
-        addButton.textContent = 'Add';
-        addButton.addEventListener('click', async () => {
-            await this.createNote();
-        });
-        return addButton;
-    }
-
     newPrivacyEdit() {
         return this.privacyContainer;
     }
@@ -130,18 +113,6 @@ export class NoteView extends HTMLElement {
     }
 
     newPriEdit() {
-        const prioritySelect = this.createPrioritySelect();
-        const priorities = ['High', 'Medium', 'Low'];
-        priorities.forEach(priority => {
-            const option = this.createPriorityOption(priority);
-            prioritySelect.appendChild(option);
-        });
-        prioritySelect.addEventListener('change', async (event) => {
-            const priority = event.target.value;
-            await this.updateNotePriority(this.selectedNote.id, priority);
-        });
-        return prioritySelect;
-    }
 
     createPrioritySelect() {
         const prioritySelect = document.createElement('select');

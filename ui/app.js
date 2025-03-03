@@ -55,13 +55,6 @@ class App {
         const monitoring = new Monitoring();
         await monitoring.start();
 
-        // Create default note if no notes exist
-        const notes = await db.getAll();
-        if (!notes || notes.length === 0) {
-            console.log("No notes found in database on initial load. Creating default note.");
-            await this.createDefaultNote(db);
-        }
-
         return {db, nostr, matcher, errorHandler, notificationManager, monitoring};
     }
 
