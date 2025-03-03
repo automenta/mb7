@@ -201,4 +201,4 @@ function initializeViews(app) {
         noteView.loadNotes();
     };
 
-export { App };
+export {App};
