@@ -397,9 +397,13 @@ class Edit {
                 console.log('Tag updated:', updatedTag.getValue(), updatedTag.getCondition());
             }
         );
-
-        this.editorArea.appendChild(tagComponent);
-    }
-}
+ 
++        this.editorArea.insertAdjacentElement('beforebegin', tagComponent);
++    }
++}
++
+ export {Edit};
+ import { createElement, debounce } from '../utils';
+ 
 
 export { Edit };
