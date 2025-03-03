@@ -56,5 +56,29 @@ export class SettingsView extends View {
         this.el.appendChild(word2vecInput);
 
         await this.settingsForm.bindEvents();
+
+        const saveButton = createElement("button", {id: "save-settings-btn"}, "Save Settings");
+        this.el.appendChild(saveButton);
+        saveButton.addEventListener("click", () => this.saveSettings());
+    }
+
+    async saveSettings() {
+        const yMap = this.settingsForm.yMap;
+        const settingsObject = await this.db.get('settings') || {};
+
+        const settings = {
+            relays: yMap.get('relays') || settingsObject.relays || '',
+            webrtcNostrRelays: yMap.get('webrtcNostrRelays') || settingsObject.webrtcNostrRelays || '',
+            privateKey: yMap.get('privateKey') || settingsObject.privateKey || '',
+            dateFormat: yMap.get('dateFormat') || settingsObject.dateFormat || '',
+            profileName: yMap.get('profileName') || settingsObject.profileName || '',
+            profilePicture: yMap.get('profilePicture') || settingsObject.profilePicture || '',
+            signalingStrategy: yMap.get('signalingStrategy') || settingsObject.signalingStrategy || 'nostr',
+            word2vecModelPath: document.getElementById("word2vecModelPath").value
+        };
+
+        await this.db.saveSettings(settings);
+        this.app.settings = settings;
+        this.app.showNotification('Settings saved');
     }
 }
