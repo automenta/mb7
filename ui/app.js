@@ -6,7 +6,7 @@ import {Nostr} from '../core/net.js';
 import {ErrorHandler} from '../core/error.js';
 import {createMenuBar} from './menu-bar.js';
 import { NotificationManager } from './notification-manager.js';
-import { createAppMainContent } from './layout.js';
+import { createAppMainContent, createLayout } from './layout.js';
 import { initializeViews } from './views.js';
 
 /**
@@ -167,7 +167,7 @@ async function setupUI() {
     const appDiv = document.getElementById('app');
     const {app} = await createApp(appDiv);
     const {noteView, friendsView, settingsView, contentView} = initializeViews(app);
-    const {menubar, mainContent} = createLayout(app, appDiv, noteView, friendsView, settingsView, contentView, app);
+    const {menubar, mainContent} = createLayout(app, appDiv, noteView, friendsView, settingsView, contentView, appDiv, app);
 
     setupDefaultView(app, noteView, contentView);
 
@@ -207,13 +207,3 @@ function initializeViews(app) {
     };
 
 export {App};
-
-function createLayout(app, appDiv, noteView, friendsView, settingsView, contentView, ) {
-    const menubar = createMenuBar(app, noteView, friendsView, settingsView, contentView);
-    const mainContent = createAppMainContent();
-
-    appDiv.appendChild(menubar);
-    appDiv.appendChild(mainContent);
-    appDiv.appendChild(app.elements.notificationArea);
-    return {menubar, mainContent};
-}
