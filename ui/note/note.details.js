@@ -173,7 +173,6 @@ export class NoteDetails extends HTMLElement {
             ${this.createPrivacyEdit().outerHTML}
             ${this.createShareEdit().outerHTML}
             ${this.createTagsSection().outerHTML}
-            ${this.tagArea.outerHTML}
         `;
         return this.el;
     }

@@ -242,7 +242,9 @@ export class NoteView extends HTMLElement {
     focusTitleInput() {
         const titleInput = this.el.querySelector('.note-title-input');
         if (titleInput) {
-            titleInput.focus();
+            setTimeout(() => {
+                titleInput.focus();
+            }, 0);
         }
     }
 
