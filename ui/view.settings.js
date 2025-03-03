@@ -44,6 +44,17 @@ export class SettingsView extends View {
         this.el.appendChild(word2vecLabel);
         this.el.appendChild(word2vecInput);
 
+        // Word2Vec Model Path Input
+        const word2vecLabel = createElement("label", {for: "word2vecModelPath"}, "Word2Vec Model Path");
+        const word2vecInput = createElement("input", {
+            type: "text",
+            id: "word2vecModelPath",
+            name: "word2vecModelPath",
+            value: this.app.settings?.word2vecModelPath || './core/word2vec.model'
+        });
+        this.el.appendChild(word2vecLabel);
+        this.el.appendChild(word2vecInput);
+
         await this.settingsForm.bindEvents();
     }
 }
