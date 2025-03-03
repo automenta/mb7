@@ -89,7 +89,6 @@ export class NoteDetails extends HTMLElement {
         this.el.innerHTML = `
             ${this.createPriorityEdit().outerHTML}
             ${this.createPrivacyEdit().outerHTML}
-            ${this.createPrivacyEdit().outerHTML}
             <div class="tag-input-container">
                 <input type="text" class="new-tag-input" placeholder="Add a tag"/>
                 <button class="add-tag-button">Add Tag</button>
