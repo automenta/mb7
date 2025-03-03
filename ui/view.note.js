@@ -320,6 +320,7 @@ export class NoteView extends HTMLElement {
         const noteId = noteIdArray[0];
         const li = document.createElement('li');
         li.dataset.id = noteId;
+        li.classList.add('note-list-item');
         const nameElement = document.createElement('div');
         nameElement.style.fontWeight = 'bold';
         li.appendChild(nameElement);
@@ -372,13 +373,11 @@ export class NoteView extends HTMLElement {
                     });
                     nameElement.textContent = yNoteMap.get("name") || note.name;
                 }
-                li.classList.add('note-list-item');
                 nameElement.classList.add('note-name');
             } else {
                 nameElement.textContent = 'Error loading note - DEBUG';
             }
         });
-        this.displayTags(noteId);
 
         return li;
     }
