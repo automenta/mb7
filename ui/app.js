@@ -177,9 +177,14 @@ async function setupUI() {
     setupDefaultView(app, noteView, contentView);
 
     // Create a default note if no notes exist
-    const notes = await app.db.getAll();
-    if (notes.length === 0) {
-        await app.createDefaultNote(app.db);
+    let notes;
+    try {
+        notes = await app.db.getAll();
+        if (notes.length === 0) {
+            await app.createDefaultNote(app.db);
+        }
+    } catch (error) {
+        app.errorHandler.handleError(error, 'Error loading notes or creating default note');
     }
 }
 
