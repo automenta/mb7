@@ -26,8 +26,10 @@ export class GenericListComponent extends UIComponent {
             this.listElement.textContent = 'No items yet.';
         } else {
             data.forEach(item => { // item is noteId
-                const listItem = this.renderer.createListItem(item); // Use the renderer.createListItem function
-                this.listElement.appendChild(listItem);
+                const listItemContent = this.renderer.renderListItem(item); // Use the renderer.renderListItem function to get the content
+                const listItem = document.createElement('li'); // Create the <li> element
+                listItem.appendChild(listItemContent); // Append the content to the <li> element
+                this.listElement.appendChild(listItem); // Append the <li> element to the list
             });
         }
     }

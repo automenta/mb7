@@ -5,10 +5,10 @@ export class MyObjectsList {
     constructor(noteView, yMyObjectsList) {
         this.noteView = noteView;
         this.yMyObjectsList = yMyObjectsList;
-        this.myObjectsListComponent = new GenericListComponent(this.renderMyObjectItem.bind(this), this.yMyObjectsList);
+        this.myObjectsListComponent = new GenericListComponent(this, this.yMyObjectsList);
     }
 
-    renderMyObjectItem(objectId) {
+    renderListItem(objectId) {
         const li = document.createElement('li');
         li.textContent = objectId;
         return li;
