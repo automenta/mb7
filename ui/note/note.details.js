@@ -72,6 +72,9 @@ export class NoteDetails extends HTMLElement {
             }
         } else {
             console.warn('Note not found:', noteId);
+        }
+    }
+
     createTagsSection() {
         const tagsContainer = document.createElement('div');
         tagsContainer.className = 'note-tags-container';
