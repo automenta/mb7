@@ -77,14 +77,13 @@ export class DB {
     constructor(app, errorHandler) {
         this.app = app;
         this.errorHandler = errorHandler;
-        this.executePersistentQueries = this.executePersistentQueries.bind(this);
     }
 
     /**
      * Initializes the database.
      * @returns {Promise<DB>} - The database object.
      */
-    static async the() {
+    static async the(app) {
         if (this.db) return this.db;
 
         console.log("DB.the - opening database");
@@ -366,12 +365,12 @@ export class DB {
     /**
      * Executes persistent queries and notifies the user of any new matches.
      */
-    async executePersistentQueries() {
+    async executePersistentQueries(app) {
         try {
             const persistentQueries = await this.getAll().filter(obj => obj.isPersistentQuery === true);
 
             await Promise.all(persistentQueries.map(async query => {
-                const matches = await this.app.matcher.findMatches(query));
+                const matches = await app.matcher.findMatches(query);
                 if (matches.length > 0) {
                     this.notifyPersistentQueryMatches(query, matches);
                 }
@@ -398,6 +397,13 @@ export class DB {
 }
 
 setInterval(async () => {
-    const db = await DB.the();
-    db.executePersistentQueries();
+    // Assuming 'app' is globally accessible or can be obtained here
+    // You might need to adjust this part based on how 'app' is managed in your application
+    const app = window.app; // Example: Assuming 'app' is a global variable
+    if (app) {
+        const db = await DB.the(app);
+        db.executePersistentQueries(app);
+    } else {
+        console.warn("App instance not available, skipping executePersistentQueries");
+    }
 }, 60000);
