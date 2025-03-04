@@ -1,59 +1,67 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Edit Component Dev UI</title>
+    <title>NoteView Component Dev UI</title>
     <style>
         body { font-family: sans-serif; }
         .dev-ui-container { display: flex; }
         .component-preview-area { flex: 2; padding: 20px; border-right: 1px solid #ccc; }
         .controls-panel { flex: 1; padding: 20px; }
-        .editor-area {
+        .editor-area { /* Keep editor-area styles for Edit component within NoteView */
             border: 1px solid #ccc;
             padding: 10px;
             min-height: 200px;
-            tab-size: 4; /* Consistent tab width */
-            white-space: pre-wrap; /* Respect new lines and spaces */
-            font-family: monospace; /* Monospace font for better cursor visibility */
+            tab-size: 4;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+        #note-view-container { /* Style for NoteView container if needed */
+            border: 1px dashed blue; /* Example border to visualize NoteView area */
+            padding: 10px;
         }
     </style>
 </head>
 <body>
-    <h1>Edit Component Dev UI</h1>
+    <h1>NoteView Component Dev UI</h1>
     <div class="dev-ui-container">
         <div class="component-preview-area">
-            <h2>Edit Component Preview</h2>
-            <div id="edit-component-container">
-                <!-- Edit component will be rendered here -->
+            <h2>NoteView Component Preview</h2>
+            <div id="note-view-container">
+                <!-- NoteView component will be rendered here -->
             </div>
         </div>
         <div class="controls-panel">
             <h2>Controls</h2>
-            <div id="content-input-area">
-                <h3>Initial Content (Yjs Text)</h3>
-                <textarea id="content-textarea" rows="10" cols="60" style="font-family: monospace; white-space: pre;"></textarea><br>
-                <button id="load-content-button">Load Content</button>
-            </div>
-            <div id="re-render-controls">
-                <h3>Re-render</h3>
-                <button id="re-render-button">Re-render Content</button>
+            <div id="note-loading-controls">
+                <h3>Load Notes</h3>
+                <button id="load-note-1-button">Load Note 1</button><br><br>
+                <button id="load-note-2-button">Load Note 2</button><br><br>
             </div>
         </div>
     </div>
 
     <script type="module">
-        import { Edit } from './ui/edit/edit.js';
+        import { NoteView } from './ui/view.note.js';
         import { createAppMock } from './test/test-utils.js';
         import * as Y from 'yjs';
 
         document.addEventListener('DOMContentLoaded', () => {
-            const editComponentContainer = document.getElementById('edit-component-container');
-            const contentTextarea = document.getElementById('content-textarea');
-            const loadContentButton = document.getElementById('load-content-button');
-            const reRenderButton = document.getElementById('re-render-button');
+            const noteViewContainer = document.getElementById('note-view-container');
+            const loadNote1Button = document.getElementById('load-note-1-button');
+            const loadNote2Button = document.getElementById('load-note-2-button');
 
-            let editInstance;
-            let yDoc = new Y.Doc();
-            let appMock = createAppMock(); // Get a mock app object
+            let noteViewInstance;
+            let appMock = createAppMock(); // Get a base mock app object
+
+            // Mock DB.get to return different notes for note1 and note2
+            appMock.db.get = async (noteId) => {
+                if (noteId === 'note1') {
+                    return { id: 'note1', name: 'Note 1', content: 'This is the content of Note 1.' };
+                } else if (noteId === 'note2') {
+                    return { id: 'note2', name: 'Note 2', content: 'Content for Note 2 is different.' };
+                }
+                return null; // Or handle default case
+            };
 
             // Mock getTagDefinition - for simplicity, return a default string tag definition
             appMock.getTagDefinition = (tagName) => {
@@ -66,32 +74,35 @@
                 };
             };
             appMock.schema = {}; // Mock schema if needed
+            appMock.store = { // Mock store for NoteView
+                dispatch: () => {},
+                subscribe: () => {},
+                getState: () => ({ selectedNoteId: null }) // Initial state
+            };
+            appMock.errorHandler = { handleError: console.error }; // Mock errorHandler
+            appMock.noteManager = { saveObject: () => {}, createNote: () => {} }; // Mock noteManager
+            appMock.noteYjsHandler = { getYNoteMap: () => {} }; // Mock noteYjsHandler
+            appMock.notificationManager = { showNotification: console.log }; // Mock notificationManager
+            appMock.ontology = {}; // Mock ontology
 
-            loadContentButton.addEventListener('click', () => {
-                const initialContent = contentTextarea.value;
-                yDoc = new Y.Doc(); // Create a new Y.Doc for each load
-                const yText = yDoc.getText('content');
-                yText.insert(0, initialContent);
+            noteViewInstance = new NoteView( // Create NoteView instance
+                appMock.store,
+                appMock.db,
+                appMock.errorHandler,
+                appMock.noteManager,
+                appMock.noteYjsHandler,
+                appMock.notificationManager,
+                appMock.ontology
+            );
+            noteViewContainer.appendChild(noteViewInstance); // Append NoteView to container
 
-                if (editInstance) {
-                    editInstance.el.remove(); // Remove previous instance if exists
-                }
-                editInstance = new Edit(
-                    { id: 'dev-note', content: '' }, // Mock note object
-                    yDoc,
-                    appMock,
-                    appMock.getTagDefinition,
-                    appMock.schema
-                );
-                editComponentContainer.appendChild(editInstance.el);
+
+            loadNote1Button.addEventListener('click', () => {
+                noteViewInstance.loadNote('note1');
             });
 
-            reRenderButton.addEventListener('click', () => {
-                if (editInstance) {
-                    editInstance.renderContent(); // Manually trigger re-render
-                } else {
-                    alert("Load content first!");
-                }
+            loadNote2Button.addEventListener('click', () => {
+                noteViewInstance.loadNote('note2');
             });
         });
     </script>
