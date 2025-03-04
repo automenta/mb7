@@ -84,11 +84,11 @@ class EditorContentHandler {
 
     serialize() {
         const clonedEditor = this.editor.editorArea.cloneNode(true);
-        clonedEditor.querySelectorAll("gra-tag").forEach(tagEl => { // Updated selector
-            const tagData = tagDataMap.get(tagEl);
-            if (tagData) {
-                tagEl.replaceWith(`[TAG:${JSON.stringify(tagData)}]`);
-            }
+        clonedEditor.querySelectorAll("data-tag").forEach(tagEl => {
+            const tagName = tagEl.getTagDefinition().name;
+            const tagValue = tagEl.getValue();
+            const tagCondition = tagEl.getCondition();
+            tagEl.replaceWith(`[TAG:${tagName}:${tagValue}:${tagCondition}]`);
         });
         return clonedEditor.innerHTML.replace(/<br\s*\/?>/g, "\\n");
     }
@@ -101,33 +101,28 @@ class EditorContentHandler {
         let match;
         while ((match = tagRegex.exec(text)) !== null) {
             if (match.index > lastIndex) {
-                this.editor.editorArea.append(text.substring(lastIndex, match.index));
+                this.editor.editorArea.append(document.createTextNode(text.substring(lastIndex, match.index)));
                 lastIndex = match.index;
             }
             try {
-                const tagName = match[1];
+                const [_, tagName, tagValue, tagCondition] = match;
                 const tagDefinition = this.editor.getTagDefinition(tagName);
                 if (tagDefinition) {
-                    try {
-                        const tag = new Tag(tagDefinition, () => this.editor.autosuggest.apply());
-                        this.editor.editorArea.append(tag);
-                    } catch (tagError) {
-                        console.error("Failed to create tag:", tagError);
-                        this.editor.editorArea.append(match[0]);
-                    }
+                    const tag = new Tag(tagDefinition, tagValue, tagCondition, () => this.editor.autosuggest.apply());
+                    this.editor.editorArea.append(tag);
                 } else {
                     console.warn("Tag definition not found:", tagName);
-                    this.editor.editorArea.append(match[0]);
+                    this.editor.editorArea.append(document.createTextNode(match[0]));
                 }
             } catch (error) {
                 console.error("Failed to parse tag:", error);
-                this.editor.editorArea.append(match[0]);
+                this.editor.editorArea.append(document.createTextNode(match[0]));
             }
             lastIndex = tagRegex.lastIndex;
         }
 
         if (lastIndex < text.length) {
-            this.editor.editorArea.append(text.substring(lastIndex));
+            this.editor.editorArea.append(document.createTextNode(text.substring(lastIndex)));
         }
     }
 
