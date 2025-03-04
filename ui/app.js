@@ -75,6 +75,7 @@ class NoteManager {
             return null;
         }
 
+        this.prepareObjectForSaving(object);
         const newObject = {id: object.id, name: object.name, content: object.content, tags: object.tags || []};
         this.processTags(newObject, object.private);
         try {
@@ -140,6 +141,14 @@ class NoteManager {
             this.errorHandler.handleError(error, 'Error publishing to Nostr');
         }
     }
+
+    prepareObjectForSaving(object) {
+        if (!object.tags || !Array.isArray(object.tags)) return;
+        const invalidTag = object.tags.find(tag => !tag.name);
+        if (invalidTag) {
+            throw new Error(`Tag name is required. Invalid tag: ${JSON.stringify(invalidTag)}`);
+        }
+    }
 }
 
 /**
@@ -194,18 +203,6 @@ class App {
 
     async relayConnected(relay) {
         await this.nostr.relayConnected(relay);
-    }
-
-    prepareObjectForSaving(object) {
-        if (!object.tags || !Array.isArray(object.tags)) return;
-        const invalidTag = object.tags.find(tag => !tag.name);
-        if (invalidTag) {
-            throw new Error(`Tag name is required. Invalid tag: ${JSON.stringify(invalidTag)}`);
-        }
-    }
-
-    showNotification(message, type) {
-        this.notificationManager.showNotification(message, type);
     }
 }
 
