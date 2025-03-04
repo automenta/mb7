@@ -9,6 +9,10 @@ vi.mock('idb', () => ({
 describe('DB', () => {
     let db;
     let errorHandler;
+    const testId = 'test-id';
+    const testObject = { id: testId, name: 'Test Object', content: 'Test Content' };
+    const defaultObjectData = { id: testId, 'default-data' };
+    const existingObjectData = { id: testId, 'test-data' };
 
     beforeEach(() => {
         errorHandler = {
@@ -48,15 +52,14 @@ describe('DB', () => {
 
     describe('getDefaultObject', () => {
         it('should return existing object if found in DB', async () => {
-            const existingObject = { id: 'test-id',  'test-data' };
             DB.db = {
-                get: vi.fn().mockResolvedValue(existingObject),
+                get: vi.fn().mockResolvedValue(existingObjectData),
             };
 
-            const result = await DB.getDefaultObject('test-id');
+            const result = await DB.getDefaultObject(testId);
 
-            expect(DB.db.get).toHaveBeenCalledWith('objects', 'test-id');
-            expect(result).toBe(existingObject);
+            expect(DB.db.get).toHaveBeenCalledWith('objects', testId);
+            expect(result).toBe(existingObjectData);
         });
 
         it('should create and return a default object if not found in DB', async () => {
@@ -64,31 +67,30 @@ describe('DB', () => {
                 get: vi.fn().mockResolvedValue(undefined),
                 put: vi.fn().mockResolvedValue(undefined),
             };
-            const createDefaultObject = vi.fn().mockResolvedValue({ id: 'test-id',  'default-data' });
+            const createDefaultObject = vi.fn().mockResolvedValue(defaultObjectData);
             DB.getDefaultObject = async (id) => {
                 let object = await DB.db.get('objects', id);
                 return object ? object : await createDefaultObject(DB.db, id);
             }
 
-            const result = await DB.getDefaultObject('test-id');
+            const result = await DB.getDefaultObject(testId);
 
-            expect(DB.db.get).toHaveBeenCalledWith('objects', 'test-id');
-            expect(createDefaultObject).toHaveBeenCalledWith(DB.db, 'test-id');
-            expect(result).toEqual({ id: 'test-id',  'default-data' });
+            expect(DB.db.get).toHaveBeenCalledWith('objects', testId);
+            expect(createDefaultObject).toHaveBeenCalledWith(DB.db, testId);
+            expect(result).toEqual(defaultObjectData);
         });
     });
 
     describe('get', () => {
         it('should retrieve an object from the database', async () => {
-            const expectedObject = { id: 'test-id',  'test-data' };
             DB.db = {
-                get: vi.fn().mockResolvedValue(expectedObject),
+                get: vi.fn().mockResolvedValue(existingObjectData),
             };
 
-            const result = await db.get('test-id');
+            const result = await db.get(testId);
 
-            expect(DB.db.get).toHaveBeenCalledWith('objects', 'test-id');
-            expect(result).toEqual(expectedObject);
+            expect(DB.db.get).toHaveBeenCalledWith('objects', testId);
+            expect(result).toEqual(existingObjectData);
         });
 
         it('should handle errors when retrieving an object', async () => {
@@ -97,7 +99,7 @@ describe('DB', () => {
                 get: vi.fn().mockRejectedValue(error),
             };
 
-            await expect(db.get('test-id')).rejects.toThrow(error);
+            await expect(db.get(testId)).rejects.toThrow(error);
             expect(errorHandler.handleError).not.toHaveBeenCalled();
         });
     });
@@ -110,18 +112,17 @@ describe('DB', () => {
         });
 
         it('should save an object to the database', async () => {
-            const object = { id: 'test-id', name: 'Test Object', content: 'Test Content' };
-            db.validateObjectData = vi.fn().mockResolvedValue(undefined);
-            db.sanitizeContent = vi.fn().mockReturnValue(object.content);
+            db.validateObjectData = vi.fn().mockResolvedValue();
+            db.sanitizeContent = vi.fn().mockReturnValue(testObject.content);
             DB.db = {
-                put: vi.fn().mockResolvedValue(undefined),
+                put: vi.fn().mockResolvedValue(),
             };
 
-            await db.save(object);
+            await db.save(testObject);
 
-            expect(db.validateObjectData).toHaveBeenCalledWith(object);
-            expect(db.sanitizeContent).toHaveBeenCalledWith(object.content);
-            expect(DB.db.put).toHaveBeenCalledWith('objects', object);
+            expect(db.validateObjectData).toHaveBeenCalledWith(testObject);
+            expect(db.sanitizeContent).toHaveBeenCalledWith(testObject.content);
+            expect(DB.db.put).toHaveBeenCalledWith('objects', testObject);
         });
     });
 
@@ -146,25 +147,24 @@ describe('DB', () => {
         });
 
         it('should throw an error if object name is empty', async () => {
-            const object = { id: 'test-id', name: '  ' };
+            const object = { id: testId, name: '  ' };
             await expect(db.validateObjectData(object)).rejects.toThrow('Object name must be a non-empty string.');
         });
 
         it('should not throw an error if object data is valid', async () => {
-            const object = { id: 'test-id', name: 'Test Object' };
-            await expect(db.validateObjectData(object)).resolves.not.toThrow();
+            await expect(db.validateObjectData(testObject)).resolves.not.toThrow();
         });
     });
 
     describe('delete', () => {
         it('should delete an object from the database', async () => {
             DB.db = {
-                delete: vi.fn().mockResolvedValue(undefined),
+                delete: vi.fn().mockResolvedValue(),
             };
 
-            await db.delete('test-id');
+            await db.delete(testId);
 
-            expect(DB.db.delete).toHaveBeenCalledWith('objects', 'test-id');
+            expect(DB.db.delete).toHaveBeenCalledWith('objects', testId);
             expect(errorHandler.handleError).not.toHaveBeenCalled();
         });
 
@@ -174,7 +174,7 @@ describe('DB', () => {
                 delete: vi.fn().mockRejectedValue(error),
             };
 
-            await expect(db.delete('test-id')).rejects.toThrow(error);
+            await expect(db.delete(testId)).rejects.toThrow(error);
             expect(errorHandler.handleError).toHaveBeenCalled();
         });
     });

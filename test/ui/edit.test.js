@@ -37,14 +37,19 @@ describe('Edit Component - Cursor Preservation', () => {
         vi.clearAllMocks();
     });
 
+    const setEditorContent = async (content, cursorPosition = null) => {
+        yDoc.getText('content').insert(0, content);
+        await vi.waitUntil(() => editorArea.textContent === content);
+        editorArea.focus();
+        if (cursorPosition !== null) {
+            editorArea.setSelectionRange(cursorPosition, cursorPosition);
+        }
+        return cursorPosition === null ? content.length : cursorPosition;
+    };
+
     it('should preserve cursor position after re-rendering - cursor at the beginning', async () => {
         const initialContent = 'This is some text content.';
-        yDoc.getText('content').insert(0, initialContent);
-        await vi.waitUntil(() => editorArea.textContent === initialContent);
-
-        editorArea.focus();
-        editorArea.setSelectionRange(0, 0);
-        const initialCursorPosition = editorArea.selectionStart;
+        const initialCursorPosition = await setEditorContent(initialContent, 0);
 
         editInstance.renderContent();
         await vi.waitUntil(() => editorArea.textContent === initialContent);
@@ -54,13 +59,8 @@ describe('Edit Component - Cursor Preservation', () => {
 
     it('should preserve cursor position after re-rendering - cursor in the middle', async () => {
         const initialContent = 'This is some text content.';
-        yDoc.getText('content').insert(0, initialContent);
-        await vi.waitUntil(() => editorArea.textContent === initialContent);
-
-        editorArea.focus();
         const cursorPosition = 10;
-        editorArea.setSelectionRange(cursorPosition, cursorPosition);
-        const initialCursorPosition = editorArea.selectionStart;
+        const initialCursorPosition = await setEditorContent(initialContent, cursorPosition);
 
         editInstance.renderContent();
         await vi.waitUntil(() => editorArea.textContent === initialContent);
@@ -70,13 +70,7 @@ describe('Edit Component - Cursor Preservation', () => {
 
     it('should preserve cursor position after re-rendering - cursor at the end', async () => {
         const initialContent = 'This is some text content.';
-        yDoc.getText('content').insert(0, initialContent);
-        await vi.waitUntil(() => editorArea.textContent === initialContent);
-
-        editorArea.focus();
-        const cursorPosition = initialContent.length;
-        editorArea.setSelectionRange(cursorPosition, cursorPosition);
-        const initialCursorPosition = editorArea.selectionStart;
+        const initialCursorPosition = await setEditorContent(initialContent);
 
         editInstance.renderContent();
         await vi.waitUntil(() => editorArea.textContent === initialContent);
@@ -86,13 +80,8 @@ describe('Edit Component - Cursor Preservation', () => {
 
     it('should preserve cursor position after re-rendering - with tags', async () => {
         const initialContent = 'Text before [TAG:{"name": "LocationTag"}] tag and text after.';
-        yDoc.getText('content').insert(0, initialContent);
-        await vi.waitUntil(() => editorArea.textContent.includes('Text before'));
-
-        editorArea.focus();
         const cursorPosition = 15;
-        editorArea.setSelectionRange(cursorPosition, cursorPosition);
-        const initialCursorPosition = editorArea.selectionStart;
+        const initialCursorPosition = await setEditorContent(initialContent, cursorPosition);
 
         editInstance.renderContent();
         await vi.waitUntil(() => editorArea.textContent.includes('Text before'));
@@ -102,13 +91,8 @@ describe('Edit Component - Cursor Preservation', () => {
 
     it('should preserve cursor position after content is changed programmatically', async () => {
         const initialContent = 'Initial content.';
-        yDoc.getText('content').insert(0, initialContent);
-        await vi.waitUntil(() => editorArea.textContent === initialContent);
-
-        editorArea.focus();
         const cursorPosition = 5;
-        editorArea.setSelectionRange(cursorPosition, cursorPosition);
-        const initialCursorPosition = editorArea.selectionStart;
+        const initialCursorPosition = await setEditorContent(initialContent, cursorPosition);
 
         const newContent = 'New content, replacing initial.';
         yDoc.getText('content').delete(0, initialContent.length);
@@ -120,12 +104,7 @@ describe('Edit Component - Cursor Preservation', () => {
 
     it('should place cursor at the end if initial cursor position is out of bounds after re-render', async () => {
         const initialContent = 'Short content.';
-        yDoc.getText('content').insert(0, initialContent);
-        await vi.waitUntil(() => editorArea.textContent === initialContent);
-
-        editorArea.focus();
-        const cursorPosition = initialContent.length;
-        editorArea.setSelectionRange(cursorPosition, cursorPosition);
+        await setEditorContent(initialContent);
 
         const shorterContent = 'Shorter.';
         yDoc.getText('content').delete(0, initialContent.length);

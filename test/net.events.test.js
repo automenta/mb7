@@ -5,6 +5,14 @@ import { createAppMock } from './test-utils.js';
 describe('EventHandler', () => {
     let eventHandler;
     let app;
+    const testObjectId = '123';
+    const testObjectName = 'Test';
+    const testObjectContent = 'Test Content';
+    const validEventContent = `{ "id": "${testObjectId}", "name": "${testObjectName}" }`;
+    const invalidEventContent = 'invalid json';
+    const baseEvent = { created_at: 1678886400, tags: [] };
+    const parsedData = { id: testObjectId, name: testObjectName, content: testObjectContent };
+    const extractedData = { id: testObjectId, name: testObjectName, content: testObjectContent };
 
     beforeEach(() => {
         app = createAppMock();
@@ -13,9 +21,9 @@ describe('EventHandler', () => {
 
     describe('validateEventContent', () => {
         it.each([
-            [{ content: '{ "id": "123" }' }, true, 'valid JSON'],
+            [{ content: validEventContent }, true, 'valid JSON'],
             [{ content: '' }, false, 'empty content'],
-            [{ content: 'invalid json' }, false, 'invalid JSON'],
+            [{ content: invalidEventContent }, false, 'invalid JSON'],
         ])('should return %s if event content is %s (%s)', (event, expected, description) => {
             expect(eventHandler.validateEventContent(event)).toBe(expected);
         });
@@ -23,13 +31,13 @@ describe('EventHandler', () => {
 
     describe('parseEventContent', () => {
         it('should parse valid JSON event content', async () => {
-            const event = { content: '{ "id": "123", "name": "Test" }' };
+            const event = { content: validEventContent };
             const parsedContent = await eventHandler.parseEventContent(event);
-            expect(parsedContent).toEqual({ id: "123", name: "Test" });
+            expect(parsedContent).toEqual({ id: testObjectId, name: testObjectName });
         });
 
         it('should throw an error if event content is invalid JSON', async () => {
-            const event = { content: 'invalid json' };
+            const event = { content: invalidEventContent };
             await expect(eventHandler.parseEventContent(event)).rejects.toThrow(SyntaxError);
         });
     });
@@ -37,23 +45,23 @@ describe('EventHandler', () => {
     describe('createOrUpdateNObject', () => {
         it('should not create or update NObject if data.id is missing', async () => {
             const event = { content: '{ "name": "Test" }', tags: [] };
-            const data = { name: 'Test' };
+            const data = { name: testObjectName };
             await eventHandler.createOrUpdateNObject(event, data);
             expect(app.db.save).not.toHaveBeenCalled();
         });
 
         it('should create a new NObject if it does not exist', async () => {
             app.db.get.mockResolvedValue(null);
-            const event = { created_at: 1678886400, tags: [] };
-            const data = { id: '123', name: 'Test', content: 'Test Content' };
+            const event = { ...baseEvent, tags: [] };
+            const data = parsedData;
 
             await eventHandler.createOrUpdateNObject(event, data);
 
             expect(app.db.save).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    id: '123',
-                    name: 'Test',
-                    content: 'Test Content',
+                    id: testObjectId,
+                    name: testObjectName,
+                    content: testObjectContent,
                     tags: []
                 }),
                 undefined
@@ -61,17 +69,17 @@ describe('EventHandler', () => {
         });
 
         it('should update an existing NObject if it exists', async () => {
-            app.db.get.mockResolvedValue({ id: '123', name: 'Old Name', content: 'Old Content' });
-            const event = { created_at: 1678886400, tags: [] };
-            const data = { id: '123', name: 'New Name', content: 'New Content' };
+            app.db.get.mockResolvedValue({ id: testObjectId, name: 'Old Name', content: 'Old Content' });
+            const event = { ...baseEvent, tags: [] };
+            const data = parsedData;
 
             await eventHandler.createOrUpdateNObject(event, data);
 
             expect(app.db.save).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    id: '123',
-                    name: 'New Name',
-                    content: 'New Content',
+                    id: testObjectId,
+                    name: testObjectName,
+                    content: testObjectContent,
                     tags: []
                 }),
                 undefined
@@ -108,7 +116,7 @@ describe('EventHandler', () => {
         });
 
         it('should not handle object event if event content is invalid', async () => {
-            const event = { content: 'invalid json' };
+            const event = { content: invalidEventContent };
             eventHandler.validateEventContent.mockReturnValue(false);
             await eventHandler.handleObjectEvent(event);
             expect(eventHandler.validateEventContent).toHaveBeenCalledWith(event);
@@ -118,7 +126,7 @@ describe('EventHandler', () => {
         });
 
         it('should not handle object event if parseEventContent returns null', async () => {
-            const event = { content: '{ "id": "123" }' };
+            const event = { content: validEventContent };
             eventHandler.validateEventContent.mockReturnValue(true);
             eventHandler.parseEventContent.mockResolvedValue(null);
             await eventHandler.handleObjectEvent(event);
@@ -130,19 +138,9 @@ describe('EventHandler', () => {
 
         it('should handle object event if event content is valid and parseEventContent returns data', async () => {
             const event = {
-                content: '{ "id": "123", "name": "Test", "content": "Test Content" }',
+                content: validEventContent,
                 created_at: 1678886400,
                 tags: []
-            };
-            const parsedData = {
-                id: '123',
-                name: 'Test',
-                content: 'Test Content'
-            };
-            const extractedData = {
-                id: '123',
-                name: 'Test',
-                content: 'Test Content'
             };
 
             eventHandler.validateEventContent.mockReturnValue(true);
