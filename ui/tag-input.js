@@ -32,6 +32,13 @@ class TagInput extends HTMLElement {
                 border: 1px solid #ccc;
                 border-radius: 4px;
             }
+
+            .clear-button {
+                background-color: #ddd;
+                border: none;
+                padding: 5px;
+                cursor: pointer;
+            }
         `;
         this.appendChild(style);
 
@@ -74,6 +81,15 @@ class TagInput extends HTMLElement {
         });
 
         this.appendChild(inputElement);
+
+        const clearButton = createElement('button', { className: 'clear-button' }, 'X');
+        clearButton.addEventListener('click', () => {
+            inputElement.value = '';
+            this.value = '';
+            this.onChange(this.value, this.condition);
+        });
+
+        this.appendChild(clearButton);
 
         // Add datalist for suggestions
         const datalist = createElement('datalist', { id: `tag-suggestions-${this.tagDefinition.name}` });
