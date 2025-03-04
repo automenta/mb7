@@ -18,7 +18,7 @@ export class GenericForm {
 
         for (const property in this.schema.tags) {
             const propertySchema = this.schema.tags[property];
-            const label = createElement("label", {for: property}, property);
+            const label = createElement("label", {for: property}, propertySchema.label || property);
             let input;
 
             switch (propertySchema.type) {
@@ -43,6 +43,18 @@ export class GenericForm {
                         name: property,
                     });
                     break;
+                case "select":
+                    input = createElement("select", {
+                        id: property,
+                        name: property,
+                    });
+                    if (propertySchema.options && Array.isArray(propertySchema.options)) {
+                        propertySchema.options.forEach(option => {
+                            const optionElement = createElement("option", {value: option}, option);
+                            input.appendChild(optionElement);
+                        });
+                    }
+                    break;
                 default:
                     input = createElement("input", {
                         type: "text",
@@ -64,10 +76,9 @@ export class GenericForm {
                 if (propertySchema && propertySchema.validate) {
                     const isValid = propertySchema.validate(value, 'is');
                     if (!isValid) {
-                        //alert(`Invalid input for ${property}`);
                         this.el.dispatchEvent(new CustomEvent('notify', {
                             detail: {
-                                message: `Invalid input for ${property}`,
+                                message: `Invalid input for ${propertySchema.label || property}`,
                                 type: 'error'
                             }
                         }));
@@ -81,14 +92,17 @@ export class GenericForm {
             })
 
             if (this.yMap.has(property)) {
-                input.value = this.yMap.get(property)
                 if (input.type === 'checkbox') {
-                    input.checked = input.value === 'true';
+                    input.checked = this.yMap.get(property);
                 } else {
-                    input.value = this.yMap.get(property)
+                    input.value = this.yMap.get(property);
                 }
             } else {
-                this.yMap.set(property, "")
+                if (propertySchema.type === 'boolean') {
+                    this.yMap.set(property, false);
+                } else {
+                    this.yMap.set(property, "");
+                }
             }
 
             form.append(label, input);
