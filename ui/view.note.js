@@ -8,21 +8,23 @@ import {NoteYjsHandler} from "./note-yjs-handler.js";
 import {GenericListComponent} from "../generic-list-component";
 
 class NoteCreator {
-    constructor(noteView) {
-        this.noteView = noteView;
+    constructor(noteManager, noteYjsHandler, yDoc) {
+        this.noteManager = noteManager;
+        this.noteYjsHandler = noteYjsHandler;
+        this.yDoc = yDoc;
     }
 
     async createNote() {
         try {
-            const newObject = await this.noteView.app.noteManager.createNote();
+            const newObject = await this.noteManager.createNote();
             if (newObject) {
-                const yNoteMap = this.noteView.noteYjsHandler.getYNoteMap(newObject.id);
+                const yNoteMap = this.noteYjsHandler.getYNoteMap(newObject.id);
                 if (!yNoteMap) {
-                    this.noteView.yDoc.transact(() => {
+                    this.yDoc.transact(() => {
                         const newYNoteMap = new Y.Map();
                         newYNoteMap.set('name', 'New Note');
                         newYNoteMap.set('content', '');
-                        this.noteView.yDoc.getMap('notes').set(newObject.id, newYNoteMap);
+                        this.yDoc.getMap('notes').set(newObject.id, newYNoteMap);
                     });
                 }
             }
@@ -51,22 +53,22 @@ class NoteViewElements {
 }
 
 export class NoteView extends HTMLElement {
-    constructor(store, db, errorHandler) {
+    constructor(store, db, errorHandler, noteManager, noteYjsHandler) {
         super();
         this.store = store;
         this.db = db;
         this.errorHandler = errorHandler;
+        this.noteManager = noteManager;
+        this.noteYjsHandler = noteYjsHandler;
 
         this.yDoc = new Y.Doc();
-        this.noteYjsHandler = new NoteYjsHandler(this.yDoc);
-
         this.noteUI = new NoteUI();
         this.notesListComponent = new GenericListComponent(this.renderNoteItem.bind(this), 'notes-list');
         this.noteList = new NoteList(this.store, this, this.yDoc, this.yDoc.getMap('notes'));
         this.noteDetails = new NoteDetails(this);
         this.tagDisplay = new TagDisplay();
         this.myObjectsList = new MyObjectsList(this, this.yDoc.getArray('myObjects'));
-        this.noteCreator = new NoteCreator(this);
+        this.noteCreator = new NoteCreator(noteManager, noteYjsHandler, this.yDoc);
         this.noteElements = new NoteViewElements();
 
         this.el = this.noteElements.createElement('div', {className: 'notes-view'});
@@ -81,7 +83,7 @@ export class NoteView extends HTMLElement {
         this.el.appendChild(this.noteDetails.render());
         this.el.appendChild(this.tagDisplay.render());
         this.el.appendChild(this.myObjectsList.render());
-        this.el.appendChild(this.noteCreator.createNote());
+        this.el.appendChild(await this.noteCreator.createNote());
         document.body.appendChild(this.el);
     }
 

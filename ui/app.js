@@ -11,6 +11,7 @@ import {UIManager} from "./ui-manager.js";
 import {Nostr} from "../core/net.js";
 import {createStore} from "../core/state.js";
 import {initialState, reducer} from "../core/reducer.js";
+import {NoteYjsHandler} from "./note/note-yjs-handler";
 
 export class NostrInitializer {
     constructor(db, errorHandler) {
@@ -67,6 +68,7 @@ async function createApp(appDiv) {
     const settingsManager = new SettingsManager(db, errorHandler, Ontology);
     const noteManager = new NoteManager(db, errorHandler, matcher, nostr, notificationManager);
     const viewManager = new ViewManager();
+    const noteYjsHandler = new NoteYjsHandler();
 
     // Create the Redux-like store
     const store = createStore(reducer, initialState);
