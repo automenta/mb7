@@ -34,7 +34,8 @@ class SettingsManager {
 }
 
 class NoteManager {
-    constructor(db, errorHandler, matcher, nostr, notificationManager) {
+    constructor(app, db, errorHandler, matcher, nostr, notificationManager) {
+        this.app = app;
         this.db = db;
         this.errorHandler = errorHandler;
         this.matcher = matcher;
@@ -167,7 +168,7 @@ class App {
         this.elements = {};
 
         this.settingsManager = new SettingsManager(db, errorHandler);
-        this.noteManager = new NoteManager(db, errorHandler, matcher, nostr, notificationManager);
+        this.noteManager = new NoteManager(this, db, errorHandler, matcher, nostr, notificationManager);
 
         this.elements.notificationArea = document.createElement('div');
         this.elements.notificationArea.id = 'notification-area';
@@ -219,6 +220,7 @@ async function createApp(appDiv) {
 /**
  * Sets up the UI after the DOM is loaded.
  * Initializes the app, creates views, and adds them to the DOM.
+ * @returns {{noteView: NoteView, friendsView: FriendsView, settingsView: SettingsView, contentView: ContentView}}
  */
 async function setupUI() {
     document.title = "Netention"; // Set the document title
