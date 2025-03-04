@@ -189,7 +189,7 @@ async function setupUI() {
     let notes;
     try {
         notes = await app.db.getAll();
-        if (notes.length === 0) {
+        if (!notes || notes.length === 0) {
             await app.createDefaultNote(app.db);
         }
     } catch (error) {
