@@ -2,13 +2,29 @@ import { createElement } from './utils';
 import { TagInput } from './tag-input';
 
 class Tag extends HTMLElement {
-    constructor(tagDefinition, initialValue, initialCondition, onTagUpdate) {
+    constructor() {
         super();
-        this.tagDefinition = tagDefinition;
-        this.value = initialValue;
-        this.condition = initialCondition;
-        this.onTagUpdate = onTagUpdate;
+        this.shadow = this.attachShadow({ mode: 'open' });
+    }
+
+    connectedCallback() {
+        this.tagDefinition = JSON.parse(this.getAttribute('tag-definition'));
+        this.value = this.getAttribute('value') || '';
+        this.condition = this.getAttribute('condition') || 'is';
         this.render();
+    }
+
+    static get observedAttributes() {
+        return ['tag-definition', 'value', 'condition'];
+    }
+
+    attributeChangedCallback(name, oldValue, newValue) {
+        if (name === 'tag-definition') {
+            this.tagDefinition = JSON.parse(newValue);
+        }
+        if (this.isConnected) {
+            this.render();
+        }
     }
 
     remove() {
@@ -21,6 +37,7 @@ class Tag extends HTMLElement {
     }
 
     render() {
+        this.shadow.innerHTML = '';
         this.el = document.createElement('div');
         this.el.className = 'tag';
 
@@ -34,12 +51,6 @@ class Tag extends HTMLElement {
 
         const removeButton = createElement('button', { className: 'remove-tag-button' }, 'X');
         removeButton.addEventListener('click', () => {
-            const event = new CustomEvent('tag-removed', {
-                detail: { tag: this },
-                bubbles: true,
-                composed: true
-            });
-            this.dispatchEvent(event);
             this.remove();
         });
         this.el.appendChild(removeButton);
@@ -49,7 +60,7 @@ class Tag extends HTMLElement {
             this.el.title = 'Invalid tag value'; // Add tooltip
         }
 
-        this.appendChild(this.el);
+        this.shadow.appendChild(this.el);
     }
 
     isValid() {

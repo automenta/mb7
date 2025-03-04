@@ -108,7 +108,10 @@ class EditorContentHandler {
                 const [_, tagName, tagValue, tagCondition] = match;
                 const tagDefinition = this.editor.getTagDefinition(tagName);
                 if (tagDefinition) {
-                    const tag = new Tag(tagDefinition, tagValue, tagCondition, () => this.editor.autosuggest.apply());
+                    const tag = document.createElement('data-tag');
+                    tag.setAttribute('tag-definition', JSON.stringify(tagDefinition));
+                    tag.setAttribute('value', tagValue);
+                    tag.setAttribute('condition', tagCondition);
                     this.editor.editorArea.append(tag);
                 } else {
                     console.warn("Tag definition not found:", tagName);
