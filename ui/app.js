@@ -9,6 +9,10 @@ import {createMenuBar} from './menu-bar.js';
 import { NotificationManager } from './notification-manager.js';
 import { createAppMainContent, createLayout } from './layout.js';
 import { initializeViews } from './views.js';
+import {NoteView} from "./view.note";
+import {FriendsView} from "./view.friends";
+import {SettingsView} from "./view.settings";
+import {ContentView} from "./ui-manager";
 
 class SettingsManager {
     constructor(db, errorHandler) {
@@ -168,6 +172,76 @@ class NostrInitializer {
     }
 }
 
+class ViewManager {
+    constructor(app) {
+        this.app = app;
+    }
+
+    showView(view) {
+        const mainContent = document.querySelector('main');
+        mainContent.innerHTML = ''; // Clear existing content
+        view.build?.(); // Conditionally call build
+        mainContent.appendChild(view.el);
+        view.bindEvents?.(); // Conditionally call bindEvents
+    }
+}
+
+class UIManager {
+    constructor(app) {
+        this.app = app;
+    }
+
+    async setupUI(appDiv) {
+        document.title = "Netention"; // Set the document title
+        const {noteView, friendsView, settingsView, contentView} = this.initializeViews(this.app);
+        this.setupDefaultView(this.app, noteView, contentView);
+        const {menubar, mainContent} = createLayout(this.app, appDiv, noteView, friendsView, settingsView, contentView);
+
+        // Select the first note if no notes exist
+        let notes;
+        try {
+            notes = await this.app.db.getAll();
+            if (!notes || notes.length === 0) {
+                await this.app.noteManager.createDefaultNote();
+            }
+        } catch (error) {
+            this.app.errorHandler.handleError(error, 'Error loading notes or creating default note');
+        }
+
+        // Display the name of the note in the editor title
+        document.title = this.app.selected ? `Netention - ${this.app.selected.name}` : "Netention";
+    }
+
+    initializeViews(app) {
+        const noteView = new NoteView(app, app.db, app.nostr);
+        const friendsView = new FriendsView(app, app.db, app.nostr);
+        const settingsView = new SettingsView(app, app.db, app.nostr);
+        const contentView = new ContentView(app);
+
+        return {noteView, friendsView, settingsView, contentView};
+    }
+
+    async setupDefaultView(app, noteView, contentView) {
+        // Default to showing the NoteView
+        app.viewManager.showView(noteView);
+
+        // Load the first note if no note is selected
+        if (!app.selected) {
+            let notes;
+            try {
+                notes = await app.db.getAll();
+                if (notes && notes.length > 0) {
+                    await noteView.selectNote(notes[0].id);
+                } else {
+                    console.warn('No notes available to select.');
+                }
+            } catch (error) {
+                app.errorHandler.handleError(error, 'Error loading notes');
+            }
+        }
+    }
+}
+
 /**
  * The main application class.
  * Manages the database, Nostr connection, and UI.
@@ -185,6 +259,7 @@ class App {
 
         this.settingsManager = new SettingsManager(db, errorHandler);
         this.noteManager = new NoteManager(this, db, errorHandler, matcher, nostr, notificationManager);
+        this.viewManager = new ViewManager(this);
     }
 
     static async initialize(appDiv) {
@@ -199,14 +274,6 @@ class App {
         const matcher = new Matcher(this);
 
         return {db, nostr, matcher, errorHandler, notificationManager, monitoring};
-    }
-
-    showView(view) {
-        const mainContent = document.querySelector('main');
-        mainContent.innerHTML = ''; // Clear existing content
-        view.build?.(); // Conditionally call build
-        mainContent.appendChild(view.el);
-        view.bindEvents?.(); // Conditionally call bindEvents
     }
 
     async relayConnected(relay) {
@@ -224,66 +291,11 @@ async function createApp(appDiv) {
     return {app};
 }
 
-/**
- * Sets up the UI after the DOM is loaded.
- * Initializes the app, creates views, and adds them to the DOM.
- * @returns {{noteView: NoteView, friendsView: FriendsView, settingsView: SettingsView, contentView: ContentView}}
- */
-async function setupUI() {
-    document.title = "Netention"; // Set the document title
+document.addEventListener("DOMContentLoaded", async () => {
     const appDiv = document.getElementById('app');
     const {app} = await createApp(appDiv);
-    const {noteView, friendsView, settingsView, contentView} = initializeViews(app);
-    setupDefaultView(app, noteView, contentView);
-    const {menubar, mainContent} = createLayout(app, appDiv, noteView, friendsView, settingsView, contentView);
-
-    // Select the first note if no notes exist
-    let notes;
-    try {
-        notes = await app.db.getAll();
-        if (!notes || notes.length === 0) {
-            await app.noteManager.createDefaultNote();
-        }
-    } catch (error) {
-        app.errorHandler.handleError(error, 'Error loading notes or creating default note');
-    }
-
-    // Display the name of the note in the editor title
-    document.title = app.selected ? `Netention - ${app.selected.name}` : "Netention";
-}
-
-function initializeViews(app) {
-    const noteView = new NoteView(app, app.db, app.nostr);
-    const friendsView = new FriendsView(app, app.db, app.nostr);
-    const settingsView = new SettingsView(app, app.db, app.nostr);
-    const contentView = new ContentView(app);
-
-    return {noteView, friendsView, settingsView, contentView};
-}
-
-async function setupDefaultView(app, noteView, contentView) {
-    // Default to showing the NoteView
-    app.showView(noteView);
-
-    // Load the first note if no note is selected
-    if (!app.selected) {
-        let notes;
-        try {
-            notes = await app.db.getAll();
-            if (notes && notes.length > 0) {
-                await noteView.selectNote(notes[0].id);
-            } else {
-                console.warn('No notes available to select.');
-            }
-        } catch (error) {
-            app.errorHandler.handleError(error, 'Error loading notes');
-        }
-    }
-}
-
-document.addEventListener("DOMContentLoaded", async () => {
-    await setupUI();
+    const uiManager = new UIManager(app);
+    await uiManager.setupUI(appDiv);
 });
-
 
 export { App };
