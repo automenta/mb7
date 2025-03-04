@@ -1,6 +1,7 @@
-import {View} from "./view.js";
-import {Ontology} from "../core/ontology.js";
+import { View } from "./view.js";
+import { Ontology } from "../core/ontology.js";
 import { createElement } from '../ui/utils.js';
+import { GenericForm } from "./generic-form.js";
 
 export class SettingsView extends View {
     constructor(app, db, nostr) {
@@ -8,145 +9,63 @@ export class SettingsView extends View {
         this.app = app;
         this.db = db;
         this.nostr = nostr;
+        this.settingsObjectId = 'settings';
     }
 
     async build() {
-        while (this.el.firstChild) {
-            this.el.removeChild(this.el.firstChild);
-        }
+        this.el.innerHTML = "";
 
-        const settingsObjectId = 'settings';
-        let settingsObject = await this.db.get(settingsObjectId);
-        let yDoc = await this.db.getYDoc(settingsObjectId);
+        let settingsObject = await this.db.get(this.settingsObjectId);
+        const yDoc = new Y.Doc();
 
-        if (!yDoc) {
+        if (!settingsObject) {
             settingsObject = {
-                id: settingsObjectId,
+                id: this.settingsObjectId,
                 name: "Settings",
             };
             await this.db.saveObject(settingsObject);
         }
 
-        // Load settings from DB
+        // Load settings from DB or create empty object
         this.app.settings = settingsObject?.content || {};
 
-        // Use the Settings ontology to build the form
-        const settingsOntology = Ontology.Settings;
-        if (settingsOntology && settingsOntology.tags) {
-            for (const property in settingsOntology.tags) {
-                const settingDefinition = settingsOntology.tags[property];
-                const label = createElement("label", { htmlFor: property }, settingDefinition.label || property);
-                let input;
+        // Initialize YDoc with existing settings
+        const yMap = yDoc.getMap('data');
+        Object.entries(this.app.settings).forEach(([key, value]) => {
+            yMap.set(key, value);
+        });
 
-                switch (settingDefinition.type) {
-                    case "string":
-                        input = createElement("input", {
-                            type: "text",
-                            id: property,
-                            name: property,
-                            value: this.app.settings[property] !== undefined ? settingDefinition.serialize(this.app.settings[property]) : settingDefinition.default || ''
-                        });
-                        break;
-                    case "number":
-                        input = createElement("input", {
-                            type: "number",
-                            id: property,
-                            name: property,
-                            value: this.app.settings[property] !== undefined ? settingDefinition.serialize(this.app.settings[property]) : settingDefinition.default || ''
-                        });
-                        break;
-                    case "boolean":
-                        input = createElement("input", {
-                            type: "checkbox",
-                            id: property,
-                            name: property,
-                            checked: this.app.settings[property] !== undefined ? settingDefinition.serialize(this.app.settings[property]) === 'true' : settingDefinition.default || false
-                        });
-                        break;
-                    case "select":
-                        input = createElement("select", {
-                            id: property,
-                            name: property,
-                        });
-                        if (settingDefinition.options && Array.isArray(settingDefinition.options)) {
-                            settingDefinition.options.forEach(option => {
-                                const optionElement = createElement("option", { value: option }, option);
-                                input.appendChild(optionElement);
-                            });
-                            input.value = this.app.settings[property] !== undefined ? settingDefinition.serialize(this.app.settings[property]) : settingDefinition.default || settingDefinition.options[0];
-                        }
-                        break;
-                    default:
-                        input = createElement("input", {
-                            type: "text",
-                            id: property,
-                            name: property,
-                            value: this.app.settings[property] !== undefined ? settingDefinition.serialize(this.app.settings[property]) : settingDefinition.default || ''
-                        });
-                }
-
-                // Add description if available
-                if (settingDefinition.description) {
-                    const description = createElement("p", { className: "setting-description" }, settingDefinition.description);
-                    this.el.appendChild(description);
-                }
-
-                this.el.appendChild(label);
-                this.el.appendChild(input);
-            }
-        }
+        // Create and render the GenericForm
+        this.genericForm = new GenericForm(Ontology.Settings, yDoc, this.settingsObjectId, this.saveSettings.bind(this));
+        await this.genericForm.build();
+        this.el.appendChild(this.genericForm.el);
 
         const saveButton = createElement("button", { id: "save-settings-btn" }, "Save Settings");
         this.el.appendChild(saveButton);
         saveButton.addEventListener("click", () => this.saveSettings());
+
+        this.yDoc = yDoc;
     }
 
     async saveSettings() {
+        const yMap = this.yDoc.getMap('data');
         const settings = {};
-        const settingsOntology = Ontology.Settings;
 
-        if (settingsOntology && settingsOntology.tags) {
-            for (const property in settingsOntology.tags) {
-                const settingDefinition = settingsOntology.tags[property];
-                const inputElement = this.el.querySelector(`#${property}`);
-
-                if (inputElement) {
-                    let value;
-                    switch (settingDefinition.type) {
-                        case "string":
-                            value = inputElement.value;
-                            break;
-                        case "number":
-                            value = parseFloat(inputElement.value);
-                            break;
-                        case "boolean":
-                            value = inputElement.checked;
-                            break;
-                        case "select":
-                            value = inputElement.value;
-                            break;
-                        default:
-                            value = inputElement.value;
-                    }
-                    settings[property] = settingDefinition.deserialize(value);
-                }
-            }
+        for (const key in Ontology.Settings.tags) {
+            const settingDefinition = Ontology.Settings.tags[key];
+            const yValue = yMap.get(key);
+            settings[key] = settingDefinition.deserialize(yValue !== undefined ? yValue : settingDefinition.default);
         }
 
         // Save settings to DB
-        const settingsObjectId = 'settings';
-        let settingsObject = await this.db.get(settingsObjectId);
-        if (!settingsObject) {
-            settingsObject = {
-                id: settingsObjectId,
-                name: "Settings",
-            };
-        }
+        let settingsObject = await this.db.get(this.settingsObjectId);
+        settingsObject = settingsObject || { id: this.settingsObjectId, name: "Settings" };
         settingsObject.content = settings;
         await this.db.saveObject(settingsObject);
 
+        // Apply settings to app
+        Object.assign(this.app.settings, settings);
         this.app.settingsManager.saveSettings(settings);
-        this.app.settings = settings;
         this.app.nostr.nostrRelays = settings.relays;
         this.app.nostr.nostrPrivateKey = settings.privateKey;
         await this.app.nostr.connectToRelays();
