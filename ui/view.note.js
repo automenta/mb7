@@ -114,6 +114,7 @@ export class NoteView extends HTMLElement {
             if (this.edit) {
                 // NOTEVIEW-1: Remove the previous edit component before creating a new one
                 this.edit.el.remove();
+                this.edit = null; // Explicitly nullify the edit reference
             }
             this.edit = new Edit(this.selectedNote, this.yDoc, this.app, getTagDefinition, this.ontology);
             this.el.appendChild(this.edit.el);
