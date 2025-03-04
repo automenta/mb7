@@ -1,5 +1,5 @@
 import { JSDOM } from 'jsdom';
-import { Tag } from '@/ui/tag.js';
+import { Tag } from './ui/tag.js'; // Use relative path here
 
 // Setup JSDOM
 const dom = new JSDOM('<!DOCTYPE html><html lang="en"><body></body></html>', {

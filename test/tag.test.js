@@ -17,6 +17,7 @@ describe('Tag Component', () => {
         };
         let tag;
         let onUpdate = vi.fn();
+
         tag = new Tag();
         tag.app = {showNotification: vi.fn()};
         tag.shadow = tag.attachShadow({mode: 'open'});
@@ -45,6 +46,7 @@ describe('Tag Component', () => {
         };
         let tag;
         let onUpdate = vi.fn();
+
         tag = new Tag();
         tag.app = {showNotification: vi.fn()};
         tag.shadow = tag.attachShadow({mode: 'open'});
@@ -71,6 +73,7 @@ describe('Tag Component', () => {
         };
         let tag;
         let onUpdate = vi.fn();
+
         tag = new Tag();
         tag.app = {showNotification: vi.fn()};
         tag.shadow = tag.attachShadow({mode: 'open'});
