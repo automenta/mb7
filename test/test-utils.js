@@ -22,7 +22,10 @@ export function createAppMock() {
             app.nostr.publish(note.content);
         }),
         getTagDefinition: vi.fn(),
-        schema: {}
+        schema: {},
+        monitoring: {
+            errorCount: 0,
+        },
     };
     return app;
 }

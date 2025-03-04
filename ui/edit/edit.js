@@ -1,4 +1,4 @@
-import { createElement } from '../ui/utils.js';
+import { createElement } from '../../ui/utils.js';
 import { YjsHelper } from '../../core/yjs-helper';
 import { SuggestionDropdown } from './suggest.dropdown.js';
 import { Autosuggest } from './suggest.js';

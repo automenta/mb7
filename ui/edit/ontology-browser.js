@@ -1,4 +1,4 @@
-import {createElement} from '../ui/utils';
+import {createElement} from '../../ui/utils.js';
 import {Tag} from '../tag.js';
 
 export class OntologyBrowser {

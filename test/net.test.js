@@ -36,28 +36,29 @@ describe('Nostr and RelayManager', () => {
     });
 
     it('onClose should update relayStatuses', async () => {
-        console.log("Relay status before:", relayManager.relayStatuses["wss://relay.example.com"]);
-        await onOpenMock.mock.results[0].value;
-        const relay = relayManager.relayObjects["wss://relay.example.com"];
-        relayManager.relayStatuses["wss://relay.example.com"] = {status: 'connecting'};
-        expect(relayManager.relayStatuses["wss://relay.example.com"].status).toBe("connecting");
-        if (relay) {
-            relay.close();
-        } else {
-            console.error('relay is undefined!');
-        }
-        if (relay && relay.status === 1) {
-            await relayManager.onClose(relay, "wss://relay.example.com");
-        } else {
-            console.error('relay is undefined or not connected!');
-        }
-        if (relay) {
-            console.error('relay is undefined!');
-        }
-        await relayManager.onClose(relay, "wss://relay.example.com");
+        const relayUrl = "wss://relay.example.com";
+        relayManager.relayStatuses[relayUrl] = {status: 'connecting'};
+        const relay = {
+            close: vi.fn(),
+            url: relayUrl,
+            addEventListener: vi.fn(),
+            removeEventListener: vi.fn(),
+        };
+        relayManager.relayObjects[relayUrl] = relay;
+
+        // Simulate the relay closing
+        relay.close();
+
+        // Wait for the onClose handler to be called
         await new Promise(resolve => setTimeout(resolve, 0));
-        console.log("Relay status after:", relayManager.relayStatuses["wss://relay.example.com"]);
-        expect(relayManager.relayStatuses["wss://relay.example.com"].status).toBe("disconnected");
+
+        // Call onClose directly with the mocked relay
+        await relayManager.onClose(relay, relayUrl);
+
+        // Wait for the status to be updated
+        await new Promise(resolve => setTimeout(resolve, 0));
+
+        expect(relayManager.relayStatuses[relayUrl].status).toBe("disconnected");
     });
 
     it('disconnectFromAllRelays should close all relays and clear relayObjects and relayStatuses', async () => {
