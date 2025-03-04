@@ -304,6 +304,37 @@ a:hover {
     font-size: smaller;
 }
 
+.tag-input-container {
+    margin-bottom: 5px;
+}
+
+.note-tag-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.tag-item {
+    margin: 5px;
+    padding: 5px 10px;
+    border: 1px solid #555;
+    border-radius: 5px;
+    background-color: #333;
+    color: #e0e0e0;
+    display: flex;
+    align-items: center;
+}
+
+.tag-item .remove-tag-button {
+    margin-left: 5px;
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+    color: #f44336;
+}
+
 .color-preview {
     width: 1em;
     height: 1em;
