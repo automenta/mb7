@@ -89,13 +89,12 @@ class Edit {
             // Deserialize the tag content
             const tagData = JSON.parse(tagContent);
 
-            // Create a span element for the tag
-            const tagElement = document.createElement('span');
-            tagElement.className = 'tag-element';
-            tagElement.textContent = tagData.name; // Display the tag name
+            // Create a button element for the tag
+            const tagElement = createElement('button', { className: 'tag-element' }, tagData.name);
 
             // Add a data attribute to store the tag content
             tagElement.dataset.tagContent = tagContent;
+            tagElement.setAttribute('aria-label', `Edit tag: ${tagData.name}`); // Accessibility
 
             // Make the tag editable
             tagElement.addEventListener('click', () => {
@@ -221,6 +220,14 @@ class Edit {
         let cursorPosition = this.editorArea.selectionStart;
         // Calculate the new cursor position
         let newCursorPosition = cursorPosition + tagPlaceholder.length;
+
+        // Sanitize input to prevent overlapping tags
+        const text = this.yText.toString();
+        const overlappingTagIndex = text.indexOf('[TAG:', cursorPosition);
+        if (overlappingTagIndex !== -1) {
+            this.app.showNotification("Cannot insert tag inside another tag.", 'warning');
+            return; // Prevent saving the tag
+        }
 
         this.yDoc.transact(() => {
             if (this.editingTagContent) {
