@@ -38,8 +38,8 @@ export class AppUI {
 
     initializeViews() {
         const noteView = new NoteView(this.store, this.db, this.errorHandler, this.noteManager, this.noteYjsHandler);
-        const friendsView = new FriendsView(this.store, this.db, this.nostr);
-        const settingsView = new SettingsView(this.store, this.db, this.nostr);
+        const friendsView = new FriendsView(this.store, this.db, this.nostr.addFriend.bind(this.nostr), this.nostr.removeFriend.bind(this.nostr));
+        const settingsView = new SettingsView(this.store, this.db, this.nostr.updateSettings.bind(this.nostr));
         const contentView = new ContentView(this.store);
 
         return {noteView, friendsView, settingsView, contentView};

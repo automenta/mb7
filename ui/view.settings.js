@@ -1,8 +1,8 @@
-import {View} from "./view.js";
-import {Ontology} from "../core/ontology.js";
-import {createElement} from '../ui/utils.js';
+import {View} from './view';
+import {createElement} from './utils.js';
 import {GenericForm} from "./generic-form.js";
 import * as Y from 'yjs';
+import {Ontology} from "../core/ontology";
 
 export class SettingsView extends View {
     constructor(app, db, nostr) {
@@ -15,72 +15,43 @@ export class SettingsView extends View {
     }
 
     async build() {
-        this.el.innerHTML = "";
-        let settingsObject = await this.db.get(this.settingsObjectId);
-        if (!settingsObject) {
-            settingsObject = {id: this.settingsObjectId, name: "Settings", content: {}};
-            await this.db.saveObject(settingsObject);
-        }
-        this.app.settings = settingsObject.content || {};
-        const yMap = this.yDoc.getMap('data');
-        for (const key in Ontology.Settings.tags) {
-            if (!Ontology.Settings.tags.hasOwnProperty(key)) continue;
-            const settingDefinition = Ontology.Settings.tags[key];
-            let value = this.app.settings[key] !== undefined ? this.app.settings[key] : settingDefinition.default;
-            if (this.app.settings[key] !== undefined && settingDefinition.deserialize) {
-                try {
-                    value = settingDefinition.deserialize(value);
-                } catch (error) {
-                    console.error(`Error deserializing setting ${key}:`, error);
-                    this.app.showNotification(`Error deserializing setting ${key}: ${error.message}`, 'error');
-                    continue;
-                }
-            }
-            yMap.set(key, value);
-        }
-        this.genericForm = new GenericForm(Ontology.Settings, this.yDoc, this.settingsObjectId, this.saveSettings.bind(this));
-        await this.genericForm.build();
-        this.el.appendChild(this.genericForm.el);
-        const saveButton = createElement("button", {id: "save-settings-btn"}, "Save Settings");
-        this.el.appendChild(saveButton);
-        saveButton.addEventListener("click", () => this.saveSettings());
-        this.el.addEventListener('notify', (event) => {
-            this.app.showNotification(event.detail.message, event.detail.type);
-        });
-    }
+        this.el.innerHTML = '';
 
-    async saveSettings() {
-        const yMap = this.yDoc.getMap('data');
-        const settings = {};
-        for (const key in Ontology.Settings.tags) {
-            if (!Ontology.Settings.tags.hasOwnProperty(key)) continue;
-            const settingDefinition = Ontology.Settings.tags[key];
-            const yValue = yMap.get(key);
-            let value = yValue !== undefined ? yValue : settingDefinition.default;
-            if (settingDefinition.serialize) {
-                try {
-                    value = settingDefinition.serialize(value);
-                } catch (error) {
-                    console.error(`Error serializing setting ${key}:`, error);
-                    this.app.showNotification(`Error serializing setting ${key}: ${error.message}`, 'error');
-                    continue;
-                }
+        // Load the settings object
+        let settingsObject = await this.db.getSettings();
+
+        // Create a JSON editor
+        const jsonEditor = createElement('textarea', {
+            className: 'json-editor',
+            rows: 10,
+            cols: 50,
+            value: JSON.stringify(settingsObject, null, 2) // Pretty print the JSON
+        });
+        this.el.appendChild(jsonEditor);
+
+        // Add a save button
+        const saveButton = createElement('button', {className: 'save-button'}, 'Save Settings');
+        saveButton.addEventListener('click', async () => {
+            try {
+                // Parse the JSON from the editor
+                const newSettings = JSON.parse(jsonEditor.value);
+
+                // Save the settings to the database
+                await this.app.db.saveSettings(newSettings);
+
+                // Update Nostr settings
+                await this.nostr.updateSettings(newSettings);
+
+                // Show a success notification
+                this.app.showNotification('Settings saved successfully', 'success');
+            } catch (error) {
+                // Show an error notification
+                this.app.showNotification(`Error saving settings: ${error.message}`, 'error');
+                console.error('Error saving settings:', error);
             }
-            settings[key] = value;
-        }
-        let settingsObject = await this.db.get(this.settingsObjectId);
-        settingsObject = settingsObject || {id: this.settingsObjectId, name: "Settings"};
-        settingsObject.content = settings;
-        await this.db.saveObject(settingsObject);
-        for (const key in Ontology.Settings.tags) {
-            if (settings.hasOwnProperty(key)) {
-                this.app.settings[key] = settings[key];
-            }
-        }
-        this.app.settingsManager.saveSettings(settings);
-        this.app.nostr.nostrRelays = settings.relays;
-        this.app.nostr.nostrPrivateKey = settings.privateKey;
-        await this.app.nostr.connectToRelays();
-        this.app.showNotification('Settings saved');
+        });
+        this.el.appendChild(saveButton);
+
+        return this.el;
     }
 }
