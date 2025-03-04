@@ -1,4 +1,3 @@
-ui/content-view-renderer.js
 import { format, parseISO } from 'date-fns';
 
 export const renderContent = (yText) => {

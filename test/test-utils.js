@@ -1,7 +1,7 @@
-import { vi } from 'vitest';
+import {vi} from 'vitest';
 
 export function createAppMock() {
-    const app = {
+    return {
         notificationManager: {
             showNotification: vi.fn(),
         },
@@ -42,7 +42,7 @@ export function createAppMock() {
         getTagDefinition: vi.fn().mockReturnValue({
             name: 'MockTag',
             label: 'Mock Tag',
-            ui: { type: "text" },
+            ui: {type: "text"},
             validate: () => true,
             conditions: ["is", "contains"]
         }),
@@ -54,10 +54,10 @@ export function createAppMock() {
             currentView: null
         },
         SettingsView: class MockSettingsView {
-            displayProfile: vi.fn()
+            displayProfile: vi.fn
+        ()
         },
         FriendsView: class MockFriendsView {
         }
     };
-    return app;
 }

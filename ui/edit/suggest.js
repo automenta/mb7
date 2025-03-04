@@ -1,6 +1,5 @@
 ui/edit/suggest.js
 import { SuggestionDropdown } from './suggestion-dropdown.js';
-import { createElement } from '../utils.js';
 
 export class Suggest {
     constructor(editorArea, app) {

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { Edit } from '../../ui/edit/edit.js';
+import { Edit } from '@/ui/edit/edit.js';
 import { createAppMock } from '../test-utils.js';
 import * as Y from 'yjs';
 

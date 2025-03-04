@@ -1,10 +1,5 @@
 ui/note/note.ui.js
 import { createElement } from '../utils.js';
-import { NoteDetails } from './note-details.js';
-import { NotesSidebar } from './note.sidebar.js';
-import { NoteToolbar } from './note.toolbar.js';
-import { Edit } from '../edit/edit.js';
-import { MyObjectsList } from './my-objects-list.js';
 
 export class NoteUI {
     constructor(noteView) {

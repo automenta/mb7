@@ -1,4 +1,3 @@
-core/ontology.js
 const isValidDate = (dateString) => {
     try {
         return !isNaN(new Date(dateString).getTime());

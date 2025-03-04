@@ -1,8 +1,8 @@
-import { createElement } from '../utils.js';
-import { SuggestionDropdown } from './suggest.dropdown.js';
-import { YjsHelper } from '../../core/yjs-helper.js';
+import {createElement} from '../utils.js';
+import {SuggestionDropdown} from './suggest.dropdown.js';
+import {YjsHelper} from '@/core/yjs-helper.js';
 
-class Edit {
+export class Edit {
     constructor(note, yDoc, app, getTagDefinition, schema) {
         this.note = note;
         this.getTagDefinition = getTagDefinition;
@@ -101,10 +101,9 @@ class Edit {
     createAutosuggest() {
         return {
             suggestTags: async (query) => {
-                const suggestions = Object.keys(this.app.ontology)
+                return Object.keys(this.app.ontology)
                     .filter(tagName => tagName.toLowerCase().startsWith(query.toLowerCase()))
-                    .map(tagName => ({ name: tagName }));
-                return suggestions;
+                    .map(tagName => ({name: tagName}));
             },
 
             renderSuggestions: (suggestions) => {

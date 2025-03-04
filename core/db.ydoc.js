@@ -1,6 +1,4 @@
-core/db.ydoc.js
 import * as Y from 'yjs';
-import { applyUpdate } from 'yjs';
 
 export async function getYDoc(db, id) {
     await db.constructor.the();

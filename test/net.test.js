@@ -83,7 +83,7 @@ describe('Nostr and RelayManager', () => {
         const relayUrl = "wss://relay.example.com";
         const errorMessage = 'Connection failed';
         WebSocketMock.mockImplementationOnce(() => {
-            const ws = {
+            return {
                 readyState: 3, // CLOSED
                 close: vi.fn(),
                 addEventListener: vi.fn((event, listener) => {
@@ -94,7 +94,6 @@ describe('Nostr and RelayManager', () => {
                 removeEventListener: vi.fn(),
                 send: vi.fn(),
             };
-            return ws;
         });
 
         app.showNotification = vi.fn();

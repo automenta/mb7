@@ -1,9 +1,7 @@
 core/db.js
 import { openDB } from 'idb';
 import * as Y from 'yjs';
-import { applyUpdate } from 'yjs';
 import { getYDoc } from './db.ydoc.js';
-import { v4 as uuidv4 } from 'uuid';
 
 const DB_NAME = 'netention-db';
 const DB_VERSION = 1;

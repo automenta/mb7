@@ -1,4 +1,3 @@
-ui/note/note-list-item-renderer.js
 function createListItem(item, updateNote, yMap) {
     const listItem = document.createElement('div');
     listItem.className = 'note-list-item';

@@ -1,7 +1,7 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { EventHandler } from '@/core/net/net.events.js';
-import { createAppMock } from './test-utils.js';
-import { FriendsView } from '@/ui/view.friends.js'; // Import FriendsView for instanceof check
+import {beforeEach, describe, expect, it, vi} from 'vitest';
+import {EventHandler} from '@/core/net/net.events.js';
+import {createAppMock} from './test-utils.js';
+import {FriendsView} from '@/ui/view.friends.js'; // Import FriendsView for instanceof check
 
 describe('EventHandler', () => {
     let eventHandler;
@@ -54,9 +54,7 @@ describe('EventHandler', () => {
         it('should create a new NObject if it does not exist', async () => {
             app.db.get.mockResolvedValue(null);
             const event = { ...baseEvent, tags: [] };
-            const data = parsedData;
-
-            await eventHandler.createOrUpdateNObject(event, data);
+            await eventHandler.createOrUpdateNObject(event, parsedData);
 
             expect(app.db.save).toHaveBeenCalledWith(
                 expect.objectContaining({
@@ -72,9 +70,7 @@ describe('EventHandler', () => {
         it('should update an existing NObject if it exists', async () => {
             app.db.get.mockResolvedValue({ id: testObjectId, name: 'Old Name', content: 'Old Content' });
             const event = { ...baseEvent, tags: [] };
-            const data = parsedData;
-
-            await eventHandler.createOrUpdateNObject(event, data);
+            await eventHandler.createOrUpdateNObject(event, parsedData);
 
             expect(app.db.save).toHaveBeenCalledWith(
                 expect.objectContaining({

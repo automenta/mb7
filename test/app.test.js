@@ -1,5 +1,5 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest';
-import {App} from '../ui/app.js';
+import {App} from '@';
 import {createAppMock} from './test-utils.js';
 import * as sha256Module from 'js-sha256';
 

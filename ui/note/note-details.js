@@ -1,5 +1,4 @@
 ui/note/note-details.js
-import { createElement } from '../utils.js';
 import { formatDate } from '../content-view-renderer.js';
 
 export class NoteDetails extends HTMLElement {

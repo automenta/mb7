@@ -1,6 +1,5 @@
 import { vi } from 'vitest';
 import { JSDOM } from 'jsdom';
-import { Tag } from '../ui/tag.js'; // Use relative path here
 
 // Setup JSDOM
 const dom = new JSDOM('<!DOCTYPE html><html lang="en"><body></body></html>', {
@@ -33,14 +32,14 @@ Object.defineProperty(window, 'matchMedia', {
     })),
 });
 
-// Ensure Tag is defined only once
-if (!customElements.get('data-tag')) {
-    try {
-        customElements.define('data-tag', Tag);
-        console.log('Custom element "data-tag" defined.');
-    } catch (e) {
-        console.error('Error defining custom element "data-tag":', e);
-    }
-} else {
-    console.log('Custom element "data-tag" already defined.');
-}
+// // Ensure Tag is defined only once
+// if (!customElements.get('data-tag')) {
+//     try {
+//         customElements.define('data-tag', Tag);
+//         console.log('Custom element "data-tag" defined.');
+//     } catch (e) {
+//         console.error('Error defining custom element "data-tag":', e);
+//     }
+// } else {
+//     console.log('Custom element "data-tag" already defined.');
+// }

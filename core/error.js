@@ -1,4 +1,3 @@
-core/error.js
 export class ErrorHandler {
     constructor(app) {
         this.app = app;

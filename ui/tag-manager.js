@@ -1,7 +1,4 @@
 ui/tag-manager.js
-import { createElement } from '../utils.js';
-import { Tag } from './tag.js';
-import Ontology from '../core/ontology.js';
 
 export class TagManager {
     constructor(note, app, getTagDefinition) {

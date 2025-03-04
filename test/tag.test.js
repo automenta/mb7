@@ -1,9 +1,11 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest';
-import {Tag} from '@/ui/tag.js'; // Corrected import path
+import {Tag} from '/ui/tag.js';
 
 describe('Tag Component', () => {
     beforeEach(() => {
-        // No need to define custom element here, it's done in global setup
+        if (!customElements.get('data-tag')) {
+            customElements.define('data-tag', Tag); // Explicitly register Tag
+        }
     });
 
     it('should render the tag correctly with the given data', async () => {

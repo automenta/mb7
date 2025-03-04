@@ -1,4 +1,3 @@
-ui/edit/suggest.dropdown.js
 import { createElement } from '../utils.js';
 
 export class SuggestionDropdown {

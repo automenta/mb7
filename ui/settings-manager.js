@@ -1,4 +1,3 @@
-ui/settings-manager.js
 import Ontology from '../core/ontology.js';
 
 export class SettingsManager {

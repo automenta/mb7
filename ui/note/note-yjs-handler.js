@@ -1,5 +1,4 @@
 ui/note/note-yjs-handler.js
-import * as Y from 'yjs';
 
 export class NoteYjsHandler {
     constructor(store) {
