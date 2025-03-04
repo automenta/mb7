@@ -428,17 +428,6 @@ class Edit {
 
 export { Edit };
 
-// Add CSS styles
-const style = document.createElement('style');
-style.textContent = `
-.tag-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: flex;
-    flex-wrap: wrap;
-}
-
 .tag-list-item {
     margin: 2px;
 }
