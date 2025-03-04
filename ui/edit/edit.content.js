@@ -92,7 +92,7 @@ class EditorContentHandler {
     serialize() {
         const clonedEditor = this.editor.editorArea.cloneNode(true);
         clonedEditor.querySelectorAll("data-tag").forEach(tagEl => {
-            const tagName = tagEl.getAttribute('tag-name');
+            const tagName = tagEl.getAttribute('tagName');
             const tagValue = tagEl.getAttribute('value') || '';
             const tagCondition = tagEl.getAttribute('condition') || 'is';
             tagEl.replaceWith(`[TAG:${tagName}:${tagValue}:${tagCondition}]`);
@@ -117,7 +117,7 @@ class EditorContentHandler {
                 const tagDefinition = this.editor.getTagDefinition(tagName);
                 if (tagDefinition) {
                     const tag = document.createElement('data-tag');
-                    tag.dataset.tagName = tagName;
+                    tag.setAttribute('tagName', tagName);
                     tag.setAttribute('tag-definition', JSON.stringify(tagDefinition));
                     tag.setAttribute('value', tagValue);
                     tag.setAttribute('condition', tagCondition);
