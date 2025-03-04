@@ -1,330 +1,100 @@
-import {createElement} from './utils';
-/** @typedef {import('../core/types').Tag} Tag */
-import {Tag} from "../core/types";
-
-const debounce = (func, delay) => {
-    let timeout;
-    return function (...args) {
-        const context = this;
-        clearTimeout(timeout);
-        timeout = setTimeout(() => func.apply(context, args), delay);
-    };
-};
-
 class TagManager extends HTMLElement {
-    /**
-     * Constructor for the TagManager class.
-     * @param {object} app - The application object.
-     * @param {object} note - The note object.
-     */
-    constructor(app, note) {
+    constructor() {
         super();
-        this.app = app;
-        this.note = note;
-        this.shadow = this.attachShadow({mode: 'open'});
+        this.shadow = this.attachShadow({ mode: 'open' });
+        this.tags = []; // Array to hold tag definitions
+        this.tagDefinitions = []; // Available tag definitions
     }
 
-    /**
-     * Called when the element is connected to the DOM.
-     */
-    connectedCallback() {
+    async connectedCallback() {
+        await this.fetchTagDefinitions();
         this.render();
     }
 
-    /**
-     * Renders the tag manager.
-     */
-    async render() {
+    async fetchTagDefinitions() {
+        // Placeholder for fetching tag definitions from an API or config
+        this.tagDefinitions = [
+            { name: 'topic' },
+            { name: 'location' },
+            { name: 'person' },
+            { name: 'event' },
+            { name: 'organization' }
+        ];
+    }
+
+    addTag(tag) {
+        this.tags.push(tag);
+        this.render();
+        this.dispatchEvent(new CustomEvent('tags-updated', { detail: this.tags })); // Dispatch event
+    }
+
+    removeTag(index) {
+        this.tags.splice(index, 1);
+        this.render();
+        this.dispatchEvent(new CustomEvent('tags-updated', { detail: this.tags })); // Dispatch event
+    }
+
+    updateTag(index, condition, value) {
+        this.tags[index].condition = condition;
+        this.tags[index].value = value;
+        this.render();
+        this.dispatchEvent(new CustomEvent('tags-updated', { detail: this.tags })); // Dispatch event
+    }
+
+
+    render() {
         this.shadow.innerHTML = `
-            <style>
-                .tag-manager {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 5px;
-                }
+        <style>
+            .tag-manager {
+                display: flex;
+                flex-direction: column;
+                gap: 5px;
+            }
 
-                .tag-list {
-                    list-style: none;
-                    padding: 0;
-                    margin: 0;
-                    display: flex;
-                    flex-wrap: wrap;
-                    gap: 5px;
-                }
-
-                .tag-list-item {
-                    display: inline-block;
-                }
-
-                .tag-input-container {
-                    display: flex;
-                }
-
-                .tag-input {
-                    flex-grow: 1;
-                    padding: 5px;
-                    border: 1px solid #ccc;
-                    border-radius: 4px;
-                    margin-right: 5px;
-                }
-
-                .add-tag-button {
-                    padding: 5px 10px;
-                    border: none;
-                    background-color: #007bff;
-                    color: white;
-                    border-radius: 4px;
-                    cursor: pointer;
-                }
-
-                .tag-suggestions {
-                    list-style: none;
-                    padding: 0;
-                    margin: 0;
-                    border: 1px solid #ccc;
-                    border-radius: 4px;
-                    position: absolute;
-                    z-index: 10;
-                    background-color: white;
-                    display: none;
-                }
-
-                .tag-suggestions li {
-                    padding: 5px;
-                    cursor: pointer;
-                }
-
-                .tag-suggestions li.selected {
-                    background-color: #f0f0f0;
-                }
-            </style>
+            .tag-list {
+                display: flex;
+                flex-direction: column;
+                gap: 3px;
+                margin-bottom: 10px;
+            }
+        </style>
             <div class="tag-manager">
-                <ul class="tag-list"></ul>
-                <div class="tag-input-container">
-                    <input type="text" class="tag-input" placeholder="Add a tag">
-                    <button class="add-tag-button">Add Tag</button>
+                <div class="tag-list">
+                    ${this.tags.map((tag, index) => `
+                        <tag-input
+                            key="${index}"
+                            tag-definition='${JSON.stringify(tag.tagDefinition)}'
+                            condition="${tag.condition}"
+                            value="${tag.value}"
+                            on-change="updateTagInput.bind(this, ${index})"
+                        ></tag-input>
+                    `).join('')}
                 </div>
-                <ul class="tag-suggestions"></ul>
+                <select id="tagDefinitionSelect">
+                    ${this.tagDefinitions.map(def => `<option value='${JSON.stringify(def)}'>${def.name}</option>`).join('')}
+                </select>
+                <button id="addTagButton">Add Tag</button>
             </div>
         `;
 
-        this.tagList = this.shadow.querySelector('.tag-list');
-        this.tagInput = this.shadow.querySelector('.tag-input');
-        this.addTagButton = this.shadow.querySelector('.add-tag-button');
-        this.tagSuggestions = this.shadow.querySelector('.tag-suggestions');
-
-        this.debouncedSuggestTags = debounce(this.suggestTags.bind(this), 200);
-        this.tagInput.addEventListener('input', this.debouncedSuggestTags);
-        this.tagInput.addEventListener('keydown', (e) => this.handleTagInputKeyDown(e));
-        this.addTagButton.addEventListener('click', () => this.addTagToNote(this.tagInput.value));
-
-        await this.renderTags();
-    }
-
-    /**
-     * Handles the tag input key down event.
-     * @param {Event} event - The tag input key down event.
-     */
-    handleTagInputKeyDown(event) {
-        if (this.tagSuggestions.style.display !== 'block') return;
-
-        switch (event.key) {
-            case 'ArrowDown':
-                event.preventDefault();
-                this.moveTagSuggestionSelection(1);
-                break;
-            case 'ArrowUp':
-                event.preventDefault();
-                this.moveTagSuggestionSelection(-1);
-                break;
-            case 'Enter':
-                event.preventDefault();
-                this.selectTagSuggestion();
-                break;
-            case 'Escape':
-                this.clearTagSuggestions();
-                break;
-        }
-    }
-
-    /**
-     * Moves the tag suggestion selection.
-     * @param {number} direction - The direction to move the selection.
-     */
-    moveTagSuggestionSelection(direction) {
-        const suggestions = this.tagSuggestions.querySelectorAll('li');
-        if (suggestions.length === 0) return;
-
-        let selectedIndex = -1;
-        suggestions.forEach((suggestion, index) => {
-            if (suggestion.classList.contains('selected')) {
-                selectedIndex = index;
-                suggestion.classList.remove('selected');
-            }
+        this.shadow.querySelector('#addTagButton').addEventListener('click', () => {
+            const selectElement = this.shadow.querySelector('#tagDefinitionSelect');
+            const selectedTagDefinition = JSON.parse(selectElement.value);
+            this.addTag({ tagDefinition: selectedTagDefinition, condition: 'is', value: '' });
         });
 
-        let newIndex = selectedIndex + direction;
-        if (newIndex < 0) {
-            newIndex = suggestions.length - 1;
-        } else if (newIndex >= suggestions.length) {
-            newIndex = 0;
-        }
-
-        suggestions[newIndex].classList.add('selected');
-    }
-
-    /**
-     * Selects a tag suggestion.
-     */
-    selectTagSuggestion() {
-        const selectedSuggestion = this.tagSuggestions.querySelector('li.selected');
-        if (selectedSuggestion) {
-            this.addTagToNote(selectedSuggestion.textContent);
-        }
-    }
-
-    /**
-     * Renders the tags.
-     */
-    async renderTags() {
-        this.tagList.innerHTML = ''; // Clear existing tags
-        if (this.note && this.note.tags) {
-            for (const tag of this.note.tags) {
-                this.renderTag(tag);
-            }
-        }
-    }
-
-    /**
-     * Renders a tag.
-     * @param {Tag} tag - The tag to render.
-     */
-    renderTag(tag) {
-        const tagDefinition = this.app.getTagDefinition(tag.name);
-        const tagComponent = document.createElement('data-tag');
-        tagComponent.setAttribute('tag-definition', JSON.stringify(tagDefinition));
-        tagComponent.setAttribute('value', tag.value);
-        tagComponent.setAttribute('condition', tag.condition);
-
-        const listItem = createElement('li', {className: 'tag-list-item'});
-        listItem.appendChild(tagComponent);
-        listItem.addEventListener('tag-removed', () => {
-            this.removeTagFromNote(tag.name);
+        // Bind the updateTagInput function to the component instance
+        const tagInputs = this.shadow.querySelectorAll('tag-input');
+        tagInputs.forEach((tagInput, index) => {
+            tagInput.onChange = (tagDefinition, condition, value) => {
+                if (condition === null && value === null) {
+                    this.removeTag(index);
+                } else {
+                    this.updateTag(index, condition, value);
+                }
+            };
         });
-        this.tagList.appendChild(listItem);
-    }
-
-    /**
-     * Adds a tag to the note.
-     * @param {string} tagName - The name of the tag to add.
-     */
-    async addTagToNote(tagName) {
-        try {
-            if (!this.note || !this.note.id) {
-                console.error('No note selected');
-                return;
-            }
-
-            if (this.note.tags.some(tag => tag.name === tagName)) {
-                console.warn('Tag already exists on this note.');
-                this.clearTagInput();
-                this.clearTagSuggestions();
-                return;
-            }
-
-            const tagDefinition = this.app.getTagDefinition(tagName);
-            if (!tagDefinition) {
-                console.error('Tag definition not found:', tagName);
-                return;
-            }
-
-            const defaultValue = tagDefinition.default || '';
-            /** @type {Tag} */
-            const newTag = {name: tagName, value: defaultValue, condition: 'is'};
-            this.note.tags.push(newTag);
-            await this.app.db.saveObject(this.note, false);
-            await this.renderTags();
-            this.clearTagInput();
-            this.clearTagSuggestions();
-        } catch (error) {
-            console.error('Error adding tag to note:', error);
-        }
-    }
-
-    /**
-     * Removes a tag from the note.
-     * @param {string} tagName - The name of the tag to remove.
-     */
-    async removeTagFromNote(tagName) {
-        try {
-            if (!this.note || !this.note.id) {
-                console.error('No note selected');
-                return;
-            }
-
-            this.note.tags = this.note.tags.filter(tag => tag.name !== tagName);
-            await this.app.db.saveObject(this.note, false);
-            await this.renderTags();
-        } catch (error) {
-            console.error('Error removing tag from note:', error);
-        }
-    }
-
-    /**
-     * Suggests tags based on the input.
-     */
-    suggestTags() {
-        const searchText = this.tagInput.value.toLowerCase();
-        const suggestions = Object.keys(this.app.getTagDefinition())
-            .filter(tagName => tagName.toLowerCase().startsWith(searchText))
-            .slice(0, 5); // Limit to 5 suggestions
-
-        this.displayTagSuggestions(suggestions);
-    }
-
-    /**
-     * Displays the tag suggestions.
-     * @param {string[]} suggestions - The tag suggestions to display.
-     */
-    displayTagSuggestions(suggestions) {
-        this.tagSuggestions.innerHTML = '';
-        if (!suggestions.length) {
-            this.tagSuggestions.style.display = 'none';
-            return;
-        }
-
-        suggestions.forEach(suggestion => {
-            const suggestionItem = createElement('li', {}, suggestion);
-            suggestionItem.addEventListener('click', () => {
-                this.addTagToNote(suggestion);
-            });
-            this.tagSuggestions.appendChild(suggestionItem);
-        });
-
-        this.tagSuggestions.style.display = 'block';
-
-        // Select the first suggestion by default
-        if (suggestions.length > 0) {
-            this.tagSuggestions.firstChild.classList.add('selected');
-        }
-    }
-
-    /**
-     * Clears the tag input.
-     */
-    clearTagInput() {
-        this.tagInput.value = '';
-    }
-
-    /**
-     * Clears the tag suggestions.
-     */
-    clearTagSuggestions() {
-        this.tagSuggestions.innerHTML = '';
-        this.tagSuggestions.style.display = 'none';
     }
 }
 
 customElements.define('tag-manager', TagManager);
-
-export {TagManager};

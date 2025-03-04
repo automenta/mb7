@@ -1,197 +1,55 @@
-import {createElement} from './utils';
-import {TagInput} from './tag-input';
-
-class Tag extends HTMLElement {
-    constructor() {
+ class Tag extends HTMLElement {
+    /**
+     * @param {TagDefinition} tagDefinition
+     * @param {string} value
+     * @param {string} condition
+     * @param {function} onRemove
+     */
+    constructor(tagDefinition, value, condition, onRemove) {
         super();
-        this.shadow = this.attachShadow({mode: 'open'});
-    }
-
-    static get observedAttributes() {
-        return ['tag-definition', 'value', 'condition'];
-    }
-
-    connectedCallback() {
-        this.tagDefinition = JSON.parse(this.getAttribute('tag-definition'));
-        this.value = this.getAttribute('value') || '';
-        this.condition = this.getAttribute('condition') || 'is';
-        this.render();
-    }
-
-    attributeChangedCallback(name, oldValue, newValue) {
-        if (name === 'tag-definition')
-            this.tagDefinition = JSON.parse(newValue);
-
-        if (this.isConnected)
-            this.render();
-    }
-
-    remove() {
-        this.dispatchEvent(new CustomEvent('tag-removed', {
-            detail: {tag: this}, bubbles: true, composed: true
-        }));
+        this.shadow = this.attachShadow({ mode: 'open' });
+        this.tagDefinition = tagDefinition;
+        this.value = value;
+        this.condition = condition;
+        this.onRemove = onRemove;
     }
 
     render() {
         this.shadow.innerHTML = `
-            <style>
-                .tag {
-                    display: inline-flex;
-                    align-items: center;
-                    background-color: #f0f0f0;
-                    border: 1px solid #ccc;
-                    border-radius: 4px;
-                    padding: 2px 4px;
-                    margin: 2px;
-                    font-size: 0.8em;
-                    transition: background-color 0.2s ease-in-out;
-                }
+        <style>
+            .tag {
+                display: inline-flex;
+                align-items: center;
+                background-color: #f0f0f0;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+                padding: 2px 4px;
+                margin: 2px;
+                font-size: 0.85em;
+            }
 
-                .tag.conditional {
-                    background-color: #e0e0e0;
-                }
-
-                .tag.invalid {
-                    background-color: #ffdddd;
-                }
-
-                .tag > span {
-                    margin-right: 4px;
-                }
-
-                .tag-condition {
-                    font-style: italic;
-                    margin-right: 4px;
-                }
-
-                .tag > button {
-                    background-color: transparent;
-                    border: none;
-                    cursor: pointer;
-                    font-size: 1em;
-                    padding: 0;
-                    margin: 0;
-                }
-
-                .tag > button:hover {
-                    color: #007bff;
-                }
-
-                .tag:hover {
-                    background-color: #ddd;
-                }
-            </style>
+            .tag-remove-button {
+                margin-left: 4px;
+                cursor: pointer;
+            }
+        </style>
+            <span class="tag-name">${this.tagDefinition.name}</span>${this.condition}${this.value}
+            <span class="tag-remove-button">❌</span>
         `;
 
-        const el = document.createElement('div');
-        el.className = 'tag';
-        el.dataset.tagName = this.tagDefinition.name;
-
-        if (this.tagDefinition.conditions && this.tagDefinition.conditions.length) {
-            el.classList.add('conditional');
-        }
-
-        const {ui, name} = this.tagDefinition;
-        const icon = ui?.icon || '🏷️';
-        const display = createElement('span', {}, `${icon} ${name}:`);
-        el.appendChild(display);
-
-        if (this.condition)
-            el.appendChild(createElement('span', {className: 'tag-condition'}, this.condition));
-
-        el.appendChild(createElement('span', {className: 'tag-value'}, this.value || ''));
-
-        this.editButton = createElement('button', {
-            className: 'edit-tag-button', title: `Edit ${name} Value`
-        }, 'Edit');
-        this.editButton.addEventListener('click', () => {
-            this.editTag();
+        this.shadow.querySelector('.tag-remove-button').addEventListener('click', () => {
+            if (this.onRemove) {
+                this.onRemove();
+            }
         });
-        el.appendChild(this.editButton);
-
-        const removeButton = createElement('button', {
-            className: 'remove-tag-button', title: `Remove ${name}`
-        }, 'X');
-        removeButton.addEventListener('click', () => {
-            this.removeTag();
-        });
-        el.appendChild(removeButton);
-
-        if (!this.tagDefinition.validate(this.value, this.condition)) {
-            el.classList.add('invalid');
-            el.title = 'Invalid tag value'; // Add tooltip
-        }
-
-        this.shadow.appendChild(el);
     }
 
-    isValid() {
-        return this.tagDefinition.validate(this.value, this.condition);
-    }
-
-    editTag() {
-        this.shadow.innerHTML = '';
-        const tagInput = new TagInput(this.tagDefinition, this.value, this.condition, (newValue, newCondition) => {
-            this.value = newValue;
-            this.condition = newCondition;
+    connectedCallback() {
+        if (!this.rendered) {
             this.render();
-        });
-        //TODO fix this broken code
-
-        //     setapp(value)
-        //     {
-        //         this._app = value;
-        //     }
-        //     getValue()
-        //     {
-        //         return this.value;
-        //     }
-        //
-        //     getCondition()
-        //     {
-        //         get
-        //         app()
-        //         {
-        //             return this._app;
-        //         }
-        //
-        //         async
-        //         removeTag()
-        //         {
-        //             try {
-        //                 const tagName = this.tagDefinition.name;
-        //                 const noteDetails = this.closest('note-details');
-        //                 if (noteDetails) {
-        //                     const noteView = noteDetails.noteView;
-        //                     if (noteView && noteView.selectedNote) {
-        //                         const note = noteView.selectedNote;
-        //                         const tagIndex = note.tags.findIndex(tag => tag.name === tagName);
-        //                         if (tagIndex !== -1) {
-        //                             note.tags.splice(tagIndex, 1);
-        //                             await noteView.app.db.saveObject(note, false);
-        //                             noteDetails.renderTags();
-        //                             noteView.displayTags(note.id);
-        //                         } else {
-        //                             console.error('Tag not found');
-        //                         }
-        //                     } else {
-        //                         console.error('NoteView or selectedNote not found');
-        //                     }
-        //                 } else {
-        //                     console.error('NoteDetails component not found');
-        //                 }
-        //             } catch (error) {
-        //                 console.error('Error removing tag:', error);
-        //             }
-        //         }
-        //
-        //         getTagDefinition()
-        //         {
-        //             return this.tagDefinition;
-        //         }
+            this.rendered = true;
+        }
     }
 }
 
-if (!customElements.get('data-tag')) {
-    customElements.define('data-tag', Tag);
-}
+customElements.define('tag-element', Tag);
