@@ -1,6 +1,6 @@
 import {createElement} from "./utils.js";
 import * as Y from 'yjs';
-import {YjsHelper} from '../../core/yjs-helper';
+import {YjsHelper} from '../core/yjs-helper.js';
 
 export class GenericForm {
     constructor(schema, yDoc, objectId, saveCallback) {
