@@ -1,4 +1,3 @@
-import { Ontology } from '../../core/ontology.js';
 import { createElement } from '../utils.js';
 
 export class NoteDetails extends HTMLElement {
@@ -13,60 +12,34 @@ export class NoteDetails extends HTMLElement {
     }
 
     handleTagRemoved(event) {
-        event.stopPropagation();
+        const tag = event.detail.tag;
+        this.removeTag(tag);
     }
 
-    createDetailEdit(text, icon) {
-        const label = createElement('span', { class: 'margin-left' }, `${icon} ${text}`);
-        return label;
+    async removeTag(tag) {
+        try {
+            const tagName = tag.getTagDefinition().name;
+            if (this.noteView.selectedNote) {
+                const note = this.noteView.selectedNote;
+                const tagIndex = note.tags.findIndex(tag => tag.name === tagName);
+                if (tagIndex !== -1) {
+                    note.tags.splice(tagIndex, 1);
+                    await this.noteView.app.db.saveObject(note, false);
+                    this.renderTags();
+                    this.noteView.displayTags(note.id);
+                } else {
+                    console.error('Tag not found');
+                }
+            } else {
+                console.error('Note not found');
+            }
+        } catch (error) {
+            console.error('Error removing tag:', error);
+        }
     }
 
-    createShareEdit() {
-        return this.createDetailEdit('No One', '👥');
-    }
-
-    createPrivacyEdit() {
-        const privacyContainer = createElement('div', { class: 'privacy-container' });
-
-        const label = createElement('label', { class: 'privacy-label' }, 'Private');
-        privacyContainer.appendChild(label);
-
-        this.privacyCheckbox = createElement('input', {
-            class: 'privacy-checkbox',
-            type: 'checkbox',
-            checked: true // Default to private
-        });
-        privacyContainer.appendChild(this.privacyCheckbox);
-
-        this.privacyCheckbox.addEventListener('change', () => {
-            const noteId = this.noteView.selectedNote.id;
-            const isPrivate = this.privacyCheckbox.checked;
-            this.noteView.updateNotePrivacy(noteId, isPrivate);
-        });
-
-        return privacyContainer;
-    }
-
-    createPriorityEdit() {
-        const priorityContainer = createElement('div', { class: 'priority-container' });
-
-        const label = createElement('label', { class: 'priority-label' }, 'Priority:');
-        priorityContainer.appendChild(label);
-
-        const prioritySelect = createElement('select', { class: 'priority-select' });
-        ['High', 'Medium', 'Low'].forEach(option => {
-            const optionElement = createElement('option', { value: option }, option);
-            prioritySelect.appendChild(optionElement);
-        });
-
-        priorityContainer.appendChild(prioritySelect);
-
-        return priorityContainer;
-    }
-
-    createTagsSection() {
-        const tagsContainer = createElement('div', { class: 'note-tags-container' });
-        return tagsContainer;
+    populateNoteDetails(note) {
+        this.render();
     }
 
     render() {
@@ -80,55 +53,25 @@ export class NoteDetails extends HTMLElement {
                     align-items: center;
                     margin-bottom: 5px;
                 }
-                .privacy-label {
-                    margin-right: 5px;
-                }
-                .priority-container {
-                    display: flex;
-                    align-items: center;
-                    margin-bottom: 5px;
-                }
-                .priority-label {
-                    margin-right: 5px;
-                }
                 .note-tags-container {
-                    margin-top: 10px;
-                    padding: 5px;
-                    border: 1px solid #ddd;
-                    border-radius: 5px;
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 5px;
                 }
             </style>
             <div class="note-details-container">
-                <div class="priority-edit-container">${this.createPriorityEdit().outerHTML}</div>
-                ${this.createPrivacyEdit().outerHTML}
-                <div class="note-tags-container">
-                    <input type="text" id="new-tag-name" placeholder="Tag Name">
-                    <select id="new-tag-condition">
-                        <option value="is">is</option>
-                        <option value="contains">contains</option>
-                    </select>
-                    <input type="text" id="new-tag-value" placeholder="Tag Value">
-                    <button id="add-tag-button">Add Tag</button>
+                <div class="privacy-container">
                 </div>
+                <div class="note-tags-container">
+                </div>
+                <button id="share-button">Share</button>
             </div>
         `;
+
         this.renderTags();
 
-        const addTagButton = this.shadow.getElementById('add-tag-button');
-        addTagButton.addEventListener('click', () => {
-            const tagNameInput = this.shadow.getElementById('new-tag-name');
-            const tagName = tagNameInput.value.trim();
-            const tagConditionSelect = this.shadow.getElementById('new-tag-condition');
-            const tagCondition = tagConditionSelect.value;
-            const tagValueInput = this.shadow.getElementById('new-tag-value');
-            const tagValue = tagValueInput.value.trim();
-
-            if (tagName) {
-                this.createTag(tagName, tagValue, tagCondition);
-                tagNameInput.value = '';
-                tagValueInput.value = '';
-            }
-        });
+        const shareButton = this.shadow.querySelector('#share-button');
+        shareButton.addEventListener('click', () => this.shareNote());
     }
 
     async renderTags() {
@@ -146,8 +89,18 @@ export class NoteDetails extends HTMLElement {
         }
     }
 
-    async createTag(tagName, tagValue = '', tagCondition = 'is') {
-        this.noteView.addTagToNote(tagName, tagValue, tagCondition);
+    async shareNote() {
+        if (this.noteView.selectedNote) {
+            try {
+                await this.noteView.app.noteManager.notePublisher.publishObject(this.noteView.selectedNote);
+            } catch (error) {
+                console.error('Error sharing note:', error);
+                this.noteView.app.errorHandler.handleError(error, 'Error sharing note');
+            }
+        } else {
+            console.warn('No note selected to share.');
+            this.noteView.app.notificationManager.showNotification('No note selected to share.', 'warning');
+        }
     }
 }
 
