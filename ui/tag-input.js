@@ -65,7 +65,7 @@ class TagInput extends HTMLElement {
                 <option value="contains" ${this.condition === 'contains' ? 'selected' : ''}>contains</option>
                 <option value="not-contains" ${this.condition === 'not-contains' ? 'selected' : ''}>not contains</option>
             </select>
-            <input type="text" class="tag-input" value="${this.value}" placeholder="Enter tag value">
+            <input type="text" class="tag-input" type="text" value="${this.value}" placeholder="Enter tag value">
             <button class="tag-remove-button">❌</button>
         </div>
         `;
