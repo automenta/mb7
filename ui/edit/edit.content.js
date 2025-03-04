@@ -113,14 +113,14 @@ class EditorContentHandler {
             }
             try {
                 const tagContent = match[1];
-                const [tagName, tagValue, tagCondition] = tagContent.split(':');
+                const [tagName, tagValue = '', tagCondition = 'is'] = tagContent.split(':');
                 const tagDefinition = this.editor.getTagDefinition(tagName);
                 if (tagDefinition) {
                     const tag = document.createElement('data-tag');
                     tag.dataset.tagName = tagName;
                     tag.setAttribute('tag-definition', JSON.stringify(tagDefinition));
-                    tag.setAttribute('value', tagValue || '');
-                    tag.setAttribute('condition', tagCondition || 'is');
+                    tag.setAttribute('value', tagValue);
+                    tag.setAttribute('condition', tagCondition);
                     this.editor.editorArea.append(tag);
                 } else {
                     console.warn("Tag definition not found:", tagName);
