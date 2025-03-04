@@ -22,32 +22,15 @@ export class Nostr {
     }
 
     async connectToRelays() {
-        // Use relays from settings if available, otherwise use default relays
         const relaysToConnect = this.nostrRelays ? this.nostrRelays.split(',').map(url => url.trim()) : this.relays;
 
         for (const relayUrl of relaysToConnect) {
             try {
                 const relay = relayInit(relayUrl);
-                relay.on('connect', () => {
-                    console.log(`Connected to relay: ${relayUrl}`);
-                    this.relayStatuses[relayUrl] = 'connected';
-                    this.app.notificationManager.showNotification(`Connected to relay: ${relayUrl}`, 'success');
-                    this.relayObjects[relayUrl] = relay;
-                });
 
-                relay.on('disconnect', () => {
-                    console.log(`Disconnected from relay: ${relayUrl}`);
-                    this.relayStatuses[relayUrl] = 'disconnected';
-                    this.app.notificationManager.showNotification(`Disconnected from relay: ${relayUrl}`, 'warning');
-                    delete this.relayObjects[relayUrl];
-                });
-
-                relay.on('error', () => {
-                    console.error(`Error connecting to relay: ${relayUrl}`);
-                    this.relayStatuses[relayUrl] = 'error';
-                    this.app.notificationManager.showNotification(`Error connecting to relay: ${relayUrl}`, 'error');
-                    delete this.relayObjects[relayUrl];
-                });
+                relay.on('connect', () => this.handleRelayConnect(relayUrl, relay));
+                relay.on('disconnect', () => this.handleRelayDisconnect(relayUrl));
+                relay.on('error', () => this.handleRelayError(relayUrl));
 
                 await relay.connect();
             } catch (error) {
@@ -55,6 +38,27 @@ export class Nostr {
                 this.app.notificationManager.showNotification(`Failed to connect to relay ${relayUrl}: ${error.message}`, 'error');
             }
         }
+    }
+
+    handleRelayConnect(relayUrl, relay) {
+        console.log(`Connected to relay: ${relayUrl}`);
+        this.relayStatuses[relayUrl] = 'connected';
+        this.app.notificationManager.showNotification(`Connected to relay: ${relayUrl}`, 'success');
+        this.relayObjects[relayUrl] = relay;
+    }
+
+    handleRelayDisconnect(relayUrl) {
+        console.log(`Disconnected from relay: ${relayUrl}`);
+        this.relayStatuses[relayUrl] = 'disconnected';
+        this.app.notificationManager.showNotification(`Disconnected from relay: ${relayUrl}`, 'warning');
+        delete this.relayObjects[relayUrl];
+    }
+
+    handleRelayError(relayUrl) {
+        console.error(`Error connecting to relay: ${relayUrl}`);
+        this.relayStatuses[relayUrl] = 'error';
+        this.app.notificationManager.showNotification(`Error connecting to relay: ${relayUrl}`, 'error');
+        delete this.relayObjects[relayUrl];
     }
 
     /**
