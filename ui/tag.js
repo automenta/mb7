@@ -4,6 +4,7 @@ import { TagInput } from './tag-input';
 class Tag extends HTMLElement {
     constructor() {
         super();
+        this.app = null;
         this.shadow = this.attachShadow({ mode: 'open' });
     }
 
@@ -11,7 +12,13 @@ class Tag extends HTMLElement {
         this.tagDefinition = JSON.parse(this.getAttribute('tag-definition'));
         this.value = this.getAttribute('value') || '';
         this.condition = this.getAttribute('condition') || 'is';
+        this.app = this.getApp();
         this.render();
+    }
+
+    getApp() {
+        // Traverse up the DOM tree to find the app instance
+        return document.querySelector('notes-view')?.app;
     }
 
     static get observedAttributes() {
