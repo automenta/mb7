@@ -97,10 +97,30 @@ class Edit {
             // Add a data attribute to store the tag content
             tagElement.dataset.tagContent = tagContent;
 
+            // Make the tag editable
+            tagElement.addEventListener('click', () => {
+                this.editTag(tagContent);
+            });
+
             return tagElement;
         } catch (error) {
             console.error("Error rendering tag:", error);
             return null;
+        }
+    }
+
+    editTag(tagContent) {
+        try {
+            const tagData = JSON.parse(tagContent);
+            const tagDefinition = this.getTagDefinition(tagData.name); // Assuming tagData.name holds the tag definition name
+            if (tagDefinition) {
+                this.selectedTag = tagDefinition;
+                this.showTagEditForm(tagDefinition, tagContent); // Pass tagContent to showTagEditForm
+            } else {
+                console.warn(`Tag definition not found for tag name: ${tagData.name}`);
+            }
+        } catch (error) {
+            console.error("Error editing tag:", error);
         }
     }
 
@@ -109,10 +129,26 @@ class Edit {
         this.showTagEditForm(tagDefinition);
     }
 
-    async showTagEditForm(tagDefinition) {
+    async showTagEditForm(tagDefinition, tagContent = null) {
         this.tagEditArea.innerHTML = '';
         this.tagEditArea.style.display = 'block';
         this.tagYDoc.getMap('data').clear();
+
+        // If tagContent is provided, populate the tagYDoc with the existing tag data
+        if (tagContent) {
+            try {
+                const tagData = JSON.parse(tagContent);
+                const yMap = this.tagYDoc.getMap('data');
+                for (const key in tagData) {
+                    if (key !== 'id' && key !== 'name' && tagDefinition.tags[key]) {
+                        yMap.set(key, tagData[key]);
+                    }
+                }
+            } catch (error) {
+                console.error("Error populating tag YDoc:", error);
+            }
+        }
+
         this.tagForm = new GenericForm(tagDefinition, this.tagYDoc, 'tag', this.saveTag.bind(this));
         await this.tagForm.build();
         this.tagEditArea.appendChild(this.tagForm.el);
