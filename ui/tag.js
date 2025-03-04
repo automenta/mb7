@@ -88,13 +88,19 @@ class Tag extends HTMLElement {
         const display = createElement('span', {}, `${icon} ${this.tagDefinition.name}: ${this.value} `);
         this.el.appendChild(display);
 
-        this.editButton = createElement('button', { className: 'edit-tag-button' }, 'Edit');
+        this.editButton = createElement('button', {
+            className: 'edit-tag-button',
+            'aria-label': `Edit ${this.tagDefinition.name}`
+        }, 'Edit');
         this.editButton.addEventListener('click', () => {
             this.editTag();
         });
         this.el.appendChild(this.editButton);
 
-        const removeButton = createElement('button', { className: 'remove-tag-button' }, 'X');
+        const removeButton = createElement('button', {
+            className: 'remove-tag-button',
+            'aria-label': `Remove ${this.tagDefinition.name}`
+        }, 'X');
         removeButton.addEventListener('click', () => {
             this.remove();
         });
