@@ -186,13 +186,6 @@ async function setupUI() {
     document.title = app.selected ? `Netention - ${app.selected.name}` : "Netention";
 }
 
-document.addEventListener("DOMContentLoaded", async () => {
-    await setupUI();
-});
-
-
-export { App };
-
 function initializeViews(app) {
     const noteView = new NoteView(app, app.db, app.nostr);
     const friendsView = new FriendsView(app, app.db, app.nostr);
@@ -201,3 +194,10 @@ function initializeViews(app) {
 
     return {noteView, friendsView, settingsView, contentView};
 }
+
+document.addEventListener("DOMContentLoaded", async () => {
+    await setupUI();
+});
+
+
+export { App };
