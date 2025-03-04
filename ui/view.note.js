@@ -20,7 +20,7 @@ class NoteViewRenderer {
         const mainArea = this.noteUI.createMainArea();
         mainArea.appendChild(this.noteUI.createTitleInput(this.noteView.handleTitleInputChange.bind(this.noteView)));
         mainArea.appendChild(this.noteUI.createPrivacyEdit());
-        mainArea.appendChild(this.noteView.noteDetails);
+        mainArea.appendChild(this.noteView.noteDetails.el);
         mainArea.appendChild(this.noteView.contentArea);
         mainArea.appendChild(this.noteView.todoArea);
         mainArea.appendChild(this.noteUI.createLinkedView());
@@ -105,6 +105,24 @@ class NoteViewEventHandler {
     }
 }
 
+class NoteViewElements {
+    constructor() {
+        this.el = document.createElement('div');
+        this.el.className = 'notes-view';
+        this.el.style.flexDirection = 'row';
+        this.el.style.display = 'flex';
+    }
+
+    createElement(type, options = {}, text = '') {
+        const element = document.createElement(type);
+        Object.assign(element, options);
+        if (text) {
+            element.textContent = text;
+        }
+        return element;
+    }
+}
+
 export class NoteView extends HTMLElement {
     constructor(app, db, nostr) {
         super();
@@ -115,10 +133,8 @@ export class NoteView extends HTMLElement {
         this.yDoc = new Y.Doc();
         this.noteYjsHandler = new NoteYjsHandler(this.yDoc);
 
-        this.el = document.createElement('div');
-        this.el.className = 'notes-view';
-        this.el.style.flexDirection = 'row';
-        this.el.style.display = 'flex';
+        this.elements = new NoteViewElements();
+        this.el = this.elements.el;
 
         this.noteUI = new NoteUI();
         this.sidebar = new NotesSidebar(app, this);
