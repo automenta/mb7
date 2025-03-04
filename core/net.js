@@ -198,4 +198,98 @@ export class Nostr {
 
         delete this.subscriptions[subscriptionId];
     }
+
+    /**
+     * Subscribes to events that match a specific NObject ID.
+     * @param {string} objectId - The ID of the NObject to subscribe to.
+     * @param {function} callback - The callback function to call when a match is received.
+     */
+    async subscribeToMatches(objectId, callback) {
+        if (!objectId) {
+            console.warn('subscribeToMatches called with empty objectId');
+            return;
+        }
+
+        const subscriptionId = `match-for-${objectId}`;
+
+        if (this.subscriptions[subscriptionId]) {
+            console.log(`Already subscribed to matches for objectId ${objectId}`);
+            return;
+        }
+
+        const sub = {
+            filter: {
+                '#e': [objectId] // Assuming 'e' tag is used to reference the original object
+            },
+            callback: callback
+        };
+
+        this.subscriptions[subscriptionId] = sub;
+
+        for (const relayUrl of this.relays) {
+            try {
+                const relay = this.relayObjects[relayUrl];
+                if (relay && relay.status === 1) {
+                    const subscription = relay.sub([
+                        {
+                            '#e': [objectId]
+                        }
+                    ]);
+
+                    subscription.on('event', event => {
+                        console.log(`Match received from ${relayUrl} for objectId ${objectId}`);
+                        callback(event);
+                    });
+
+                    subscription.on('eose', () => {
+                        console.log(`End of stored events for matches for objectId ${objectId} from ${relayUrl}`);
+                    });
+                } else {
+                    console.warn(`Relay ${relayUrl} not connected, skipping subscription`);
+                    this.app.notificationManager.showNotification(`Relay ${relayUrl} not connected, skipping subscription`, 'warning');
+                }
+            } catch (error) {
+                console.error(`Failed to subscribe to matches for objectId ${objectId} on relay ${relayUrl}:`, error);
+                this.app.notificationManager.showNotification(`Failed to subscribe to matches for objectId ${objectId} on relay ${relayUrl}: ${error.message}`, 'error');
+            }
+        }
+    }
+
+    /**
+     * Unsubscribes from events that match a specific NObject ID.
+     * @param {string} subscriptionId - The ID of the subscription to unsubscribe from.
+     */
+    async unsubscribeToMatches(subscriptionId) {
+        if (!subscriptionId) {
+            console.warn('unsubscribeToMatches called with empty subscriptionId');
+            return;
+        }
+
+        if (!this.subscriptions[subscriptionId]) {
+            console.log(`Not subscribed to subscriptionId ${subscriptionId}`);
+            return;
+        }
+
+        for (const relayUrl of this.relays) {
+            try {
+                const relay = this.relayObjects[relayUrl];
+                if (relay && relay.status === 1) {
+                    relay.unsub([
+                        {
+                            id: subscriptionId
+                        }
+                    ]);
+                    console.log(`Unsubscribed from matches ${subscriptionId} on relay ${relayUrl}`);
+                } else {
+                    console.warn(`Relay ${relayUrl} not connected, skipping unsubscription`);
+                    this.app.notificationManager.showNotification(`Relay ${relayUrl} not connected, skipping unsubscription`, 'warning');
+                }
+            } catch (error) {
+                console.error(`Failed to unsubscribe from matches ${subscriptionId} on relay ${relayUrl}:`, error);
+                this.app.notificationManager.showNotification(`Failed to unsubscribe from matches ${subscriptionId} on relay ${relayUrl}: ${error.message}`, 'error');
+            }
+        }
+
+        delete this.subscriptions[subscriptionId];
+    }
 }

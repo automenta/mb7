@@ -45,6 +45,8 @@ class NotePublisher {
         }
 
         try {
+            // Add 'e' tag to reference the original object
+            object.tags.push(['e', object.id]);
             await this.nostr.publish(object);
             this.notificationManager.showNotification('Published to Nostr!', 'success');
         } catch (error) {

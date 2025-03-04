@@ -6,8 +6,8 @@ import { GenericListComponent } from './generic-list.js';
 import { NoteUI } from './note/note.ui.js';
 import {NoteList} from "./note/note-list";
 import {NoteDetails} from "./note/note-details";
-import {TagDisplay} from "./note/tag-display";
-import {MyObjectsList} from "./note/my-objects-list";
+import {TagDisplay} from "./tag-display";
+import {MyObjectsList} from "./my-objects-list";
 import { createElement } from '../utils.js';
 import { YjsHelper } from '../../core/yjs-helper';
 
@@ -93,6 +93,12 @@ class NoteSelector {
                     });
                     nameElement.textContent = yNoteMap.get("name") || note.name;
                 }
+
+                // Subscribe to match events for the selected note
+                this.noteView.app.nostr.subscribeToMatches(noteId, (event) => {
+                    console.log(`Match received for note ${noteId}:`, event);
+                    this.noteView.app.notificationManager.showNotification(`Match received: ${event.content}`, 'success');
+                });
             }
         } catch (error) {
             this.noteView.app.errorHandler.handleError(error, 'Error selecting note');
