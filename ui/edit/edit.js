@@ -156,19 +156,28 @@ class EditorArea {
     }
 }
 
+class EditorMenuBuilder {
+    build() {
+        const persistentQueryLabel = createElement('label', {htmlFor: 'persistentQueryCheckbox'}, 'Save as Persistent Query');
+        const persistentQueryCheckbox = createElement('input', {type: 'checkbox', id: 'persistentQueryCheckbox'});
+        const persistentQueryContainer = createElement('div', { className: 'persistent-query-container' });
+        persistentQueryContainer.append(persistentQueryLabel, persistentQueryCheckbox);
+        return persistentQueryContainer;
+    }
+}
+
 class EditorMenu {
     constructor(app, saveHandler) {
         this.app = app;
         this.saveHandler = saveHandler;
         this.el = createElement('div');
-        this.persistentQueryCheckbox = createElement('input', {type: 'checkbox', id: 'persistentQueryCheckbox'});
+        this.builder = new EditorMenuBuilder();
+        this.persistentQueryCheckbox = document.getElementById('persistentQueryCheckbox');
         this.build();
     }
 
     build() {
-        const persistentQueryLabel = createElement('label', {htmlFor: 'persistentQueryCheckbox'}, 'Save as Persistent Query');
-        const persistentQueryContainer = createElement('div', { className: 'persistent-query-container' });
-        persistentQueryContainer.append(persistentQueryLabel, this.persistentQueryCheckbox);
+        const persistentQueryContainer = this.builder.build();
         this.el.append(persistentQueryContainer);
     }
 
