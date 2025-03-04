@@ -83,13 +83,19 @@ class Edit {
      * Renders the content of the editor area, including text and tags.
      */
     renderContent() {
-        // Save current selection
+        // Save current cursor position
+        let cursorOffset = 0;
         const selection = window.getSelection();
-        const range = selection.rangeCount > 0 ? selection.getRangeAt(0) : false;
+        if (selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            const preCaretRange = range.cloneRange();
+            preCaretRange.selectNodeContents(this.editorArea);
+            preCaretRange.setEnd(range.endContainer, range.endOffset);
+            cursorOffset = preCaretRange.toString().length;
+        }
 
         // Clear the editor area
         this.editorArea.innerHTML = '';
-
 
         // Get the current text from Yjs
         const text = this.yText.toString();
@@ -98,12 +104,20 @@ class Edit {
         const tagRegex = /\[TAG:([^\]]*)\]/g;
         let match;
         let lastIndex = 0;
+        let textIndex = 0; // Track index in the combined text content
+
+        // Array to store text nodes and their lengths
+        const textNodes = [];
 
         // Iterate over the text, finding and rendering tags
         while ((match = tagRegex.exec(text)) !== null) {
             // Add the text before the tag
             if (match.index > lastIndex) {
-                this.editorArea.appendChild(document.createTextNode(text.substring(lastIndex, match.index)));
+                const textContent = text.substring(lastIndex, match.index);
+                const textNode = document.createTextNode(textContent);
+                this.editorArea.appendChild(textNode);
+                textNodes.push({node: textNode, length: textContent.length, startIndex: textIndex});
+                textIndex += textContent.length;
             }
 
             // Extract the tag content (the JSON string)
@@ -124,15 +138,48 @@ class Edit {
 
         // Add the remaining text after the last tag
         if (lastIndex < text.length) {
-            this.editorArea.appendChild(document.createTextNode(text.substring(lastIndex)));
+            const textContent = text.substring(lastIndex);
+            const textNode = document.createTextNode(textContent);
+            this.editorArea.appendChild(textNode);
+            textNodes.push({node: textNode, length: textContent.length, startIndex: textIndex});
+            textIndex += textContent.length;
         }
 
-        // Restore selection if it existed
-        if (range) {
-            selection.removeAllRanges();
-            selection.addRange(range);
+        // Restore cursor position
+        if (cursorOffset !== null) {
+            let nodeFound = null;
+            let offsetInNode = 0;
+            let accumulatedLength = 0;
+
+            for (const textNodeInfo of textNodes) {
+                if (cursorOffset >= accumulatedLength && cursorOffset <= accumulatedLength + textNodeInfo.length) {
+                    nodeFound = textNodeInfo.node;
+                    offsetInNode = cursorOffset - accumulatedLength;
+                    break;
+                }
+                accumulatedLength += textNodeInfo.length;
+            }
+
+            if (nodeFound) {
+                const range = document.createRange();
+                range.setStart(nodeFound, offsetInNode);
+                range.collapse(true);
+                selection.removeAllRanges();
+                selection.addRange(range);
+            } else if (textNodes.length > 0) {
+                // Fallback: if cursorOffset is beyond text length, put cursor at the end
+                const lastTextNodeInfo = textNodes[textNodes.length - 1];
+                const range = document.createRange();
+                range.setStart(lastTextNodeInfo.node, lastTextNodeInfo.length);
+                range.collapse(true);
+                selection.removeAllRanges();
+                selection.addRange(range);
+            } else {
+                // If no text nodes, focus at the beginning of the editor
+                this.editorArea.focus();
+            }
         } else {
-            // If no selection to restore, place cursor at the end
+            // If no previous cursor position, focus at the end
             this.editorArea.focus();
         }
     }
