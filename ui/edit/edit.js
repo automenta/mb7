@@ -74,6 +74,11 @@ class Edit {
         this.editorArea.addEventListener('input', () => {
             this.autosuggest.debouncedApply();
         });
+
+        // Listen for notify events from the GenericForm
+        this.el.addEventListener('notify', (event) => {
+            this.app.showNotification(event.detail.message, event.detail.type);
+        });
     }
 
     handleTagSelected(tagDefinition) {

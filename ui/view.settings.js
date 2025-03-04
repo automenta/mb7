@@ -31,9 +31,11 @@ export class SettingsView extends View {
 
         // Initialize YDoc with existing settings
         const yMap = yDoc.getMap('data');
-        Object.entries(this.app.settings).forEach(([key, value]) => {
+        for (const key in Ontology.Settings.tags) {
+            const settingDefinition = Ontology.Settings.tags[key];
+            const value = this.app.settings[key] !== undefined ? this.app.settings[key] : settingDefinition.default;
             yMap.set(key, value);
-        });
+        }
 
         // Create and render the GenericForm
         this.genericForm = new GenericForm(Ontology.Settings, yDoc, this.settingsObjectId, this.saveSettings.bind(this));
@@ -45,6 +47,11 @@ export class SettingsView extends View {
         saveButton.addEventListener("click", () => this.saveSettings());
 
         this.yDoc = yDoc;
+
+        // Listen for notify events from the GenericForm
+        this.el.addEventListener('notify', (event) => {
+            this.app.showNotification(event.detail.message, event.detail.type);
+        });
     }
 
     async saveSettings() {
@@ -64,7 +71,11 @@ export class SettingsView extends View {
         await this.db.saveObject(settingsObject);
 
         // Apply settings to app
-        Object.assign(this.app.settings, settings);
+        for (const key in Ontology.Settings.tags) {
+            if (settings.hasOwnProperty(key)) {
+                this.app.settings[key] = settings[key];
+            }
+        }
         this.app.settingsManager.saveSettings(settings);
         this.app.nostr.nostrRelays = settings.relays;
         this.app.nostr.nostrPrivateKey = settings.privateKey;

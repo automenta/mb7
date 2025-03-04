@@ -225,7 +225,9 @@ export const Ontology = {
                 serialize: (value) => value,
                 deserialize: (value) => value
             }
-        }
+        },
+        serialize: (value) => JSON.stringify(value),
+        deserialize: (value) => JSON.parse(value)
     },
     "Public": {
         conditions: ["is"],

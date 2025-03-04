@@ -91,11 +91,18 @@ export class GenericForm {
                 }
             })
 
+            let initialValue;
             if (this.yMap.has(property)) {
+                initialValue = this.yMap.get(property);
+            } else {
+                initialValue = propertySchema.default;
+            }
+
+            if (initialValue !== undefined) {
                 if (input.type === 'checkbox') {
-                    input.checked = this.yMap.get(property);
+                    input.checked = initialValue;
                 } else {
-                    input.value = this.yMap.get(property);
+                    input.value = initialValue;
                 }
             } else {
                 if (propertySchema.type === 'boolean') {
