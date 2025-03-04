@@ -9,6 +9,7 @@ import { GenericListComponent } from './generic-list.js';
 import { Ontology } from '../core/ontology.js';
 import { NoteListRenderer } from './note/note-list-item-renderer.js';
 import { NoteUI } from './note/note.ui.js';
+import { createElement } from '../utils.js';
 
 class NoteList {
     constructor(app, noteView, yDoc, yNotesList, notesListComponent) {
@@ -178,6 +179,30 @@ class NoteYjsHandler {
     }
 }
 
+class MyObjectsList {
+    constructor(noteView, yMyObjectsList) {
+        this.noteView = noteView;
+        this.yMyObjectsList = yMyObjectsList;
+        this.myObjectsListComponent = new GenericListComponent(this.renderMyObjectItem.bind(this), this.yMyObjectsList);
+    }
+
+    renderMyObjectItem(objectId) {
+        const li = document.createElement('li');
+        li.textContent = objectId;
+        return li;
+    }
+
+    render() {
+        const myObjectsArea = this.noteView.noteUI.createMyObjectsArea();
+        myObjectsArea.appendChild(this.myObjectsListComponent.el);
+
+        const createObjectButton = createElement('button', {}, 'Create New Object');
+        myObjectsArea.appendChild(createObjectButton);
+
+        return myObjectsArea;
+    }
+}
+
 export class NoteView extends HTMLElement {
     constructor(app, db, nostr) {
         super();
@@ -197,12 +222,12 @@ export class NoteView extends HTMLElement {
         this.sidebar = new NotesSidebar(app, this);
         this.noteDetails = new NoteDetails(this, app);
         this.tagDisplay = new TagDisplay(app);
+        this.myObjectsList = new MyObjectsList(this, this.noteYjsHandler.yMyObjectsList);
 
         this.mainArea = this.noteUI.createMainArea();
         this.contentArea = this.noteUI.createContentArea();
         this.todoArea = this.noteUI.createTodoArea();
         this.tagArea = this.noteUI.createTagArea();
-        this.myObjectsArea = this.noteUI.createMyObjectsArea();
 
         this.el.appendChild(this.sidebar.render());
 
@@ -222,16 +247,7 @@ export class NoteView extends HTMLElement {
         this.tagManager = new TagManager(this.app, this.selectedNote);
         this.mainArea.appendChild(this.tagManager);
 
-        this.mainArea.appendChild(this.myObjectsArea);
-
-        this.myObjectsListComponent = new GenericListComponent(this.renderMyObjectItem.bind(this), this.noteYjsHandler.yMyObjectsList);
-        this.myObjectsArea.appendChild(this.myObjectsListComponent.el);
-
-        const createObjectButton = document.createElement('button');
-        createObjectButton.textContent = 'Create New Object';
-        this.myObjectsArea.appendChild(createObjectButton);
-
-        this.noteListRenderer = NoteListRenderer;
+        this.mainArea.appendChild(this.myObjectsList.render());
 
         this.noteList = new NoteList(this.app, this, this.yDoc, this.noteYjsHandler.yNotesList, this.notesListComponent);
         this.notesListComponent = new GenericListComponent(this.noteList.renderNoteItem.bind(this.noteList), this.noteYjsHandler.yNotesList);
@@ -334,12 +350,6 @@ export class NoteView extends HTMLElement {
         } catch (error) {
             this.app.errorHandler.handleError(error, 'Error selecting note');
         }
-    }
-
-    renderMyObjectItem(objectId) {
-        const li = document.createElement('li');
-        li.textContent = objectId;
-        return li;
     }
 
     async getNoteTags(noteId) {
