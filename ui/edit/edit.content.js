@@ -92,7 +92,7 @@ class EditorContentHandler {
     serialize() {
         const clonedEditor = this.editor.editorArea.cloneNode(true);
         clonedEditor.querySelectorAll("data-tag").forEach(tagEl => {
-            const { tagName } = tagEl.dataset;
+            const tagName = tagEl.getAttribute('tag-name');
             const tagValue = tagEl.getAttribute('value') || '';
             const tagCondition = tagEl.getAttribute('condition') || 'is';
             tagEl.replaceWith(`[TAG:${tagName}:${tagValue}:${tagCondition}]`);
@@ -101,7 +101,7 @@ class EditorContentHandler {
     }
 
     deserialize(text) {
-        this.editor.editorArea.innerHTML = "";
+        this.updateYjsContent("");
         const tagRegex = /\[TAG:([^\]]*)\]/g;
 
         let lastIndex = 0;
