@@ -1,22 +1,22 @@
 .edit-view {
     display: flex;
     flex-direction: column;
-    height: 100%; /* Make sure it takes full height of parent */
+    height: 100%;
 }
 
 .editor-area {
-    flex-grow: 1; /* Take up remaining vertical space */
+    flex-grow: 1;
     padding: 10px;
     border: 1px solid #ccc;
     border-radius: 5px;
-    font-family: monospace; /* Monospace font for editor */
+    font-family: monospace;
     font-size: 14px;
     line-height: 1.5;
-    overflow-y: auto; /* Enable vertical scrolling if content overflows */
-    white-space: pre-wrap; /* Preserve line breaks and spaces */
-    word-wrap: break-word; /* Break long words */
-    outline: none; /* Remove default focus outline */
-    min-height: 200px; /* Minimum height for the editor */
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    outline: none;
+    min-height: 200px;
 }
 
 .details-area {
@@ -34,24 +34,24 @@
 }
 
 .tag-element {
-    background-color: #e0f7fa; /* Light cyan background */
-    color: #004d40; /* Dark teal text */
-    border: 1px solid #b2ebf2; /* Light cyan border */
+    background-color: #e0f7fa;
+    color: #004d40;
+    border: 1px solid #b2ebf2;
     border-radius: 4px;
     padding: 2px 4px;
     margin: 2px;
     cursor: pointer;
-    display: inline-block; /* Ensure inline behavior */
+    display: inline-block;
 }
 
 .tag-stub {
-    background-color: #eee; /* Different background for stubs */
+    background-color: #eee;
     color: #555;
-    border: 1px dashed #ccc; /* Dashed border to indicate stub */
+    border: 1px dashed #ccc;
     border-radius: 4px;
     padding: 2px 4px;
     margin: 2px;
-    display: inline-block; /* Ensure inline behavior */
+    display: inline-block;
 }
 
 .generic-form {
@@ -63,15 +63,15 @@
 .generic-form-form {
     display: flex;
     flex-direction: column;
-    gap: 10px; /* Increased gap for better spacing */
+    gap: 10px;
 }
 
 .generic-form-group {
-    margin-bottom: 5px; /* Spacing between form groups */
+    margin-bottom: 5px;
 }
 
 .generic-form-label {
-    display: block; /* Label on its own line */
+    display: block;
     margin-bottom: 5px;
     font-weight: bold;
 }
@@ -80,8 +80,8 @@
     padding: 8px;
     border: 1px solid #ddd;
     border-radius: 4px;
-    width: 100%; /* Full width input */
-    box-sizing: border-box; /* Include padding and border in element's total width and height */
+    width: 100%;
+    box-sizing: border-box;
     font-size: 14px;
 }
 
@@ -90,16 +90,16 @@
     border: none;
     border-radius: 4px;
     color: white;
-    background-color: #007bff; /* Primary button color */
+    background-color: #007bff;
     cursor: pointer;
     font-size: 14px;
-    transition: background-color 0.3s ease; /* Smooth transition for hover effect */
+    transition: background-color 0.3s ease;
 }
 
 .delete-tag-button {
-    background-color: #dc3545; /* Danger button color for delete */
+    background-color: #dc3545;
 }
 
 .save-button:hover, .delete-tag-button:hover {
-    background-color: #0056b3; /* Darker shade on hover */
+    background-color: #0056b3;
 }

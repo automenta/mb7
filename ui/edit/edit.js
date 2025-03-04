@@ -5,7 +5,7 @@ import {Autosuggest} from './suggest.js';
 import {OntologyBrowser} from './ontology-browser.js';
 import {GenericForm} from '../generic-form.js';
 import * as Y from 'yjs';
-import './edit.css'; // Import CSS for Edit component
+import './edit.css';
 
 class Edit {
     constructor(note, yDoc, app, getTagDefinition, schema) {
@@ -21,7 +21,7 @@ class Edit {
         this.selectedTag = null;
         this.tagYDoc = new Y.Doc();
         this.render();
-        this.debouncedSaveContent = this.debounce(this.saveContent, 500); // Debounce saveContent
+        this.debouncedSaveContent = this.debounce(this.saveContent, 500);
     }
 
     async render() {
@@ -34,45 +34,28 @@ class Edit {
         this.ontologyBrowser = new OntologyBrowser(this, this.handleTagSelected.bind(this));
         this.el.appendChild(this.ontologyBrowser.getElement());
         this.ontologyBrowser.render(this.schema);
-        this.tagEditArea = createElement('div', {className: 'tag-edit-area'}); // Removed inline style
-        this.tagEditArea.style.display = 'none'; // Keep hiding logic in JS
+        this.tagEditArea = createElement('div', {className: 'tag-edit-area'});
+        this.tagEditArea.style.display = 'none';
         this.el.appendChild(this.tagEditArea);
         this.editorArea.addEventListener('input', () => this.autosuggest.debouncedApply());
         this.editorArea.addEventListener('keydown', (event) => this.autosuggest.handleKeyDown(event));
         this.el.addEventListener('notify', (event) => this.app.notificationManager.showNotification(event.detail.message, event.detail.type));
 
-        // Initialize the editor with existing content and render tags
         this.renderContent();
-
-        // Observe changes to the Yjs text and re-render the content
         this.yText.observe(() => this.renderContent());
-
-        // Add a blur event listener to save the content when the editor loses focus
         this.editorArea.addEventListener('blur', () => this.debouncedSaveContent());
-        // TODO [EDIT-2]: Implement proper cursor/selection preservation after re-rendering content - IMPROVED
     }
 
-    /**
-     * Saves the content of the editor to the database.
-     */
     async saveContent() {
         this.note.content = this.serializeContent();
         await this.app.noteManager.saveObject(this.note);
     }
 
-    /**
-     * Serializes the content from the editor area, converting HTML-like tags to plain text.
-     * @returns {string} Plain text content.
-     */
     serializeContent() {
         return this.editorArea.innerHTML;
     }
 
-    /**
-     * Renders the content into the editor area, parsing tags and applying formatting.
-     */
     renderContent() {
-        // Save cursor position
         const selection = window.getSelection();
         let range;
         if (selection.rangeCount > 0) {
@@ -81,7 +64,6 @@ class Edit {
 
         this.editorArea.innerHTML = this.note.content;
 
-        // Restore cursor position if a range was saved
         if (range) {
             selection.removeAllRanges();
             selection.addRange(range);
@@ -121,8 +103,8 @@ class Edit {
             {tags: {[tagDefinition.name]: tagDefinition}},
             this.tagYDoc,
             this.note.id,
-            () => { /* this.saveTag(tagDefinition.name); */ }, // Save callback - currently empty
-            this.app // Pass the app instance
+            () => { /* this.saveTag(tagDefinition.name); */ },
+            this.app
         );
 
         form.build().then(formElement => {
@@ -141,23 +123,22 @@ class Edit {
     async saveTag(tagName) {
         const tagValue = this.tagYDoc.getMap('data').get(tagName);
         if (tagValue !== undefined) {
-            // Assuming 'tags' is an array in your note object
             if (!this.note.tags) {
                 this.note.tags = [];
             }
             const existingTagIndex = this.note.tags.findIndex(tag => tag.name === tagName);
             if (existingTagIndex > -1) {
-                this.note.tags[existingTagIndex].value = tagValue; // Update existing tag
+                this.note.tags[existingTagIndex].value = tagValue;
             } else {
-                this.note.tags.push({name: tagName, value: tagValue}); // Add new tag
+                this.note.tags.push({name: tagName, value: tagValue});
             }
             await this.app.noteManager.saveObject(this.note);
             this.app.notificationManager.showNotification(`Tag '${tagName}' saved successfully.`, 'success');
             this.tagEditArea.style.display = 'none';
             this.tagEditArea.innerHTML = '';
             this.selectedTag = null;
-            this.tagYDoc = new Y.Doc(); // Clear the tag YDoc after saving
-            this.renderContent(); // Re-render content to reflect tag changes
+            this.tagYDoc = new Y.Doc();
+            this.renderContent();
         } else {
             this.app.notificationManager.showNotification(`Value for tag '${tagName}' is undefined. Tag not saved.`, 'warning');
         }
@@ -168,14 +149,14 @@ class Edit {
         if (this.note.tags) {
             const tagIndex = this.note.tags.findIndex(tag => tag.name === tagName);
             if (tagIndex > -1) {
-                this.note.tags.splice(tagIndex, 1); // Remove tag
+                this.note.tags.splice(tagIndex, 1);
                 await this.app.noteManager.saveObject(this.note);
                 this.app.notificationManager.showNotification(`Tag '${tagName}' deleted successfully.`, 'success');
                 this.tagEditArea.style.display = 'none';
                 this.tagEditArea.innerHTML = '';
                 this.selectedTag = null;
-                this.tagYDoc = new Y.Doc(); // Clear the tag YDoc after deleting
-                this.renderContent(); // Re-render content to reflect tag changes
+                this.tagYDoc = new Y.Doc();
+                this.renderContent();
             } else {
                 this.app.notificationManager.showNotification(`Tag '${tagName}' not found in note.`, 'warning');
             }
