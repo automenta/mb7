@@ -1,5 +1,5 @@
-import {beforeEach, describe, expect, it, vi} from 'vitest';
-import {Tag} from '../ui/tag.js';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { Tag } from '../ui/tag.js';
 
 describe('Tag Component', () => {
     let tag;
@@ -11,7 +11,7 @@ describe('Tag Component', () => {
             name: 'Test Tag',
             emoji: '🧪',
             type: 'string',
-            conditions: {is: 'Is'},
+            conditions: { is: 'Is' },
             condition: 'is',
             value: 'Test Value',
         };
