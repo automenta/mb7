@@ -34,8 +34,13 @@ export class NotificationManager {
     }
 
     async animateAndRemoveNotification(notification) {
-        await notification.animateOut();
-        notification.remove();
-        await this.showNextNotification();
+        try {
+            await notification.animateOut();
+            notification.remove();
+        } catch (error) {
+            console.error('Error animating and removing notification:', error);
+        } finally {
+            await this.showNextNotification();
+        }
     }
 }
