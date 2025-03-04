@@ -6,6 +6,10 @@ import natural from 'natural';
 import {format, formatISO, isValid as isValidDate, parseISO} from "date-fns";
 
 export class Matcher {
+    /**
+     * Constructor for the Matcher class.
+     * @param {object} app - The application object.
+     */
     constructor(app) {
         this.app = app;
         this.fuse = new Fuse([], {
@@ -45,6 +49,11 @@ export class Matcher {
         }
     }
 
+    /**
+     * Finds matches for a given object.
+     * @param {object} object - The object to find matches for.
+     * @returns {object[]} - The matching objects.
+     */
     async findMatches(object) {
         const matches = [];
         const objects = await this.app.db.getAll();
@@ -265,6 +274,12 @@ export class Matcher {
         return matches.map(match => match.obj);
     }
 
+    /**
+     * Calculates the cosine similarity between two vectors.
+     * @param {number[]} vecA - The first vector.
+     * @param {number[]} vecB - The second vector.
+     * @returns {number} - The cosine similarity between the two vectors.
+     */
     cosineSimilarity(vecA, vecB) {
         let dotProduct = 0;
         let magnitudeA = 0;
