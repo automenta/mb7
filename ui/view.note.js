@@ -319,7 +319,7 @@ export class NoteView extends HTMLElement {
                 if (this.edit && this.edit.contentHandler) {
                     this.edit.contentHandler.deserialize(note.content);
                 }
-                this.displayTags(noteId);
+                await this.displayTags(noteId);
 
                 // Add 'selected' class to the clicked list item
                 const listItem = this.el.querySelector(`.note-list-item[data-id="${noteId}"]`);
