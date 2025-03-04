@@ -3,7 +3,6 @@ import { TagManager } from './tag-manager.js';
 import * as Y from 'yjs';
 
 import {NotesSidebar} from './note/note.sidebar.js';
-import {NoteDetails} from './note/note.details.js';
 
 import {GenericListComponent} from './generic-list.js';
 
