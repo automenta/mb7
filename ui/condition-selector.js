@@ -13,12 +13,16 @@ class ConditionSelector extends HTMLElement {
     }
 
     static get observedAttributes() {
-        return ['selectedCondition'];
+        return ['selectedCondition', 'tagDefinition'];
     }
 
     attributeChangedCallback(name, oldValue, newValue) {
         if (name === 'selectedCondition' && oldValue !== newValue) {
             this.selectedCondition = newValue;
+            this.renderOptions();
+        }
+        if (name === 'tagDefinition' && oldValue !== newValue) {
+            this.tagDefinition = JSON.parse(newValue);
             this.renderOptions();
         }
     }
