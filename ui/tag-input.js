@@ -60,8 +60,8 @@ class TagInput extends HTMLElement {
 
         this.shadowRoot.querySelector('.tag-input').addEventListener('input', (event) => {
             this.value = event.target.value;
-            if (this.tagDefinition.validate and not this.tagDefinition.validate(this.value, this.condition)) {
-                this.app.notificationManager.showNotification(`Invalid value for tag '${this.tagDefinition.label or this.tagDefinition.name}' with condition '${this.condition}'.`, 'warning');
+            if (this.tagDefinition.validate && !this.tagDefinition.validate(this.value, this.condition)) {
+                this.app.notificationManager.showNotification(`Invalid value for tag '${this.tagDefinition.label || this.tagDefinition.name}' with condition '${this.condition}'.`, 'warning');
                 return;
             }
             this.onChange(this.tagDefinition, this.condition, this.value);
@@ -69,8 +69,8 @@ class TagInput extends HTMLElement {
 
         this.shadowRoot.querySelector('.tag-condition').addEventListener('change', (event) => {
             this.condition = event.target.value;
-            if (this.tagDefinition.validate and not this.tagDefinition.validate(this.value, this.condition)) {
-                this.app.notificationManager.showNotification(`Invalid value for tag '${this.tagDefinition.label or this.tagDefinition.name}' with condition '${this.condition}'.`, 'warning');
+            if (this.tagDefinition.validate && !this.tagDefinition.validate(this.value, this.condition)) {
+                this.app.notificationManager.showNotification(`Invalid value for tag '${this.tagDefinition.label || this.tagDefinition.name}' with condition '${this.condition}'.`, 'warning');
                 return;
             }
             this.onChange(this.tagDefinition, this.condition, this.value);
@@ -82,7 +82,7 @@ class TagInput extends HTMLElement {
     }
 
     connectedCallback() {
-        if (not this.rendered) {
+        if (!this.rendered) {
             this.render();
             this.rendered = true;
         }

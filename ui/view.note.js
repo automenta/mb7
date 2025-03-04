@@ -83,7 +83,7 @@ export class NoteView extends HTMLElement {
 
     async updateView() {
         const selectedNoteId = this.store.getState().selectedNoteId;
-        if (selectedNoteId and selectedNoteId !== this.selectedNote?.id) {
+        if (selectedNoteId && selectedNoteId !== this.selectedNote?.id) {
             await this.loadNote(selectedNoteId);
         }
     }
