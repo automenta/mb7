@@ -33,7 +33,7 @@ class Tag extends HTMLElement {
         const display = createElement('span', {}, `${icon} ${this.tagDefinition.name}: ${this.value}`);
         this.el.appendChild(display);
 
-        const removeButton = createElement('span', { className: 'remove-tag' }, 'x');
+        const removeButton = createElement('button', { className: 'remove-tag-button' }, 'X');
         removeButton.addEventListener('click', () => this.remove());
         this.el.appendChild(removeButton);
 

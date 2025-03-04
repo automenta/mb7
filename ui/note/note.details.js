@@ -90,7 +90,7 @@ export class NoteDetails extends HTMLElement {
 
     render() {
         this.el.innerHTML = `
-            ${this.createPriorityEdit().outerHTML}
+            <div class="priority-edit-container">${this.createPriorityEdit().outerHTML}</div>
             ${this.createPrivacyEdit().outerHTML}
             <div class="tag-input-container">
                 <input type="text" class="new-tag-input" placeholder="Add a tag"/>
@@ -111,6 +111,13 @@ export class NoteDetails extends HTMLElement {
         });
 
         return this.el;
+    }
+
+    handleTagRemoved(event) {
+        const tagToRemove = event.detail.tag;
+        const noteId = this.noteView.selectedNote.id;
+
+        this.noteView.removeTagFromNote(noteId, tagToRemove.tagDefinition.name);
     }
 }
 

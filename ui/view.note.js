@@ -298,6 +298,7 @@ export class NoteView extends HTMLElement {
                     this.selectedNote = note;
                     this.populateNoteDetails(note);
                     this.edit.contentHandler.deserialize(note.content);
+                    this.displayTags(noteId);
 
                     // Add 'selected' class to the clicked list item
                     li.classList.add('selected');
@@ -502,7 +503,7 @@ export class NoteView extends HTMLElement {
                 note.tags.push({name: tagName, value: tagValue, condition: tagCondition});
                 await this.app.db.saveObject(note, false);
                 this.displayTags(noteId);
-                this.edit.contentHandler.insertTagAtSelection(tagName); // Update editor content
+                this.edit.contentHandler.insertTagAtSelection(tagName);
             } else {
                 console.error('Note not found');
             }

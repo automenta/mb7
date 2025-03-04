@@ -23,6 +23,7 @@ class Edit {
         this.el = createElement('div', { className: 'edit-view' });
 
         this.editorArea = this.createEditorArea();
+        this.app = autosuggest.app;
         this.el.appendChild(this.editorArea);
 
         this.setupEditorAreaEvents();
