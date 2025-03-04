@@ -31,6 +31,9 @@ export class GenericForm {
             }, tagDef.label || property);
 
             let input;
+            const yjsValue = this.yMap.get(property);
+            const defaultValue = tagDef.default !== undefined ? tagDef.default : ''; // Use default if defined, otherwise empty string
+            const initialValue = yjsValue !== undefined ? yjsValue : defaultValue; // Prioritize Yjs value, then default
 
             // Apply UI overrides from settings
             const uiOverrides = tagUIOverrides[property] || {}; // Use property as the key
@@ -44,7 +47,8 @@ export class GenericForm {
                         name: property,
                         className: 'generic-form-input',
                         placeholder: ui.placeholder || '', // Apply placeholder from UI overrides or schema
-                        required: ui.required || false // Apply required from UI overrides or schema
+                        required: ui.required || false, // Apply required from UI overrides or schema
+                        value: initialValue // Set initial value
                     });
                     break;
                 case "number":
@@ -52,7 +56,8 @@ export class GenericForm {
                         type: "number",
                         id: property,
                         name: property,
-                        className: 'generic-form-input'
+                        className: 'generic-form-input',
+                        value: initialValue // Set initial value
                     });
                     break;
                 case "boolean":
@@ -60,7 +65,8 @@ export class GenericForm {
                         type: "checkbox",
                         id: property,
                         name: property,
-                        className: 'generic-form-input'
+                        className: 'generic-form-input',
+                        checked: initialValue === true // Handle boolean default/Yjs value
                     });
                     break;
                 case "select":
@@ -71,7 +77,7 @@ export class GenericForm {
                     });
                     if (tagDef.ui.options && Array.isArray(tagDef.ui.options)) {
                         tagDef.ui.options.forEach(option => {
-                            const optionElement = createElement("option", {value: option}, option);
+                            const optionElement = createElement("option", {value: option, selected: option === initialValue}, option); // Set selected option
                             input.appendChild(optionElement);
                         });
                     }
@@ -82,21 +88,22 @@ export class GenericForm {
                         name: property,
                         className: 'generic-form-input',
                         rows: 4 // Default rows
-                    });
+                    }, initialValue); // Set initial value for textarea
                     break;
                 case "date":
                     input = createElement("input", {
                         type: "date",
                         id: property,
                         name: property,
-                        className: 'generic-form-input'
+                        className: 'generic-form-input',
+                        value: initialValue // Set initial value
                     });
                     break;
                 default:
                     // Use TagInput for other types, passing the app instance
                     input = new TagInput(
                         tagDef,
-                        this.yMap.get(property) || tagDef.default || '',
+                        initialValue, // Use initial value for TagInput
                         'is', // Default condition, can be adjusted as needed
                         (tagDefinition, condition, value) => {
                             if (value === null) {
