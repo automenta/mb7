@@ -1,28 +1,3 @@
-async function upgradeDatabase(db, oldVersion, newVersion, transaction) {
-    console.log('onupgradeneeded triggered');
-    if (!db.objectStoreNames.contains(OBJECTS_STORE)) {
-        const objectStore = db.createObjectStore(OBJECTS_STORE, {keyPath: 'id'});
-        objectStore.createIndex('kind', 'kind', {unique: false});
-        objectStore.createIndex('content', 'content', {unique: false});
-        objectStore.createIndex('tags', 'tags', {unique: false});
-        objectStore.createIndex('createdAt', 'createdAt', {unique: false});
-        objectStore.createIndex('updatedAt', 'updatedAt', {unique: false});
-        objectStore.createIndex('private', 'private', {unique: false});
-        objectStore.createIndex('isPersistentQuery', 'isPersistentQuery', {unique: false});
-    }
-    if (!db.objectStoreNames.contains(KEY_STORAGE)) {
-        db.createObjectStore(KEY_STORAGE);
-    }
-    const objectStore = transaction.objectStore(OBJECTS_STORE);
-    if (!objectStore.indexNames.contains('content')) {
-        objectStore.createIndex('content', 'content', {unique: false});
-    }
-}
-
-const DOMPURIFY_CONFIG = {
-    ALLOWED_TAGS: ["br", "b", "i", "span", "p", "strong", "em", "ul", "ol", "li", "a"],
-    ALLOWED_ATTR: ["class", "contenteditable", "tabindex", "id", "aria-label"]
-};
 import DOMPurify from 'dompurify';
 import {openDB} from 'idb';
 
@@ -42,6 +17,47 @@ const FRIENDS_OBJECT_ID = 'friends';
 const SETTINGS_OBJECT_ID = 'settings';
 const NOTES_INDEX_ID = 'notes-index';
 
+const DB_SCHEMA = {
+    [OBJECTS_STORE]: {
+        keyPath: 'id',
+        indices: [
+            {name: 'kind', keyPath: 'kind', unique: false},
+            {name: 'content', keyPath: 'content', unique: false},
+            {name: 'tags', keyPath: 'tags', unique: false},
+            {name: 'createdAt', keyPath: 'createdAt', unique: false},
+            {name: 'updatedAt', keyPath: 'updatedAt', unique: false},
+            {name: 'private', keyPath: 'private', unique: false},
+            {name: 'isPersistentQuery', keyPath: 'isPersistentQuery', unique: false},
+            {name: 'content', keyPath: 'content', unique: false}
+        ]
+    },
+    [KEY_STORAGE]: {}
+};
+
+const DOMPURIFY_CONFIG = {
+    ALLOWED_TAGS: ["br", "b", "i", "span", "p", "strong", "em", "ul", "ol", "li", "a"],
+    ALLOWED_ATTR: ["class", "contenteditable", "tabindex", "id", "aria-label"]
+};
+
+async function upgradeDatabase(db, oldVersion, newVersion, transaction) {
+    console.log('onupgradeneeded triggered');
+
+    for (const storeName in DB_SCHEMA) {
+        if (!db.objectStoreNames.contains(storeName)) {
+            const storeConfig = DB_SCHEMA[storeName];
+            const objectStore = db.createObjectStore(storeName, {keyPath: storeConfig.keyPath});
+
+            storeConfig.indices?.forEach(index => {
+                objectStore.createIndex(index.name, index.keyPath, {unique: index.unique});
+            });
+        }
+    }
+
+    const objectStore = transaction.objectStore(OBJECTS_STORE);
+    if (!objectStore.indexNames.contains('content')) {
+        objectStore.createIndex('content', 'content', {unique: false});
+    }
+}
 
 export class DB {
     static db = null;
@@ -149,12 +165,12 @@ export class DB {
      * @param {boolean} isPersistentQuery - Whether the object is a persistent query.
      */
     async save(o, isPersistentQuery) {
-        try {
-            if (!o.id) {
-                console.error('Attempted to save an object without an `id`:', o);
-                throw new Error('Missing id property on object');
-            }
+        if (!o.id) {
+            console.error('Attempted to save an object without an `id`:', o);
+            throw new Error('Missing id property on object');
+        }
 
+        try {
             await this.validateObjectData(o);
 
             // Data sanitization - prevent XSS attacks
@@ -162,13 +178,11 @@ export class DB {
 
             // Deduplication - skip saving if the object hasn't changed
             const existingObject = await this.get(o.id);
-            if (existingObject) {
-                if (JSON.stringify(existingObject) === JSON.stringify(o)) {
-                    console.log('Object has not been modified, skipping save');
-                    return o;
-                } else {
-                    console.log('Object with id ' + o.id + ' already exists, updating...');
-                }
+            if (existingObject && JSON.stringify(existingObject) === JSON.stringify(o)) {
+                console.log('Object has not been modified, skipping save');
+                return o;
+            } else {
+                console.log('Object with id ' + o.id + ' already exists, updating...');
             }
 
             o.isPersistentQuery = isPersistentQuery;
