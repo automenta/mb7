@@ -6,6 +6,7 @@ import {SuggestionDropdown} from './suggest.dropdown';
 import {EditorContentHandler} from './edit.content';
 import {Toolbar} from './edit.toolbar';
 import {YjsHelper} from '../../core/yjs-helper'; // Import YjsHelper
+import { getTagDefinition } from '../../core/ontology';
 
 class EditorEventHandler {
     constructor(edit) {

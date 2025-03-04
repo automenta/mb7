@@ -10,6 +10,7 @@ import { NoteManager } from "./note-manager";
 import { ViewManager } from "./view-manager";
 import { UIManager } from "./ui-manager";
 import * as Y from 'yjs';
+import { Ontology } from '../core/ontology';
 
 async function createApp(appDiv) {
     const errorHandler = new ErrorHandler(appDiv);
@@ -22,14 +23,14 @@ async function createApp(appDiv) {
     const matcher = new Matcher();
 
     // Load the ontology
-    let ontology = null;
-    try {
-        const response = await fetch('core/ontology.json');
-        ontology = await response.json();
-    } catch (error) {
-        errorHandler.handleError(error, 'Failed to load ontology.json');
-        ontology = {}; // Use an empty object if loading fails
-    }
+    let ontology = Ontology;
+    //try {
+    //    const response = await fetch('core/ontology.json');
+    //    ontology = await response.json();
+    //} catch (error) {
+    //    errorHandler.handleError(error, 'Failed to load ontology.json');
+    //    ontology = {}; // Use an empty object if loading fails
+    //}
 
     const settingsManager = new SettingsManager(db, errorHandler, ontology);
     const noteManager = new NoteManager(db, errorHandler, matcher, nostr, notificationManager);
@@ -39,7 +40,7 @@ async function createApp(appDiv) {
     // Create a Yjs document
     const yDoc = new Y.Doc();
 
-    const app = new App(db, nostr, matcher, errorHandler, notificationManager, monitoring, settingsManager, noteManager, viewManager, uiManager, yDoc);
+    const app = new App(db, nostr, matcher, errorHandler, notificationManager, monitoring, settingsManager, noteManager, viewManager, uiManager, ontology);
     app.settings = await app.settingsManager.getSettings();
     return app;
 }
