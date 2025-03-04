@@ -309,7 +309,9 @@ export class NoteView extends HTMLElement {
 
                 this.selectedNote = note;
                 this.populateNoteDetails(note);
-                this.edit.contentHandler.deserialize(note.content);
+                if (this.edit && this.edit.contentHandler) {
+                    this.edit.contentHandler.deserialize(note.content);
+                }
                 this.displayTags(noteId);
 
                 // Add 'selected' class to the clicked list item
@@ -319,18 +321,18 @@ export class NoteView extends HTMLElement {
                 }
 
                 const yNoteMap = this.getYNoteMap(noteId);
-                if (yNoteMap) {
+                const nameElement = listItem?.querySelector('.note-name');
+                if (yNoteMap && nameElement) {
                     yNoteMap.observe((event) => {
                         if (event.changes.keys.has("name")) {
                             nameElement.textContent = yNoteMap.get("name");
                         }
-                        if (event.changes.keys.has("content")) {
+                        if (event.changes.keys.has("content") && this.edit.contentHandler) {
                             this.edit.contentHandler.deserialize(yNoteMap.get("content"));
                         }
                     });
                     nameElement.textContent = yNoteMap.get("name") || note.name;
                 }
-                nameElement.classList.add('note-name');
             }
         } catch (error) {
             this.app.errorHandler.handleError(error, 'Error selecting note');
@@ -347,6 +349,7 @@ export class NoteView extends HTMLElement {
         if (privacyCheckbox) {
             privacyCheckbox.checked = note.private;
         }
+         const prioritySelect = this.el.querySelector('.priority-select');
         if (prioritySelect) {
             prioritySelect.value = note.priority;
         }

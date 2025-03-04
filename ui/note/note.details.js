@@ -79,7 +79,7 @@ export class NoteDetails extends HTMLElement {
         return tagsContainer;
     }
 
-    async createTag(tagName, tagValue = '', tagCondition = 'is') {
+   async createTag(tagName, tagValue = '', tagCondition = 'is') {
         this.noteView.addTagToNote(tagName, tagValue, tagCondition);
     }
 
