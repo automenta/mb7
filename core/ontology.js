@@ -14,12 +14,12 @@ export const Ontology = {
         conditions: ["is", "before", "after", "between"],
         validate: (value, condition) => {
             if (condition === "between") {
-                return isValidDate(parseISO(value.start)) && isValidDate(parseISO(value.end));
+                return isValidDate(value.start) && isValidDate(value.end);
             }
-            return isValidDate(parseISO(value));
+            return isValidDate(value);
         },
         serialize: (value) => typeof value === 'object' && value !== null ?
-            {start: formatISO(parseISO(value.start)), end: formatISO(parseISO(value.end))} : formatISO(parseISO(value)),
+            {start: value.start, end: value.end} : value,
         deserialize: (value) => value
     },
     "string": {
@@ -114,10 +114,7 @@ export const Ontology = {
             profilePicture: {type: "string", required: false},
             signalingStrategy: {type: "string", required: false},
             word2vecModelPath: {type: "string", required: false}
-        },
-        validate: (value, condition) => typeof value === 'object',
-        serialize: (value) => value,
-        deserialize: (value) => value
+        }
     },
     "Public": {
         conditions: ["is"],

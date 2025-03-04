@@ -163,10 +163,7 @@
         "description": "Path to the Word2Vec model file.",
         "validate": (value, condition) => typeof value === "string"
       }
-    },
-    "validate": (value, condition) => typeof value === 'object',
-    "serialize": (value) => value,
-    "deserialize": (value) => value
+    }
   },
   "Public": {
     "conditions": ["is"],
@@ -175,15 +172,3 @@
     "deserialize": (value) => value === "true"
   }
 }
-
-const isValidDate = (dateString) => {
-  try {
-    return !isNaN(new Date(dateString).getTime());
-  } catch (error) {
-    return false;
-  }
-};
-
-export const getTagDefinition = (name) => {
-  return Ontology[name] || Ontology.string;
-};
