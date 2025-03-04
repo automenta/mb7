@@ -8,18 +8,13 @@ import {GenericListComponent} from './generic-list.js';
 
 import {Ontology} from '../core/ontology.js';
 import {NoteListRenderer} from './note/note-list-item-renderer.js';
-
-import {
-    createPrivacyContainer,
-    createPrioritySelect,
-    createTitleInput,
-    createTextView
-} from './note/note.ui.js';
+import { NoteUI } from './note/note.ui.js';
 
 class NoteList {
-    constructor(app, noteView, yNotesList, notesListComponent) {
+    constructor(app, noteView, yDoc, yNotesList, notesListComponent) {
         this.app = app;
         this.noteView = noteView;
+        this.yDoc = yDoc;
         this.yNotesList = yNotesList;
         this.notesListComponent = notesListComponent;
     }
@@ -82,9 +77,10 @@ class NoteList {
 }
 
 class NoteDetails extends HTMLElement {
-    constructor(noteView) {
+    constructor(noteView, app) {
         super();
         this.noteView = noteView;
+        this.app = app;
     }
 
     populateNoteDetails(note) {
@@ -140,6 +136,32 @@ if (!customElements.get('note-details')) {
     customElements.define('note-details', NoteDetails);
 }
 
+class TagDisplay {
+    constructor(app) {
+        this.app = app;
+    }
+
+    async displayTags(noteView, noteId) {
+        const tagArea = noteView.mainArea.querySelector('.note-tag-area');
+        tagArea.innerHTML = ''; // Clear existing tags
+
+        try {
+            const note = await this.app.db.get(noteId);
+            if (note && note.tags) {
+                note.tags.forEach(tag => {
+                    const tagElement = document.createElement('span');
+                    tagElement.textContent = `${tag.name}: ${tag.value} `;
+                    tagArea.appendChild(tagElement);
+                });
+            } else {
+                console.log('No tags found for this note.');
+            }
+        } catch (error) {
+            console.error('Error getting note tags:', error);
+        }
+    }
+}
+
 export class NoteView extends HTMLElement {
     constructor(app, db, nostr) {
         super();
@@ -161,12 +183,11 @@ export class NoteView extends HTMLElement {
         this.el.style.display = 'flex';
 
         this.sidebar = new NotesSidebar(app, this);
-        this.noteDetails = new NoteDetails(this);
+        this.noteDetails = new NoteDetails(this, app);
+        this.noteUI = new NoteUI();
+        this.tagDisplay = new TagDisplay(app);
 
         this.mainArea = this.createMainArea();
-        this.privacyContainer = createPrivacyContainer();
-        this.privacyLabel = this.createPrivacyLabel();
-        this.privacyCheckbox = this.createPrivacyCheckbox();
         this.contentArea = this.createContentArea();
         this.todoArea = this.createTodoArea();
         this.tagArea = this.createTagArea();
@@ -175,11 +196,9 @@ export class NoteView extends HTMLElement {
         this.el.appendChild(this.sidebar.render());
 
         this.mainArea.appendChild(this.newTitleEdit());
-        this.privacyContainer.appendChild(this.privacyLabel);
-        this.privacyContainer.appendChild(this.privacyCheckbox);
         this.mainArea.appendChild(this.newPrivacyEdit());
 
-        this.noteDetailsComponent = new NoteDetails(this);
+        this.noteDetailsComponent = new NoteDetails(this, app);
         this.mainArea.appendChild(this.noteDetailsComponent);
 
         this.mainArea.appendChild(this.contentArea);
@@ -204,27 +223,14 @@ export class NoteView extends HTMLElement {
 
         this.noteListRenderer = NoteListRenderer;
 
-        this.notesListComponent = new GenericListComponent(this.noteListRenderer, this.yNotesList);
+        this.noteList = new NoteList(this.app, this, this.yDoc, this.yNotesList, this.notesListComponent);
+        this.notesListComponent = new GenericListComponent(this.noteList.renderNoteItem.bind(this.noteList), this.yNotesList);
         this.sidebar.elements.notesList.replaceWith(this.notesListComponent.el);
         this.sidebar.el.insertBefore(this.newAddButton(), this.notesListComponent.el);
-
-        this.noteList = new NoteList(this.app, this, this.yNotesList, this.notesListComponent);
 
         this.el.appendChild(this.mainArea);
 
         this.selectedNote = null;
-    }
-
-    createPrivacyContainer() {
-        const privacyContainer = document.createElement('div');
-        privacyContainer.className = 'privacy-container';
-        return privacyContainer;
-    }
-
-    createPrioritySelect() {
-        const prioritySelect = document.createElement('select');
-        prioritySelect.className = 'note-priority-select';
-        return prioritySelect;
     }
 
     createMainArea() {
@@ -268,7 +274,7 @@ export class NoteView extends HTMLElement {
     }
 
     createTitleInput() {
-        const titleInput = createTitleInput(() => {
+        const titleInput = this.noteUI.createTitleInput(() => {
             this.yDoc.transact(() => {
                 this.yName.delete(0, this.yName.length); // Clear existing content
                 this.yName.insert(0, titleInput.value); // Insert new content
@@ -297,11 +303,11 @@ export class NoteView extends HTMLElement {
     }
 
     newLinkedView() {
-        return createTextView('Linked View');
+        return this.noteUI.createTextView('Linked View');
     }
 
     newMatchesView() {
-        return createTextView('Matches View');
+        return this.noteUI.createTextView('Matches View');
     }
 
     async createNote() {
@@ -365,7 +371,7 @@ export class NoteView extends HTMLElement {
                 if (this.edit && this.edit.contentHandler) {
                     this.edit.contentHandler.deserialize(note.content);
                 }
-                await this.displayTags(noteId);
+                await this.tagDisplay.displayTags(this, noteId);
 
                 // Add 'selected' class to the clicked list item
                 const listItem = this.el.querySelector(`.note-list-item[data-id="${noteId}"]`);
@@ -398,6 +404,14 @@ export class NoteView extends HTMLElement {
         return li;
     }
 
+    newPrivacyEdit() {
+        const container = this.noteUI.createPrivacyContainer();
+        const label = this.noteUI.createPrivacyLabel();
+        const checkbox = this.noteUI.createPrivacyCheckbox();
+        container.appendChild(label);
+        container.appendChild(checkbox);
+        return container;
+    }
 
     getYNoteMap(noteId) {
         return this.yMap.get(noteId);
@@ -416,26 +430,6 @@ export class NoteView extends HTMLElement {
         setTimeout(() => {
             this.el.removeChild(e);
         }, 3000);
-    }
-
-    async displayTags(noteId) {
-        const tagArea = this.mainArea.querySelector('.note-tag-area');
-        tagArea.innerHTML = ''; // Clear existing tags
-
-        try {
-            const note = await this.app.db.get(noteId);
-            if (note && note.tags) {
-                note.tags.forEach(tag => {
-                    const tagElement = document.createElement('span');
-                    tagElement.textContent = `${tag.name}: ${tag.value} `;
-                    tagArea.appendChild(tagElement);
-                });
-            } else {
-                console.log('No tags found for this note.');
-            }
-        } catch (error) {
-            console.error('Error getting note tags:', error);
-        }
     }
 
     async getNoteTags(noteId) {
