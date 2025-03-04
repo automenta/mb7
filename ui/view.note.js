@@ -2,12 +2,12 @@ import { Edit } from './edit/edit.js';
 import { TagManager } from './tag-manager.js';
 import * as Y from 'yjs';
 
-import {NotesSidebar} from './note/note.sidebar.js';
+import { NotesSidebar } from './note/note.sidebar.js';
 
-import {GenericListComponent} from './generic-list.js';
+import { GenericListComponent } from './generic-list.js';
 
-import {Ontology} from '../core/ontology.js';
-import {NoteListRenderer} from './note/note-list-item-renderer.js';
+import { Ontology } from '../core/ontology.js';
+import { NoteListRenderer } from './note/note-list-item-renderer.js';
 import { NoteUI } from './note/note.ui.js';
 
 class NoteList {
@@ -198,11 +198,11 @@ export class NoteView extends HTMLElement {
         this.noteDetails = new NoteDetails(this, app);
         this.tagDisplay = new TagDisplay(app);
 
-        this.mainArea = this.createMainArea();
-        this.contentArea = this.createContentArea();
-        this.todoArea = this.createTodoArea();
-        this.tagArea = this.createTagArea();
-        this.myObjectsArea = this.createMyObjectsArea();
+        this.mainArea = this.noteUI.createMainArea();
+        this.contentArea = this.noteUI.createContentArea();
+        this.todoArea = this.noteUI.createTodoArea();
+        this.tagArea = this.noteUI.createTagArea();
+        this.myObjectsArea = this.noteUI.createMyObjectsArea();
 
         this.el.appendChild(this.sidebar.render());
 
@@ -245,42 +245,6 @@ export class NoteView extends HTMLElement {
 
     handleTitleInputChange(title) {
         this.noteYjsHandler.updateNoteTitle(title);
-    }
-
-    createMainArea() {
-        const mainArea = document.createElement('div');
-        mainArea.style.flex = '1';
-        mainArea.style.flexGrow = '1';
-        mainArea.style.padding = '10px';
-        return mainArea;
-    }
-
-    createContentArea() {
-        const contentArea = document.createElement('div');
-        contentArea.className = 'note-content-area';
-        contentArea.style.padding = '10px';
-        return contentArea;
-    }
-
-    createTodoArea() {
-        const todoArea = document.createElement('div');
-        todoArea.className = 'note-todo-area';
-        todoArea.style.padding = '10px';
-        return todoArea;
-    }
-
-    createTagArea() {
-        const tagArea = document.createElement('div');
-        tagArea.className = 'note-tag-area';
-        tagArea.style.padding = '10px';
-        return tagArea;
-    }
-
-    createMyObjectsArea() {
-        const myObjectsArea = document.createElement('div');
-        myObjectsArea.className = 'my-objects-area';
-        myObjectsArea.style.padding = '10px';
-        return myObjectsArea;
     }
 
     newAddButton() {

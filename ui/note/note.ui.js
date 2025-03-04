@@ -56,4 +56,40 @@ export class NoteUI {
     createMatchesView() {
         return this.createTextView('Matches View');
     }
+
+    createMainArea() {
+        const mainArea = document.createElement('div');
+        mainArea.style.flex = '1';
+        mainArea.style.flexGrow = '1';
+        mainArea.style.padding = '10px';
+        return mainArea;
+    }
+
+    createContentArea() {
+        const contentArea = document.createElement('div');
+        contentArea.className = 'note-content-area';
+        contentArea.style.padding = '10px';
+        return contentArea;
+    }
+
+    createTodoArea() {
+        const todoArea = document.createElement('div');
+        todoArea.className = 'note-todo-area';
+        todoArea.style.padding = '10px';
+        return todoArea;
+    }
+
+    createTagArea() {
+        const tagArea = document.createElement('div');
+        tagArea.className = 'note-tag-area';
+        tagArea.style.padding = '10px';
+        return tagArea;
+    }
+
+    createMyObjectsArea() {
+        const myObjectsArea = document.createElement('div');
+        myObjectsArea.className = 'my-objects-area';
+        myObjectsArea.style.padding = '10px';
+        return myObjectsArea;
+    }
 }
