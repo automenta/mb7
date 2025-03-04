@@ -1,7 +1,6 @@
 import {createElement} from "./utils.js";
 import {YjsHelper} from '../core/yjs-helper.js';
 import {TagInput} from './tag-input.js'; // Import TagInput
-import './edit.css'; // Import CSS for styling generic form elements (assuming styles are in edit.css)
 
 
 export class GenericForm {
