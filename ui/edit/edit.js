@@ -118,9 +118,11 @@ class Edit {
                 this.showTagEditForm(tagDefinition, tagContent); // Pass tagContent to showTagEditForm
             } else {
                 console.warn(`Tag definition not found for tag name: ${tagData.name}`);
+                this.app.showNotification(`Tag definition not found for tag name: ${tagData.name}`, 'warning');
             }
         } catch (error) {
             console.error("Error editing tag:", error);
+            this.app.showNotification(`Error editing tag: ${error.message}`, 'error');
         }
     }
 
@@ -139,14 +141,27 @@ class Edit {
             try {
                 const tagData = JSON.parse(tagContent);
                 const yMap = this.tagYDoc.getMap('data');
-                for (const key in tagData) {
-                    if (key !== 'id' && key !== 'name' && tagDefinition.tags[key]) {
-                        yMap.set(key, tagData[key]);
+                for (const key in tagDefinition.tags) {
+                    const tagDef = tagDefinition.tags[key];
+                    let value = tagData[key];
+                    if (value === undefined) {
+                        value = tagDef.default;
                     }
+                    if (tagDef.deserialize) {
+                        try {
+                            value = tagDef.deserialize(value);
+                        } catch (error) {
+                            console.error(`Error deserializing tag property ${key}:`, error);
+                            this.app.showNotification(`Error deserializing tag property ${key}: ${error.message}`, 'error');
+                            continue;
+                        }
+                    }
+                    yMap.set(key, value || null); // Use null for undefined values
                 }
                 this.editingTagContent = tagContent; // Store the original tag content for updating
             } catch (error) {
                 console.error("Error populating tag YDoc:", error);
+                this.app.showNotification(`Error populating tag YDoc: ${error.message}`, 'error');
             }
         } else {
             this.editingTagContent = null;
@@ -175,6 +190,7 @@ class Edit {
                 tagId = existingTagData.id;
             } catch (error) {
                 console.error("Error parsing existing tag content:", error);
+                this.app.showNotification(`Error parsing existing tag content: ${error.message}`, 'error');
                 tagId = Math.random().toString(36).substring(2, 15); // Generate a new ID if parsing fails
             }
         } else {
@@ -199,6 +215,7 @@ class Edit {
                     this.yText.insert(index, tagPlaceholder);
                 } else {
                     console.warn("Tag to replace not found in Yjs text!");
+                    this.app.showNotification("Tag to replace not found in Yjs text!", 'warning');
                     this.yText.insert(this.editorArea.selectionStart, tagPlaceholder);
                 }
             }
