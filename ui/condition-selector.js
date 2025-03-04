@@ -11,7 +11,6 @@ class ConditionSelector extends HTMLElement {
     }
 
     connectedCallback() {
-        this.render();
     }
 
     disconnectedCallback() {
