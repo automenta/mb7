@@ -17,12 +17,15 @@ describe('Tag Component', () => {
         };
         onUpdate = vi.fn();
         tag = new Tag();
+        tag.app = {showNotification: vi.fn()}
+        tag.shadow = tag.attachShadow({ mode: 'open' });
         tag.tagDefinition = tagData;
         document.body.appendChild(tag); // Append to document so connectedCallback is called
     });
 
     it('should render the tag correctly with the given data', () => {
-        expect(tag.shadowRoot.textContent).toContain(tagData.name);
+        tag.render()
+        expect(tag.shadowRoot.innerHTML).toContain(tagData.name);
         // expect(tag.querySelector('.tag-condition').value).toBe(tagData.condition);
     });
 
