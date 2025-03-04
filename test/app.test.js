@@ -1,14 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from '../ui/app.js';
 import { createAppMock } from './test-utils.js';
-import { sha256 } from 'js-sha256';
+import * as sha256Module from 'js-sha256';
 
 // Mock the animate function
 global.Element.prototype.animate = vi.fn();
 
-vi.mock('js-sha256', () => ({
-    sha256: vi.fn().mockReturnValue('mocked_sha256_hash'),
-}));
+vi.mock('js-sha256', () => sha256Module);
 
 describe('App', () => {
     let app;

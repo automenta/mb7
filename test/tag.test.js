@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { Tag } from '../ui/tag.js';
+import * as TagModule from '../ui/tag.js';
+const { Tag } = TagModule;
 
 describe('Tag Component', () => {
     let tag;
