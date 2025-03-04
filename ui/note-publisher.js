@@ -1,7 +1,11 @@
 /** @typedef {import('../core/types').NObject} NObject */
 
+/**
+ * The `NotePublisher` class is responsible for publishing notes to Nostr.
+ */
 export class NotePublisher {
     /**
+     * Constructor for the `NotePublisher` class.
      * @param {object} nostr - The Nostr object.
      * @param {object} notificationManager - The notification manager object.
      * @param {object} errorHandler - The error handler object.
