@@ -195,7 +195,7 @@ class Edit {
             this.editingTagContent = null;
         }
 
-        this.tagForm = new GenericForm(tagDefinition, this.tagYDoc, 'tag', this.saveTag.bind(this));
+        this.tagForm = new GenericForm(tagDefinition, this.tagYDoc, 'tag', this.saveTag.bind(this), this.app);
         await this.tagForm.build();
         this.tagEditArea.appendChild(this.tagForm.el);
 

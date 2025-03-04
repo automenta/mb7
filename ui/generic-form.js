@@ -3,18 +3,22 @@ import * as Y from 'yjs';
 import {YjsHelper} from '../core/yjs-helper.js';
 
 export class GenericForm {
-    constructor(schema, yDoc, objectId, saveCallback) {
+    constructor(schema, yDoc, objectId, saveCallback, app) { // Add app to constructor
         this.schema = schema;
         this.objectId = objectId;
         this.el = createElement("div", {class: "generic-form"});
         this.yDoc = yDoc;
         this.yMap = YjsHelper.createYMap(this.yDoc, 'data');
         this.saveCallback = saveCallback;
+        this.app = app; // Store the app instance
     }
 
     async build() {
         this.el.innerHTML = "";
         const form = createElement("form", { className: 'generic-form-form' });
+
+        // Load tagUIOverrides from Settings
+        const tagUIOverrides = await this.loadTagUIOverrides();
 
         for (const property in this.schema.tags) {
             if (!this.schema.tags.hasOwnProperty(property)) continue;
@@ -27,13 +31,19 @@ export class GenericForm {
 
             let input;
 
+            // Apply UI overrides from settings
+            const uiOverrides = tagUIOverrides[property] || {}; // Use property as the key
+            const ui = { ...propertySchema.ui, ...uiOverrides };
+
             switch (propertySchema.type) {
                 case "string":
                     input = createElement("input", {
                         type: "text",
                         id: property,
                         name: property,
-                        className: 'generic-form-input'
+                        className: 'generic-form-input',
+                        placeholder: ui.placeholder || '', // Apply placeholder from UI overrides or schema
+                        required: ui.required || false // Apply required from UI overrides or schema
                     });
                     break;
                 case "number":
@@ -132,5 +142,14 @@ export class GenericForm {
         form.style.gap = '5px';
 
         return this.el;
+    }
+
+    // Load tagUIOverrides from Settings
+    async loadTagUIOverrides() {
+        if (!this.app || !this.app.settings) {
+            console.warn("App or app settings not available.  Returning empty overrides.");
+            return {};
+        }
+        return this.app.settings.tagUIOverrides || {};
     }
 }
