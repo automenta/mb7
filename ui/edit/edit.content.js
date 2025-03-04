@@ -92,9 +92,9 @@ class EditorContentHandler {
     serialize() {
         const clonedEditor = this.editor.editorArea.cloneNode(true);
         clonedEditor.querySelectorAll("data-tag").forEach(tagEl => {
-            const tagName = tagEl.getTagDefinition().name;
-            const tagValue = tagEl.getValue();
-            const tagCondition = tagEl.getCondition();
+            const tagName = tagEl.dataset.tagName;
+            const tagValue = tagEl.getAttribute('value');
+            const tagCondition = tagEl.getAttribute('condition');
             tagEl.replaceWith(`[TAG:${tagName}:${tagValue}:${tagCondition}]`);
         });
         return clonedEditor.innerHTML.replace(/<br\s*\/?>/g, "\\n");
@@ -113,17 +113,17 @@ class EditorContentHandler {
             }
             try {
                 const [_, tagName, tagValue, tagCondition] = match;
-                const tagDefinition = this.editor.getTagDefinition(tagName);
-                if (tagDefinition) {
-                    const tag = document.createElement('data-tag');
-                    tag.setAttribute('tag-definition', JSON.stringify(tagDefinition));
-                    tag.setAttribute('value', tagValue);
-                    tag.setAttribute('condition', tagCondition);
-                    this.editor.editorArea.append(tag);
-                } else {
-                    console.warn("Tag definition not found:", tagName);
-                    this.editor.editorArea.append(document.createTextNode(match[0]));
-                }
+                 const tagDefinition = this.editor.getTagDefinition(tagName);
+                 if (tagDefinition) {
+                     const tag = document.createElement('data-tag');
+                     tag.setAttribute('tag-definition', JSON.stringify(tagDefinition));
+                     tag.setAttribute('value', tagValue);
+                     tag.setAttribute('condition', tagCondition);
+                     this.editor.editorArea.append(tag);
+                 } else {
+                     console.warn("Tag definition not found:", tagName);
+                     this.editor.editorArea.append(document.createTextNode(match[0]));
+                 }
             } catch (error) {
                 console.error("Failed to parse tag:", error);
                 this.editor.editorArea.append(document.createTextNode(match[0]));
