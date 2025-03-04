@@ -25,6 +25,7 @@ class TagInput extends HTMLElement {
         conditionSelect.addEventListener('change', (e) => {
             this.condition = e.target.value;
             this.onChange(this.value, this.condition);
+            this.updateSuggestions(this.value);
         });
         this.appendChild(conditionSelect);
 
