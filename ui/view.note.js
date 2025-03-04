@@ -91,3 +91,5 @@ export class NoteView extends HTMLElement {
         this.el.remove();
     }
 }
+
+customElements.define('note-view', NoteView);
