@@ -100,9 +100,9 @@ class EditorContentHandler {
         return clonedEditor.innerHTML.replace(/<br\s*\/?>/g, "\\n");
     }
 
-     deserialize(text) {
-         this.editor.editorArea.innerHTML = "";
-         const tagRegex = /\[TAG:([^\]]*)\]/g;
+    deserialize(text) {
+        this.editor.editorArea.innerHTML = "";
+        const tagRegex = /\[TAG:([^\]]*)\]/g;
 
         let lastIndex = 0;
         let match;
