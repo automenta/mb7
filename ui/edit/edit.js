@@ -290,7 +290,9 @@ class Edit {
         const tagPlaceholder = `[TAG:${tagContent}]`;
 
         // Get current cursor position
-        let cursorPosition = this.editorArea.selectionStart;
+        const selection = window.getSelection();
+        let range = selection.getRangeAt(0);
+        let cursorPosition = range.startOffset;
         // Calculate the new cursor position
         let newCursorPosition = cursorPosition + tagPlaceholder.length;
 
