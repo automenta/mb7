@@ -5,8 +5,12 @@ import {FriendsView} from "./view.friends";
 import {SettingsView} from "./view.settings";
 
 export class UIManager {
-    constructor(app) {
-        this.app = app;
+    constructor(store, viewManager, noteManager, db, errorHandler) {
+        this.store = store;
+        this.viewManager = viewManager;
+        this.noteManager = noteManager;
+        this.db = db;
+        this.errorHandler = errorHandler;
     }
 
     async setupUI(appDiv) {
