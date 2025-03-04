@@ -1,14 +1,16 @@
 import {Ontology} from '../../core/ontology.js';
+import {createElement} from '../utils.js';
 
 export class NoteDetails extends HTMLElement {
     constructor(noteView) {
         super();
         this.noteView = noteView;
+        this.shadow = this.attachShadow({ mode: 'open' });
+        this.render();
+    }
 
-        this.el = document.createElement('div');
-        this.el.className = 'note-details-container';
-
-        this.el.addEventListener('tag-removed', this.handleTagRemoved.bind(this));
+    connectedCallback() {
+        this.shadow.addEventListener('tag-removed', this.handleTagRemoved.bind(this));
     }
 
     handleTagRemoved(event) {
@@ -16,9 +18,7 @@ export class NoteDetails extends HTMLElement {
     }
 
     createDetailEdit(text, icon) {
-        const label = document.createElement('span');
-        label.textContent = `${icon} ${text}`;
-        label.classList.add('margin-left');
+        const label = createElement('span', { class: 'margin-left' }, `${icon} ${text}`);
         return label;
     }
 
@@ -27,18 +27,16 @@ export class NoteDetails extends HTMLElement {
     }
 
     createPrivacyEdit() {
-        const privacyContainer = document.createElement('div');
-        privacyContainer.className = 'privacy-container';
+        const privacyContainer = createElement('div', { class: 'privacy-container' });
 
-        const label = document.createElement('label');
-        label.className = 'privacy-label';
-        label.textContent = 'Private';
+        const label = createElement('label', { class: 'privacy-label' }, 'Private');
         privacyContainer.appendChild(label);
 
-        this.privacyCheckbox = document.createElement('input');
-        this.privacyCheckbox.className = 'privacy-checkbox';
-        this.privacyCheckbox.type = 'checkbox';
-        this.privacyCheckbox.checked = true; // Default to private
+        this.privacyCheckbox = createElement('input', {
+            class: 'privacy-checkbox',
+            type: 'checkbox',
+            checked: true // Default to private
+        });
         privacyContainer.appendChild(this.privacyCheckbox);
 
         this.privacyCheckbox.addEventListener('change', () => {
@@ -51,20 +49,14 @@ export class NoteDetails extends HTMLElement {
     }
 
     createPriorityEdit() {
-        const priorityContainer = document.createElement('div');
-        priorityContainer.className = 'priority-container';
+        const priorityContainer = createElement('div', { class: 'priority-container' });
 
-        const label = document.createElement('label');
-        label.className = 'priority-label';
-        label.textContent = 'Priority:';
+        const label = createElement('label', { class: 'priority-label' }, 'Priority:');
         priorityContainer.appendChild(label);
 
-        const prioritySelect = document.createElement('select');
-        prioritySelect.className = 'priority-select';
+        const prioritySelect = createElement('select', { class: 'priority-select' });
         ['High', 'Medium', 'Low'].forEach(option => {
-            const optionElement = document.createElement('option');
-            optionElement.value = option;
-            optionElement.textContent = option;
+            const optionElement = createElement('option', { value: option }, option);
             prioritySelect.appendChild(optionElement);
         });
 
@@ -74,8 +66,7 @@ export class NoteDetails extends HTMLElement {
     }
 
     createTagsSection() {
-        const tagsContainer = document.createElement('div');
-        tagsContainer.className = 'note-tags-container';
+        const tagsContainer = createElement('div', { class: 'note-tags-container' });
         return tagsContainer;
     }
 
@@ -84,12 +75,33 @@ export class NoteDetails extends HTMLElement {
     }
 
     render() {
-        this.el.innerHTML = `
-            <div class="priority-edit-container">${this.createPriorityEdit().outerHTML}</div>
-            ${this.createPrivacyEdit().outerHTML}
+        this.shadow.innerHTML = `
+            <style>
+                .note-details-container {
+                    padding: 10px;
+                }
+                .privacy-container {
+                    display: flex;
+                    align-items: center;
+                    margin-bottom: 5px;
+                }
+                .privacy-label {
+                    margin-right: 5px;
+                }
+                .priority-container {
+                    display: flex;
+                    align-items: center;
+                    margin-bottom: 5px;
+                }
+                .priority-label {
+                    margin-right: 5px;
+                }
+            </style>
+            <div class="note-details-container">
+                <div class="priority-edit-container">${this.createPriorityEdit().outerHTML}</div>
+                ${this.createPrivacyEdit().outerHTML}
+            </div>
         `;
-
-        return this.el;
     }
 }
 

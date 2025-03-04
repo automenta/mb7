@@ -13,6 +13,28 @@ class TagInput extends HTMLElement {
     render() {
         this.innerHTML = '';
 
+        // Add CSS styles
+        const style = document.createElement('style');
+        style.textContent = `
+            .tag-input-container {
+                display: flex;
+                align-items: center;
+            }
+
+            .condition-select {
+                margin-right: 5px;
+            }
+
+            input[type="text"],
+            input[type="number"],
+            input[type="date"] {
+                padding: 5px;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+            }
+        `;
+        this.appendChild(style);
+
         const conditionSelect = document.createElement('select');
         conditionSelect.className = 'condition-select';
         this.tagDefinition.conditions.forEach(condition => {

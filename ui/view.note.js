@@ -47,7 +47,10 @@ export class NoteView extends HTMLElement {
         this.privacyContainer.appendChild(this.privacyLabel);
         this.privacyContainer.appendChild(this.privacyCheckbox);
         this.mainArea.appendChild(this.newPrivacyEdit());
-        this.mainArea.appendChild(this.noteDetails.render());
+
+        this.noteDetailsComponent = new NoteDetails(this);
+        this.mainArea.appendChild(this.noteDetailsComponent);
+
         this.mainArea.appendChild(this.contentArea);
         this.mainArea.appendChild(this.todoArea);
         this.mainArea.appendChild(this.newLinkedView());
@@ -346,10 +349,13 @@ export class NoteView extends HTMLElement {
         if (titleInput) {
             titleInput.value = note.name;
         }
+
+        const privacyCheckbox = this.noteDetailsComponent.shadow.querySelector('.privacy-checkbox');
         if (privacyCheckbox) {
             privacyCheckbox.checked = note.private;
         }
-         const prioritySelect = this.el.querySelector('.priority-select');
+
+        const prioritySelect = this.noteDetailsComponent.shadow.querySelector('.priority-select');
         if (prioritySelect) {
             prioritySelect.value = note.priority;
         }
