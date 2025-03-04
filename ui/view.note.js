@@ -138,9 +138,16 @@ class NoteSelector {
         try {
             const originalNote = await this.noteView.app.db.get(originalNoteId);
             if (originalNote) {
+                // Fetch the author's profile from Nostr
+                const authorProfile = await this.getAuthorProfile(originalNote.pubkey);
+
                 this.noteView.originalNoteView.innerHTML = `
                     <h3>Original Note:</h3>
-                    <p>${originalNote.content}</p>
+                    <div style="border: 1px solid #ccc; padding: 5px; margin: 5px;">
+                        <p><strong>Author:</strong> ${authorProfile?.name || originalNote.pubkey}</p>
+                        <p><strong>Timestamp:</strong> ${new Date(originalNote.createdAt).toLocaleString()}</p>
+                        <p><strong>Content:</strong> ${originalNote.content}</p>
+                    </div>
                 `;
             } else {
                 this.noteView.originalNoteView.innerHTML = `
@@ -155,6 +162,22 @@ class NoteSelector {
                 <p>Error loading original note.</p>
             `;
         }
+    }
+
+    async getAuthorProfile(pubkey) {
+        return new Promise((resolve) => {
+            this.noteView.app.nostr.subscribeToPubkey(pubkey, (event) => {
+                try {
+                    const profile = JSON.parse(event.content);
+                    resolve(profile);
+                    // Unsubscribe after receiving the profile to avoid memory leaks
+                    this.noteView.app.nostr.unsubscribeToPubkey(`friend-profile-${pubkey}`);
+                } catch (error) {
+                    console.error("Error parsing profile", error);
+                    resolve({ name: pubkey }); // Fallback to pubkey if parsing fails
+                }
+            });
+        });
     }
 
     clearOriginalNote() {
