@@ -3,10 +3,9 @@ import {Tag} from '@/ui/tag.js'; // Corrected import path
 
 describe('Tag Component', () => {
     beforeEach(() => {
-        if (!customElements.get('data-tag')) {
-            customElements.define('data-tag', Tag); // Explicitly register Tag
-        }
+        // No need to define custom element here, it's done in global setup
     });
+
     it('should render the tag correctly with the given data', async () => {
         const tagDef = {
             name: 'testTag',
