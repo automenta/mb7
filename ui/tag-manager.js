@@ -209,7 +209,6 @@ class TagManager extends HTMLElement {
                 return;
             }
 
-            /** @type {Tag} */
             const newTag = { name: tagName, value: '', condition: 'is' };
             this.note.tags.push(newTag);
             await this.app.db.saveObject(this.note, false);
