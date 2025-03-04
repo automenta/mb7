@@ -190,16 +190,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     await setupUI();
 });
 
-function initializeViews(app) {
-    const noteView = new NoteView(app, app.db, app.nostr);
-    const friendsView = new FriendsView(app, app.db, app.nostr);
-    const settingsView = new SettingsView(app, app.db, app.nostr);
-    const contentView = new ContentView(app);
-
-    noteView.createNote = async () => {
-        const newNote = await app.createNote();
-        noteView.loadNotes();
-    };
 
 export { App };
 
