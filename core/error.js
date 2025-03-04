@@ -7,5 +7,6 @@ export class ErrorHandler {
         const timestamp = new Date().toISOString();
         console.error(`[${timestamp}] ${message}: ${error.name} - ${error.message}`, error);
         this.app.notificationManager.showNotification(`${message}: ${error.message}`, "error");
+        this.app.monitoring.errorCount++; // Increment the error count
     }
 }
