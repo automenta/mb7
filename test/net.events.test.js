@@ -12,26 +12,13 @@ describe('EventHandler', () => {
     });
 
     describe('validateEventContent', () => {
-        it('should return true if event content is valid', () => {
-            const event = { content: '{ "id": "123" }' };
-            expect(eventHandler.validateEventContent(event)).toBe(true);
+        it.each([
+            [{ content: '{ "id": "123" }' }, true, 'valid JSON'],
+            [{ content: '' }, false, 'empty content'],
+            [{ content: 'invalid json' }, false, 'invalid JSON'],
+        ])('should return %s if event content is %s (%s)', (event, expected, description) => {
+            expect(eventHandler.validateEventContent(event)).toBe(expected);
         });
-
-        it('should return false if event content is empty', () => {
-            const event = { content: '' };
-            expect(eventHandler.validateEventContent(event)).toBeFalsy(); // Use toBeFalsy for boolean coercion
-        });
-
-        it('should return false if event content is invalid JSON', () => {
-            const event = { content: 'invalid json' };
-            expect(eventHandler.validateEventContent(event)).toBe(false);
-        });
-
-        it('should return false if event content does not start with "{"', () => {
-            const event = { content: 'invalid json' };
-            expect(eventHandler.validateEventContent(event)).toBe(false);
-        });
-
     });
 
     describe('parseEventContent', () => {
@@ -41,7 +28,7 @@ describe('EventHandler', () => {
             expect(parsedContent).toEqual({ id: "123", name: "Test" });
         });
 
-        it('should return null if event content is invalid JSON', async () => {
+        it('should throw an error if event content is invalid JSON', async () => {
             const event = { content: 'invalid json' };
             await expect(eventHandler.parseEventContent(event)).rejects.toThrow(SyntaxError);
         });
@@ -56,19 +43,45 @@ describe('EventHandler', () => {
         });
 
         it('should create a new NObject if it does not exist', async () => {
+            // Arrange
             app.db.get.mockResolvedValue(null);
             const event = { created_at: 1678886400, tags: [] };
             const data = { id: '123', name: 'Test', content: 'Test Content' };
+
+            // Act
             await eventHandler.createOrUpdateNObject(event, data);
-            expect(app.db.save).toHaveBeenCalled();
+
+            // Assert
+            expect(app.db.save).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    id: '123',
+                    name: 'Test',
+                    content: 'Test Content',
+                    tags: []
+                }),
+                undefined
+            );
         });
 
         it('should update an existing NObject if it exists', async () => {
+            // Arrange
             app.db.get.mockResolvedValue({ id: '123', name: 'Old Name', content: 'Old Content' });
             const event = { created_at: 1678886400, tags: [] };
             const data = { id: '123', name: 'New Name', content: 'New Content' };
+
+            // Act
             await eventHandler.createOrUpdateNObject(event, data);
-            expect(app.db.save).toHaveBeenCalled();
+
+            // Assert
+            expect(app.db.save).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    id: '123',
+                    name: 'New Name',
+                    content: 'New Content',
+                    tags: []
+                }),
+                undefined
+            );
         });
     });
 
@@ -93,20 +106,32 @@ describe('EventHandler', () => {
     });
 
     describe('handleObjectEvent', () => {
+        beforeEach(() => {
+            eventHandler.validateEventContent = vi.fn();
+            eventHandler.parseEventContent = vi.fn();
+            eventHandler.extractNObjectData = vi.fn();
+            eventHandler.createOrUpdateNObject = vi.fn();
+        });
+
         it('should not handle object event if event content is invalid', async () => {
             const event = { content: 'invalid json' };
-            eventHandler.validateEventContent = vi.fn().mockReturnValue(false);
+            eventHandler.validateEventContent.mockReturnValue(false);
             await eventHandler.handleObjectEvent(event);
             expect(eventHandler.validateEventContent).toHaveBeenCalledWith(event);
+            expect(eventHandler.parseEventContent).not.toHaveBeenCalled();
+            expect(eventHandler.extractNObjectData).not.toHaveBeenCalled();
+            expect(eventHandler.createOrUpdateNObject).not.toHaveBeenCalled();
         });
 
         it('should not handle object event if parseEventContent returns null', async () => {
             const event = { content: '{ "id": "123" }' };
-            eventHandler.validateEventContent = vi.fn().mockReturnValue(true);
-            eventHandler.parseEventContent = vi.fn().mockResolvedValue(null);
+            eventHandler.validateEventContent.mockReturnValue(true);
+            eventHandler.parseEventContent.mockResolvedValue(null);
             await eventHandler.handleObjectEvent(event);
             expect(eventHandler.validateEventContent).toHaveBeenCalledWith(event);
             expect(eventHandler.parseEventContent).toHaveBeenCalledWith(event);
+            expect(eventHandler.extractNObjectData).not.toHaveBeenCalled();
+            expect(eventHandler.createOrUpdateNObject).not.toHaveBeenCalled();
         });
 
         it('should handle object event if event content is valid and parseEventContent returns data', async () => {
@@ -115,27 +140,27 @@ describe('EventHandler', () => {
                 created_at: 1678886400,
                 tags: []
             };
-            eventHandler.validateEventContent = vi.fn().mockReturnValue(true);
-            eventHandler.parseEventContent = vi.fn().mockResolvedValue({
+            const parsedData = {
                 id: '123',
                 name: 'Test',
                 content: 'Test Content'
-            });
-            eventHandler.extractNObjectData = vi.fn().mockReturnValue({
+            };
+            const extractedData = {
                 id: '123',
                 name: 'Test',
                 content: 'Test Content'
-            });
-            eventHandler.createOrUpdateNObject = vi.fn();
+            };
+
+            eventHandler.validateEventContent.mockReturnValue(true);
+            eventHandler.parseEventContent.mockResolvedValue(parsedData);
+            eventHandler.extractNObjectData.mockReturnValue(extractedData);
+
             await eventHandler.handleObjectEvent(event);
+
             expect(eventHandler.validateEventContent).toHaveBeenCalledWith(event);
             expect(eventHandler.parseEventContent).toHaveBeenCalledWith(event);
-            expect(eventHandler.extractNObjectData).toHaveBeenCalled();
-            expect(eventHandler.createOrUpdateNObject).toHaveBeenCalledWith(event, {
-                id: '123',
-                name: 'Test',
-                content: 'Test Content'
-            });
+            expect(eventHandler.extractNObjectData).toHaveBeenCalledWith(parsedData);
+            expect(eventHandler.createOrUpdateNObject).toHaveBeenCalledWith(event, extractedData);
         });
     });
 });
