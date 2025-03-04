@@ -23,7 +23,7 @@ export class NotificationManager {
         }
         const {message, type} = this.notificationQueue.shift();
         const notification = new Notification(message, type);
-        const notificationArea = document.getElementById('notification-area');
+        const notificationArea = this.app.elements.notificationArea;
         notification.appendTo(notificationArea);
 
         await notification.animateIn();
