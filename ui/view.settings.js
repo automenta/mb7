@@ -11,7 +11,7 @@ export class SettingsView extends View {
         this.db = db;
         this.nostr = nostr;
         this.settingsObjectId = 'settings';
-        this.yDoc = new Y.Doc(); // Initialize YDoc here
+        this.yDoc = new Y.Doc();
     }
 
     async build() {
@@ -23,29 +23,31 @@ export class SettingsView extends View {
             settingsObject = {
                 id: this.settingsObjectId,
                 name: "Settings",
-                content: {} // Ensure content exists
+                content: {}
             };
             await this.db.saveObject(settingsObject);
         }
 
-        // Load settings from DB or create empty object
         this.app.settings = settingsObject.content || {};
 
-        // Initialize YDoc with existing settings
         const yMap = this.yDoc.getMap('data');
         for (const key in Ontology.Settings.tags) {
             const settingDefinition = Ontology.Settings.tags[key];
             let value = this.app.settings[key] !== undefined ? this.app.settings[key] : settingDefinition.default;
 
-            // Deserialize the value when loading from settings
             if (this.app.settings[key] !== undefined && settingDefinition.deserialize) {
-                value = settingDefinition.deserialize(value);
+                try {
+                    value = settingDefinition.deserialize(value);
+                } catch (error) {
+                    console.error(`Error deserializing setting ${key}:`, error);
+                    this.app.showNotification(`Error deserializing setting ${key}: ${error.message}`, 'error');
+                    continue;
+                }
             }
 
             yMap.set(key, value);
         }
 
-        // Create and render the GenericForm
         this.genericForm = new GenericForm(Ontology.Settings, this.yDoc, this.settingsObjectId, this.saveSettings.bind(this));
         await this.genericForm.build();
         this.el.appendChild(this.genericForm.el);
@@ -54,7 +56,6 @@ export class SettingsView extends View {
         this.el.appendChild(saveButton);
         saveButton.addEventListener("click", () => this.saveSettings());
 
-        // Listen for notify events from the GenericForm
         this.el.addEventListener('notify', (event) => {
             this.app.showNotification(event.detail.message, event.detail.type);
         });
@@ -69,20 +70,23 @@ export class SettingsView extends View {
             const yValue = yMap.get(key);
             let value = yValue !== undefined ? yValue : settingDefinition.default;
 
-            // Serialize the value before saving to settings
-             if (settingDefinition.serialize) {
-                 value = settingDefinition.serialize(value);
-             }
+            if (settingDefinition.serialize) {
+                try {
+                    value = settingDefinition.serialize(value);
+                } catch (error) {
+                    console.error(`Error serializing setting ${key}:`, error);
+                    this.app.showNotification(`Error serializing setting ${key}: ${error.message}`, 'error');
+                    continue;
+                }
+            }
             settings[key] = value;
         }
 
-        // Save settings to DB
         let settingsObject = await this.db.get(this.settingsObjectId);
         settingsObject = settingsObject || { id: this.settingsObjectId, name: "Settings" };
         settingsObject.content = settings;
         await this.db.saveObject(settingsObject);
 
-        // Apply settings to app
         for (const key in Ontology.Settings.tags) {
             if (settings.hasOwnProperty(key)) {
                 this.app.settings[key] = settings[key];

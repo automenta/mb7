@@ -1,29 +1,38 @@
-import {createElement} from '../ui/utils.js';
-
 class Autosuggest {
     constructor(editor) {
         this.editor = editor;
-        this.debouncedApply = this.apply.bind(this);
+        this.suggestionDropdown = editor.suggestionDropdown;
+        this.schema = editor.schema;
+        this.editorArea = editor.editorArea;
+        this.selectedIndex = -1;
+        this.apply = this.apply.bind(this);
+        this.debouncedApply = this.debounce(this.apply, 200);
+    }
+
+    debounce(func, delay) {
+        let timeout;
+        return function(...args) {
+            const context = this;
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(context, args), delay);
+        };
     }
 
     apply() {
-        const editorContent = this.editor.editorArea;
+        const { editorArea, suggestionDropdown, schema } = this;
 
-        // Get the current cursor position
         const selection = window.getSelection();
         if (!selection.rangeCount) {
-            this.editor.suggestionDropdown.hide();
+            suggestionDropdown.hide();
             return;
         }
+
         const range = selection.getRangeAt(0);
         const cursorPosition = range.getBoundingClientRect();
-
-        // Get the text around the cursor
-        const text = editorContent.textContent;
+        const text = editorArea.textContent;
         const cursorIndex = selection.anchorOffset;
-        let tagStart = -1;
 
-        // Find the start of the tag
+        let tagStart = -1;
         for (let i = cursorIndex - 1; i >= 0; i--) {
             if (text[i] === '[') {
                 tagStart = i;
@@ -31,52 +40,98 @@ class Autosuggest {
             }
         }
 
-        // If no tag start is found, hide the suggestion dropdown
         if (tagStart === -1) {
-            this.editor.suggestionDropdown.hide();
+            suggestionDropdown.hide();
             return;
         }
 
-        // Extract the tag name
-        const tagName = text.substring(tagStart + 1, cursorIndex);
-
-        // If the tag name is empty, hide the suggestion dropdown
-        if (tagName.length === 0) {
-            this.editor.suggestionDropdown.hide();
+        const tagName = text.substring(tagStart + 1, cursorIndex).trim();
+        if (!tagName) {
+            suggestionDropdown.hide();
             return;
         }
 
-        // Get the suggestions
         const suggestions = this.getSuggestions(tagName);
-
-        // If there are no suggestions, hide the suggestion dropdown
-        if (suggestions.length === 0) {
-            this.editor.suggestionDropdown.hide();
+        if (!suggestions.length) {
+            suggestionDropdown.hide();
             return;
         }
 
-        // Show the suggestion dropdown
-        this.editor.suggestionDropdown.show(
+        this.selectedIndex = -1;
+        suggestionDropdown.show(
             suggestions,
             cursorPosition.x,
             cursorPosition.bottom,
             (selectedSuggestion) => {
-                // Replace the tag name with the selected suggestion
-                const newText = text.substring(0, tagStart + 1) + selectedSuggestion.displayText + text.substring(cursorIndex);
-                this.editor.editorArea.textContent = newText;
-                this.editor.autosuggest.apply();
+                this.selectSuggestion(selectedSuggestion, tagStart, cursorIndex, text);
             }
         );
     }
 
     getSuggestions(tagName) {
         const suggestions = [];
-        for (const key in this.editor.schema) {
+        for (const key in this.schema) {
             if (key.toLowerCase().startsWith(tagName.toLowerCase())) {
-                suggestions.push({displayText: key, tagData: this.editor.schema[key]});
+                suggestions.push({ displayText: key, tagData: this.schema[key] });
             }
         }
         return suggestions;
+    }
+
+    selectSuggestion(selectedSuggestion, tagStart, cursorIndex, text) {
+        const newText = text.substring(0, tagStart + 1) + selectedSuggestion.displayText + text.substring(cursorIndex);
+        this.editorArea.textContent = newText;
+        this.apply();
+    }
+
+    handleKeyDown(event) {
+        if (!this.suggestionDropdown.isVisible()) {
+            return;
+        }
+
+        switch (event.key) {
+            case 'ArrowUp':
+                event.preventDefault();
+                this.moveSelection(-1);
+                break;
+            case 'ArrowDown':
+                event.preventDefault();
+                this.moveSelection(1);
+                break;
+            case 'Enter':
+                event.preventDefault();
+                this.selectCurrentSuggestion();
+                break;
+            case 'Escape':
+                event.preventDefault();
+                this.suggestionDropdown.hide();
+                break;
+            default:
+                return;
+        }
+    }
+
+    moveSelection(direction) {
+        const suggestionCount = this.suggestionDropdown.getSuggestionCount();
+        if (suggestionCount === 0) return;
+
+        this.selectedIndex += direction;
+
+        if (this.selectedIndex < 0) {
+            this.selectedIndex = suggestionCount - 1;
+        } else if (this.selectedIndex >= suggestionCount) {
+            this.selectedIndex = 0;
+        }
+
+        this.suggestionDropdown.updateSelection(this.selectedIndex);
+    }
+
+    selectCurrentSuggestion() {
+        const selectedSuggestion = this.suggestionDropdown.getSelectedSuggestion(this.selectedIndex);
+        if (selectedSuggestion) {
+            this.selectSuggestion(selectedSuggestion.suggestion, this.tagStart, this.cursorIndex, this.editorArea.textContent);
+            this.suggestionDropdown.hide();
+        }
     }
 }
 

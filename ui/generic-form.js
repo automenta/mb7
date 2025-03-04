@@ -1,6 +1,6 @@
 import {createElement} from "./utils.js";
 import * as Y from 'yjs';
-import {YjsHelper} from '../../core/yjs-helper'; // Import YjsHelper
+import {YjsHelper} from '../../core/yjs-helper';
 
 export class GenericForm {
     constructor(schema, yDoc, objectId, saveCallback) {
@@ -8,7 +8,7 @@ export class GenericForm {
         this.objectId = objectId;
         this.el = createElement("div", {class: "generic-form"});
         this.yDoc = yDoc;
-        this.yMap = YjsHelper.createYMap(this.yDoc, 'data'); // Use YjsHelper to create YMap
+        this.yMap = YjsHelper.createYMap(this.yDoc, 'data');
         this.saveCallback = saveCallback;
     }
 
@@ -63,7 +63,6 @@ export class GenericForm {
                     });
             }
 
-            //Yjs binding
             input.addEventListener('change', () => {
                 let value;
                 if (input.type === 'checkbox') {
@@ -72,7 +71,6 @@ export class GenericForm {
                     value = input.value;
                 }
 
-                // Validate the input using the Ontology
                 if (propertySchema && propertySchema.validate) {
                     const isValid = propertySchema.validate(value, 'is');
                     if (!isValid) {
@@ -85,7 +83,7 @@ export class GenericForm {
                         return;
                     }
                 }
-                YjsHelper.updateYMapValue(this.yDoc, this.yMap, property, value); // Use YjsHelper to update YMap
+                YjsHelper.updateYMapValue(this.yDoc, this.yMap, property, value);
                 if (this.saveCallback) {
                     this.saveCallback();
                 }

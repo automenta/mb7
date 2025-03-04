@@ -24,7 +24,7 @@ export class SuggestionDropdown {
                 onSelect(suggestion);
                 this.hide();
             });
-            suggestionElement.suggestion = suggestion; // Store suggestion data on the element
+            suggestionElement.suggestion = suggestion;
             this.el.appendChild(suggestionElement);
         });
 
@@ -39,11 +39,21 @@ export class SuggestionDropdown {
         this.el.style.display = 'none';
         this.selectedIndex = -1;
         this.onSelectCallback = null;
-        this.remove();
     }
 
-    remove() {
-        this.el.remove();
+    isVisible() {
+        return this.el.style.display === 'block';
+    }
+
+    getSuggestionCount() {
+        return this.el.children.length;
+    }
+
+    getSelectedSuggestion(selectedIndex) {
+        if (selectedIndex >= 0 && selectedIndex < this.getSuggestionCount()) {
+            return this.el.children[selectedIndex];
+        }
+        return null;
     }
 
     updateSelection(selectedIndex = this.selectedIndex) {

@@ -1,5 +1,61 @@
 import { parseISO, formatISO } from 'date-fns';
 
+const isValidDate = (dateString) => {
+    try {
+        return !isNaN(new Date(dateString).getTime());
+    } catch (error) {
+        return false;
+    }
+};
+
+const serializeDate = (value) => {
+    try {
+        if (typeof value === 'object' && value !== null && value.start && value.end) {
+            return JSON.stringify({ start: formatISO(parseISO(value.start)), end: formatISO(parseISO(value.end)) });
+        }
+        return formatISO(parseISO(value));
+    } catch (error) {
+        console.error("Error serializing date:", error);
+        return null;
+    }
+};
+
+const deserializeDate = (value) => {
+    try {
+        const parsed = JSON.parse(value);
+        if (parsed && typeof parsed === 'object' && parsed.start && parsed.end) {
+            return { start: parsed.start, end: parsed.end };
+        }
+    } catch (e) {
+        // Ignore JSON parsing errors, assume it's a single date
+    }
+    return value;
+};
+
+const serializeNumber = (value) => {
+    try {
+        if (typeof value === 'object' && value !== null && value.lower && value.upper) {
+            return JSON.stringify({ lower: String(value.lower), upper: String(value.upper) });
+        }
+        return String(value);
+    } catch (error) {
+        console.error("Error serializing number:", error);
+        return null;
+    }
+};
+
+const deserializeNumber = (value) => {
+    try {
+        const parsed = JSON.parse(value);
+        if (parsed && typeof parsed === 'object' && parsed.lower && parsed.upper) {
+            return { lower: parsed.lower, upper: parsed.upper };
+        }
+    } catch (e) {
+        // Ignore JSON parsing errors, assume it's a single number
+    }
+    return value;
+};
+
 export const Ontology = {
     "location": {
         conditions: ["is", "contains", "near"],
@@ -7,7 +63,7 @@ export const Ontology = {
         serialize: (value) => value,
         deserialize: (value) => value,
         ui: {
-            type: "text", // or "map", "location-picker", etc.
+            type: "text",
             placeholder: "Enter a location",
             icon: "📍"
         }
@@ -20,23 +76,8 @@ export const Ontology = {
             }
             return isValidDate(value);
         },
-        serialize: (value) => {
-            if (typeof value === 'object' && value !== null) {
-                return JSON.stringify({start: formatISO(parseISO(value.start)), end: formatISO(parseISO(value.end))});
-            }
-            return formatISO(parseISO(value));
-        },
-        deserialize: (value) => {
-            try {
-                const parsed = JSON.parse(value);
-                if (parsed && typeof parsed === 'object' && parsed.start && parsed.end) {
-                    return { start: parsed.start, end: parsed.end };
-                }
-            } catch (e) {
-                // Ignore JSON parsing errors, assume it's a single date
-            }
-            return value;
-        }
+        serialize: serializeDate,
+        deserialize: deserializeDate
     },
     "string": {
         conditions: ["is", "contains", "matches regex"],
@@ -53,23 +94,8 @@ export const Ontology = {
             }
             return !isNaN(parseFloat(value)) && isFinite(value);
         },
-        serialize: (value) => {
-            if (typeof value === 'object' && value !== null) {
-                return JSON.stringify({lower: String(value.lower), upper: String(value.upper)});
-            }
-            return String(value)
-        },
-        deserialize: (value) => {
-            try {
-                const parsed = JSON.parse(value);
-                if (parsed && typeof parsed === 'object' && parsed.lower && parsed.upper) {
-                    return { lower: parsed.lower, upper: parsed.upper };
-                }
-            } catch (e) {
-                // Ignore JSON parsing errors, assume it's a single number
-            }
-            return value;
-        },
+        serialize: serializeNumber,
+        deserialize: deserializeNumber,
         ui: {
             type: "number",
             unit: "meters",
@@ -84,7 +110,14 @@ export const Ontology = {
             return typeof value === 'object';
         },
         serialize: (value) => JSON.stringify(value),
-        deserialize: (value) => JSON.parse(value)
+        deserialize: (value) => {
+            try {
+                return JSON.parse(value);
+            } catch (error) {
+                console.error("Error deserializing People:", error);
+                return {};
+            }
+        }
     },
     "Emotion": {
         conditions: ["is", "is between", "is below", "is above"],
@@ -95,23 +128,8 @@ export const Ontology = {
             }
             return !isNaN(parseFloat(value)) && isFinite(value);
         },
-        serialize: (value) => {
-            if (typeof value === 'object' && value !== null) {
-                return JSON.stringify({lower: String(value.lower), upper: String(value.upper)});
-            }
-            return String(value)
-        },
-        deserialize: (value) => {
-            try {
-                const parsed = JSON.parse(value);
-                if (parsed && typeof parsed === 'object' && parsed.lower && parsed.upper) {
-                    return { lower: parsed.lower, upper: parsed.upper };
-                }
-            } catch (e) {
-                // Ignore JSON parsing errors, assume it's a single number
-            }
-            return value;
-        }
+        serialize: serializeNumber,
+        deserialize: deserializeNumber
     },
     "Business": {
         conditions: ["is one of"],
@@ -123,30 +141,34 @@ export const Ontology = {
         conditions: ["is one of"],
         validate: (value, condition) => Array.isArray(value),
         serialize: (value) => JSON.stringify(value),
-        deserialize: (value) => JSON.parse(value)
+        deserialize: (value) => {
+            try {
+                return JSON.parse(value);
+            } catch (error) {
+                console.error("Error deserializing Data:", error);
+                return [];
+            }
+        }
     },
     "DueDate": {
         conditions: ["is", "before", "after", "between"],
         validate: (value, condition) => condition === "between" ? isValidDate(value.start) && isValidDate(value.end) : isValidDate(value),
-        serialize: (value) => typeof value === 'object' && value !== null ? JSON.stringify({start: value.start, end: value.end}) : value,
-        deserialize: (value) => {
-            try {
-                const parsed = JSON.parse(value);
-                if (parsed && typeof parsed === 'object' && parsed.start && parsed.end) {
-                    return { start: parsed.start, end: parsed.end };
-                }
-            } catch (e) {
-                // Ignore JSON parsing errors, assume it's a single date
-            }
-            return value;
-        }
+        serialize: serializeDate,
+        deserialize: deserializeDate
     },
     "List": {
         conditions: ["is"],
         type: "list",
         validate: (value, condition) => Array.isArray(value),
         serialize: (value) => JSON.stringify(value),
-        deserialize: (value) => JSON.parse(value)
+        deserialize: (value) => {
+            try {
+                return JSON.parse(value);
+            } catch (error) {
+                console.error("Error deserializing List:", error);
+                return [];
+            }
+        }
     },
     "Settings": {
         conditions: ["is"],
@@ -234,7 +256,14 @@ export const Ontology = {
             }
         },
         serialize: (value) => JSON.stringify(value),
-        deserialize: (value) => JSON.parse(value)
+        deserialize: (value) => {
+            try {
+                return JSON.parse(value);
+            } catch (error) {
+                console.error("Error deserializing Settings:", error);
+                return {};
+            }
+        }
     },
     "Public": {
         conditions: ["is"],
@@ -251,7 +280,14 @@ Ontology.Note = {
         return typeof value === 'object';
     },
     serialize: (value) => JSON.stringify(value),
-    deserialize: (value) => JSON.parse(value)
+    deserialize: (value) => {
+        try {
+            return JSON.parse(value);
+        } catch (error) {
+            console.error("Error deserializing Note:", error);
+            return {};
+        }
+    }
 };
 
 Ontology.Event = {
@@ -261,7 +297,14 @@ Ontology.Event = {
         return typeof value === 'object';
     },
     serialize: (value) => JSON.stringify(value),
-    deserialize: (value) => JSON.parse(value)
+    deserialize: (value) => {
+        try {
+            return JSON.parse(value);
+        } catch (error) {
+            console.error("Error deserializing Event:", error);
+            return {};
+        }
+    }
 };
 
 Ontology.Relay = {
@@ -271,19 +314,17 @@ Ontology.Relay = {
         return typeof value === 'object';
     },
     serialize: (value) => JSON.stringify(value),
-    deserialize: (value) => JSON.parse(value)
-};
-
-const isValidDate = (dateString) => {
-    try {
-        return !isNaN(new Date(dateString).getTime());
-    } catch (error) {
-        return false;
+    deserialize: (value) => {
+        try {
+            return JSON.parse(value);
+        } catch (error) {
+            console.error("Error deserializing Relay:", error);
+            return {};
+        }
     }
 };
 
 export const getTagDefinition = (name) => {
-    // TODO: Add support for semantic information, such as synonyms, related concepts, and hierarchical relationships
     return Ontology[name] || Ontology.string;
 };
 
