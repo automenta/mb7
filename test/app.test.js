@@ -5,6 +5,10 @@ import {createAppMock} from './test-utils.js';
 // Mock the animate function
 global.Element.prototype.animate = vi.fn();
 
+vi.mock('js-sha256', () => ({
+    sha256: vi.fn().mockReturnValue('mocked_sha256_hash'),
+}));
+
 describe('App', () => {
     let app;
 

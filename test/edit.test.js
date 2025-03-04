@@ -1,12 +1,11 @@
 import {describe, expect, it} from 'vitest';
 import {Edit} from '../ui/edit/edit.js';
 import {Ontology} from '../core/ontology';
+import * as Y from 'yjs';
 
 describe('Edit Autosuggest', () => {
     it('should suggest tag names from ontology', () => {
-        const yDoc = {
-            getText: () => ({}) // Mock Y.Text
-        }; // Mock Y.Doc
+        const yDoc = new Y.Doc()
 
         const getTagDefinition = (name) => Ontology[name]; // Mock getTagDefinition
 
@@ -32,7 +31,7 @@ describe('Edit Autosuggest', () => {
         const toolbar = {getElement: () => ({})}; // Mock Toolbar
         const schema = {}; // Mock Schema
 
-        const edit = new Edit(yDoc, autosuggest, contentHandler, ontologyBrowser, toolbar, getTagDefinition, schema);
+        const edit = new Edit({}, yDoc, {}, getTagDefinition, schema);
 
         edit.matchesOntology = (word) => {
             return Object.keys(Ontology).some(tagName => tagName.toLowerCase() === word.toLowerCase());
