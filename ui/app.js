@@ -175,7 +175,8 @@ class App {
     static async initialize(appDiv) {
         const errorHandler = new ErrorHandler(appDiv);
         const db = new DB(errorHandler);
-        const notificationManager = new NotificationManager();
+        const app = this;
+        const notificationManager = new NotificationManager(app);
         const monitoring = new Monitoring();
         await monitoring.start();
         const nostr = await App.initNostr(db, errorHandler);
