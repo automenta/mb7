@@ -9,6 +9,7 @@ const dom = new JSDOM('<!DOCTYPE html><html lang="en"><body></body></html>', {
   storageQuota: 10000000,
   runScripts: 'dangerously',
   resources: 'usable',
+  customElement: true, // Add this line
 });
 
 global.window = dom.window;
