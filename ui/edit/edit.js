@@ -68,7 +68,7 @@ class EditorEventHandler {
             case "Enter":
                 event.preventDefault();
                 if (this.suggestionDropdown.getSelectedSuggestion()) {
-                    const suggestion = this.edit.findSuggestion(this.suggestionDropdown.getSelectedSuggestion());
+                    const suggestion = this.edit.suggestionFinder.findSuggestion(this.suggestionDropdown.getSelectedSuggestion());
                     if (suggestion) this.contentHandler.insertTagFromSuggestion(suggestion);
                 }
                 this.suggestionDropdown.hide();
@@ -189,6 +189,26 @@ class EditorSaveHandler {
     }
 }
 
+class SuggestionFinder {
+    constructor(getTagDefinition) {
+        this.getTagDefinition = getTagDefinition;
+    }
+
+    findSuggestion(name) {
+        const tagDefinition = this.getTagDefinition(name);
+        if (tagDefinition) {
+            if (tagDefinition.instances) {
+                for (const t of tagDefinition.instances) {
+                    if (t.name === name) return {displayText: t.name, tagData: t};
+                }
+            } else if (tagDefinition.name === name) {
+                return {displayText: tagDefinition.name, tagData: tagDefinition};
+            }
+        }
+        return null;
+    }
+}
+
 class Edit {
     constructor(note, yDoc, app, autosuggest, contentHandler, ontologyBrowser, toolbar, getTagDefinition, schema) {
         this.note = note;
@@ -209,6 +229,7 @@ class Edit {
         this.toolbar = toolbar || new Toolbar(this);
         this.eventHandler = new EditorEventHandler(this);
         this.suggestionHandler = new SuggestionHandler(this);
+        this.suggestionFinder = new SuggestionFinder(getTagDefinition);
 
         this.saveHandler = new EditorSaveHandler(this.app, this.persistentQueryCheckbox);
         this.menu = new EditorMenu(this.app, this.saveHandler);
@@ -240,20 +261,6 @@ class Edit {
 
     setContent(html) {
         this.contentHandler.setContent(html);
-    }
-
-    findSuggestion(name) {
-        const tagDefinition = this.getTagDefinition(name);
-        if (tagDefinition) {
-            if (tagDefinition.instances) {
-                for (const t of tagDefinition.instances) {
-                    if (t.name === name) return {displayText: t.name, tagData: t};
-                }
-            } else if (tagDefinition.name === name) {
-                return {displayText: tagDefinition.name, tagData: tagDefinition};
-            }
-        }
-        return null;
     }
 
     setupEditorEvents() {

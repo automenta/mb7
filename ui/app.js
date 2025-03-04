@@ -9,6 +9,7 @@ import {NostrInitializer} from "./nostr-initializer";
 import {NoteManager} from "./note-manager";
 import {ViewManager} from "./view-manager";
 import {UIManager} from "./ui-manager";
+import { createApp } from './app-initializer';
 
 /**
  * The main application class.
@@ -31,47 +32,9 @@ class App {
         this.uiManager = uiManager;
     }
 
-    static async initialize(appDiv) {
-        const errorHandler = new ErrorHandler(appDiv);
-        const db = new DB(errorHandler);
-        const notificationManager = new NotificationManager(this);
-        const monitoring = new Monitoring();
-        await monitoring.start();
-        const nostrInitializer = new NostrInitializer(db, errorHandler);
-        const nostr = await nostrInitializer.initNostr();
-        const matcher = new Matcher(this);
-        const settingsManager = new SettingsManager(db, errorHandler);
-        const noteManager = new NoteManager(this, db, errorHandler, matcher, nostr, notificationManager);
-        const viewManager = new ViewManager(this);
-        const uiManager = new UIManager(this);
-
-        return {db, nostr, matcher, errorHandler, notificationManager, monitoring, settingsManager, noteManager, viewManager, uiManager};
-    }
-
     async relayConnected(relay) {
         await this.nostr.relayConnected(relay);
     }
-}
-
-
-async function createApp(appDiv) {
-    const appData = await App.initialize(appDiv);
-    console.log('Creating App instance with db:', appData.db, 'and nostr:', appData.nostr);
-    const app = new App(
-        appData.db,
-        appData.nostr,
-        appData.matcher,
-        appData.errorHandler,
-        appData.notificationManager,
-        appData.monitoring,
-        appData.settingsManager,
-        appData.noteManager,
-        appData.viewManager,
-        appData.uiManager
-    );
-    app.settings = await app.db.getSettings();
-    console.log('App.initialize() promise resolved');
-    return {app};
 }
 
 document.addEventListener("DOMContentLoaded", async () => {

@@ -7,8 +7,8 @@ import { NoteUI } from './note/note.ui.js';
 import {NoteList} from "./note/note-list";
 import {NoteDetails} from "./note/note-details";
 import {TagDisplay} from "./note/tag-display";
-import {NoteYjsHandler} from "./note/note-yjs-handler";
 import {MyObjectsList} from "./note/my-objects-list";
+import { createElement } from '../utils.js';
 
 class NoteViewRenderer {
     constructor(noteView, noteUI) {
@@ -32,39 +32,33 @@ class NoteViewRenderer {
     }
 }
 
-class NoteViewEventHandler {
+class NoteYjsManager {
+    constructor(yDoc) {
+        this.yDoc = yDoc;
+        this.yMap = this.yDoc.getMap('notes');
+        this.yName = this.yDoc.getText('name');
+        this.yNotesList = this.yDoc.getArray('notesList');
+        this.yMyObjectsList = this.yDoc.getArray('myObjectsList');
+    }
+
+    getYNoteMap(noteId) {
+        return this.yMap.get(noteId);
+    }
+
+    updateNoteTitle(title) {
+        this.yDoc.transact(() => {
+            this.yName.delete(0, this.yName.length);
+            this.yName.insert(0, title);
+        });
+    }
+}
+
+class NoteSelector {
     constructor(noteView) {
         this.noteView = noteView;
     }
 
-    async handleCreateNote() {
-        try {
-            const newObject = await this.noteView.app.noteManager.createNote();
-            if (newObject) {
-                const yNoteMap = this.noteView.noteYjsHandler.getYNoteMap(newObject.id);
-                if (!yNoteMap) {
-                    this.noteView.yDoc.transact(() => {
-                        const newYNoteMap = new Y.Map();
-                        newYNoteMap.set('name', 'New Note');
-                        newYNoteMap.set('content', '');
-                        this.noteView.noteYjsHandler.yMap.set(newObject.id, newYNoteMap);
-                    });
-                }
-                await this.noteView.noteList.addNoteToList(newObject.id);
-                await this.noteView.notesListComponent.fetchDataAndRender();
-                this.noteView.app.notificationManager.showNotification('Saved', 'success');
-                await this.noteView.selectNote(newObject.id);
-                this.noteView.editor.contentHandler.deserialize(newObject.content);
-                this.noteView.focusTitleInput();
-            } else {
-                console.error('Error creating note: newObject is null');
-            }
-        } catch (error) {
-            console.error('Error creating note:', error);
-        }
-    }
-
-    async handleSelectNote(noteId) {
+    async selectNote(noteId) {
         try {
             const note = await this.noteView.app.db.get(noteId);
             if (note) {
@@ -85,7 +79,7 @@ class NoteViewEventHandler {
                     listItem.classList.add('selected');
                 }
 
-                const yNoteMap = this.noteView.noteYjsHandler.getYNoteMap(noteId);
+                const yNoteMap = this.noteView.noteYjsManager.getYNoteMap(noteId);
                 const nameElement = listItem?.querySelector('.note-name');
                 if (yNoteMap && nameElement) {
                     yNoteMap.observe((event) => {
@@ -101,6 +95,39 @@ class NoteViewEventHandler {
             }
         } catch (error) {
             this.noteView.app.errorHandler.handleError(error, 'Error selecting note');
+        }
+    }
+}
+
+class NoteCreator {
+    constructor(noteView) {
+        this.noteView = noteView;
+    }
+
+    async createNote() {
+        try {
+            const newObject = await this.noteView.app.noteManager.createNote();
+            if (newObject) {
+                const yNoteMap = this.noteView.noteYjsManager.getYNoteMap(newObject.id);
+                if (!yNoteMap) {
+                    this.noteView.yDoc.transact(() => {
+                        const newYNoteMap = new Y.Map();
+                        newYNoteMap.set('name', 'New Note');
+                        newYNoteMap.set('content', '');
+                        this.noteView.noteYjsManager.yMap.set(newObject.id, newYNoteMap);
+                    });
+                }
+                await this.noteView.noteList.addNoteToList(newObject.id);
+                await this.noteView.notesListComponent.fetchDataAndRender();
+                this.noteView.app.notificationManager.showNotification('Saved', 'success');
+                await this.noteView.noteSelector.selectNote(newObject.id);
+                this.noteView.editor.contentHandler.deserialize(newObject.content);
+                this.noteView.focusTitleInput();
+            } else {
+                console.error('Error creating note: newObject is null');
+            }
+        } catch (error) {
+            console.error('Error creating note:', error);
         }
     }
 }
@@ -131,7 +158,7 @@ export class NoteView extends HTMLElement {
         this.nostr = nostr;
 
         this.yDoc = new Y.Doc();
-        this.noteYjsHandler = new NoteYjsHandler(this.yDoc);
+        this.noteYjsManager = new NoteYjsManager(this.yDoc);
 
         this.elements = new NoteViewElements();
         this.el = this.elements.el;
@@ -140,7 +167,7 @@ export class NoteView extends HTMLElement {
         this.sidebar = new NotesSidebar(app, this);
         this.noteDetails = new NoteDetails(this, app);
         this.tagDisplay = new TagDisplay(app);
-        this.myObjectsList = new MyObjectsList(this, this.noteYjsHandler.yMyObjectsList);
+        this.myObjectsList = new MyObjectsList(this, this.noteYjsManager.yMyObjectsList);
 
         this.contentArea = this.noteUI.createContentArea();
         this.todoArea = this.noteUI.createTodoArea();
@@ -149,8 +176,8 @@ export class NoteView extends HTMLElement {
 
         this.tagManager = new TagManager(this.app, this.selectedNote);
 
-        this.noteList = new NoteList(this.app, this, this.yDoc, this.noteYjsHandler.yNotesList, null);
-        this.notesListComponent = new GenericListComponent(this.noteList.renderNoteItem.bind(this.noteList), this.noteYjsHandler.yNotesList);
+        this.noteList = new NoteList(this.app, this, this.yDoc, this.noteYjsManager.yNotesList, null);
+        this.notesListComponent = new GenericListComponent(this.noteList.renderNoteItem.bind(this.noteList), this.noteYjsManager.yNotesList);
         this.sidebar.elements.notesList.replaceWith(this.notesListComponent.el);
         this.sidebar.el.insertBefore(this.newAddButton(), this.notesListComponent.el);
 
@@ -159,13 +186,14 @@ export class NoteView extends HTMLElement {
         this.el.appendChild(this.sidebar.render());
         this.el.appendChild(this.mainArea);
 
-        this.noteViewEventHandler = new NoteViewEventHandler(this);
+        this.noteSelector = new NoteSelector(this);
+        this.noteCreator = new NoteCreator(this);
 
         this.selectedNote = null;
     }
 
     handleTitleInputChange(title) {
-        this.noteYjsHandler.updateNoteTitle(title);
+        this.noteYjsManager.updateNoteTitle(title);
     }
 
     newAddButton() {
@@ -187,11 +215,11 @@ export class NoteView extends HTMLElement {
     }
 
     async createNote() {
-        await this.noteViewEventHandler.handleCreateNote();
+        await this.noteCreator.createNote();
     }
 
     async selectNote(noteId) {
-        await this.noteViewEventHandler.handleSelectNote(noteId);
+        await this.noteSelector.selectNote(noteId);
     }
 
     async getNoteTags(noteId) {
@@ -211,7 +239,7 @@ export class NoteView extends HTMLElement {
         if (this.selectedNote) {
             const titleInput = this.el.querySelector('.note-title-input');
             if (titleInput) {
-                titleInput.value = this.noteYjsHandler.yName.toString();
+                titleInput.value = this.noteYjsManager.yName.toString();
             }
         }
     }
