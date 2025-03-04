@@ -81,45 +81,6 @@ class Tag extends HTMLElement {
                 }
             </style>
         `;
-        this.el = document.createElement('div');
-        this.el.className = 'tag';
-        this.el.dataset.tagName = this.tagDefinition.name;
-
-        if (this.tagDefinition.conditions && this.tagDefinition.conditions.length) {
-            this.el.classList.add('conditional');
-        }
-
-        const icon = this.tagDefinition.ui?.icon || '🏷️';
-        const display = createElement('span', {}, `${icon} ${this.tagDefinition.name}: ${this.value}`);
-        this.el.appendChild(display);
-
-        this.editButton = createElement('button', {
-            className: 'edit-tag-button',
-            'aria-label': `Edit ${this.tagDefinition.name}`,
-            title: `Edit ${this.tagDefinition.name} Value`
-        }, 'Edit');
-        this.editButton.addEventListener('click', () => {
-            this.editTag();
-        });
-        this.el.appendChild(this.editButton);
-
-        const removeButton = createElement('button', {
-            className: 'remove-tag-button',
-            'aria-label': `Remove ${this.tagDefinition.name}`,
-            title: `Remove ${this.tagDefinition.name}`
-        }, 'X');
-        removeButton.addEventListener('click', () => {
-            this.remove();
-        });
-        this.el.appendChild(removeButton);
-
-        if (!this.tagDefinition.validate(this.value, this.condition)) {
-            this.el.classList.add('invalid');
-            this.el.title = 'Invalid tag value'; // Add tooltip
-        }
-
-        this.shadow.appendChild(this.el);
-    }
 
     isValid() {
         return this.tagDefinition.validate(this.value, this.condition);
@@ -127,8 +88,9 @@ class Tag extends HTMLElement {
 
     editTag() {
         this.shadow.innerHTML = '';
-        const tagInput = new TagInput(this.tagDefinition, this.value, (newValue) => {
+        const tagInput = new TagInput(this.tagDefinition, this.value, this.condition, (newValue, newCondition) => {
             this.value = newValue;
+            this.condition = newCondition;
             this.render();
         });
         this.shadow.appendChild(tagInput);

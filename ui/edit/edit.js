@@ -135,7 +135,11 @@ class Edit {
 
     renderTag(tag) {
         const tagDefinition = this.getTagDefinition(tag.name);
-        const tagComponent = new Tag(tagDefinition, tag.value, tag.condition);
+        const tagComponent = document.createElement('data-tag');
+        tagComponent.setAttribute('tag-definition', JSON.stringify(tagDefinition));
+        tagComponent.setAttribute('value', tag.value);
+        tagComponent.setAttribute('condition', tag.condition);
+
         const listItem = createElement('li', { className: 'tag-list-item' });
         listItem.appendChild(tagComponent);
         listItem.addEventListener('tag-removed', () => {
@@ -495,17 +499,17 @@ style.textContent = `
                 }
             </style>
         `;
-        this.el = document.createElement('div');
-        this.el.className = 'tag';
-        this.el.dataset.tagName = this.tagDefinition.name;
+        const el = document.createElement('div');
+        el.className = 'tag';
+        el.dataset.tagName = this.tagDefinition.name;
 
         if (this.tagDefinition.conditions && this.tagDefinition.conditions.length) {
-            this.el.classList.add('conditional');
+            el.classList.add('conditional');
         }
 
         const icon = this.tagDefinition.ui?.icon || '🏷️';
         const display = createElement('span', {}, `${icon} ${this.tagDefinition.name}: ${this.value}`);
-        this.el.appendChild(display);
+        el.appendChild(display);
 
         this.editButton = createElement('button', {
             className: 'edit-tag-button',
@@ -515,7 +519,7 @@ style.textContent = `
         this.editButton.addEventListener('click', () => {
             this.editTag();
         });
-        this.el.appendChild(this.editButton);
+        el.appendChild(this.editButton);
 
         const removeButton = createElement('button', {
             className: 'remove-tag-button',
@@ -525,14 +529,14 @@ style.textContent = `
         removeButton.addEventListener('click', () => {
             this.remove();
         });
-        this.el.appendChild(removeButton);
+        el.appendChild(removeButton);
 
         if (!this.tagDefinition.validate(this.value, this.condition)) {
-            this.el.classList.add('invalid');
-            this.el.title = 'Invalid tag value'; // Add tooltip
+            el.classList.add('invalid');
+            el.title = 'Invalid tag value'; // Add tooltip
         }
 
-        this.shadow.appendChild(this.el);
+        this.shadow.appendChild(el);
     }
 
     isValid() {
