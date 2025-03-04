@@ -2,16 +2,26 @@ import {GenericListComponent} from '../generic-list.js';
 import {createElement} from '../utils.js';
 
 export class MyObjectsList {
-    constructor(noteView, yMyObjectsList) {
+    constructor(noteView, yMyObjectsList, app) { // Added app to constructor
         this.noteView = noteView;
         this.yMyObjectsList = yMyObjectsList;
+        this.app = app; // Store the app instance
         this.myObjectsListComponent = new GenericListComponent(this, this.yMyObjectsList);
     }
 
-    renderListItem(objectId) { // Renamed from renderMyObjectItem to renderListItem
-        // The renderListItem function in ui/note/my-objects-list.js should now return only the content of the list item, not the <li> element itself.
-        const listItemContent = document.createTextNode(objectId); // Create text node for objectId
-        return listItemContent; // Return only the content of the list item
+    async renderListItem(objectId) { // Renamed from renderMyObjectItem to renderListItem
+        try {
+            const object = await this.app.db.get(objectId); // Fetch object from DB
+            if (!object) {
+                console.warn(`Object with ID ${objectId} not found.`);
+                return document.createTextNode(`Object ID: ${objectId.substring(0, 8)}... (Not Found)`); // Indicate if not found
+            }
+            const objectName = object.name || `Object ID: ${objectId.substring(0, 8)}...`; // Use object name or fallback to ID
+            return document.createTextNode(objectName); // Display object name
+        } catch (error) {
+            console.error("Error fetching object:", error);
+            return document.createTextNode(`Object ID: ${objectId.substring(0, 8)}... (Error)`); // Indicate error
+        }
     }
 
     render() {
