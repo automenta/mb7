@@ -5,7 +5,7 @@ import {FriendsView} from "./view.friends";
 import {SettingsView} from "./view.settings";
 
 export class AppUI {
-    constructor(store, viewManager, noteManager, db, errorHandler, nostr, noteYjsHandler) {
+    constructor(store, viewManager, noteManager, db, errorHandler, nostr, noteYjsHandler, notificationManager) {
         this.store = store;
         this.viewManager = viewManager;
         this.noteManager = noteManager;
@@ -13,6 +13,7 @@ export class AppUI {
         this.errorHandler = errorHandler;
         this.nostr = nostr;
         this.noteYjsHandler = noteYjsHandler;
+        this.notificationManager = notificationManager;
     }
 
     async setupUI(appDiv) {
@@ -37,9 +38,9 @@ export class AppUI {
     }
 
     initializeViews() {
-        const noteView = new NoteView(this.store, this.db, this.errorHandler, this.noteManager, this.noteYjsHandler);
-        const friendsView = new FriendsView(this.store, this.db, this.nostr.addFriend.bind(this.nostr), this.nostr.removeFriend.bind(this.nostr));
-        const settingsView = new SettingsView(this.store, this.db, this.nostr.updateSettings.bind(this.nostr));
+        const noteView = new NoteView(this.store, this.db, this.errorHandler, this.noteManager, this.noteYjsHandler, this.notificationManager);
+        const friendsView = new FriendsView(this.store, this.db, this.nostr.addFriend.bind(this.nostr), this.nostr.removeFriend.bind(this.nostr), this.nostr.subscribeToPubkey.bind(this.nostr), this.nostr.unsubscribeToPubkey.bind(this.nostr), this.notificationManager.showNotification.bind(this.notificationManager));
+        const settingsView = new SettingsView(this.store, this.db, this.nostr.updateSettings.bind(this.nostr), this.notificationManager.showNotification.bind(this.notificationManager));
         const contentView = new ContentView(this.store);
 
         return {noteView, friendsView, settingsView, contentView};

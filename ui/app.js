@@ -74,7 +74,7 @@ async function createApp(appDiv) {
     const store = createStore(reducer, initialState);
 
     // Inject dependencies into AppUI
-    const appUI = new AppUI(store, viewManager, noteManager, db, errorHandler, nostr, noteYjsHandler);
+    const appUI = new AppUI(store, viewManager, noteManager, db, errorHandler, nostr, noteYjsHandler, notificationManager);
 
     const app = new App(db, nostr, matcher, errorHandler, notificationManager, monitoring, settingsManager, noteManager, viewManager, appUI, Ontology, store);
     window.app = app;

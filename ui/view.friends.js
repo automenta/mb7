@@ -100,13 +100,13 @@ export class FriendsView extends View {
                 pubkey = NostrTools.nip19.decode(pubkey).data;
             }
         } catch (error) {
-            this.app.showNotification("Invalid npub format.", "error");
+            this.showNotification("Invalid npub format.", "error");
             return;
         }
 
         // Validate pubkey
         if (!/^[0-9a-f]{64}$/i.test(pubkey)) {
-            this.app.showNotification("Invalid pubkey format.", "error");
+            this.showNotification("Invalid pubkey format.", "error");
             return;
         }
 
@@ -126,16 +126,16 @@ export class FriendsView extends View {
                         this.loadFriends(); // Refresh the friend list
                     } catch (parseError) {
                         console.error('Failed to parse profile content:', parseError);
-                        this.app.showNotification("Failed to parse profile content.", "error");
+                        this.showNotification("Failed to parse profile content.", "error");
                     }
                 }
             });
 
             // Refresh the friend list
             await this.loadFriends();
-            this.app.showNotification("Friend added successfully.", "success");
+            this.showNotification("Friend added successfully.", "success");
         } catch (error) {
-            this.app.showNotification("Failed to add friend.", "error");
+            this.showNotification("Failed to add friend.", "error");
         }
     }
 
@@ -153,9 +153,9 @@ export class FriendsView extends View {
 
             // Refresh the friend list
             await this.loadFriends();
-            this.app.showNotification("Friend removed successfully.", "success");
+            this.showNotification("Friend removed successfully.", "success");
         } catch (error) {
-            this.app.showNotification("Failed to remove friend.", "error");
+            this.showNotification("Failed to remove friend.", "error");
         }
     }
 }
