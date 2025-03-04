@@ -344,22 +344,30 @@ export class DB {
         try {
             const persistentQueries = await this.getAll().filter(obj => obj.isPersistentQuery === true);
 
-            for (const query of persistentQueries) {
+            await Promise.all(persistentQueries.map(async query => {
                 const matches = await this.app.matcher.findMatches(query);
-
                 if (matches.length > 0) {
-                    //dedupe matches
-                    const uniqueMatches = [...new Set(matches.map(m => m.id))].map(id => matches.find(m => m.id === id));
-
-                    this.app.showNotification(
-                        `Match in ${uniqueMatches.length} object(s) for persistent query <em>${query.name}</em>:<br>${uniqueMatches.map(m => `<em>${m.name}</em> (updated ${formatDate(m.updatedAt)})`).join("<br>")}`
-                    );
+                    this.notifyPersistentQueryMatches(query, matches);
                 }
-            }
+            }));
         } catch (error) {
             this.errorHandler.handleError(error, "Failed to execute persistent queries", error);
             console.error("Failed to execute persistent queries:", error);
         }
+    }
+
+    /**
+     * Notifies the user of matches for a persistent query.
+     * @param {object} query - The persistent query object.
+     * @param {array} matches - The array of matched objects.
+     */
+    notifyPersistentQueryMatches(query, matches) {
+        // Deduplicate matches
+        const uniqueMatches = [...new Set(matches.map(m => m.id))].map(id => matches.find(m => m.id === id));
+
+        const message = `Match in ${uniqueMatches.length} object(s) for persistent query <em>${query.name}</em>:<br>${uniqueMatches.map(m => `<em>${m.name}</em> (updated ${formatDate(m.updatedAt)})`).join("<br>")}`;
+
+        this.app.showNotification(message);
     }
 }
 

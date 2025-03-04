@@ -2,19 +2,14 @@ import { v4 as uuidv4 } from 'uuid';
 
 class TagProcessor {
     processTags(object, isPrivate) {
-        // Ensure tags is an array
-        if (!object.tags) {
-            object.tags = [];
-        }
+        const { tags = [] } = object;
 
-        const publicTag = object.tags.find(tag => tag.name === 'Public');
+        const publicTag = tags.find(tag => tag.name === 'Public');
         const isPublic = publicTag && publicTag.value === 'true';
 
-        // Remove existing visibility tag
-        object.tags = object.tags.filter(tag => tag.name !== 'visibility');
+        object.tags = tags.filter(tag => tag.name !== 'visibility');
 
         if (!isPublic) {
-            // Add visibility tag
             object.tags.push({ name: 'visibility', value: isPrivate ? 'private' : 'public' });
         }
     }
