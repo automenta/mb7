@@ -31,9 +31,6 @@ export async function loadKeys() {
         keys = await generateKeys();
         console.log('Keys generated and saved.');
     }
-
     window.keys = keys;
     return keys;
-}```
-
-ui/edit/suggest.dropdown.js
+}
