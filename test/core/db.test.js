@@ -11,8 +11,8 @@ describe('DB', () => {
     let errorHandler;
     const testId = 'test-id';
     const testObject = { id: testId, name: 'Test Object', content: 'Test Content' };
-    const defaultObjectData = { id: testId, 'default-data' };
-    const existingObjectData = { id: testId, 'test-data' };
+    const defaultObjectData = { id: testId, 'default-data': 'default' };
+    const existingObjectData = { id: testId, 'test-data': 'existing' };
 
     beforeEach(() => {
         errorHandler = {
