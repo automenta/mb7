@@ -48,7 +48,7 @@ class Edit {
         this.tagInput.addEventListener('input', debounce(() => this.suggestTags(), 200));
         this.tagInput.addEventListener('keydown', (e) => this.handleTagInputKeyDown(e));
 
-        this.addTagButton = createElement('button', { className: 'add-tag-button' }, 'Add Tag');
+        this.addTagButton = createElement('button', { className: 'add-tag-button', title: 'Add Tag' }, 'Add Tag');
         this.addTagButton.addEventListener('click', () => this.addTagToNote(this.tagInput.value));
 
         this.tagSuggestions = document.createElement('ul');
@@ -80,17 +80,22 @@ class Edit {
 
     handleTagInputKeyDown(event) {
         if (this.tagSuggestions.style.display === 'block') {
-            if (event.key === 'ArrowDown') {
-                event.preventDefault();
-                this.moveTagSuggestionSelection(1);
-            } else if (event.key === 'ArrowUp') {
-                event.preventDefault();
-                this.moveTagSuggestionSelection(-1);
-            } else if (event.key === 'Enter') {
-                event.preventDefault();
-                this.selectTagSuggestion();
-            } else if (event.key === 'Escape') {
-                this.clearTagSuggestions();
+            switch (event.key) {
+                case 'ArrowDown':
+                    event.preventDefault();
+                    this.moveTagSuggestionSelection(1);
+                    break;
+                case 'ArrowUp':
+                    event.preventDefault();
+                    this.moveTagSuggestionSelection(-1);
+                    break;
+                case 'Enter':
+                    event.preventDefault();
+                    this.selectTagSuggestion();
+                    break;
+                case 'Escape':
+                    this.clearTagSuggestions();
+                    break;
             }
         }
     }
@@ -493,12 +498,11 @@ export { Edit };
         }
 
         const icon = this.tagDefinition.ui?.icon || '🏷️';
-        const display = createElement('span', {}, `${icon} ${this.tagDefinition.name}: ${this.value}`);
+        const display = createElement('span', {}, `${icon} ${this.tagDefinition.name}: ${this.value || ''}`);
         el.appendChild(display);
 
         this.editButton = createElement('button', {
             className: 'edit-tag-button',
-            'aria-label': `Edit ${this.tagDefinition.name}`,
             title: `Edit ${this.tagDefinition.name} Value`
         }, 'Edit');
         this.editButton.addEventListener('click', () => {
@@ -508,7 +512,6 @@ export { Edit };
 
         const removeButton = createElement('button', {
             className: 'remove-tag-button',
-            'aria-label': `Remove ${this.tagDefinition.name}`,
             title: `Remove ${this.tagDefinition.name}`
         }, 'X');
         removeButton.addEventListener('click', () => {
