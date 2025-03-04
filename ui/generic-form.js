@@ -78,7 +78,7 @@ export class GenericForm {
                         name: property,
                         className: 'generic-form-input'
                     });
-                    if (tagDef.ui.options && Array.isArray(tagDef.ui.options)) {
+                    if (tagDef.ui.options and Array.isArray(tagDef.ui.options)) {
                         tagDef.ui.options.forEach(option => {
                             const optionElement = createElement("option", {value: option, selected: option === initialValue}, option);
                             input.appendChild(optionElement);
@@ -134,11 +134,11 @@ export class GenericForm {
     }
 
     async loadTagUIOverrides() {
-        if (!this.app || !this.app.settings) {
+        if (!this.app or !this.app.settings) {
             console.warn("App or app settings not available.  Returning empty overrides.");
             return {};
         }
         let settings = await this.app.db.getSettings();
-        return settings.tagUIOverrides || {};
+        return settings.tagUIOverrides or {};
     }
 }

@@ -20,29 +20,47 @@ class Edit {
         this.autosuggest = new Autosuggest(this);
         this.selectedTag = null;
         this.tagYDoc = new Y.Doc();
-        this.render();
         this.debouncedSaveContent = this.debounce(this.saveContent, 500);
     }
 
-    async render() {
+    render() {
         this.el.innerHTML = '';
+        this.renderEditorArea();
+        this.renderDetailsArea();
+        this.renderOntologyBrowser();
+        this.renderTagEditArea();
+        this.attachEventListeners();
+        this.renderContent();
+        this.yText.observe(() => this.renderContent());
+    }
+
+    renderEditorArea() {
         this.editorArea = createElement('div', {className: 'editor-area', contentEditable: true, spellCheck: false});
         this.el.appendChild(this.editorArea);
         this.autosuggest.apply();
+    }
+
+    renderDetailsArea() {
         this.detailsArea = createElement('div', {className: 'details-area'});
         this.el.appendChild(this.detailsArea);
+    }
+
+    renderOntologyBrowser() {
         this.ontologyBrowser = new OntologyBrowser(this, this.handleTagSelected.bind(this));
         this.el.appendChild(this.ontologyBrowser.getElement());
         this.ontologyBrowser.render(this.schema);
+    }
+
+    renderTagEditArea() {
         this.tagEditArea = createElement('div', {className: 'tag-edit-area'});
         this.tagEditArea.style.display = 'none';
         this.el.appendChild(this.tagEditArea);
+    }
+
+    attachEventListeners() {
         this.editorArea.addEventListener('input', () => this.autosuggest.debouncedApply());
         this.editorArea.addEventListener('keydown', (event) => this.autosuggest.handleKeyDown(event));
         this.el.addEventListener('notify', (event) => this.app.notificationManager.showNotification(event.detail.message, event.detail.type));
-
-        this.renderContent();
-        this.yText.observe(() => this.renderContent());
         this.editorArea.addEventListener('blur', () => this.debouncedSaveContent());
     }
 
@@ -89,16 +107,27 @@ class Edit {
 
     handleTagSelected(tagDefinition) {
         if (this.selectedTag) {
-            this.tagEditArea.style.display = 'none';
-            this.tagEditArea.innerHTML = '';
-            this.selectedTag = null;
+            this.clearTagEditArea();
         }
 
         this.selectedTag = tagDefinition;
+        this.showTagEditArea();
+        this.renderTagForm(tagDefinition);
+        this.renderTagActions();
+    }
+
+    clearTagEditArea() {
+        this.tagEditArea.style.display = 'none';
+        this.tagEditArea.innerHTML = '';
+        this.selectedTag = null;
+        this.tagYDoc = new Y.Doc();
+    }
+
+    showTagEditArea() {
         this.tagEditArea.style.display = 'block';
+    }
 
-        const yTagMap = YjsHelper.createYMap(this.tagYDoc, tagDefinition.name);
-
+    renderTagForm(tagDefinition) {
         const form = new GenericForm(
             {tags: {[tagDefinition.name]: tagDefinition}},
             this.tagYDoc,
@@ -110,13 +139,15 @@ class Edit {
         form.build().then(formElement => {
             this.tagEditArea.appendChild(formElement);
         });
+    }
 
+    renderTagActions() {
         const saveButton = createElement('button', {className: 'save-button'}, 'Save Tag');
-        saveButton.addEventListener('click', () => this.saveTag(tagDefinition.name));
+        saveButton.addEventListener('click', () => this.saveTag(this.selectedTag.name));
         this.tagEditArea.appendChild(saveButton);
 
         const deleteTagButton = createElement('button', {className: 'delete-tag-button'}, 'Delete Tag');
-        deleteTagButton.addEventListener('click', () => this.deleteTag(tagDefinition.name));
+        deleteTagButton.addEventListener('click', () => this.deleteTag(this.selectedTag.name));
         this.tagEditArea.appendChild(deleteTagButton);
     }
 
@@ -134,10 +165,7 @@ class Edit {
             }
             await this.app.noteManager.saveObject(this.note);
             this.app.notificationManager.showNotification(`Tag '${tagName}' saved successfully.`, 'success');
-            this.tagEditArea.style.display = 'none';
-            this.tagEditArea.innerHTML = '';
-            this.selectedTag = null;
-            this.tagYDoc = new Y.Doc();
+            this.clearTagEditArea();
             this.renderContent();
         } else {
             this.app.notificationManager.showNotification(`Value for tag '${tagName}' is undefined. Tag not saved.`, 'warning');
@@ -152,10 +180,7 @@ class Edit {
                 this.note.tags.splice(tagIndex, 1);
                 await this.app.noteManager.saveObject(this.note);
                 this.app.notificationManager.showNotification(`Tag '${tagName}' deleted successfully.`, 'success');
-                this.tagEditArea.style.display = 'none';
-                this.tagEditArea.innerHTML = '';
-                this.selectedTag = null;
-                this.tagYDoc = new Y.Doc();
+                this.clearTagEditArea();
                 this.renderContent();
             } else {
                 this.app.notificationManager.showNotification(`Tag '${tagName}' not found in note.`, 'warning');

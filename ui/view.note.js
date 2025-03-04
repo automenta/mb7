@@ -8,6 +8,7 @@ import {GenericListComponent} from "@/ui/generic-list.js";
 import {NotesSidebar} from "@/ui/note/note.sidebar.js";
 import {Edit} from "@/ui/edit/edit.js";
 import {getTagDefinition} from "@/core/ontology.js";
+import {createElement} from "@/ui/utils.js";
 
 class NoteCreator {
     constructor(noteManager, noteYjsHandler, yDoc) {
@@ -37,24 +38,6 @@ class NoteCreator {
     }
 }
 
-class NoteViewElements {
-    constructor() {
-        this.el = document.createElement('div');
-        this.el.className = 'notes-view';
-        this.el.style.flexDirection = 'row';
-        this.el.style.display = 'flex';
-    }
-
-    createElement(type, options = {}, text = '') {
-        const element = document.createElement(type);
-        Object.assign(element, options);
-        if (text) {
-            element.textContent = text;
-        }
-        return element;
-    }
-}
-
 export class NoteView extends HTMLElement {
     constructor(app, store, db, errorHandler, noteManager, noteYjsHandler, notificationManager, ontology) {
         super();
@@ -75,26 +58,23 @@ export class NoteView extends HTMLElement {
         this.tagDisplay = new TagDisplay(this.app);
         this.myObjectsList = new MyObjectsList(this, this.yDoc.getArray('myObjects'), this.app);
         this.noteCreator = new NoteCreator(noteManager, noteYjsHandler, this.yDoc);
-        this.noteElements = new NoteViewElements();
         this.notesSidebar = new NotesSidebar(this.app, this);
         this.edit = null;
         this.selectedNote = null;
 
-        this.el = this.noteElements.createElement('div', {className: 'notes-view'});
+        this.el = createElement('div', {className: 'notes-view'});
         this.el.style.display = 'flex';
         this.el.style.flexDirection = 'row';
-
-        this.build();
     }
 
     async build() {
+        this.appendChild(this.el);
         this.el.appendChild(this.notesSidebar.render());
         this.el.appendChild(this.notesListComponent.render());
         this.el.appendChild(this.noteDetails.render());
         this.el.appendChild(this.tagDisplay.render());
         this.el.appendChild(this.myObjectsList.render());
         await this.createNote();
-        this.appendChild(this.el);
 
         await this.store.subscribe(() => {
             this.updateView();
@@ -103,7 +83,7 @@ export class NoteView extends HTMLElement {
 
     async updateView() {
         const selectedNoteId = this.store.getState().selectedNoteId;
-        if (selectedNoteId && selectedNoteId !== this.selectedNote?.id) {
+        if (selectedNoteId and selectedNoteId !== this.selectedNote?.id) {
             await this.loadNote(selectedNoteId);
         }
     }
@@ -126,15 +106,26 @@ export class NoteView extends HTMLElement {
         liContent.dataset.id = noteId;
         liContent.classList.add('note-list-item');
 
+        this.renderNoteName(liContent, noteId);
+        this.renderDeleteButton(liContent, noteId);
+
+        liContent.addEventListener('click', async () => {
+            await this.selectNote(noteId);
+        });
+
+        return liContent;
+    }
+
+    renderNoteName(liContent, noteId) {
         const nameElement = document.createElement('div');
         nameElement.style.fontWeight = 'bold';
-
         const yNoteMap = this.yDoc.getMap('notes').get(noteId);
         const noteName = yNoteMap ? yNoteMap.get('name') : `Note ID: ${noteId.substring(0, 8)}...`;
         nameElement.textContent = noteName;
-
         liContent.appendChild(nameElement);
+    }
 
+    renderDeleteButton(liContent, noteId) {
         const deleteButton = document.createElement('button');
         deleteButton.textContent = 'Delete';
         deleteButton.addEventListener('click', async (event) => {
@@ -145,12 +136,6 @@ export class NoteView extends HTMLElement {
             }
         });
         liContent.appendChild(deleteButton);
-
-        liContent.addEventListener('click', async () => {
-            await this.selectNote(noteId);
-        });
-
-        return liContent;
     }
 
 

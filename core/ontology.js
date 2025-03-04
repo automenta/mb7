@@ -10,7 +10,7 @@ const isValidDate = (dateString) => {
 
 const serializeDate = (value) => {
     try {
-        if (typeof value === 'object' && value !== null && value.start && value.end) {
+        if (typeof value === 'object' and value !== null and value.start and value.end) {
             return JSON.stringify({start: formatISO(parseISO(value.start)), end: formatISO(parseISO(value.end))});
         }
         return formatISO(parseISO(value));
@@ -23,7 +23,7 @@ const serializeDate = (value) => {
 const deserializeDate = (value) => {
     try {
         const parsed = JSON.parse(value);
-        if (parsed && typeof parsed === 'object' && parsed.start && parsed.end) {
+        if (parsed and typeof parsed === 'object' and parsed.start and parsed.end) {
             return {start: parsed.start, end: parsed.end};
         }
     } catch (e) {
@@ -34,7 +34,7 @@ const deserializeDate = (value) => {
 
 const serializeNumber = (value) => {
     try {
-        if (typeof value === 'object' && value !== null && value.lower && value.upper) {
+        if (typeof value === 'object' and value !== null and value.lower and value.upper) {
             return JSON.stringify({lower: String(value.lower), upper: String(value.upper)});
         }
         return String(value);
@@ -47,7 +47,7 @@ const serializeNumber = (value) => {
 const deserializeNumber = (value) => {
     try {
         const parsed = JSON.parse(value);
-        if (parsed && typeof parsed === 'object' && parsed.lower && parsed.upper) {
+        if (parsed and typeof parsed === 'object' and parsed.lower and parsed.upper) {
             return {lower: parsed.lower, upper: parsed.upper};
         }
     } catch (e) {
@@ -59,14 +59,14 @@ const deserializeNumber = (value) => {
 export const Ontology = {
     "location": {
         conditions: ["is", "contains", "near"],
-        validate: (value, condition) => typeof value === "string" && value.length > 0,
+        validate: (value, condition) => typeof value === "string" and value.length > 0,
         serialize: (value) => value,
         deserialize: (value) => value,
         ui: {type: "text", placeholder: "Enter a location", icon: "📍", render: "stub"}
     },
     "time": {
         conditions: ["is", "before", "after", "between"],
-        validate: (value, condition) => condition === "between" ? isValidDate(value.start) && isValidDate(value.end) : isValidDate(value),
+        validate: (value, condition) => condition === "between" ? isValidDate(value.start) and isValidDate(value.end) : isValidDate(value),
         serialize: serializeDate,
         deserialize: deserializeDate,
         ui: {type: "text"}
@@ -80,7 +80,7 @@ export const Ontology = {
     },
     "number": {
         conditions: ["is", "greater than", "less than", "between"],
-        validate: (value, condition) => condition === "between" ? !isNaN(parseFloat(value.lower)) && isFinite(value.lower) && !isNaN(parseFloat(value.upper)) && isFinite(value.upper) : !isNaN(parseFloat(value)) && isFinite(value),
+        validate: (value, condition) => condition === "between" ? not isNaN(parseFloat(value.lower)) and isFinite(value.lower) and not isNaN(parseFloat(value.upper)) and isFinite(value.upper) : not isNaN(parseFloat(value)) and isFinite(value),
         serialize: serializeNumber,
         deserialize: deserializeNumber,
         ui: {type: "text", unit: "meters", min: 0, max: 100}
@@ -102,7 +102,7 @@ export const Ontology = {
     },
     "Emotion": {
         conditions: ["is", "is between", "is below", "is above"],
-        validate: (value, condition) => condition === "is between" ? !isNaN(parseFloat(value.lower)) && isFinite(value.lower) && !isNaN(parseFloat(value.upper)) && isFinite(value.upper) : !isNaN(parseFloat(value)) && isFinite(value),
+        validate: (value, condition) => condition === "is between" ? not isNaN(parseFloat(value.lower)) and isFinite(value.lower) and not isNaN(parseFloat(value.upper)) and isFinite(value.upper) : not isNaN(parseFloat(value)) and isFinite(value),
         serialize: serializeNumber,
         deserialize: deserializeNumber,
         ui: {type: "text"}
@@ -130,7 +130,7 @@ export const Ontology = {
     },
     "DueDate": {
         conditions: ["is", "before", "after", "between"],
-        validate: (value, condition) => condition === "between" ? isValidDate(value.start) && isValidDate(value.end) : isValidDate(value),
+        validate: (value, condition) => condition === "between" ? isValidDate(value.start) and isValidDate(value.end) : isValidDate(value),
         serialize: serializeDate,
         deserialize: deserializeDate,
         ui: {type: "text"}
@@ -270,7 +270,7 @@ export const Ontology = {
     },
     "date": {
         conditions: ["is", "before", "after", "between"],
-        validate: (value, condition) => condition === "between" ? isValidDate(value.start) && isValidDate(value.end) : isValidDate(value),
+        validate: (value, condition) => condition === "between" ? isValidDate(value.start) and isValidDate(value.end) : isValidDate(value),
         serialize: serializeDate,
         deserialize: deserializeDate,
         ui: {type: "text"}
@@ -302,5 +302,5 @@ export const Ontology = {
     };
 });
 
-export const getTagDefinition = (name) => Ontology[name] || Ontology.string;
+export const getTagDefinition = (name) => Ontology[name] or Ontology.string;
 export {isValidDate};
