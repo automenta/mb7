@@ -39,6 +39,13 @@ const DOMPURIFY_CONFIG = {
     ALLOWED_ATTR: ["class", "contenteditable", "tabindex", "id", "aria-label"]
 };
 
+/**
+ * Upgrades the database schema.
+ * @param {IDBDatabase} db - The database object.
+ * @param {number} oldVersion - The old version of the database.
+ * @param {number} newVersion - The new version of the database.
+ * @param {IDBTransaction} transaction - The database transaction.
+ */
 async function upgradeDatabase(db, oldVersion, newVersion, transaction) {
     console.log('onupgradeneeded triggered');
 
@@ -62,11 +69,20 @@ async function upgradeDatabase(db, oldVersion, newVersion, transaction) {
 export class DB {
     static db = null;
 
+    /**
+     * Constructor for the DB class.
+     * @param {object} app - The application object.
+     * @param {object} errorHandler - The error handler object.
+     */
     constructor(app, errorHandler) {
         this.app = app;
         this.errorHandler = errorHandler;
     }
 
+    /**
+     * Initializes the database.
+     * @returns {Promise<DB>} - The database object.
+     */
     static async the() {
         if (this.db) return this.db;
 
@@ -79,6 +95,11 @@ export class DB {
         return this.db;
     }
 
+    /**
+     * Gets the default object.
+     * @param {string} id - The ID of the object to get.
+     * @returns {Promise<object>} - The default object.
+     */
     static async getDefaultObject(id) {
         if (!DB.db) await DB.the();
 
@@ -104,6 +125,10 @@ export class DB {
         }
     }
 
+    /**
+     * Initializes the keys.
+     * @returns {Promise<object>} - The initialized keys.
+     */
     async initializeKeys() {
         const keys = await loadKeys();
         if (keys) {
@@ -345,7 +370,7 @@ export class DB {
             const persistentQueries = await this.getAll().filter(obj => obj.isPersistentQuery === true);
 
             await Promise.all(persistentQueries.map(async query => {
-                const matches = await this.app.matcher.findMatches(query);
+                const matches = await this.app.matcher.findMatches(query));
                 if (matches.length > 0) {
                     this.notifyPersistentQueryMatches(query, matches);
                 }

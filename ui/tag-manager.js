@@ -13,6 +13,11 @@ const debounce = (func, delay) => {
 };
 
 class TagManager extends HTMLElement {
+    /**
+     * Constructor for the TagManager class.
+     * @param {object} app - The application object.
+     * @param {object} note - The note object.
+     */
     constructor(app, note) {
         super();
         this.app = app;
@@ -20,10 +25,16 @@ class TagManager extends HTMLElement {
         this.shadow = this.attachShadow({ mode: 'open' });
     }
 
+    /**
+     * Called when the element is connected to the DOM.
+     */
     connectedCallback() {
         this.render();
     }
 
+    /**
+     * Renders the tag manager.
+     */
     async render() {
         this.shadow.innerHTML = `
             <style>
@@ -111,6 +122,10 @@ class TagManager extends HTMLElement {
         this.renderTags();
     }
 
+    /**
+     * Handles the tag input key down event.
+     * @param {Event} event - The tag input key down event.
+     */
     handleTagInputKeyDown(event) {
         if (this.tagSuggestions.style.display !== 'block') return;
 
@@ -133,6 +148,10 @@ class TagManager extends HTMLElement {
         }
     }
 
+    /**
+     * Moves the tag suggestion selection.
+     * @param {number} direction - The direction to move the selection.
+     */
     moveTagSuggestionSelection(direction) {
         const suggestions = this.tagSuggestions.querySelectorAll('li');
         if (suggestions.length === 0) return;
@@ -155,6 +174,9 @@ class TagManager extends HTMLElement {
         suggestions[newIndex].classList.add('selected');
     }
 
+    /**
+     * Selects a tag suggestion.
+     */
     selectTagSuggestion() {
         const selectedSuggestion = this.tagSuggestions.querySelector('li.selected');
         if (selectedSuggestion) {
@@ -162,6 +184,9 @@ class TagManager extends HTMLElement {
         }
     }
 
+    /**
+     * Renders the tags.
+     */
     async renderTags() {
         this.tagList.innerHTML = ''; // Clear existing tags
         if (this.note && this.note.tags) {
@@ -172,7 +197,8 @@ class TagManager extends HTMLElement {
     }
 
     /**
-     * @param {Tag} tag
+     * Renders a tag.
+     * @param {Tag} tag - The tag to render.
      */
     renderTag(tag) {
         const tagDefinition = this.app.getTagDefinition(tag.name);
@@ -189,6 +215,10 @@ class TagManager extends HTMLElement {
         this.tagList.appendChild(listItem);
     }
 
+    /**
+     * Adds a tag to the note.
+     * @param {string} tagName - The name of the tag to add.
+     */
     async addTagToNote(tagName) {
         try {
             if (!this.note || !this.note.id) {
@@ -210,6 +240,7 @@ class TagManager extends HTMLElement {
             }
 
             const defaultValue = tagDefinition.default || '';
+            /** @type {Tag} */
             const newTag = { name: tagName, value: defaultValue, condition: 'is' };
             this.note.tags.push(newTag);
             await this.app.db.saveObject(this.note, false);
@@ -221,6 +252,10 @@ class TagManager extends HTMLElement {
         }
     }
 
+    /**
+     * Removes a tag from the note.
+     * @param {string} tagName - The name of the tag to remove.
+     */
     async removeTagFromNote(tagName) {
         try {
             if (!this.note || !this.note.id) {
@@ -236,6 +271,9 @@ class TagManager extends HTMLElement {
         }
     }
 
+    /**
+     * Suggests tags based on the input.
+     */
     suggestTags() {
         const searchText = this.tagInput.value.toLowerCase();
         const suggestions = Object.keys(this.app.getTagDefinition())
@@ -245,6 +283,10 @@ class TagManager extends HTMLElement {
         this.displayTagSuggestions(suggestions);
     }
 
+    /**
+     * Displays the tag suggestions.
+     * @param {string[]} suggestions - The tag suggestions to display.
+     */
     displayTagSuggestions(suggestions) {
         this.tagSuggestions.innerHTML = '';
         if (!suggestions.length) {
@@ -268,10 +310,16 @@ class TagManager extends HTMLElement {
         }
     }
 
+    /**
+     * Clears the tag input.
+     */
     clearTagInput() {
         this.tagInput.value = '';
     }
 
+    /**
+     * Clears the tag suggestions.
+     */
     clearTagSuggestions() {
         this.tagSuggestions.innerHTML = '';
         this.tagSuggestions.style.display = 'none';
