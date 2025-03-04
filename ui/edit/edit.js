@@ -83,9 +83,27 @@ class Edit {
         }
     }
 
-    addTagToNote(tagName) {
-        // TODO: Implement the logic to add the tag to the note
-        console.log('Adding tag:', tagName);
+    async addTagToNote(tagName) {
+        try {
+            if (!this.note || !this.note.id) {
+                console.error('No note selected');
+                return;
+            }
+
+            const tagDefinition = this.getTagDefinition(tagName);
+            if (!tagDefinition) {
+                console.error('Tag definition not found:', tagName);
+                return;
+            }
+
+            const newTag = { name: tagName, value: '', condition: 'is' };
+            this.note.tags.push(newTag);
+            await this.app.db.saveObject(this.note, false);
+            this.renderTags();
+            this.tagInput.value = ''; // Clear the input field
+        } catch (error) {
+            console.error('Error adding tag to note:', error);
+        }
     }
 
     suggestTags() {
