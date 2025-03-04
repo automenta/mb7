@@ -13,7 +13,6 @@ export class UIManager {
         document.title = "Netention"; // Set the document title
         const {noteView, friendsView, settingsView, contentView} = this.initializeViews(this.app);
         this.setupDefaultView(this.app, noteView, contentView);
-        const {menubar, mainContent} = createLayout(this.app, appDiv, noteView, friendsView, settingsView, contentView);
 
         // Select the first note if no notes exist
         let notes;
@@ -26,6 +25,7 @@ export class UIManager {
             this.app.errorHandler.handleError(error, 'Error loading notes or creating default note');
         }
 
+        const {menubar, mainContent} = createLayout(this.app, appDiv, noteView, friendsView, settingsView, contentView);
         // Display the name of the note in the editor title
         document.title = this.app.selected ? `Netention - ${this.app.selected.name}` : "Netention";
     }

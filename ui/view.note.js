@@ -5,6 +5,7 @@ import {NoteDetails} from "./note/note.details.js";
 import {TagDisplay} from "./note/tag-display.js";
 import {MyObjectsList} from "./note/my-objects-list.js";
 import {NoteYjsHandler} from "./note/note-yjs-handler.js";
+import {GenericListComponent} from "../generic-list-component";
 
 class NoteCreator {
     constructor(noteView) {
@@ -60,7 +61,8 @@ export class NoteView extends HTMLElement {
         this.noteYjsHandler = new NoteYjsHandler(this.yDoc);
 
         this.noteUI = new NoteUI();
-        this.noteList = new NoteList(this, this.yDoc.getMap('notes'));
+        this.notesListComponent = new GenericListComponent(this.renderNoteItem.bind(this), 'notes-list');
+        this.noteList = new NoteList(this.app, this, this.yDoc, this.yDoc.getMap('notes'));
         this.noteDetails = new NoteDetails(this);
         this.tagDisplay = new TagDisplay();
         this.myObjectsList = new MyObjectsList(this, this.yDoc.getArray('myObjects'));
@@ -75,12 +77,38 @@ export class NoteView extends HTMLElement {
     }
 
     async build() {
-        this.el.appendChild(this.noteList.render());
+        this.el.appendChild(this.notesListComponent.render());
         this.el.appendChild(this.noteDetails.render());
         this.el.appendChild(this.tagDisplay.render());
         this.el.appendChild(this.myObjectsList.render());
         this.el.appendChild(this.noteCreator.createNote());
         document.body.appendChild(this.el);
+    }
+
+    renderNoteItem(noteIdArray) { // Renamed from renderNObject to renderNoteItem, used by GenericListComponent, now receives noteId
+        const noteId = noteIdArray[0];
+        const li = document.createElement('li');
+        li.dataset.id = noteId;
+        li.classList.add('note-list-item');
+        const nameElement = document.createElement('div');
+        nameElement.style.fontWeight = 'bold';
+        li.appendChild(nameElement);
+        const deleteButton = document.createElement('button');
+        deleteButton.textContent = 'Delete';
+        deleteButton.addEventListener('click', async (event) => {
+            event.stopPropagation(); // Prevent note selection
+            const note = await this.app.db.get(noteId);
+            if (note) {
+                await this.noteList.handleDeleteNote(note);
+            }
+        });
+        li.appendChild(deleteButton);
+
+        li.addEventListener('click', async () => {
+            await this.selectNote(noteId);
+        });
+
+        return li;
     }
 
     async createNote() {
