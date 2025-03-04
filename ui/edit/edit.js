@@ -13,7 +13,13 @@ class EditorEventHandler {
         this.suggestionDropdown = this.edit.suggestionDropdown;
         this.autosuggest = this.edit.autosuggest;
         this.contentHandler = this.edit.contentHandler;
+    }
 
+    setup(editorArea, suggestionDropdown, autosuggest, contentHandler) {
+        this.editorArea = editorArea;
+        this.suggestionDropdown = suggestionDropdown;
+        this.autosuggest = autosuggest;
+        this.contentHandler = contentHandler;
         this.setupEditorAreaEvents();
         this.setupDocumentEvents();
     }
@@ -101,6 +107,10 @@ class SuggestionHandler {
     constructor(edit) {
         this.edit = edit;
         this.suggestionDropdown = this.edit.suggestionDropdown;
+    }
+
+    setup(suggestionDropdown) {
+        this.suggestionDropdown = suggestionDropdown;
     }
 
     createSuggestion(tagData, span = null) {
@@ -214,6 +224,12 @@ class Edit {
         this.save = (object) => {
             this.saveHandler.save(object);
         };
+
+        // Setup event handler
+        this.eventHandler.setup(this.editorArea, this.suggestionDropdown, this.autosuggest, this.contentHandler);
+
+        // Setup suggestion handler
+        this.suggestionHandler.setup(this.suggestionDropdown);
     }
 
     setupEditorAreaEvents() {
