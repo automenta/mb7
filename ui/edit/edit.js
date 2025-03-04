@@ -65,6 +65,22 @@ class Edit {
             const isPersistentQuery = this.persistentQueryCheckbox.checked;
             this.app.db.saveObject(object, isPersistentQuery).catch(error => this.app.errorHandler.handleError(error, "Failed to save object"));
         };
+        this.renderTags();
+    }
+
+    async renderTags() {
+        this.tagList.innerHTML = ''; // Clear existing tags
+        if (this.note && this.note.tags) {
+            for (const tag of this.note.tags) {
+                const tagDefinition = this.getTagDefinition(tag.name);
+                const tagComponent = new Tag(tagDefinition, tag.value, tag.condition, (updatedTag) => {
+                    this.updateTag(tag.name, updatedTag.getValue(), updatedTag.getCondition());
+                });
+                const listItem = createElement('li', { className: 'tag-list-item' });
+                listItem.appendChild(tagComponent);
+                this.tagList.appendChild(listItem);
+            }
+        }
     }
 
     addTagToNote(tagName) {
