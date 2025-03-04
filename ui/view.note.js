@@ -9,6 +9,13 @@ import {GenericListComponent} from './generic-list.js';
 import {Ontology} from '../core/ontology.js';
 import {NoteListRenderer} from './note/note-list-item-renderer.js';
 
+import {
+    createPrivacyContainer,
+    createPrioritySelect,
+    createTitleInput,
+    createTextView
+} from './note/note.ui.js';
+
 export class NoteView extends HTMLElement {
     constructor(app, db, nostr) {
         super();
@@ -33,7 +40,7 @@ export class NoteView extends HTMLElement {
         this.noteDetails = new NoteDetails(this);
 
         this.mainArea = this.createMainArea();
-        this.privacyContainer = this.createPrivacyContainer();
+        this.privacyContainer = createPrivacyContainer();
         this.privacyLabel = this.createPrivacyLabel();
         this.privacyCheckbox = this.createPrivacyCheckbox();
         this.contentArea = this.createContentArea();
@@ -153,11 +160,7 @@ export class NoteView extends HTMLElement {
     }
 
     createTitleInput() {
-        const titleInput = document.createElement('input');
-        titleInput.type = 'text';
-        titleInput.placeholder = 'Note Title';
-        titleInput.className = 'note-title-input';
-        titleInput.addEventListener('input', () => {
+        const titleInput = createTitleInput(() => {
             this.yDoc.transact(() => {
                 this.yName.delete(0, this.yName.length); // Clear existing content
                 this.yName.insert(0, titleInput.value); // Insert new content
@@ -186,17 +189,11 @@ export class NoteView extends HTMLElement {
     }
 
     newLinkedView() {
-        return this.createTextView('Linked View');
+        return createTextView('Linked View');
     }
 
     newMatchesView() {
-        return this.createTextView('Matches View');
-    }
-
-    createTextView(text) {
-        const view = document.createElement('div');
-        view.textContent = text;
-        return view;
+        return createTextView('Matches View');
     }
 
     async createNote() {
