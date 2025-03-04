@@ -15,6 +15,7 @@ export class SettingsView extends View {
         while (this.el.firstChild) {
             this.el.removeChild(this.el.firstChild);
         }
+
         const settingsObjectId = 'settings';
         let settingsObject = await this.db.get(settingsObjectId);
         let yDoc = await this.db.getYDoc(settingsObjectId);
