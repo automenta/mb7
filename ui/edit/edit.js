@@ -45,6 +45,9 @@ class Edit {
         this.yText.observe(() => this.renderContent());
     }
 
+    /**
+     * Renders the content of the editor area, including text and tags.
+     */
     renderContent() {
         // Clear the editor area
         this.editorArea.innerHTML = '';
@@ -57,13 +60,14 @@ class Edit {
         let match;
         let lastIndex = 0;
 
+        // Iterate over the text, finding and rendering tags
         while ((match = tagRegex.exec(text)) !== null) {
             // Add the text before the tag
             if (match.index > lastIndex) {
                 this.editorArea.appendChild(document.createTextNode(text.substring(lastIndex, match.index)));
             }
 
-            // Extract the tag content
+            // Extract the tag content (the JSON string)
             const tagContent = match[1];
 
             // Render the tag
@@ -75,6 +79,7 @@ class Edit {
                 this.editorArea.appendChild(document.createTextNode(match[0]));
             }
 
+            // Update the last index to the end of the tag
             lastIndex = tagRegex.lastIndex;
         }
 
@@ -84,6 +89,11 @@ class Edit {
         }
     }
 
+    /**
+     * Renders a single tag element from the given tag content.
+     * @param {string} tagContent - The JSON string representing the tag data.
+     * @returns {HTMLElement | null} - The rendered tag element, or null if rendering fails.
+     */
     renderTag(tagContent) {
         try {
             // Deserialize the tag content
@@ -116,9 +126,15 @@ class Edit {
         }
     }
 
+    /**
+     * Opens the tag edit form for the given tag content.
+     * @param {string} tagContent - The JSON string representing the tag data.
+     */
     editTag(tagContent) {
         try {
+            // Deserialize the tag content
             const tagData = JSON.parse(tagContent);
+            // Get the tag definition from the ontology
             const tagDefinition = this.getTagDefinition(tagData.name); // Assuming tagData.name holds the tag definition name
             if (tagDefinition) {
                 this.selectedTag = tagDefinition;
@@ -138,6 +154,11 @@ class Edit {
         this.showTagEditForm(tagDefinition);
     }
 
+    /**
+     * Shows the tag edit form for the given tag definition and content.
+     * @param {object} tagDefinition - The tag definition from the ontology.
+     * @param {string | null} tagContent - The JSON string representing the tag data (optional).
+     */
     async showTagEditForm(tagDefinition, tagContent = null) {
         this.tagEditArea.innerHTML = '';
         this.tagEditArea.style.display = 'block';
@@ -184,6 +205,9 @@ class Edit {
         this.tagEditArea.appendChild(deleteButton);
     }
 
+    /**
+     * Saves the tag data to the Yjs document.
+     */
     async saveTag() {
         console.log('Saving tag data...');
         const tagData = {};
@@ -261,6 +285,9 @@ class Edit {
         this.autosuggest.apply();
     }
 
+    /**
+     * Deletes the currently edited tag from the Yjs document.
+     */
     async deleteTag() {
         if (this.editingTagContent) {
             const text = this.yText.toString();
