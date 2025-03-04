@@ -11,7 +11,7 @@ export class SettingsManager {
             const settingsData = settingsObject.data || {}; // Use a 'data' field to store settings
 
             // Apply default values from ontology if settings are missing
-            const settingsOntology = this.ontology?.settings || {};
+            const settingsOntology = this.ontology?.Settings?.tags || {};
             const defaultSettings = {};
             for (const key in settingsOntology) {
                 defaultSettings[key] = settingsData[key] !== undefined ? settingsData[key] : settingsOntology[key].default;
@@ -30,6 +30,19 @@ export class SettingsManager {
 
     async saveSettings(settings) {
         try {
+            // Validate settings against ontology
+            const settingsOntology = this.ontology?.Settings?.tags || {};
+            for (const key in settings) {
+                const settingDefinition = settingsOntology[key];
+                if (settingDefinition && settingDefinition.validate) {
+                    const isValid = settingDefinition.validate(settings[key], 'is');
+                    if (!isValid) {
+                        this.errorHandler.handleError(new Error(`Invalid value for setting: ${key}`), `Invalid value for setting: ${key}`);
+                        throw new Error(`Invalid value for setting: ${key}`);
+                    }
+                }
+            }
+
             let settingsObject = await this.db.getSettings();
             if (!settingsObject) {
                 settingsObject = {
@@ -45,6 +58,7 @@ export class SettingsManager {
             await this.db.saveObject(settingsObject);
         } catch (error) {
             this.errorHandler.handleError(error, 'Error saving settings to db');
+            throw error;
         }
     }
 }

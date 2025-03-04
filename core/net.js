@@ -23,7 +23,10 @@ export class Nostr {
     }
 
     async connectToRelays() {
-        for (const relayUrl of this.relays) {
+        // Use relays from settings if available, otherwise use default relays
+        const relaysToConnect = this.nostrRelays ? this.nostrRelays.split(',').map(url => url.trim()) : this.relays;
+
+        for (const relayUrl of relaysToConnect) {
             try {
                 const relay = relayInit(relayUrl);
                 relay.on('connect', () => {
@@ -82,7 +85,9 @@ export class Nostr {
         event = signEvent(event, this.nostrPrivateKey);
 
         // Publish to relays
-        for (const relayUrl of this.relays) {
+        const relaysToPublish = this.nostrRelays ? this.nostrRelays.split(',').map(url => url.trim()) : this.relays;
+
+        for (const relayUrl of relaysToPublish) {
             try {
                 const relay = this.relayObjects[relayUrl];
                 if (relay && relay.status === 1) {
@@ -136,7 +141,9 @@ export class Nostr {
 
         this.subscriptions[subscriptionId] = sub;
 
-        for (const relayUrl of this.relays) {
+        const relaysToSubscribe = this.nostrRelays ? this.nostrRelays.split(',').map(url => url.trim()) : this.relays;
+
+        for (const relayUrl of relaysToSubscribe) {
             try {
                 const relay = this.relayObjects[relayUrl];
                 if (relay && relay.status === 1) {
@@ -176,7 +183,9 @@ export class Nostr {
             return;
         }
 
-        for (const relayUrl of this.relays) {
+        const relaysToUnsubscribe = this.nostrRelays ? this.nostrRelays.split(',').map(url => url.trim()) : this.relays;
+
+        for (const relayUrl of relaysToUnsubscribe) {
             try {
                 const relay = this.relayObjects[relayUrl];
                 if (relay && relay.status === 1) {
@@ -226,7 +235,9 @@ export class Nostr {
 
         this.subscriptions[subscriptionId] = sub;
 
-        for (const relayUrl of this.relays) {
+        const relaysToSubscribe = this.nostrRelays ? this.nostrRelays.split(',').map(url => url.trim()) : this.relays;
+
+        for (const relayUrl of relaysToSubscribe) {
             try {
                 const relay = this.relayObjects[relayUrl];
                 if (relay && relay.status === 1) {
@@ -270,7 +281,9 @@ export class Nostr {
             return;
         }
 
-        for (const relayUrl of this.relays) {
+        const relaysToUnsubscribe = this.nostrRelays ? this.nostrRelays.split(',').map(url => url.trim()) : this.relays;
+
+        for (const relayUrl of relaysToUnsubscribe) {
             try {
                 const relay = this.relayObjects[relayUrl];
                 if (relay && relay.status === 1) {

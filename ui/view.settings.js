@@ -29,47 +29,116 @@ export class SettingsView extends View {
             yDoc = new Y.Doc()
         }
 
-        this.settingsForm = new GenericForm(Ontology.Settings, yDoc, 'settings', this.saveSettings.bind(this));
-        const formElement = await this.settingsForm.build();
-        this.el.append(formElement);
+        // Use the Settings ontology to build the form
+        const settingsOntology = Ontology.Settings;
+        if (settingsOntology && settingsOntology.tags) {
+            for (const property in settingsOntology.tags) {
+                const settingDefinition = settingsOntology.tags[property];
+                const label = createElement("label", {for: property}, settingDefinition.label || property);
+                let input;
 
-        // Word2Vec Model Path Input
-        this.word2vecLabel = createElement("label", {for: "word2vecModelPath"}, "Word2Vec Model Path");
-        this.word2vecInput = createElement("input", {
-            type: "text",
-            id: "word2vecModelPath",
-            name: "word2vecModelPath",
-            value: this.app.settings?.word2vecModelPath || './core/word2vec.model'
-        });
-        this.el.appendChild(this.word2vecLabel);
-        this.el.appendChild(this.word2vecInput);
-    }
+                switch (settingDefinition.type) {
+                    case "string":
+                        input = createElement("input", {
+                            type: "text",
+                            id: property,
+                            name: property,
+                            value: this.app.settings[property] || settingDefinition.default || ''
+                        });
+                        break;
+                    case "number":
+                        input = createElement("input", {
+                            type: "number",
+                            id: property,
+                            name: property,
+                            value: this.app.settings[property] || settingDefinition.default || ''
+                        });
+                        break;
+                    case "boolean":
+                        input = createElement("input", {
+                            type: "checkbox",
+                            id: property,
+                            name: property,
+                            checked: this.app.settings[property] || settingDefinition.default || false
+                        });
+                        break;
+                    case "select":
+                        input = createElement("select", {
+                            id: property,
+                            name: property,
+                        });
+                        if (settingDefinition.options && Array.isArray(settingDefinition.options)) {
+                            settingDefinition.options.forEach(option => {
+                                const optionElement = createElement("option", {value: option}, option);
+                                input.appendChild(optionElement);
+                            });
+                            input.value = this.app.settings[property] || settingDefinition.default || settingDefinition.options[0];
+                        }
+                        break;
+                    default:
+                        input = createElement("input", {
+                            type: "text",
+                            id: property,
+                            name: property,
+                            value: this.app.settings[property] || settingDefinition.default || ''
+                        });
+                }
 
-    async bindEvents() {
-        await this.settingsForm.bindEvents();
+                // Add description if available
+                if (settingDefinition.description) {
+                    const description = createElement("p", {class: "setting-description"}, settingDefinition.description);
+                    this.el.appendChild(description);
+                }
+
+                this.el.appendChild(label);
+                this.el.appendChild(input);
+            }
+        }
 
         const saveButton = createElement("button", {id: "save-settings-btn"}, "Save Settings");
         this.el.appendChild(saveButton);
         saveButton.addEventListener("click", () => this.saveSettings());
     }
 
+    async bindEvents() {
+        // No need to bind events for GenericForm, as it's not used anymore
+    }
+
     async saveSettings() {
-        const yMap = this.settingsForm.yMap;
-        const settingsObject = await this.db.get('settings') || {};
+        const settings = {};
+        const settingsOntology = Ontology.Settings;
 
-        const settings = {
-            relays: yMap.get('relays') || settingsObject.relays || '',
-            webrtcNostrRelays: yMap.get('webrtcNostrRelays') || settingsObject.webrtcNostrRelays || '',
-            privateKey: yMap.get('privateKey') || settingsObject.privateKey || '',
-            dateFormat: yMap.get('dateFormat') || settingsObject.dateFormat || '',
-            profileName: yMap.get('profileName') || settingsObject.profileName || '',
-            profilePicture: yMap.get('profilePicture') || settingsObject.profilePicture || '',
-            signalingStrategy: yMap.get('signalingStrategy') || settingsObject.signalingStrategy || 'nostr',
-            word2vecModelPath: document.getElementById("word2vecModelPath").value
-        };
+        if (settingsOntology && settingsOntology.tags) {
+            for (const property in settingsOntology.tags) {
+                const settingDefinition = settingsOntology.tags[property];
+                const inputElement = this.el.querySelector(`#${property}`);
 
-        await this.db.saveSettings(settings);
+                if (inputElement) {
+                    switch (settingDefinition.type) {
+                        case "string":
+                            settings[property] = inputElement.value;
+                            break;
+                        case "number":
+                            settings[property] = parseFloat(inputElement.value);
+                            break;
+                        case "boolean":
+                            settings[property] = inputElement.checked;
+                            break;
+                        case "select":
+                            settings[property] = inputElement.value;
+                            break;
+                        default:
+                            settings[property] = inputElement.value;
+                    }
+                }
+            }
+        }
+
+        await this.app.settingsManager.saveSettings(settings);
         this.app.settings = settings;
+        this.app.nostr.nostrRelays = settings.nostrRelays;
+        this.app.nostr.nostrPrivateKey = settings.nostrPrivateKey;
+        await this.app.nostr.connectToRelays();
         this.app.showNotification('Settings saved');
     }
 }
