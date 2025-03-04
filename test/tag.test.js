@@ -21,10 +21,10 @@ describe('Tag Component', () => {
         tag.shadow = tag.attachShadow({ mode: 'open' });
         tag.tagDefinition = tagData;
         document.body.appendChild(tag); // Append to document so connectedCallback is called
+        tag.render()
     });
 
     it('should render the tag correctly with the given data', () => {
-        tag.render()
         expect(tag.shadowRoot.innerHTML).toContain(tagData.name);
         // expect(tag.querySelector('.tag-condition').value).toBe(tagData.condition);
     });

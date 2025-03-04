@@ -30,8 +30,9 @@ describe('Edit Autosuggest', () => {
         const ontologyBrowser = { getElement: () => ({}) }; // Mock OntologyBrowser
         const toolbar = { getElement: () => ({}) }; // Mock Toolbar
         const schema = Ontology; // Mock Schema
+        const app = {showNotification: vi.fn()}
 
-        const edit = new Edit({}, yDoc, {}, getTagDefinition, schema);
+        const edit = new Edit({}, yDoc, app, getTagDefinition, schema);
 
         edit.matchesOntology = (word) => {
             return Object.keys(Ontology).some(tagName => tagName.toLowerCase() === word.toLowerCase());

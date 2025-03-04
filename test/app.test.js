@@ -13,7 +13,6 @@ describe('App', () => {
     let app;
 
     beforeEach(async () => {
-        app = new App();
         app = createAppMock();
     });
 
