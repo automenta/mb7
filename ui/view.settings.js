@@ -1,6 +1,7 @@
 import {View} from "./view.js";
 import {GenericForm} from "./generic-form.js";
 import {Ontology} from "../core/ontology.js";
+import { createElement } from '../utils.js';
 
 export class SettingsView extends View {
     constructor(app, db, nostr) {
@@ -27,7 +28,7 @@ export class SettingsView extends View {
             yDoc = new Y.Doc()
         }
 
-        this.settingsForm = new GenericForm(Ontology.Settings, yDoc, 'settings');
+        this.settingsForm = new GenericForm(Ontology.Settings, yDoc, 'settings', this.saveSettings.bind(this));
         const formElement = await this.settingsForm.build();
         this.el.append(formElement);
 
