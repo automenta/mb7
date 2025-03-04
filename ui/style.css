@@ -1,0 +1,57 @@
+/* General styles */
+body {
+    font-family: sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+/* Note details styles */
+.note-details-container {
+    padding: 10px;
+    border-bottom: 1px solid #ccc;
+}
+
+.priority-edit-container {
+    margin-bottom: 5px;
+}
+
+.privacy-container {
+    margin-bottom: 5px;
+}
+
+.tag-input-container {
+    margin-bottom: 5px;
+}
+
+.note-tag-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.tag-item {
+    margin: 5px;
+    padding: 5px 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background-color: #f0f0f0;
+    display: flex;
+    align-items: center;
+}
+
+.tag-item .remove-tag-button {
+    margin-left: 5px;
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+}
+
+/* Editor styles */
+.editor-area {
+    padding: 10px;
+    border: 1px solid #ccc;
+    min-height: 200px;
+    overflow-y: auto;
+}

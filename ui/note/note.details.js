@@ -27,6 +27,7 @@ export class NoteDetails extends HTMLElement {
         privacyContainer.className = 'privacy-container';
 
         const label = document.createElement('label');
+        label.className = 'privacy-label';
         label.textContent = 'Private ';
         privacyContainer.appendChild(label);
 
