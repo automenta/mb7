@@ -10,7 +10,7 @@ Organize, prioritize, and grow thoughts into actionable results: real-time commu
 
 ### Search and Match
 
-- **Persistent Queries:** `NObject`s can act as ongoing search interests when describing 'imaginary' things.
+- **Persistent Queries:** `NObject`s describing 'imaginary' things (hypothetical, with acceptability conditions) act as persistent search queries that match 'real' NObjects (actual measurements/observations)
 - **Semantic Matching:** `NObject`s capture meaning and intent: unambiguously, efficiently, and precisely.
 - **Notifications:** Matches are received and linked via your matching NObject, enabling contact and discussion.
 
