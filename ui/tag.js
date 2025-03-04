@@ -81,36 +81,4 @@ class Tag extends HTMLElement {
                 }
             </style>
         `;
-
-    isValid() {
-        return this.tagDefinition.validate(this.value, this.condition);
     }
-
-    editTag() {
-        this.shadow.innerHTML = '';
-        const tagInput = new TagInput(this.tagDefinition, this.value, this.condition, (newValue, newCondition) => {
-            this.value = newValue;
-            this.condition = newCondition;
-            this.render();
-        });
-        this.shadow.appendChild(tagInput);
-    }
-
-    getValue() {
-        return this.value;
-    }
-
-    getCondition() {
-        return this.condition;
-    }
-
-    getTagDefinition() {
-        return this.tagDefinition;
-    }
-}
-
-if (!customElements.get('data-tag')) {
-    customElements.define('data-tag', Tag);
-}
-
-export { Tag };
