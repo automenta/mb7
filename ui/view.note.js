@@ -111,7 +111,8 @@ export class NoteView extends HTMLElement {
         this.selectedNote = await this.db.get(noteId);
         if (this.selectedNote) {
             if (this.edit) {
-                this.edit.el.remove(); // Remove the previous edit component
+                // NOTEVIEW-1: Remove the previous edit component before creating a new one
+                this.edit.el.remove();
             }
             this.edit = new Edit(this.selectedNote, this.yDoc, this.app, getTagDefinition, this.ontology);
             this.el.appendChild(this.edit.el);

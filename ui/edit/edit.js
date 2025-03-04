@@ -202,8 +202,8 @@ class Edit {
             // Deserialize the tag content
             const tagData = JSON.parse(tagContent);
 
-            // Create a button element for the tag - default rendering as button
-            const tagElement = createElement('button', {className: 'tag-element'}, tagData.name); // Still create button for default
+            // Create a span element for all tags for minimal rendering (EDIT-RENDER-1)
+            const tagElement = createElement('span', {className: 'tag-element'}, `[${tagData.name}]`);
 
             // Add a data attribute to store the tag content
             tagElement.dataset.tagContent = tagContent;
@@ -214,9 +214,10 @@ class Edit {
                 this.editTag(tagContent);
             });
 
-            // Basic styling - for default button rendering
-            tagElement.style.backgroundColor = '#f0f0f0';
-            tagElement.style.border = '1px solid #ccc';
+            // Basic styling for span tag (EDIT-RENDER-1)
+            tagElement.style.backgroundColor = '#eee';
+            tagElement.style.color = '#555';
+            tagElement.style.border = '1px dashed #ccc';
             tagElement.style.borderRadius = '4px';
             tagElement.style.padding = '2px 4px';
             tagElement.style.margin = '2px';
@@ -450,3 +451,5 @@ class Edit {
         };
     }
 }
+
+export {Edit};

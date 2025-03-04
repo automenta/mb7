@@ -64,12 +64,12 @@ class TagInput extends HTMLElement {
         });
         this.appendChild(conditionSelect);
 
-        // Render only text input
+        // TAGINPUT-1: Render only text input
         const inputElement = createElement('input', {type: 'text', value: this.value || ''});
 
         inputElement.addEventListener('change', (e) => {
             this.value = e.target.value;
-            // Basic Validation
+            // TAGINPUT-1: Basic Validation
             if (this.tagDefinition.validate) {
                 if (!this.tagDefinition.validate(this.value, this.condition)) {
                     alert(`Invalid value for tag: ${this.tagDefinition.name}`); // Basic error message
