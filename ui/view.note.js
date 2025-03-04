@@ -1,13 +1,13 @@
 import * as Y from 'yjs';
-import {NoteUI} from '@/ui/note/note.ui.js';
-import {NoteList} from "@/ui/note/note-list.js";
-import {NoteDetails} from "@/ui/note/note.details.js";
-import {TagDisplay} from "@/ui/note/tag-display.js";
-import {MyObjectsList} from "@/ui/note/my-objects-list.js";
-import {GenericListComponent} from "@/ui/generic-list-component.js";
-import {NotesSidebar} from "@/ui/note/note.sidebar.js";
-import {Edit} from "@/ui/edit/edit.js";
-import {getTagDefinition} from "@/core/ontology.js";
+import {NoteUI} from '/ui/note/note.ui.js';
+import {NoteList} from "/ui/note/note-list.js";
+import {NoteDetails} from "/ui/note/note.details.js";
+import {TagDisplay} from "/ui/note/tag-display.js";
+import {MyObjectsList} from "/ui/note/my-objects-list.js";
+import {GenericListComponent} from "/ui/generic-list.js";
+import {NotesSidebar} from "/ui/note/note.sidebar.js";
+import {Edit} from "/ui/edit/edit.js";
+import {getTagDefinition} from "/core/ontology.js";
 
 class NoteCreator {
     constructor(noteManager, noteYjsHandler, yDoc) {

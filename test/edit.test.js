@@ -1,6 +1,6 @@
 import * as Y from 'yjs'
-import {Edit} from "@/ui/edit/edit.js";
-import {Ontology} from "@/core/ontology.js";
+import {Edit} from "/ui/edit/edit.js";
+import {Ontology} from "/core/ontology.js";
 import {describe, expect, it} from "vitest";
 
 describe('Edit Autosuggest', () => {

@@ -135,7 +135,7 @@ export class NoteDetails extends HTMLElement {
                 tagElement.setAttribute('tag-definition', JSON.stringify(tag));
                 tagElement.setAttribute('value', tag.value || '');
                 tagElement.setAttribute('condition', tag.condition || 'is');
-                +tagElement.app = this.noteView.app; // Pass the app instance
+                tagElement.app = this.noteView.app; // Pass the app instance
                 tagsContainer.appendChild(tagElement);
             });
         }

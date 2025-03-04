@@ -1,7 +1,7 @@
 import {createElement} from './utils';
 import {TagInput} from './tag-input';
 
-class Tag extends HTMLElement {
+export class Tag extends HTMLElement {
     constructor() {
         super();
         this.shadow = this.attachShadow({mode: 'open'});
