@@ -21,7 +21,7 @@ describe('App', () => {
             const newNote = {name: 'Test Note', content: 'Test Content'};
             const newObject = await app.createNewObject(newNote);
             expect(newObject).toBeDefined();
-
+            expect(app.db.save).toHaveBeenCalledWith(newObject); // Verify save was called with the new object
             expect(newObject.content).toBe('Test Content');
         });
     });
@@ -29,14 +29,21 @@ describe('App', () => {
     describe('publishNoteToNostr', () => {
         it('should publish the note content to Nostr', async () => {
             app.nostr = {
-                publish: vi.fn(),
+                publish: vi.fn().mockResolvedValue({}), // Mock publish to return a promise
             };
             const note = {content: 'Test Note Content'};
-            console.log('Test: Calling app.publishNoteToNostr with:', note);
             await app.publishNoteToNostr(note);
-            console.log('Test: app.publishNoteToNostr called');
             expect(app.nostr.publish).toHaveBeenCalledWith(note.content);
         });
 
+        it('should handle publish errors', async () => {
+            app.nostr = {
+                publish: vi.fn().mockRejectedValue(new Error('Publish failed')), // Mock publish to reject
+            };
+            app.errorHandler.handleError = vi.fn(); // Spy on handleError
+            const note = {content: 'Test Note Content'};
+            await app.publishNoteToNostr(note);
+            expect(app.errorHandler.handleError).toHaveBeenCalled(); // Verify error handler was called
+        });
     });
 });

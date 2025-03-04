@@ -27,26 +27,34 @@ describe('Matcher', () => {
             const text = 'text';
             const event = {};
             const result = await matcher.matchTagData(tagData, text, event);
-            console.log('Result type:', typeof result);
             expect(result).toBe(false);
         });
+
         it('should return true if condition is "is" and text includes value', async () => {
             getTagDefinition.mockReturnValue({validate: vi.fn().mockReturnValue(true)});
             const tagData = {name: 'test', condition: 'is', value: 'value'.toLowerCase()};
             const text = 'text with value'.toLowerCase();
             const event = {};
             const result = await matcher.matchTagData(tagData, text, event);
-            console.log('Result type:', typeof result);
             expect(result).toBe(true);
         });
+
         it('should return false if condition is "is" and text does not include value', async () => {
             getTagDefinition.mockReturnValue({validate: vi.fn().mockReturnValue(true)});
             const tagData = {name: 'test', condition: 'is', value: 'value'.toLowerCase()};
             const text = 'text without value'.toLowerCase();
             const event = {};
             const result = await matcher.matchTagData(tagData, text, event);
-            console.log('Result type:', typeof result);
             expect(result).toBe(false);
+        });
+
+        it('should handle empty text and value', async () => {
+            getTagDefinition.mockReturnValue({validate: vi.fn().mockReturnValue(true)});
+            const tagData = { name: 'test', condition: 'is', value: '' };
+            const text = '';
+            const event = {};
+            const result = await matcher.matchTagData(tagData, text, event);
+            expect(result).toBe(true); // Empty value is considered to be present in empty text
         });
     });
 
@@ -71,6 +79,15 @@ describe('Matcher', () => {
             app.showNotification = vi.fn();
             const event = {content: 'test', pubkey: 'testpubkey', tags: []};
             await matcher.matchEvent(event);
+            expect(app.showNotification).not.toHaveBeenCalled();
+        });
+
+        it('should handle errors when fetching objects from the database', async () => {
+            app.db.getAll.mockRejectedValue(new Error('Database error'));
+            app.errorHandler.handleError = vi.fn();
+            const event = {content: 'test', pubkey: 'testpubkey', tags: []};
+            await matcher.matchEvent(event);
+            expect(app.errorHandler.handleError).toHaveBeenCalled();
             expect(app.showNotification).not.toHaveBeenCalled();
         });
     });
