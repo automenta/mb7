@@ -144,9 +144,12 @@ class Edit {
                         yMap.set(key, tagData[key]);
                     }
                 }
+                this.editingTagContent = tagContent; // Store the original tag content for updating
             } catch (error) {
                 console.error("Error populating tag YDoc:", error);
             }
+        } else {
+            this.editingTagContent = null;
         }
 
         this.tagForm = new GenericForm(tagDefinition, this.tagYDoc, 'tag', this.saveTag.bind(this));
@@ -164,20 +167,48 @@ class Edit {
             tagData[key] = tagDefinition.deserialize(yValue !== undefined ? yValue : tagDefinition.default);
         }
 
-        // Create a unique ID for the tag
-        const tagId = Math.random().toString(36).substring(2, 15);
+        // If we are editing an existing tag, preserve its ID
+        let tagId;
+        if (this.editingTagContent) {
+            try {
+                const existingTagData = JSON.parse(this.editingTagContent);
+                tagId = existingTagData.id;
+            } catch (error) {
+                console.error("Error parsing existing tag content:", error);
+                tagId = Math.random().toString(36).substring(2, 15); // Generate a new ID if parsing fails
+            }
+        } else {
+            // Create a unique ID for the tag
+            tagId = Math.random().toString(36).substring(2, 15);
+        }
         tagData.id = tagId;
         tagData.name = this.selectedTag.label;
 
         // Serialize the tag data to JSON
         const tagContent = JSON.stringify(tagData);
-
-        // Insert the tag placeholder into the Yjs text
         const tagPlaceholder = `[TAG:${tagContent}]`;
+
         this.yDoc.transact(() => {
-            this.yText.insert(this.editorArea.selectionStart, tagPlaceholder);
+            if (this.editingTagContent) {
+                // Replace the existing tag
+                const text = this.yText.toString();
+                const tagToReplace = `[TAG:${this.editingTagContent}]`;
+                const index = text.indexOf(tagToReplace);
+                if (index !== -1) {
+                    this.yText.delete(index, tagToReplace.length);
+                    this.yText.insert(index, tagPlaceholder);
+                } else {
+                    console.warn("Tag to replace not found in Yjs text!");
+                    this.yText.insert(this.editorArea.selectionStart, tagPlaceholder);
+                }
+            }
+            else {
+                // Insert the tag placeholder into the Yjs text
+                this.yText.insert(this.editorArea.selectionStart, tagPlaceholder);
+            }
         });
 
         console.log('tagData', tagData);
+        this.editingTagContent = null; // Reset editingTagContent
     }
 }
