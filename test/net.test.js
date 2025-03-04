@@ -3,6 +3,21 @@ import {Nostr} from '../core/net.js';
 import {RelayManager} from '../core/net/net.relays.js';
 import {createAppMock} from './test-utils.js';
 
+// Mock WebSocket
+vi.mock('websocket', () => {
+    const WebSocket = vi.fn(() => {
+        return {
+            readyState: 1,
+            OPEN: 1,
+            close: vi.fn(),
+            addEventListener: vi.fn(),
+            removeEventListener: vi.fn(),
+            send: vi.fn(),
+        };
+    });
+    return {w3cwebsocket: WebSocket};
+});
+
 describe('Nostr and RelayManager', () => {
     let closeSpy;
     let nostr;
