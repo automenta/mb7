@@ -292,24 +292,6 @@ export class NoteView extends HTMLElement {
 
         li.addEventListener('click', async () => {
             await this.selectNote(noteId);
-        this.app.db.get(noteId).then(note => {
-            if (note) {
-                const yNoteMap = this.getYNoteMap(noteId);
-                if (yNoteMap) {
-                    yNoteMap.observe((event) => {
-                        if (event.changes.keys.has("name")) {
-                            nameElement.textContent = yNoteMap.get("name");
-                        }
-                        if (event.changes.keys.has("content")) {
-                            this.edit.contentHandler.deserialize(yNoteMap.get("content"));
-                        }
-                    });
-                    nameElement.textContent = yNoteMap.get("name") || note.name;
-                }
-                nameElement.classList.add('note-name');
-            } else {
-                nameElement.textContent = 'Error loading note - DEBUG';
-            }
         });
 
         return li;
@@ -335,6 +317,20 @@ export class NoteView extends HTMLElement {
                 if (listItem) {
                     listItem.classList.add('selected');
                 }
+
+                const yNoteMap = this.getYNoteMap(noteId);
+                if (yNoteMap) {
+                    yNoteMap.observe((event) => {
+                        if (event.changes.keys.has("name")) {
+                            nameElement.textContent = yNoteMap.get("name");
+                        }
+                        if (event.changes.keys.has("content")) {
+                            this.edit.contentHandler.deserialize(yNoteMap.get("content"));
+                        }
+                    });
+                    nameElement.textContent = yNoteMap.get("name") || note.name;
+                }
+                nameElement.classList.add('note-name');
             }
         } catch (error) {
             this.app.errorHandler.handleError(error, 'Error selecting note');
