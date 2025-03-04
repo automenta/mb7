@@ -1,4 +1,5 @@
-import {vi} from 'vitest';
+test/test-utils.js
+import { vi } from 'vitest';
 
 export function createAppMock() {
     const app = {
@@ -10,22 +11,33 @@ export function createAppMock() {
             get: vi.fn(),
             getAll: vi.fn(),
         },
-        showNotification: vi.fn(),
-        createNewObject: vi.fn(async (newNote) => {
-            await app.db.save({id: "test-id", name: newNote.name, content: newNote.content});
-            return {name: 'Test Note', content: 'Test Content'}
-        }),
-        nostr: {
-            publish: vi.fn()
+        errorHandler: {
+            handleError: vi.fn(),
         },
-        publishNoteToNostr: vi.fn(async (note) => {
-            app.nostr.publish(note.content);
-        }),
-        getTagDefinition: vi.fn(),
-        schema: {},
+        ontology: {},
+        noteManager: {
+            createNote: vi.fn(),
+            saveObject: vi.fn(),
+        },
+        relayManager: {
+            connect: vi.fn(),
+            disconnectFromAllRelays: vi.fn(),
+            updateRelayStatus: vi.fn(),
+            addRelayObject: vi.fn(),
+            removeRelayObject: vi.fn(),
+        },
+        signaling: {
+            connectToRelays: vi.fn(),
+            sendSignal: vi.fn(),
+            subscribeSignals: vi.fn(),
+            unsubscribeSignals: vi.fn(),
+            queueIceCandidate: vi.fn(),
+            sendIceCandidates: vi.fn(),
+        },
         monitoring: {
             errorCount: 0,
         },
+        showNotification: vi.fn(),
     };
     return app;
 }

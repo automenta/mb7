@@ -1,4 +1,5 @@
-import {createElement} from '../utils';
+ui/note/note.create.js
+import { createElement } from '../utils.js';
 
 export class CreateNoteButton {
     constructor(app, noteView) {
@@ -10,7 +11,7 @@ export class CreateNoteButton {
 
     handleClick() {
         this.app.createNote().then(() => {
-            this.noteView.loadNotes();
+            this.noteView.renderNotesList();
         });
     }
 

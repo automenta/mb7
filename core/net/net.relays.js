@@ -1,5 +1,4 @@
-import {Relay} from 'nostr-tools';
-
+core/net/net.relays.js
 export class RelayManager {
     constructor(nostr, relays, relayStatuses, relayObjects, relayConnected, showNotification) {
         this.nostr = nostr;
@@ -10,16 +9,27 @@ export class RelayManager {
         this.showNotification = showNotification;
     }
 
-    setRelays(relays) {
-        this.disconnectFromAllRelays();
-        this.relays = relays.map(relay => typeof relay === 'string' ? relay : relay.url);
-        this.connect();
-    }
-
     connect() {
         this.disconnectFromAllRelays();
         this.connectToRelays();
     }
+
+    disconnectFromAllRelays() {
+        for (const relayUrl in this.relayObjects) {
+            this.disconnectRelay(relayUrl);
+        }
+        this.relayObjects = {};
+        this.relayConnected = false;
+    }
+
+    disconnectRelay(relayUrl) {
+        if (this.relayObjects[relayUrl]) {
+            this.relayObjects[relayUrl].disconnect();
+            delete this.relayObjects[relayUrl];
+            this.updateRelayStatus(relayUrl, 'disconnected');
+        }
+    }
+
 
     connectToRelays() {
         if (this.relays.length === 0) {
@@ -33,86 +43,36 @@ export class RelayManager {
     }
 
     async connectToRelay(relayUrl) {
-        console.log("RelayManager.connectToRelay() called");
-
-        console.log('RelayManager.connectToRelay() called', relayUrl);
-        if (this.relayStatuses[relayUrl]?.status === "connecting" || this.relayStatuses[relayUrl]?.status === "connected") {
-            return;
-        }
-
-        this.relayStatuses[relayUrl] = {status: "connecting"};
-
         try {
-            const relay = await Relay.connect(relayUrl);
-            this.relayObjects[relayUrl] = relay;
-            console.log("Relay object:", relay);
-
-            await this.onOpen(relay);
-
+            await this.nostr.connectToRelays();
+            this.updateRelayStatus(relayUrl, 'connecting');
+            this.relayConnected = true;
         } catch (error) {
-            console.error("WebSocket connection error:", error);
-            this.relayStatuses[relayUrl] = {status: "error"};
+            console.error(`Failed to connect to relay ${relayUrl}:`, error);
+            this.showNotification(`Failed to connect to relay ${relayUrl}: ${error.message}`, 'error');
+            this.updateRelayStatus(relayUrl, 'error');
         }
     }
 
-    async onOpen(relay) {
-        console.log('RelayManager.onOpen() called', relay.url);
-        try {
-            console.log("Connected to relay:", relay.url);
-            this.relayStatuses[relay.url] = {status: "connected"};
-            await this.relayConnected(relay);
-        } catch (error) {
-            console.error("Error handling onOpen:", error);
-        }
+
+    updateRelayStatus(relayUrl, status) {
+        this.relayStatuses[relayUrl] = status;
+        this.notifyRelayStatusUpdate(relayUrl, status);
     }
 
-    async onNotice(relay, notice) {
-        try {
-            console.log(`NOTICE from ${relay.url}: ${notice}`);
-            this.app.showNotification(`NOTICE from ${relay.url}: ${notice}`, "warning");
-        } catch (error) {
-            console.error("Error handling notice:", error);
-        }
+    addRelayObject(relayUrl, relay) {
+        this.relayObjects[relayUrl] = relay;
     }
 
-    async onClose(relay) {
-        try {
-            console.log("Disconnected from relay:", relay.url);
-            console.log("Relay status before update:", this.relayStatuses[relay.url]);
-            if (this.relayStatuses[relay.url]) {
-                this.relayStatuses[relay.url].status = "disconnected";
-            }
-            console.log("Relay status after update:", this.relayStatuses[relay.url]);
-        } catch (error) {
-            console.error("Error handling close:", error);
-        }
+    removeRelayObject(relayUrl) {
+        delete this.relayObjects[relayUrl];
     }
 
-    async disconnectFromAllRelays() {
-        try {
-            for (const relayUrl in this.relayObjects) {
-                console.log('disconnectFromAllRelays - relayUrl:', relayUrl);
-                console.log('disconnectFromAllRelays - relay:', this.relayObjects[relayUrl]);
-                await this.relayObjects[relayUrl].close();
-            }
-            this.relayStatuses = {};
-            this.relayObjects = {};
 
-            // Unsubscribe from all subscriptions
-            for (const relayUrl in this.relayObjects) {
-                const relay = this.relayObjects[relayUrl];
-                const subscriptions = this.nostr.getSubscriptions();
-                for (const subId in subscriptions) {
-                    try {
-                        await relay.unsubscribe({id: subId});
-                    } catch (error) {
-                        console.error("Error unsubscribing:", error);
-                    }
-                }
-                await relay.close();
-            }
-        } catch (error) {
-            console.error("Error disconnecting from relays:", error);
-        }
+    notifyRelayStatusUpdate(relayUrl, status) {
+        const event = new CustomEvent('relaystatusupdate', {
+            detail: { relayUrl, status }
+        });
+        document.dispatchEvent(event);
     }
 }

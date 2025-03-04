@@ -1,36 +1,31 @@
-export class NotesToolbar extends HTMLElement {
-    constructor() {
-        super();
+ui/note/note.toolbar.js
+import { createElement } from '../utils.js';
 
-        this.el = document.createElement('div');
-        this.el.className = 'notes-toolbar';
-
-        const title = document.createElement('span');
-        title.textContent = 'Notes';
-        this.el.appendChild(title);
-
-        const actions = document.createElement('div');
-        actions.className = 'notes-toolbar-actions';
-        this.el.appendChild(actions);
-
-        const searchButton = document.createElement('button');
-        searchButton.textContent = 'Search';
-        actions.appendChild(searchButton);
-
-        const addNoteButton = document.createElement('button');
-        addNoteButton.textContent = 'Add';
-        addNoteButton.addEventListener('click', () => {
-            // TODO: Implement add note functionality
-            console.log('Add note clicked');
-        });
-        actions.appendChild(addNoteButton);
+export class NoteToolbar {
+    constructor(noteView) {
+        this.noteView = noteView;
+        this.el = createElement('div', {className: 'note-toolbar'});
+        this.elements = {};
+        this.build();
     }
+
+    build() {
+        this.elements.deleteButton = this.createDeleteButton();
+
+        this.el.append(this.elements.deleteButton);
+    }
+
+
+    createDeleteButton() {
+        const deleteButton = createElement('button', {className: 'delete-note-button'}, 'Delete Note');
+        deleteButton.addEventListener('click', () => {
+            this.noteView.handleDeleteNote();
+        });
+        return deleteButton;
+    }
+
 
     render() {
         return this.el;
     }
-}
-
-if (!customElements.get('notes-toolbar')) {
-    customElements.define('notes-toolbar', NotesToolbar);
 }

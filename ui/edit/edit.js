@@ -1,11 +1,13 @@
-import {createElement} from '../utils.js';
-import {YjsHelper} from '../../core/yjs-helper';
-import {SuggestionDropdown} from './suggest.dropdown.js';
-import {Autosuggest} from './suggest.js';
-import {OntologyBrowser} from './ontology-browser.js';
-import {GenericForm} from '../generic-form.js';
+ui/edit/edit.js
 import * as Y from 'yjs';
-import './edit.css';
+import { YjsHelper } from '../yjs-helper.js';
+import { createElement } from '../utils.js';
+import { SuggestionDropdown } from './suggestion-dropdown.js';
+import { OntologyBrowser } from './ontology-browser.js';
+import { renderContent } from '../content-view-renderer.js';
+import { TagManager } from '../tag-manager.js';
+import { EditToolbar } from './edit.toolbar.js';
+
 
 class Edit {
     constructor(note, yDoc, app, getTagDefinition, schema) {
@@ -17,11 +19,12 @@ class Edit {
         this.el = createElement('div', {className: 'edit-view'});
         this.app = app;
         this.suggestionDropdown = new SuggestionDropdown();
-        this.autosuggest = new Autosuggest(this);
-        this.selectedTag = null;
-        this.tagYDoc = new Y.Doc();
-        this.debouncedSaveContent = this.debounce(this.saveContent, 500);
+        this.autosuggest = this.createAutosuggest();
+        this.ontologyBrowser = new OntologyBrowser(this, this.handleTagSelection.bind(this));
+        this.tagManager = new TagManager(note, app, getTagDefinition);
+        this.editToolbar = new EditToolbar(this);
     }
+
 
     render() {
         this.el.innerHTML = '';
@@ -32,163 +35,163 @@ class Edit {
         this.attachEventListeners();
         this.renderContent();
         this.yText.observe(() => this.renderContent());
+        return this.el;
     }
 
+
     renderEditorArea() {
-        this.editorArea = createElement('div', {className: 'editor-area', contentEditable: true, spellCheck: false});
+        this.editorArea = createElement('div', {className: 'editor-area'});
+        this.editorArea.contentEditable = true;
+        this.editorArea.setAttribute('contenteditable', 'true');
+        this.editorArea.setAttribute('spellcheck', 'true');
+        this.editorArea.setAttribute('autocorrect', 'true');
+        this.editorArea.setAttribute('autocomplete', 'off');
+        this.editorArea.setAttribute('data-gramm_editor', 'false');
         this.el.appendChild(this.editorArea);
-        this.autosuggest.apply();
     }
 
     renderDetailsArea() {
         this.detailsArea = createElement('div', {className: 'details-area'});
+        this.detailsArea.innerHTML = `<h2>Details</h2>`;
         this.el.appendChild(this.detailsArea);
     }
 
     renderOntologyBrowser() {
-        this.ontologyBrowser = new OntologyBrowser(this, this.handleTagSelected.bind(this));
-        this.el.appendChild(this.ontologyBrowser.getElement());
-        this.ontologyBrowser.render(this.schema);
+        this.ontologyBrowserContainer = createElement('div', {className: 'ontology-browser-container'});
+        this.ontologyBrowserContainer.appendChild(this.ontologyBrowser.container);
+        this.el.appendChild(this.ontologyBrowserContainer);
     }
 
     renderTagEditArea() {
         this.tagEditArea = createElement('div', {className: 'tag-edit-area'});
-        this.tagEditArea.style.display = 'none';
+        this.tagEditArea.appendChild(this.tagManager.render());
         this.el.appendChild(this.tagEditArea);
     }
 
+
     attachEventListeners() {
-        this.editorArea.addEventListener('input', () => this.autosuggest.debouncedApply());
-        this.editorArea.addEventListener('keydown', (event) => this.autosuggest.handleKeyDown(event));
-        this.el.addEventListener('notify', (event) => this.app.notificationManager.showNotification(event.detail.message, event.detail.type));
-        this.editorArea.addEventListener('blur', () => this.debouncedSaveContent());
+        this.editorArea.addEventListener('input', () => this.handleInput());
+        this.editorArea.addEventListener('keydown', (event) => this.handleKeyDown(event));
+        this.editorArea.addEventListener('keyup', () => this.handleInput());
     }
 
-    async saveContent() {
-        this.note.content = this.serializeContent();
-        await this.app.noteManager.saveObject(this.note);
-    }
-
-    serializeContent() {
-        return this.editorArea.innerHTML;
-    }
 
     renderContent() {
-        const selection = window.getSelection();
-        let range;
-        if (selection.rangeCount > 0) {
-            range = selection.getRangeAt(0);
-        }
-
-        this.editorArea.innerHTML = this.note.content;
-
-        if (range) {
-            selection.removeAllRanges();
-            selection.addRange(range);
-        }
+        this.editorArea.innerHTML = '';
+        this.editorArea.appendChild(renderContent(this.yText));
     }
 
 
-    debounce(func, wait) {
-        let timeout;
-        return function executedFunction(...args) {
-            const later = () => {
-                timeout = null;
-                func.apply(this, args);
-            };
-            clearTimeout(timeout);
-            timeout = setTimeout(later, wait);
-        };
-    }
-
-    getElement() {
-        return this.el;
-    }
-
-    handleTagSelected(tagDefinition) {
-        if (this.selectedTag) {
-            this.clearTagEditArea();
-        }
-
-        this.selectedTag = tagDefinition;
-        this.showTagEditArea();
-        this.renderTagForm(tagDefinition);
-        this.renderTagActions();
-    }
-
-    clearTagEditArea() {
-        this.tagEditArea.style.display = 'none';
-        this.tagEditArea.innerHTML = '';
-        this.selectedTag = null;
-        this.tagYDoc = new Y.Doc();
-    }
-
-    showTagEditArea() {
-        this.tagEditArea.style.display = 'block';
-    }
-
-    renderTagForm(tagDefinition) {
-        const form = new GenericForm(
-            {tags: {[tagDefinition.name]: tagDefinition}},
-            this.tagYDoc,
-            this.note.id,
-            () => {},
-            this.app
-        );
-
-        form.build().then(formElement => {
-            this.tagEditArea.appendChild(formElement);
+    handleInput() {
+        const text = this.editorArea.textContent;
+        this.yDoc.transact(() => {
+            this.yText.delete(0, this.yText.length);
+            this.yText.insert(0, text);
         });
     }
 
-    renderTagActions() {
-        const saveButton = createElement('button', {className: 'save-button'}, 'Save Tag');
-        saveButton.addEventListener('click', () => this.saveTag(this.selectedTag.name));
-        this.tagEditArea.appendChild(saveButton);
 
-        const deleteTagButton = createElement('button', {className: 'delete-tag-button'}, 'Delete Tag');
-        deleteTagButton.addEventListener('click', () => this.deleteTag(this.selectedTag.name));
-        this.tagEditArea.appendChild(deleteTagButton);
-    }
-
-    async saveTag(tagName) {
-        const tagValue = this.tagYDoc.getMap('data').get(tagName);
-        if (tagValue !== undefined) {
-            if (!this.note.tags) {
-                this.note.tags = [];
+    handleKeyDown(event) {
+        if (event.key === 'Enter') {
+            this.handleInput();
+            event.preventDefault();
+        }
+        if (event.key === ' ' && this.suggestionDropdown.isVisible()) {
+            event.preventDefault();
+            const selectedSuggestion = this.suggestionDropdown.getSelectedSuggestion();
+            if (selectedSuggestion) {
+                this.applySuggestion(selectedSuggestion);
             }
-            const existingTagIndex = this.note.tags.findIndex(tag => tag.name === tagName);
-            if (existingTagIndex > -1) {
-                this.note.tags[existingTagIndex].value = tagValue;
-            } else {
-                this.note.tags.push({name: tagName, value: tagValue});
-            }
-            await this.app.noteManager.saveObject(this.note);
-            this.app.notificationManager.showNotification(`Tag '${tagName}' saved successfully.`, 'success');
-            this.clearTagEditArea();
-            this.renderContent();
-        } else {
-            this.app.notificationManager.showNotification(`Value for tag '${tagName}' is undefined. Tag not saved.`, 'warning');
+            this.suggestionDropdown.hide();
+        }
+        if (event.key === 'Escape' && this.suggestionDropdown.isVisible()) {
+            this.suggestionDropdown.hide();
+        }
+        if (event.key === 'ArrowDown' && this.suggestionDropdown.isVisible()) {
+            event.preventDefault();
+            this.suggestionDropdown.selectNextSuggestion();
+        }
+        if (event.key === 'ArrowUp' && this.suggestionDropdown.isVisible()) {
+            event.preventDefault();
+            this.suggestionDropdown.selectPreviousSuggestion();
         }
     }
 
 
-    async deleteTag(tagName) {
-        if (this.note.tags) {
-            const tagIndex = this.note.tags.findIndex(tag => tag.name === tagName);
-            if (tagIndex > -1) {
-                this.note.tags.splice(tagIndex, 1);
-                await this.app.noteManager.saveObject(this.note);
-                this.app.notificationManager.showNotification(`Tag '${tagName}' deleted successfully.`, 'success');
-                this.clearTagEditArea();
-                this.renderContent();
-            } else {
-                this.app.notificationManager.showNotification(`Tag '${tagName}' not found in note.`, 'warning');
+    createAutosuggest() {
+        return {
+            suggestTags: async (query) => {
+                const suggestions = Object.keys(this.app.ontology)
+                    .filter(tagName => tagName.toLowerCase().startsWith(query.toLowerCase()))
+                    .map(tagName => ({ name: tagName }));
+                return suggestions;
+            },
+
+            renderSuggestions: (suggestions) => {
+                this.suggestionDropdown.clear();
+                if (suggestions.length > 0) {
+                    suggestions.forEach(suggestion => {
+                        this.suggestionDropdown.addSuggestion(suggestion);
+                    });
+                    this.suggestionDropdown.show(this.editorArea);
+                } else {
+                    this.suggestionDropdown.hide();
+                }
+            },
+
+            clearSuggestions: () => {
+                this.suggestionDropdown.clear();
+                this.suggestionDropdown.hide();
             }
+        };
+    }
+
+
+    async handleTagSelection(tagName) {
+        const tagDef = this.getTagDefinition(tagName);
+        if (tagDef) {
+            this.tagManager.addTag(tagName, tagDef);
         } else {
-            this.app.notificationManager.showNotification(`No tags to delete in this note.`, 'info');
+            console.warn(`No tag definition found for ${tagName}`);
+        }
+    }
+
+
+    applySuggestion(suggestion) {
+        const cursorPosition = this.editorArea.selectionStart;
+        const textBeforeCursor = this.editorArea.textContent.substring(0, cursorPosition);
+        const lastWordMatch = textBeforeCursor.match(/(\w+)$/);
+        if (lastWordMatch) {
+            const wordToReplace = lastWordMatch[1];
+            const replacementText = suggestion.name + ' ';
+            const newText = textBeforeCursor.replace(/(\w+)$/, replacementText) + this.editorArea.textContent.substring(cursorPosition);
+
+            this.yDoc.transact(() => {
+                this.yText.delete(0, this.yText.length);
+                this.yText.insert(0, newText);
+            });
+            this.renderContent();
+            const newCursorPosition = textBeforeCursor.length - wordToReplace.length + replacementText.length;
+            this.editorArea.focus();
+            document.getSelection().collapse(this.editorArea.childNodes[0], newCursorPosition);
+
+        }
+    }
+
+
+    async triggerAutosuggest(query) {
+        if (query.trim() === '') {
+            this.autosuggest.clearSuggestions();
+            return;
+        }
+
+        try {
+            const suggestions = await this.autosuggest.suggestTags(query);
+            this.autosuggest.renderSuggestions(suggestions);
+        } catch (error) {
+            console.error("Error fetching suggestions:", error);
         }
     }
 }
 
-export {Edit};
+export { Edit };

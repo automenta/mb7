@@ -1,18 +1,31 @@
- class Tag extends HTMLElement {
-    /**
-     * @param {TagDefinition} tagDefinition
-     * @param {string} value
-     * @param {string} condition
-     * @param {function} onRemove
-     */
-    constructor(tagDefinition, value, condition, onRemove) {
+ui/tag.js
+import { createElement } from '../utils.js';
+
+export class Tag extends HTMLElement {
+    constructor() {
         super();
-        this.shadow = this.attachShadow({ mode: 'open' });
-        this.tagDefinition = tagDefinition;
-        this.value = value;
-        this.condition = condition;
-        this.onRemove = onRemove;
+        this.shadow = this.attachShadow({mode: 'open'});
     }
+
+    static get observedAttributes() {
+        return ['tag-name'];
+    }
+
+    attributeChangedCallback(name, oldValue, newValue) {
+        if (name === 'tag-name') {
+            this.tagName = newValue;
+            this.render();
+        }
+    }
+
+
+    connectedCallback() {
+        if (!this.tagName) {
+            this.tagName = this.getAttribute('tag-name') || 'default-tag';
+        }
+        this.render();
+    }
+
 
     render() {
         this.shadow.innerHTML = `
@@ -24,32 +37,25 @@
                 border: 1px solid #ccc;
                 border-radius: 4px;
                 padding: 2px 4px;
-                margin: 2px;
-                font-size: 0.85em;
-            }
-
-            .tag-remove-button {
-                margin-left: 4px;
+                margin: 2px 2px;
                 cursor: pointer;
             }
-        </style>
-            <span class="tag-name">${this.tagDefinition.name}</span>${this.condition}${this.value}
-            <span class="tag-remove-button">❌</span>
-        `;
 
-        this.shadow.querySelector('.tag-remove-button').addEventListener('click', () => {
-            if (this.onRemove) {
-                this.onRemove();
+            .tag-name {
+                margin-right: 4px;
             }
-        });
-    }
 
-    connectedCallback() {
-        if (!this.rendered) {
-            this.render();
-            this.rendered = true;
-        }
+            .remove-icon {
+                opacity: 0.6;
+                font-size: 0.8em;
+            }
+        </style>
+        <div class="tag">
+            <span class="tag-name">${this.tagName}</span>
+            <span class="remove-icon"></span>
+        </div>
+        `;
     }
 }
 
-customElements.define('tag-element', Tag);
+customElements.define('nt-tag', Tag);

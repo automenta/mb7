@@ -1,5 +1,6 @@
-import {GenericListComponent} from '../generic-list.js';
-import {createElement} from '../utils.js';
+ui/note/my-objects-list.js
+import { GenericListComponent } from '../generic-list.component.js';
+import { createElement } from '../utils.js';
 
 export class MyObjectsList {
     constructor(noteView, yMyObjectsList, app) {
@@ -13,18 +14,15 @@ export class MyObjectsList {
         try {
             const object = await this.app.db.get(objectId);
             if (!object) {
-                console.warn(`Object with ID ${objectId} not found.`);
-                this.app.notificationManager.showNotification(`Object with ID ${objectId} not found.`, 'warning');
-                return document.createTextNode(`Object ID: ${objectId.substring(0, 8)}... (Not Found)`);
+                return 'Object not found';
             }
-            const objectName = object.name || `Object ID: ${objectId.substring(0, 8)}...`;
-            return document.createTextNode(objectName);
+            return object.name || object.id;
         } catch (error) {
-            console.error("Error fetching object:", error);
-            this.app.notificationManager.showNotification(`Error fetching object with ID ${objectId}: ${error.message}`, 'error');
-            return document.createTextNode(`Object ID: ${objectId.substring(0, 8)}... (Error)`);
+            console.error('Error rendering list item:', error);
+            return 'Error loading item';
         }
     }
+
 
     render() {
         const myObjectsArea = this.noteView.noteUI.createMyObjectsArea();

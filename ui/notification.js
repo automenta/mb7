@@ -1,3 +1,4 @@
+ui/notification.js
 class Notification {
     constructor(message, type = "info") {
         this.message = message;
@@ -34,17 +35,17 @@ class Notification {
     }
 
     animateIn() {
-        return this.animate({
+        return this.element.animate({
             right: '10px',
             opacity: 1
-        }, {duration: 300, fill: 'forwards'});
+        }, {duration: 300, fill: 'forwards'}).finished;
     }
 
     animateOut() {
-        return this.animate({
+        return this.element.animate({
             right: '-300px',
             opacity: 0
-        }, {duration: 300, fill: 'forwards'});
+        }, {duration: 300, fill: 'forwards'}).finished;
     }
 
     remove() {
@@ -52,4 +53,4 @@ class Notification {
     }
 }
 
-export default Notification;
+export { Notification };

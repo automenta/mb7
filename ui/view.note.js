@@ -1,14 +1,13 @@
+ui/view.note.js
 import * as Y from 'yjs';
-import {NoteUI} from '@/ui/note/note.ui.js';
-import {NoteList} from "@/ui/note/note-list.js";
-import {NoteDetails} from "@/ui/note/note.details.js";
-import {TagDisplay} from "@/ui/note/tag-display.js";
-import {MyObjectsList} from "@/ui/note/my-objects-list.js";
-import {GenericListComponent} from "@/ui/generic-list.js";
-import {NotesSidebar} from "@/ui/note/note.sidebar.js";
-import {Edit} from "@/ui/edit/edit.js";
-import {getTagDefinition} from "@/core/ontology.js";
-import {createElement} from "@/ui/utils.js";
+import { View } from '../view.js';
+import { NotesSidebar } from '../note/note.sidebar.js';
+import { NoteDetails } from '../note/note-details.js';
+import { Edit } from './edit/edit.js';
+import { NoteToolbar } from '../note/note.toolbar.js';
+import { MyObjectsList } from '../note/my-objects-list.js';
+import { NoteUI } from './note.ui.js';
+
 
 class NoteCreator {
     constructor(noteManager, noteYjsHandler, yDoc) {
@@ -30,16 +29,19 @@ class NoteCreator {
                         this.yDoc.getMap('notes').set(newObject.id, newYNoteMap);
                     });
                 }
+                return newObject;
             }
+            return null;
         } catch (error) {
             console.error("Error creating note:", error);
-            this.app.notificationManager.showNotification(`Failed to create note: ${error.message}`, 'error');
+            return null;
         }
     }
 }
 
+
 export class NoteView extends HTMLElement {
-    constructor(app, store, db, errorHandler, noteManager, noteYjsHandler, notificationManager, ontology) {
+    constructor(app, store, db, errorHandler, noteManager, noteYjsHandler, notificationManager, ontology, matcher, nostr) {
         super();
         this.app = app;
         this.store = store;
@@ -49,93 +51,47 @@ export class NoteView extends HTMLElement {
         this.noteYjsHandler = noteYjsHandler;
         this.notificationManager = notificationManager;
         this.ontology = ontology;
+        this.matcher = matcher;
+        this.nostr = nostr;
+        this.noteUI = new NoteUI(this);
+        this.shadow = this.attachShadow({mode: 'open'});
+        this.el = this.noteUI.render();
+        this.shadow.appendChild(this.el);
 
-        this.yDoc = new Y.Doc();
-        this.noteUI = new NoteUI();
-        this.noteList = new NoteList(this.app, this, this.yDoc, this.yDoc.getArray('notesList'));
-        this.notesListComponent = new GenericListComponent(this, this.noteList.yNotesList);
-        this.noteDetails = new NoteDetails(this, this.app);
-        this.tagDisplay = new TagDisplay(this.app);
-        this.myObjectsList = new MyObjectsList(this, this.yDoc.getArray('myObjects'), this.app);
-        this.noteCreator = new NoteCreator(noteManager, noteYjsHandler, this.yDoc);
+
         this.notesSidebar = new NotesSidebar(this.app, this);
-        this.edit = null;
-        this.selectedNote = null;
+        this.noteDetails = new NoteDetails(this.app, this);
+        this.noteToolbar = new NoteToolbar(this);
+        this.noteCreator = new NoteCreator(this.noteManager, this.noteYjsHandler, this.store.ydoc);
+        this.myObjectsList = new MyObjectsList(this, this.store.yMyObjectsList, this.app);
 
-        this.el = createElement('div', {className: 'notes-view'});
-        this.el.style.display = 'flex';
-        this.el.style.flexDirection = 'row';
+        this.selectedNoteId = null;
+        this.editView = null;
     }
 
-    async build() {
-        this.appendChild(this.el);
-        this.el.appendChild(this.notesSidebar.render());
-        this.el.appendChild(this.notesListComponent.render());
-        this.el.appendChild(this.noteDetails.render());
-        this.el.appendChild(this.tagDisplay.render());
-        this.el.appendChild(this.myObjectsList.render());
-        await this.createNote();
 
-        await this.store.subscribe(() => {
-            this.updateView();
-        });
+    async connectedCallback() {
+        this.render();
+        this.loadNotes();
     }
 
-    async updateView() {
-        const selectedNoteId = this.store.getState().selectedNoteId;
-        if (selectedNoteId && selectedNoteId !== this.selectedNote?.id) {
-            await this.loadNote(selectedNoteId);
+
+    async loadNotes() {
+        try {
+            const notes = await this.noteManager.getAllNotes();
+            this.renderNotesList(notes);
+        } catch (error) {
+            console.error("Error loading notes:", error);
         }
     }
 
-    async loadNote(noteId) {
-        this.selectedNote = await this.db.get(noteId);
-        if (this.selectedNote) {
-            if (this.edit) {
-                this.edit.el.remove();
-                this.edit = null;
-            }
-            this.edit = new Edit(this.selectedNote, this.yDoc, this.app, getTagDefinition, this.ontology);
-            this.el.appendChild(this.edit.el);
-        }
-    }
 
-    renderListItem(noteIdArray) {
-        const noteId = noteIdArray[0];
-        const liContent = document.createElement('div');
-        liContent.dataset.id = noteId;
-        liContent.classList.add('note-list-item');
-
-        this.renderNoteName(liContent, noteId);
-        this.renderDeleteButton(liContent, noteId);
-
-        liContent.addEventListener('click', async () => {
-            await this.selectNote(noteId);
-        });
-
-        return liContent;
-    }
-
-    renderNoteName(liContent, noteId) {
-        const nameElement = document.createElement('div');
-        nameElement.style.fontWeight = 'bold';
-        const yNoteMap = this.yDoc.getMap('notes').get(noteId);
-        const noteName = yNoteMap ? yNoteMap.get('name') : `Note ID: ${noteId.substring(0, 8)}...`;
-        nameElement.textContent = noteName;
-        liContent.appendChild(nameElement);
-    }
-
-    renderDeleteButton(liContent, noteId) {
-        const deleteButton = document.createElement('button');
-        deleteButton.textContent = 'Delete';
-        deleteButton.addEventListener('click', async (event) => {
-            event.stopPropagation();
-            const note = await this.db.get(noteId);
-            if (note) {
-                await this.noteList.handleDeleteNote(note);
-            }
-        });
-        liContent.appendChild(deleteButton);
+    render() {
+        this.noteUI.renderSidebar(this.notesSidebar);
+        this.noteUI.renderToolbar(this.noteToolbar);
+        this.noteUI.renderDetails(this.noteDetails);
+        this.noteUI.renderMyObjectsList(this.myObjectsList);
+        return this.el;
     }
 
 
@@ -143,12 +99,82 @@ export class NoteView extends HTMLElement {
         await this.noteCreator.createNote();
     }
 
-    remove() {
-        this.el.remove();
+
+    async renderNotesList(notes = []) {
+        this.notesSidebar.renderNoteList(notes);
     }
 
-    async selectNote(noteId) {
-        this.store.dispatch({type: 'SET_SELECTED_NOTE', payload: noteId});
+
+    async handleNoteSelect(noteId) {
+        this.selectedNoteId = noteId;
+        const note = await this.noteManager.getNote(noteId);
+        this.noteDetails.setSelectedNote(note);
+        this.renderEditView(note);
+    }
+
+
+    async renderEditView(note) {
+        if (this.editView) {
+            this.editView.remove();
+        }
+
+        const ydoc = await this.app.db.getYDoc(note.id);
+        if (!ydoc) {
+            console.log("Creating new YDoc for note ID:", note.id);
+            return await this.createNewYDocForNote(note);
+        }
+        console.log("YDoc already exists for note ID:", note.id);
+        this.editView = new Edit(note, ydoc, this.app, this.getTagDefinition.bind(this), {});
+        this.noteUI.renderEdit(this.editView);
+    }
+
+    getTagDefinition(tagName) {
+        for (const category in this.ontology) {
+            if (this.ontology[category].tags && this.ontology[category].tags[tagName]) {
+                return this.ontology[category].tags[tagName];
+            }
+        }
+        return null;
+    }
+
+
+    async createNewYDocForNote(note) {
+        const ydoc = new Y.Doc();
+        await this.app.db.saveYDoc(note.id, ydoc);
+        this.editView = new Edit(note, ydoc, this.app, this.getTagDefinition.bind(this), {});
+        this.noteUI.renderEdit(this.editView);
+    }
+
+
+    async handleDeleteNote() {
+        if (!this.selectedNoteId) {
+            this.notificationManager.showNotification("No note selected for deletion.", 'warning');
+            return;
+        }
+
+        try {
+            await this.noteManager.deleteNote(this.selectedNoteId);
+            this.notificationManager.showNotification("Note deleted successfully.", 'success');
+            this.clearView();
+            await this.loadNotes();
+        } catch (error) {
+            console.error("Error deleting note:", error);
+            this.notificationManager.showNotification("Failed to delete note.", 'error');
+        }
+    }
+
+
+    clearView() {
+        if (this.editView) {
+            this.editView.remove();
+            this.editView = null;
+        }
+        this.noteDetails.setSelectedNote(null);
+    }
+
+
+    remove() {
+        this.el.remove();
     }
 }
 

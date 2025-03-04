@@ -1,91 +1,127 @@
+ui/tag-input.js
+const tagInputTemplate = document.createElement('template');
+tagInputTemplate.innerHTML = /*html*/`
+    <style>
+    .tag-input-container {
+        display: flex;
+        align-items: center;
+        padding: 5px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        margin-bottom: 5px;
+        flex-wrap: wrap; /* Allows tags to wrap to the next line */
+    }
+
+    .tag {
+        display: inline-flex;
+        align-items: center;
+        background-color: #f0f0f0;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        padding: 2px 4px;
+        margin: 2px 2px;
+    }
+
+    .tag-remove-button {
+        background: none;
+        border: none;
+        cursor: pointer;
+        margin-left: 4px;
+        font-size: 1em;
+        color: #333;
+    }
+
+    input[type=text] {
+        border: none;
+        outline: none;
+        padding: 5px;
+        flex-grow: 1;
+        margin: 2px 0px;
+    }
+    </style>
+    <div class="tag-input-container">
+        <slot name="tag"></slot>
+        <input type="text" placeholder="Add a tag..." />
+    </div>
+`;
+
+
 class TagInput extends HTMLElement {
-    constructor(tagDefinition, value, condition, onChange, app) {
+    constructor() {
         super();
-        this.tagDefinition = tagDefinition;
-        this.value = value;
-        this.condition = condition;
-        this.onChange = onChange;
-        this.app = app;
-        this.rendered = false;
-        this.attachShadow({mode: 'open'});
+        this.shadowRoot = this.attachShadow({mode: 'open'});
+        this.shadowRoot.appendChild(tagInputTemplate.content.cloneNode(true));
+        this.tagsSlot = this.shadowRoot.querySelector('slot[name="tag"]');
+        this.inputElement = this.shadowRoot.querySelector('input[type=text]');
+        this.tags = [];
     }
 
-    render() {
-        this.shadowRoot.innerHTML = /*html*/`
-            <style>
-            .tag-input-container {
-                display: flex;
-                align-items: center;
-                padding: 5px;
-                border: 1px solid #ccc;
-                border-radius: 4px;
-                margin-bottom: 5px;
-            }
-
-            .tag-input {
-                flex-grow: 1;
-                padding: 8px;
-                border: none;
-                border-radius: 4px;
-                margin-right: 5px;
-            }
-
-            .tag-condition {
-                padding: 8px;
-            }
-
-            .tag-remove-button {
-                background-color: #f44336;
-                color: white;
-                border: none;
-                padding: 8px 12px;
-                border-radius: 4px;
-                margin-left: 5px;
-                cursor: pointer;
-            }
-            </style>
-
-        <div class="tag-input-container">
-            <span class="tag-name">${this.tagDefinition.label || this.tagDefinition.name}</span>
-            <select class="tag-condition">
-                <option value="is" ${this.condition === 'is' ? 'selected' : ''}>is</option>
-                <option value="is-not" ${this.condition === 'is-not' ? 'selected' : ''}>is not</option>
-                <option value="contains" ${this.condition === 'contains' ? 'selected' : ''}>contains</option>
-                <option value="not-contains" ${this.condition === 'not-contains' ? 'selected' : ''}>not contains</option>
-            </select>
-            <input type="text" class="tag-input" type="text" value="${this.value}" placeholder="Enter tag value">
-            <button class="tag-remove-button">❌</button>
-        </div>
-        `;
-
-        this.shadowRoot.querySelector('.tag-input').addEventListener('input', (event) => {
-            this.value = event.target.value;
-            if (this.tagDefinition.validate && !this.tagDefinition.validate(this.value, this.condition)) {
-                this.app.notificationManager.showNotification(`Invalid value for tag '${this.tagDefinition.label || this.tagDefinition.name}' with condition '${this.condition}'.`, 'warning');
-                return;
-            }
-            this.onChange(this.tagDefinition, this.condition, this.value);
-        });
-
-        this.shadowRoot.querySelector('.tag-condition').addEventListener('change', (event) => {
-            this.condition = event.target.value;
-            if (this.tagDefinition.validate && !this.tagDefinition.validate(this.value, this.condition)) {
-                this.app.notificationManager.showNotification(`Invalid value for tag '${this.tagDefinition.label || this.tagDefinition.name}' with condition '${this.condition}'.`, 'warning');
-                return;
-            }
-            this.onChange(this.tagDefinition, this.condition, this.value);
-        });
-
-        this.shadowRoot.querySelector('.tag-remove-button').addEventListener('click', () => {
-            this.onChange(this.tagDefinition, null, null);
-        });
-    }
 
     connectedCallback() {
-        if (!this.rendered) {
-            this.render();
-            this.rendered = true;
+        this.inputElement.addEventListener('keydown', this.handleKeyDown.bind(this));
+        this.inputElement.addEventListener('blur', this.handleBlur.bind(this));
+        this.render();
+    }
+
+
+    handleKeyDown(event) {
+        if (event.key === 'Enter' && this.inputElement.value.trim() !== '') {
+            event.preventDefault();
+            this.addTag(this.inputElement.value.trim());
+            this.inputElement.value = '';
         }
+    }
+
+    handleBlur() {
+        if (this.inputElement.value.trim() !== '') {
+            this.addTag(this.inputElement.value.trim());
+            this.inputElement.value = '';
+        }
+    }
+
+
+    addTag(tagName) {
+        if (!this.tags.includes(tagName)) {
+            this.tags.push(tagName);
+            this.render();
+            this.dispatchEvent(new CustomEvent('tag-added', { detail: tagName }));
+        }
+    }
+
+
+    removeTag(tagName) {
+        this.tags = this.tags.filter(tag => tag !== tagName);
+        this.render();
+        this.dispatchEvent(new CustomEvent('tag-removed', { detail: tagName }));
+    }
+
+
+    render() {
+        this.tagsSlot.assignedNodes().forEach(node => node.remove());
+
+        this.tags.forEach(tagName => {
+            const tagElement = document.createElement('div');
+            tagElement.className = 'tag';
+            tagElement.textContent = tagName;
+
+            const removeButton = document.createElement('button');
+            removeButton.className = 'tag-remove-button';
+            removeButton.textContent = 'x';
+            removeButton.addEventListener('click', () => this.removeTag(tagName));
+
+            tagElement.appendChild(removeButton);
+
+            this.tagsSlot.appendChild(tagElement);
+        });
+    }
+
+    getTags() {
+        return this.tags;
+    }
+
+    setTags(tags) {
+        this.tags = tags;
+        this.render();
     }
 }
 

@@ -1,44 +1,37 @@
-class TagManager extends HTMLElement {
-    constructor() {
-        super();
-        this.shadow = this.attachShadow({ mode: 'open' });
-        this.tags = []; // Array to hold tag definitions
-        this.tagDefinitions = []; // Available tag definitions
+ui/tag-manager.js
+import { createElement } from '../utils.js';
+import { Tag } from './tag.js';
+import Ontology from '../core/ontology.js';
+
+export class TagManager {
+    constructor(note, app, getTagDefinition) {
+        this.note = note;
+        this.app = app;
+        this.getTagDefinition = getTagDefinition;
+        this.shadow = this.attachShadow({mode: 'open'});
+        this.tags = this.note.tags || [];
     }
 
-    async connectedCallback() {
-        await this.fetchTagDefinitions();
+
+    connectedCallback() {
         this.render();
     }
 
-    async fetchTagDefinitions() {
-        // Placeholder for fetching tag definitions from an API or config
-        this.tagDefinitions = [
-            { name: 'topic' },
-            { name: 'location' },
-            { name: 'person' },
-            { name: 'event' },
-            { name: 'organization' }
-        ];
+
+    addTag(tagName, tagDef) {
+        if (!this.tags.includes(tagName)) {
+            this.tags.push(tagName);
+            this.note.tags = this.tags;
+            this.app.noteManager.saveObject(this.note);
+            this.render();
+        }
     }
 
-    addTag(tag) {
-        this.tags.push(tag);
+    removeTag(tagName) {
+        this.tags = this.tags.filter(tag => tag !== tagName);
+        this.note.tags = this.tags;
+        this.app.noteManager.saveObject(this.note);
         this.render();
-        this.dispatchEvent(new CustomEvent('tags-updated', { detail: this.tags })); // Dispatch event
-    }
-
-    removeTag(index) {
-        this.tags.splice(index, 1);
-        this.render();
-        this.dispatchEvent(new CustomEvent('tags-updated', { detail: this.tags })); // Dispatch event
-    }
-
-    updateTag(index, condition, value) {
-        this.tags[index].condition = condition;
-        this.tags[index].value = value;
-        this.render();
-        this.dispatchEvent(new CustomEvent('tags-updated', { detail: this.tags })); // Dispatch event
     }
 
 
@@ -53,48 +46,32 @@ class TagManager extends HTMLElement {
 
             .tag-list {
                 display: flex;
-                flex-direction: column;
-                gap: 3px;
-                margin-bottom: 10px;
+                flex-wrap: wrap;
+                gap: 5px;
             }
         </style>
-            <div class="tag-manager">
-                <div class="tag-list">
-                    ${this.tags.map((tag, index) => `
-                        <tag-input
-                            key="${index}"
-                            tag-definition='${JSON.stringify(tag.tagDefinition)}'
-                            condition="${tag.condition}"
-                            value="${tag.value}"
-                            on-change="updateTagInput.bind(this, ${index})"
-                        ></tag-input>
-                    `).join('')}
-                </div>
-                <select id="tagDefinitionSelect">
-                    ${this.tagDefinitions.map(def => `<option value='${JSON.stringify(def)}'>${def.name}</option>`).join('')}
-                </select>
-                <button id="addTagButton">Add Tag</button>
+        <div class="tag-manager">
+            <h3>Tags</h3>
+            <div class="tag-list" id="tag-list">
+                ${this.tags.map(tagName => `<nt-tag tag-name="${tagName}"></nt-tag>`).join('')}
             </div>
+        </div>
         `;
+        this.attachTagEventListeners();
+        return this.shadow.firstChild;
+    }
 
-        this.shadow.querySelector('#addTagButton').addEventListener('click', () => {
-            const selectElement = this.shadow.querySelector('#tagDefinitionSelect');
-            const selectedTagDefinition = JSON.parse(selectElement.value);
-            this.addTag({ tagDefinition: selectedTagDefinition, condition: 'is', value: '' });
-        });
 
-        // Bind the updateTagInput function to the component instance
-        const tagInputs = this.shadow.querySelectorAll('tag-input');
-        tagInputs.forEach((tagInput, index) => {
-            tagInput.onChange = (tagDefinition, condition, value) => {
-                if (condition === null && value === null) {
-                    this.removeTag(index);
-                } else {
-                    this.updateTag(index, condition, value);
-                }
-            };
+    attachTagEventListeners() {
+        this.tags.forEach(tagName => {
+            const tagElement = this.shadow.querySelector(`nt-tag[tag-name="${tagName}"]`);
+            if (tagElement) {
+                tagElement.onclick = () => {
+                    this.removeTag(tagName);
+                };
+            }
         });
     }
 }
 
-customElements.define('tag-manager', TagManager);
+customElements.define('nt-tag-manager', TagManager);

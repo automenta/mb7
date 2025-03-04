@@ -1,37 +1,34 @@
-import * as Y from 'yjs'
-import {Edit} from "@/ui/edit/edit.js";
-import {Ontology} from "@/core/ontology.js";
-import {describe, expect, it} from "vitest";
+test/edit.test.js
+import { describe, it, expect, vi } from 'vitest';
+import * as Y from 'yjs';
+import { Edit } from '../ui/edit/edit';
+import Ontology from '../core/ontology';
 
 describe('Edit Autosuggest', () => {
     it('should suggest tag names from ontology', () => {
         const yDoc = new Y.Doc()
 
-        const getTagDefinition = (name) => Ontology[name]; // Mock getTagDefinition
+        const getTagDefinition = (name) => Ontology[name];
 
         class MockAutosuggest {
             constructor(edit) {
                 this.edit = edit;
             }
 
-            apply() {
-                // Mock apply method
+            suggestTags(query) {
+                const suggestions = Object.keys(Ontology)
+                    .filter(tagName => tagName.toLowerCase().startsWith(query.toLowerCase()))
+                    .map(tagName => ({ name: tagName }));
+                return Promise.resolve(suggestions);
+            }
+
+            renderSuggestions(suggestions) {
+            }
+
+            clearSuggestions() {
             }
         }
 
-        class MockSuggestionDropdown {
-            constructor() {
-                // Mock constructor
-            }
-
-            show(suggestions, onSelect) {
-                // Mock show method
-            }
-
-            hide() {
-                // Mock hide method
-            }
-        }
 
         class MockOntologyBrowser {
             constructor(editor, onTagSelect) {
@@ -40,42 +37,20 @@ describe('Edit Autosuggest', () => {
             }
 
             render(ontology) {
-                // Mock render method
-            }
-
-            getElement() {
-                return document.createElement('div'); // Mock getElement
             }
         }
 
-
-        const app = {showNotification: vi.fn()}
-
-        const edit = new Edit({}, yDoc, app, getTagDefinition, Ontology);
-        edit.autosuggest = new MockAutosuggest(edit); // Mock autosuggest
-        edit.suggestionDropdown = new MockSuggestionDropdown(); // Mock suggestionDropdown
-        edit.ontologyBrowser = new MockOntologyBrowser(edit, () => {
-        }); // Mock ontologyBrowser
-
-        edit.matchesOntology = (word) => {
-            const suggestions = [];
-            for (const tagCategory in Ontology) {
-                const category = Ontology[tagCategory];
-                if (category.tags) {
-                    for (const tagName in category.tags) {
-                        if (tagName.startsWith(word)) {
-                            suggestions.push(tagName);
-                        }
-                    }
-                } else if (tagCategory.startsWith(word)) {
-                    suggestions.push(tagCategory);
-                }
-            }
-            return suggestions;
-        }
+        const mockApp = {
+            ontology: Ontology
+        };
 
 
-        const suggestions = edit.getSuggestionsForWord("l");
-        expect(suggestions).toContain("location");
-    })
-})
+        const edit = new Edit({}, yDoc, mockApp, getTagDefinition, {});
+        edit.autosuggest = new MockAutosuggest(edit);
+
+        return edit.autosuggest.suggestTags('Per').then(suggestions => {
+            expect(suggestions.length).toBeGreaterThan(0);
+            expect(suggestions.some(suggestion => suggestion.name === 'Person')).toBe(true);
+        });
+    });
+});

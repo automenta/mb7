@@ -1,20 +1,17 @@
-import * as nostrTools from 'nostr-tools';
-
-const {Relay, nip19, getEventHash} = nostrTools;
-const signEvent = nostrTools.signEvent;
+core/net/net.signaling.js
+import { Relay } from 'nostr-tools'
+import { nip19 } from 'nostr-tools'
 
 class NostrSignalingProvider {
     constructor(relays, nostrPrivateKey, app) {
         this.relays = relays;
         this.nostrPrivateKey = nostrPrivateKey;
         this.nostrPublicKey = nip19.decode(nostrPrivateKey).data;
-        this.eventKind = 30001; // Custom event kind for WebRTC signaling
+        this.eventKind = 30001;
         this.subscriptions = {};
         this.relayObjects = {};
         this.connectedRelays = [];
         this.iceCandidateQueue = {};
-        this.app = app;
-        this.connectToRelays();
     }
 
     async connectToRelays() {
@@ -34,202 +31,119 @@ class NostrSignalingProvider {
                         this.app.showNotification(`Disconnected from relay: ${relayUrl}`);
                     });
                     relay.on('error', (error) => {
-                        console.error(`Error connecting to relay ${relayUrl}:`, error);
-                        this.app.showNotification(`Error connecting to relay ${relayUrl}: ${error.message}`, 'error');
+                        console.error(`Relay error on ${relayUrl}:`, error);
+                        this.app.showNotification(`Relay error on ${relayUrl}: ${error.message}`, 'error');
                     });
                     await relay.connect();
                 } catch (error) {
                     console.error(`Error connecting to relay ${relayUrl}:`, error);
-                    this.app.showNotification(`Error connecting to relay ${relayUrl}: ${error.message}`, 'error');
+                    this.app.showNotification(`Failed to connect to relay ${relayUrl}: ${error.message}`, 'error');
                 }
             }
         } catch (error) {
-            console.error("Error in connectToRelays:", error);
-            this.app.showNotification(`Error in connectToRelays: ${error.message}`, 'error');
+            console.error("Error during relay connection:", error);
         }
     }
 
-    async publishToRelays(event) {
-        try {
-            event.id = getEventHash(event);
-            event.sig = await signEvent(event, this.nostrPrivateKey);
 
-            for (const relayUrl of this.connectedRelays) {
-                const relay = this.relayObjects[relayUrl];
-                if (relay) {
-                    await relay.publish(event);
-                } else {
-                    console.warn(`Relay ${relayUrl} not connected.`);
-                    this.app.showNotification(`Relay ${relayUrl} not connected.`, 'warning');
-                }
+    async sendSignal(targetPublicKey, message) {
+        const event = {
+            kind: this.eventKind,
+            pubkey: this.nostrPublicKey,
+            created_at: Math.floor(Date.now() / 1000),
+            tags: [
+                ['p', targetPublicKey],
+            ],
+            content: message,
+        };
+
+        try {
+            const signedEvent = await window.nostr.signEvent(event);
+            if (!signedEvent) {
+                throw new Error('Failed to sign event.');
             }
-        } catch (error) {
-            console.error("Error in publishToRelays:", error);
-            this.app.showNotification(`Error in publishToRelays: ${error.message}`, 'error');
-        }
-    }
-
-    async subscribeToEvents(peerId) {
-        try {
-            for (const relayUrl of this.connectedRelays) {
-                const relay = this.relayObjects[relayUrl];
-                if (relay) {
-                    const sub = relay.subscribe([{
-                        kinds: [this.eventKind],
-                        authors: [peerId, this.nostrPublicKey], // Listen for events from peer or self
-                        '#p': [this.nostrPublicKey, peerId] // Listen for events tagged to peer or self
-                    }]);
-
-                    sub.on('event', event => {
-                        try {
-                            const messageType = event.content.split(':')[0];
-                            const messageData = event.content.substring(event.content.indexOf(':') + 1);
-
-                            switch (messageType) {
-                                case 'offer':
-                                    this.onOfferReceivedCallback(event.pubkey, messageData);
-                                    break;
-                                case 'answer':
-                                    this.onAnswerReceivedCallback(event.pubkey, messageData);
-                                    break;
-                                case 'icecandidate':
-                                    try {
-                                        const candidate = JSON.parse(messageData);
-                                        this.onIceCandidateReceivedCallback(event.pubkey, candidate);
-                                    } catch (e) {
-                                        console.error("Failed to parse ice candidate", e);
-                                        this.app.showNotification(`Failed to parse ice candidate: ${e.message}`, 'error');
-                                    }
-                                    break;
-                            }
-                        } catch (error) {
-                            console.error("Error handling event:", error);
-                            this.app.showNotification(`Error handling event: ${error.message}`, 'error');
-                        }
+            for (const relayUrl of this.relays) {
+                if (this.relayObjects[relayUrl] && this.relayObjects[relayUrl].status === 1) {
+                    let pub = this.relayObjects[relayUrl].publish(signedEvent);
+                    pub.on('failed', (reason) => {
+                        console.error(`Failed to publish to relay ${relayUrl}: ${reason}`);
+                        this.app.showNotification(`Failed to publish signal to relay ${relayUrl}: ${reason}`, 'error');
                     });
+                }
+            }
+            return signedEvent;
+        } catch (error) {
+            console.error("Error sending signal:", error);
+            this.app.showNotification(`Failed to send signal: ${error.message}`, 'error');
+            throw error;
+        }
+    }
+
+
+    async subscribeSignals(onSignalReceived) {
+        if (this.relays.length === 0) {
+            console.warn("No relays configured, not subscribing to signals.");
+            return;
+        }
+
+        const sub = {
+            filter: {
+                kinds: [this.eventKind],
+                authors: [this.nostrPublicKey],
+                '#p': [this.nostrPublicKey]
+            },
+            cb: (event) => {
+                if (event.pubkey !== this.nostrPublicKey) {
+                    onSignalReceived(event.pubkey, event.content);
+                }
+            }
+        };
+
+        for (const relayUrl of this.relays) {
+            if (this.relayObjects[relayUrl] && this.relayObjects[relayUrl].status === 1) {
+                try {
+                    this.relayObjects[relayUrl].subscribe(sub.filter, sub.cb);
                     this.subscriptions[relayUrl] = sub;
-                } else {
-                    console.warn(`Relay ${relayUrl} not connected.`);
-                    this.app.showNotification(`Relay ${relayUrl} not connected.`, 'warning');
+                    console.log(`Subscribed to signal events on relay: ${relayUrl}`);
+                } catch (error) {
+                    console.error(`Error subscribing to relay ${relayUrl}:`, error);
+                    this.app.showNotification(`Failed to subscribe to signals on relay ${relayUrl}: ${error.message}`, 'error');
                 }
             }
-        } catch (error) {
-            console.error("Error in subscribeToEvents:", error);
-            this.app.showNotification(`Error in subscribeToEvents: ${error.message}`, 'error');
         }
     }
 
-    initiateConnection(peerId, onOffer) {
-        try {
-            this.onOfferReceivedCallback = onOffer;
-            this.subscribeToEvents(peerId); // Subscribe before sending offer
 
-            //Process any ice candidates that arrived before the offer
-            if (this.iceCandidateQueue[peerId]) {
-                this.iceCandidateQueue[peerId].forEach(candidate => {
-                    this.sendIceCandidate(peerId, candidate);
-                });
-                delete this.iceCandidateQueue[peerId];
-            }
-        } catch (error) {
-            console.error("Error in initiateConnection:", error);
-            this.app.showNotification(`Error in initiateConnection: ${error.message}`, 'error');
-        }
-    }
-
-    acceptConnection(peerId, onAnswer) {
-        try {
-            this.onAnswerReceivedCallback = onAnswer;
-            this.subscribeToEvents(peerId); // Subscribe before sending answer
-        } catch (error) {
-            console.error("Error in acceptConnection:", error);
-            this.app.showNotification(`Error in acceptConnection: ${error.message}`, 'error');
-        }
-    }
-
-    async sendIceCandidate(peerId, candidate) {
-        try {
-            if (!this.onOfferReceivedCallback) {
-                if (!this.iceCandidateQueue[peerId]) {
-                    this.iceCandidateQueue[peerId] = [];
+    async unsubscribeSignals() {
+        for (const relayUrl in this.subscriptions) {
+            if (this.relayObjects[relayUrl]) {
+                try {
+                    this.relayObjects[relayUrl].unsubscribe(this.subscriptions[relayUrl].filter, this.subscriptions[relayUrl].cb);
+                    delete this.subscriptions[relayUrl];
+                    console.log(`Unsubscribed from signal events on relay: ${relayUrl}`);
+                } catch (error) {
+                    console.error(`Error unsubscribing from relay ${relayUrl}:`, error);
+                    this.app.showNotification(`Failed to unsubscribe from signals on relay ${relayUrl}: ${error.message}`, 'error');
                 }
-                this.iceCandidateQueue[peerId].push(candidate);
-                return;
             }
-
-            const event = {
-                kind: this.eventKind,
-                created_at: Math.floor(Date.now() / 1000),
-                tags: [['p', peerId]],
-                content: `icecandidate:${JSON.stringify(candidate)}`,
-                pubkey: this.nostrPublicKey,
-            };
-            await this.publishToRelays(event);
-        } catch (error) {
-            console.error("Error in sendIceCandidate:", error);
-            this.app.showNotification(`Error in sendIceCandidate: ${error.message}`, 'error');
         }
     }
 
-    sendOffer(peerId, offer) {
-        try {
-            const event = {
-                kind: this.eventKind,
-                created_at: Math.floor(Date.now() / 1000),
-                tags: [['p', peerId]],
-                content: `offer:${offer}`,
-                pubkey: this.nostrPublicKey,
-            };
-            this.publishToRelays(event);
-        } catch (error) {
-            console.error("Error in sendOffer:", error);
-            this.app.showNotification(`Error in sendOffer: ${error.message}`, 'error');
+    queueIceCandidate(targetPublicKey, candidate) {
+        if (!this.iceCandidateQueue[targetPublicKey]) {
+            this.iceCandidateQueue[targetPublicKey] = [];
         }
+        this.iceCandidateQueue[targetPublicKey].push(candidate);
     }
 
-    sendAnswer(peerId, answer) {
-        try {
-            const event = {
-                kind: this.eventKind,
-                created_at: Math.floor(Date.now() / 1000),
-                tags: [['p', peerId]],
-                content: `answer:${answer}`,
-                pubkey: this.nostrPublicKey,
-            };
-            this.publishToRelays(event);
-        } catch (error) {
-            console.error("Error in sendAnswer:", error);
-            this.app.showNotification(`Error in sendAnswer: ${error.message}`, 'error');
+    async sendIceCandidates(targetPublicKey) {
+        const candidates = this.iceCandidateQueue[targetPublicKey] || [];
+        for (const candidate of candidates) {
+            await this.sendSignal(targetPublicKey, JSON.stringify({ type: 'ice-candidate', candidate }));
         }
+        this.iceCandidateQueue[targetPublicKey] = [];
     }
 
-    closeConnection(peerId) {
-        // Implement closing logic if needed (e.g., unsubscribe from events)
-    }
-
-    onOfferReceived(callback) {
-        this.onOfferReceivedCallback = callback;
-    }
-
-    onAnswerReceived(callback) {
-        this.onAnswerReceivedCallback = callback;
-    }
-
-    onIceCandidateReceived(callback) {
-        this.onIceCandidateReceivedCallback = callback;
-    }
-
-    setOnOfferReceivedCallback(callback) {
-        this.onOfferReceivedCallback = callback;
-    }
-
-    setOnAnswerReceivedCallback(callback) {
-        this.onAnswerReceivedCallback = callback;
-    }
-
-    setOnIceCandidateReceivedCallback(callback) {
-        this.onIceCandidateReceivedCallback = callback;
-    }
 }
 
-export {NostrSignalingProvider};
+export default NostrSignalingProvider;

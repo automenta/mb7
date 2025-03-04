@@ -1,306 +1,328 @@
-import {formatISO, parseISO} from 'date-fns';
-
+core/ontology.js
 const isValidDate = (dateString) => {
     try {
         return !isNaN(new Date(dateString).getTime());
     } catch (error) {
         return false;
     }
-};
+}
 
-const serializeDate = (value) => {
-    try {
-        if (typeof value === 'object' && value !== null && value.start && value.end) {
-            return JSON.stringify({start: formatISO(parseISO(value.start)), end: formatISO(parseISO(value.end))});
+const Ontology = {
+    "Person": {
+        "tags": {
+            "name": {
+                "type": "text",
+                "description": "Full name of the person."
+            },
+            "birthday": {
+                "type": "date",
+                "description": "Date of birth.",
+                "validation": isValidDate
+            },
+            "email": {
+                "type": "email",
+                "description": "Email address."
+            },
+            "phone": {
+                "type": "tel",
+                "description": "Phone number."
+            },
+            "address": {
+                "type": "text",
+                "description": "Physical address."
+            }
         }
-        return formatISO(parseISO(value));
-    } catch (error) {
-        console.error("Error serializing date:", error);
-        return null;
-    }
-};
-
-const deserializeDate = (value) => {
-    try {
-        const parsed = JSON.parse(value);
-        if (parsed && typeof parsed === 'object' && parsed.start && parsed.end) {
-            return {start: parsed.start, end: parsed.end};
+    },
+    "Task": {
+        "tags": {
+            "title": {
+                "type": "text",
+                "description": "Title of the task."
+            },
+            "description": {
+                "type": "textarea",
+                "description": "Detailed description of the task."
+            },
+            "dueDate": {
+                "type": "date",
+                "description": "Date when the task is due.",
+                "validation": isValidDate
+            },
+            "priority": {
+                "type": "select",
+                "options": ["High", "Medium", "Low"],
+                "description": "Priority level."
+            },
+            "status": {
+                "type": "select",
+                "options": ["Open", "InProgress", "Completed", "Cancelled"],
+                "description": "Current status of the task."
+            },
+            "assignedTo": {
+                "type": "object",
+                "objectType": "Person",
+                "description": "Person assigned to the task."
+            }
         }
-    } catch (e) {
-        // Ignore JSON parsing errors, assume it's a single date
-    }
-    return value;
-};
-
-const serializeNumber = (value) => {
-    try {
-        if (typeof value === 'object' && value !== null && value.lower && value.upper) {
-            return JSON.stringify({lower: String(value.lower), upper: String(value.upper)});
+    },
+    "Project": {
+        "tags": {
+            "projectName": {
+                "type": "text",
+                "description": "Name of the project."
+            },
+            "projectDescription": {
+                "type": "textarea",
+                "description": "Description of the project."
+            },
+            "startDate": {
+                "type": "date",
+                "description": "Project start date.",
+                "validation": isValidDate
+            },
+            "endDate": {
+                "type": "date",
+                "description": "Project end date.",
+                "validation": isValidDate
+            },
+            "projectStatus": {
+                "type": "select",
+                "options": ["Planning", "InProgress", "Completed", "OnHold", "Cancelled"],
+                "description": "Current project status."
+            },
+            "teamMembers": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "objectType": "Person"
+                },
+                "description": "Team members involved in the project."
+            }
         }
-        return String(value);
-    } catch (error) {
-        console.error("Error serializing number:", error);
-        return null;
-    }
-};
-
-const deserializeNumber = (value) => {
-    try {
-        const parsed = JSON.parse(value);
-        if (parsed && typeof parsed === 'object' && parsed.lower && parsed.upper) {
-            return {lower: parsed.lower, upper: parsed.upper};
+    },
+    "Event": {
+        "tags": {
+            "eventName": {
+                "type": "text",
+                "description": "Name of the event."
+            },
+            "eventDescription": {
+                "type": "textarea",
+                "description": "Description of the event."
+            },
+            "eventDate": {
+                "type": "date",
+                "description": "Date of the event.",
+                "validation": isValidDate
+            },
+            "eventTime": {
+                "type": "time",
+                "description": "Time of the event."
+            },
+            "eventLocation": {
+                "type": "text",
+                "description": "Location of the event."
+            },
+            "eventAttendees": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "objectType": "Person"
+                },
+                "description": "People attending the event."
+            }
         }
-    } catch (e) {
-        // Ignore JSON parsing errors, assume it's a single number
-    }
-    return value;
-};
-
-export const Ontology = {
-    "location": {
-        conditions: ["is", "contains", "near"],
-        validate: (value, condition) => typeof value === "string" && value.length > 0,
-        serialize: (value) => value,
-        deserialize: (value) => value,
-        ui: {type: "text", placeholder: "Enter a location", icon: "📍", render: "stub"}
     },
-    "time": {
-        conditions: ["is", "before", "after", "between"],
-        validate: (value, condition) => condition === "between" ? isValidDate(value.start) && isValidDate(value.end) : isValidDate(value),
-        serialize: serializeDate,
-        deserialize: deserializeDate,
-        ui: {type: "text"}
-    },
-    "string": {
-        conditions: ["is", "contains", "matches regex"],
-        validate: (value, condition) => typeof value === "string",
-        serialize: (value) => value,
-        deserialize: (value) => value,
-        ui: {type: "text"}
-    },
-    "number": {
-        conditions: ["is", "greater than", "less than", "between"],
-        validate: (value, condition) => condition === "between" ? !isNaN(parseFloat(value.lower)) && isFinite(value.lower) && !isNaN(parseFloat(value.upper)) && isFinite(value.upper) : !isNaN(parseFloat(value)) && isFinite(value),
-        serialize: serializeNumber,
-        deserialize: deserializeNumber,
-        ui: {type: "text", unit: "meters", min: 0, max: 100}
-    },
-    "People": {
-        conditions: ["is"],
-        type: "object",
-        validate: (value, condition) => typeof value === 'object',
-        serialize: (value) => JSON.stringify(value),
-        deserialize: (value) => {
-            try {
-                return JSON.parse(value);
-            } catch (error) {
-                console.error("Error deserializing People:", error);
-                return {};
+    "Note": {
+        "tags": {
+            "noteTitle": {
+                "type": "text",
+                "description": "Title of the note."
+            },
+            "noteContent": {
+                "type": "textarea",
+                "description": "Content of the note."
+            },
+            "createdDate": {
+                "type": "date",
+                "description": "Date created.",
+                "validation": isValidDate
+            },
+            "lastModifiedDate": {
+                "type": "date",
+                "description": "Date last modified.",
+                "validation": isValidDate
+            },
+            "category": {
+                "type": "select",
+                "options": ["Personal", "Work", "Ideas", "Research"],
+                "description": "Category of the note."
+            },
+            "tags": {
+                "type": "array",
+                "items": {
+                    "type": "text"
+                },
+                "description": "Tags associated with the note."
             }
-        },
-        ui: {type: "text"}
+        }
     },
-    "Emotion": {
-        conditions: ["is", "is between", "is below", "is above"],
-        validate: (value, condition) => condition === "is between" ? !isNaN(parseFloat(value.lower)) && isFinite(value.lower) && !isNaN(parseFloat(value.upper)) && isFinite(value.upper) : !isNaN(parseFloat(value)) && isFinite(value),
-        serialize: serializeNumber,
-        deserialize: deserializeNumber,
-        ui: {type: "text"}
-    },
-    "Business": {
-        conditions: ["is one of"],
-        validate: (value, condition) => typeof value === "string",
-        serialize: (value) => value,
-        deserialize: (value) => value,
-        ui: {type: "text"}
-    },
-    "Data": {
-        conditions: ["is one of"],
-        validate: (value, condition) => Array.isArray(value),
-        serialize: (value) => JSON.stringify(value),
-        deserialize: (value) => {
-            try {
-                return JSON.parse(value);
-            } catch (error) {
-                console.error("Error deserializing Data:", error);
-                return [];
+    "Contact": {
+        "tags": {
+            "contactName": {
+                "type": "text",
+                "description": "Name of the contact."
+            },
+            "contactEmail": {
+                "type": "email",
+                "description": "Email address of the contact."
+            },
+            "contactPhone": {
+                "type": "tel",
+                "description": "Phone number of the contact."
+            },
+            "relationship": {
+                "type": "select",
+                "options": ["Friend", "Family", "Colleague", "Client"],
+                "description": "Relationship type."
+            },
+            "notes": {
+                "type": "textarea",
+                "description": "Notes about the contact."
             }
-        },
-        ui: {type: "text"}
+        }
     },
-    "DueDate": {
-        conditions: ["is", "before", "after", "between"],
-        validate: (value, condition) => condition === "between" ? isValidDate(value.start) && isValidDate(value.end) : isValidDate(value),
-        serialize: serializeDate,
-        deserialize: deserializeDate,
-        ui: {type: "text"}
-    },
-    "List": {
-        conditions: ["is"],
-        type: "list",
-        validate: (value, condition) => Array.isArray(value),
-        serialize: (value) => JSON.stringify(value),
-        deserialize: (value) => {
-            try {
-                return JSON.parse(value);
-            } catch (error) {
-                console.error("Error deserializing List:", error);
-                return [];
+    "Document": {
+        "tags": {
+            "documentTitle": {
+                "type": "text",
+                "description": "Title of the document."
+            },
+            "author": {
+                "type": "text",
+                "description": "Author of the document."
+            },
+            "publicationDate": {
+                "type": "date",
+                "description": "Date of publication.",
+                "validation": isValidDate
+            },
+            "documentType": {
+                "type": "select",
+                "options": ["Report", "Article", "Book", "Presentation", "Manual"],
+                "description": "Type of document."
+            },
+            "keywords": {
+                "type": "array",
+                "items": {
+                    "type": "text"
+                },
+                "description": "Keywords associated with the document."
             }
-        },
-        ui: {type: "text"}
+        }
     },
-    "Settings": {
-        conditions: ["is"],
-        type: "object",
-        tags: {
-            "relays": {
-                type: "string",
-                required: false,
-                label: "Nostr Relays",
-                description: "Comma-separated list of Nostr relay URLs.",
-                validate: (value, condition) => typeof value === "string",
-                serialize: (value) => value,
-                deserialize: (value) => value,
-                default: "",
-                ui: {type: "text"}
+    "Meeting": {
+        "tags": {
+            "meetingTitle": {
+                "type": "text",
+                "description": "Title of the meeting."
             },
-            "webrtcNostrRelays": {
-                type: "string",
-                required: false,
-                label: "WebRTC Nostr Relays",
-                description: "Comma-separated list of WebRTC Nostr relay URLs.",
-                validate: (value, condition) => typeof value === "string",
-                serialize: (value) => value,
-                deserialize: (value) => value,
-                default: "",
-                ui: {type: "text"}
+            "meetingDescription": {
+                "type": "textarea",
+                "description": "Description of the meeting."
             },
-            "privateKey": {
-                type: "string",
-                required: false,
-                label: "Nostr Private Key",
-                description: "Your Nostr private key (hex or npriv).",
-                validate: (value, condition) => typeof value === "string",
-                serialize: (value) => value,
-                deserialize: (value) => value,
-                default: "",
-                ui: {type: "text"}
+            "meetingDate": {
+                "type": "date",
+                "description": "Date of the meeting.",
+                "validation": isValidDate
             },
-            "dateFormat": {
-                type: "string",
-                required: false,
-                label: "Date Format",
-                description: "The format for displaying dates.",
-                validate: (value, condition) => typeof value === "string",
-                serialize: (value) => value,
-                deserialize: (value) => value,
-                default: "yyyy-MM-dd",
-                ui: {type: "text"}
+            "meetingTime": {
+                "type": "time",
+                "description": "Time of the meeting."
             },
-            "profileName": {
-                type: "string",
-                required: false,
-                label: "Profile Name",
-                description: "Your profile name.",
-                validate: (value, condition) => typeof value === "string",
-                serialize: (value) => value,
-                deserialize: (value) => value,
-                default: "",
-                ui: {type: "text"}
+            "attendees": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "objectType": "Person"
+                },
+                "description": "People attending the meeting."
             },
-            "profilePicture": {
-                type: "string",
-                required: false,
-                label: "Profile Picture URL",
-                description: "URL for your profile picture.",
-                validate: (value, condition) => typeof value === "string",
-                serialize: (value) => value,
-                deserialize: (value) => value,
-                default: "",
-                ui: {type: "text"}
+            "agenda": {
+                "type": "textarea",
+                "description": "Meeting agenda."
             },
-            "signalingStrategy": {
-                type: "select",
-                default: "nostr",
-                label: "Signaling Strategy",
-                description: "The signaling strategy to use for WebRTC.",
-                options: ["nostr", "webrtc"],
-                validate: (value, condition) => ["nostr", "webrtc"].includes(value),
-                serialize: (value) => value,
-                deserialize: (value) => value,
-                ui: {type: "text"}
-            },
-            "word2vecModelPath": {
-                type: "string",
-                required: false,
-                label: "Word2Vec Model Path",
-                description: "Path to the Word2Vec model file.",
-                validate: (value, condition) => typeof value === "string",
-                serialize: (value) => value,
-                deserialize: (value) => value,
-                default: "",
-                ui: {type: "text"}
+            "minutes": {
+                "type": "textarea",
+                "description": "Meeting minutes."
             }
-        },
-        serialize: (value) => JSON.stringify(value),
-        deserialize: (value) => {
-            try {
-                return JSON.parse(value);
-            } catch (error) {
-                console.error("Error deserializing Settings:", error);
-                return {};
+        }
+    },
+    "Decision": {
+        "tags": {
+            "decisionTitle": {
+                "type": "text",
+                "description": "Title of the decision."
+            },
+            "decisionDescription": {
+                "type": "textarea",
+                "description": "Description of the decision."
+            },
+            "decisionDate": {
+                "type": "date",
+                "description": "Date of the decision.",
+                "validation": isValidDate
+            },
+            "decisionMaker": {
+                "type": "object",
+                "objectType": "Person",
+                "description": "Person who made the decision."
+            },
+            "rationale": {
+                "type": "textarea",
+                "description": "Rationale behind the decision."
+            },
+            "status": {
+                "type": "select",
+                "options": ["Proposed", "Approved", "Rejected", "Implemented", "Deferred"],
+                "description": "Current status of the decision."
             }
-        },
-        ui: {type: "text"}
+        }
     },
-    "Public": {
-        conditions: ["is"],
-        validate: (value, condition) => typeof value === "boolean",
-        serialize: (value) => value.toString(),
-        deserialize: (value) => value === "true",
-        ui: {type: "text"}
-    },
-    "textarea": {
-        conditions: ["is", "contains"],
-        validate: (value, condition) => typeof value === "string",
-        serialize: (value) => value,
-        deserialize: (value) => value,
-        ui: {type: "textarea", placeholder: "Enter text"}
-    },
-    "date": {
-        conditions: ["is", "before", "after", "between"],
-        validate: (value, condition) => condition === "between" ? isValidDate(value.start) && isValidDate(value.end) : isValidDate(value),
-        serialize: serializeDate,
-        deserialize: deserializeDate,
-        ui: {type: "text"}
-    },
-    "boolean": {
-        conditions: ["is"],
-        validate: (value, condition) => typeof value === "boolean",
-        serialize: (value) => value.toString(),
-        deserialize: (value) => value === "true",
-        ui: {type: "text"}
+    "Goal": {
+        "tags": {
+            "goalTitle": {
+                "type": "text",
+                "description": "Title of the goal."
+            },
+            "goalDescription": {
+                "type": "textarea",
+                "description": "Description of the goal."
+            },
+            "startDate": {
+                "type": "date",
+                "description": "Start date for achieving the goal.",
+                "validation": isValidDate
+            },
+            "targetDate": {
+                "type": "date",
+                "description": "Target date for achieving the goal.",
+                "validation": isValidDate
+            },
+            "progress": {
+                "type": "number",
+                "min": 0,
+                "max": 100,
+                "description": "Progress towards the goal (in percentage)."
+            },
+            "status": {
+                "type": "select",
+                "options": ["Planned", "InProgress", "Achieved", "OnHold", "Abandoned"],
+                "description": "Current status of the goal."
+            }
+        }
     }
 };
 
-["Note", "Event", "Relay"].forEach(type => {
-    Ontology[type] = {
-        conditions: ["is"],
-        type: "object",
-        validate: (value, condition) => typeof value === 'object',
-        serialize: (value) => JSON.stringify(value),
-        deserialize: (value) => {
-            try {
-                return JSON.parse(value);
-            } catch (error) {
-                console.error(`Error deserializing ${type}:`, error);
-                return {};
-            }
-        },
-        ui: {type: "text"}
-    };
-});
 
-export const getTagDefinition = (name) => Ontology[name] || Ontology.string;
-export {isValidDate};
+export default Ontology;

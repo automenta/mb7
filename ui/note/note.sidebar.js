@@ -1,4 +1,6 @@
-import {createElement} from '../utils.js';
+ui/note/note.sidebar.js
+import { createElement } from '../utils.js';
+import { CreateNoteButton } from './note.create.js';
 
 export class NotesSidebar extends HTMLElement {
     constructor(app, noteView) {
@@ -6,41 +8,46 @@ export class NotesSidebar extends HTMLElement {
         this.app = app;
         this.noteView = noteView;
         this.el = createElement('aside', {id: 'notes-sidebar', className: 'notes-sidebar'});
-        this.elements = {}; // Store references to important elements
+        this.elements = {};
         this.build();
     }
 
     build() {
-        this.el.innerHTML = ''; // Clear existing content
+        this.elements.header = this.createHeader();
+        this.elements.noteList = this.createNoteList();
+        this.elements.createNoteButton = new CreateNoteButton(this.app, this.noteView);
 
-        // Create and append the "Notes" heading
-        const notesHeading = createElement('h2', {}, 'Notes');
-        this.el.appendChild(notesHeading);
-
-        // Create and append the notes list
-        this.elements.notesList = createElement('ul', {id: 'notes-list', className: 'notes-list'});
-        this.el.appendChild(this.elements.notesList);
-
-        // Create and append the "Add" button (but don't add it to the list yet)
-        this.elements.addButton = this.newAddButton();
-
-        // Append the sidebar to the main container
-        this.el.appendChild(this.elements.addButton);
+        this.el.append(this.elements.header);
+        this.el.append(this.elements.createNoteButton.render());
+        this.el.append(this.elements.noteList);
     }
 
-    newAddButton() {
-        const addButton = createElement('button', {}, 'Add Note');
-        addButton.addEventListener('click', async () => {
-            await this.noteView.createNote();
+
+    createHeader() {
+        return createElement('header', {}, 'Notes');
+    }
+
+    createNoteList() {
+        this.noteList = createElement('ul', {id: 'note-list'});
+        return this.noteList;
+    }
+
+
+    renderNoteList(notes) {
+        this.noteList.innerHTML = '';
+        notes.forEach(note => {
+            const noteItem = createElement('li', {class: 'note-item'}, note.name);
+            noteItem.addEventListener('click', () => {
+                this.noteView.handleNoteSelect(note.id);
+            });
+            this.noteList.appendChild(noteItem);
         });
-        return addButton;
     }
+
 
     render() {
         return this.el;
     }
 }
 
-if (!customElements.get('notes-sidebar')) {
-    customElements.define('notes-sidebar', NotesSidebar);
-}
+customElements.define('notes-sidebar', NotesSidebar);
