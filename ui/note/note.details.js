@@ -11,6 +11,10 @@ export class NoteDetails extends HTMLElement {
         this.el.addEventListener('tag-removed', this.handleTagRemoved.bind(this));
     }
 
+    handleTagRemoved(event) {
+        event.stopPropagation();
+    }
+
     createDetailEdit(text, icon) {
         const label = document.createElement('span');
         label.textContent = `${icon} ${text}`;
@@ -47,7 +51,26 @@ export class NoteDetails extends HTMLElement {
     }
 
     createPriorityEdit() {
-        return this.noteView.newPriEdit();
+        const priorityContainer = document.createElement('div');
+        priorityContainer.className = 'priority-container';
+
+        const label = document.createElement('label');
+        label.className = 'priority-label';
+        label.textContent = 'Priority:';
+        priorityContainer.appendChild(label);
+
+        const prioritySelect = document.createElement('select');
+        prioritySelect.className = 'priority-select';
+        ['High', 'Medium', 'Low'].forEach(option => {
+            const optionElement = document.createElement('option');
+            optionElement.value = option;
+            optionElement.textContent = option;
+            prioritySelect.appendChild(optionElement);
+        });
+
+        priorityContainer.appendChild(prioritySelect);
+
+        return priorityContainer;
     }
 
     createTagsSection() {

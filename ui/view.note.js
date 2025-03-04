@@ -228,6 +228,7 @@ export class NoteView extends HTMLElement {
                 await this.addNoteToList(newObject.id);
                 await this.notesListComponent.fetchDataAndRender();
                 this.showMessage('Saved');
+                await this.selectNote(newObject.id);
                 this.edit.contentHandler.deserialize(newObject.content);
                 this.focusTitleInput();
             } else {
@@ -236,6 +237,10 @@ export class NoteView extends HTMLElement {
         } catch (error) {
             console.error('Error creating note:', error);
         }
+    }
+
+    async selectNote(noteId) {
+        await this.loadNote(noteId);
     }
 
     async deleteNote(note) {
@@ -286,28 +291,7 @@ export class NoteView extends HTMLElement {
         li.appendChild(deleteButton);
 
         li.addEventListener('click', async () => {
-            try {
-                const note = await this.app.db.get(noteId);
-                if (note) {
-                    // Deselect previously selected note
-                    const previousSelected = this.el.querySelector('.note-list-item.selected');
-                    if (previousSelected) {
-                        previousSelected.classList.remove('selected');
-                    }
-
-                    this.selectedNote = note;
-                    this.populateNoteDetails(note);
-                    this.edit.contentHandler.deserialize(note.content);
-                    this.displayTags(noteId);
-
-                    // Add 'selected' class to the clicked list item
-                    li.classList.add('selected');
-                }
-            } catch (error) {
-                this.app.errorHandler.handleError(error, 'Error selecting note');
-            }
-        });
-
+            await this.selectNote(noteId);
         this.app.db.get(noteId).then(note => {
             if (note) {
                 const yNoteMap = this.getYNoteMap(noteId);
@@ -331,6 +315,31 @@ export class NoteView extends HTMLElement {
         return li;
     }
 
+    async loadNote(noteId) {
+        try {
+            const note = await this.app.db.get(noteId);
+            if (note) {
+                // Deselect previously selected note
+                const previousSelected = this.el.querySelector('.note-list-item.selected');
+                if (previousSelected) {
+                    previousSelected.classList.remove('selected');
+                }
+
+                this.selectedNote = note;
+                this.populateNoteDetails(note);
+                this.edit.contentHandler.deserialize(note.content);
+                this.displayTags(noteId);
+
+                // Add 'selected' class to the clicked list item
+                const listItem = this.el.querySelector(`.note-list-item[data-id="${noteId}"]`);
+                if (listItem) {
+                    listItem.classList.add('selected');
+                }
+            }
+        } catch (error) {
+            this.app.errorHandler.handleError(error, 'Error selecting note');
+        }
+    }
     populateNoteDetails(note) {
         const titleInput = this.el.querySelector('.note-title-input');
         const privacyCheckbox = this.el.querySelector('.privacy-checkbox');
@@ -433,17 +442,39 @@ export class NoteView extends HTMLElement {
         this.getNoteTags(noteId).then(tags => {
             tags.forEach(tag => {
                 const tagItem = document.createElement('li');
-                tagItem.className = 'tag-item'; // Add a class for styling
+                tagItem.className = 'tag-item';
                 const tagDefinition = this.app.getTagDefinition(tag.name);
-                const tagInput = new TagInput(tagDefinition, tag.value, (newValue) => {
-                    // Handle tag value change
-                    console.log('Tag value changed:', newValue);
-                    this.updateTagValue(noteId, tag.name, newValue);
+                const tagComponent = new Tag(tagDefinition, tag.value, tag.condition, (updatedTag) => {
+                    this.updateTag(noteId, tag.name, updatedTag.getValue(), updatedTag.getCondition());
                 });
-                tagItem.appendChild(tagInput);
+                tagItem.addEventListener('tag-removed', () => {
+                    this.removeTagFromNote(noteId, tag.name);
+                });
+                tagItem.appendChild(tagComponent);
                 tagList.appendChild(tagItem);
             });
         });
+    }
+
+    async updateTag(noteId, tagName, newValue, newCondition) {
+        try {
+            const note = await this.app.db.get(noteId);
+            if (note) {
+                const tagIndex = note.tags.findIndex(tag => tag.name === tagName);
+                if (tagIndex !== -1) {
+                    note.tags[tagIndex].value = newValue;
+                    note.tags[tagIndex].condition = newCondition;
+                    await this.app.db.saveObject(note, false);
+                    this.displayTags(noteId);
+                } else {
+                    console.error('Tag not found');
+                }
+            } else {
+                console.error('Note not found');
+            }
+        } catch (error) {
+            console.error('Error updating tag:', error);
+        }
     }
 
     async removeTagFromNote(noteId, tagName) {
