@@ -7,6 +7,7 @@ export class NoteDetails extends HTMLElement {
         super();
         this.noteView = noteView;
         this.shadow = this.attachShadow({mode: 'open'});
+        this.selectedNoteId = null; // Track selected note ID
     }
 
     /**
@@ -14,7 +15,10 @@ export class NoteDetails extends HTMLElement {
      */
     connectedCallback() {
         this.shadow.addEventListener('tag-removed', this.handleTagRemoved.bind(this));
-        this.render();
+        this.noteView.store.subscribe(() => {
+            this.updateNoteDetails(); // Update on store changes
+        });
+        this.updateNoteDetails(); // Initial render
     }
 
     /**
@@ -53,17 +57,30 @@ export class NoteDetails extends HTMLElement {
     }
 
     /**
-     * Populates the note details.
-     * @param {object} note - The note to populate the details with.
+     * Updates the note details based on the selected note in the store.
      */
-    populateNoteDetails(note) {
-        this.render();
+    async updateNoteDetails() {
+        const selectedNoteId = this.noteView.store.getState().selectedNoteId;
+        if (selectedNoteId && selectedNoteId !== this.selectedNoteId) {
+            this.selectedNoteId = selectedNoteId;
+            try {
+                this.selectedNote = await this.noteView.db.get(selectedNoteId);
+                this.render();
+            } catch (error) {
+                console.error('Error fetching note details:', error);
+            }
+        }
     }
 
     /**
      * Renders the note details.
      */
     render() {
+        if (!this.selectedNote) {
+            this.shadow.innerHTML = `<p>No note selected.</p>`;
+            return;
+        }
+
         this.shadow.innerHTML = `
             <style>
                 .note-details-container {
@@ -79,8 +96,17 @@ export class NoteDetails extends HTMLElement {
                     flex-wrap: wrap;
                     gap: 5px;
                 }
+                .note-title {
+                    font-size: 1.5em;
+                    margin-bottom: 10px;
+                }
+                .note-content {
+                    white-space: pre-wrap; /* Preserve line breaks */
+                }
             </style>
             <div class="note-details-container">
+                <h2 class="note-title">${this.selectedNote.name}</h2>
+                <div class="note-content">${this.selectedNote.content}</div>
                 <div class="privacy-container">
                 </div>
                 <div class="note-tags-container">
@@ -102,8 +128,8 @@ export class NoteDetails extends HTMLElement {
         const tagsContainer = this.shadow.querySelector('.note-tags-container');
         tagsContainer.innerHTML = ''; // Clear existing tags
 
-        if (this.noteView.selectedNote && this.noteView.selectedNote.tags) {
-            this.noteView.selectedNote.tags.forEach(tag => {
+        if (this.selectedNote && this.selectedNote.tags) {
+            this.selectedNote.tags.forEach(tag => {
                 const tagElement = document.createElement('data-tag');
                 tagElement.setAttribute('tag-definition', JSON.stringify(tag));
                 tagElement.setAttribute('value', tag.value || '');
