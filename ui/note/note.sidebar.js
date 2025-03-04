@@ -1,28 +1,39 @@
-import { NotesToolbar } from './note.toolbar.js';
-import { CreateNoteButton } from './note.create.js';
+import { createElement } from '../utils.js';
 
 export class NotesSidebar extends HTMLElement {
-    constructor(app, notesView) {
+    constructor(app, noteView) {
         super();
         this.app = app;
-        this.notesView = notesView;
+        this.noteView = noteView;
+        this.el = createElement('aside', { id: 'notes-sidebar', className: 'notes-sidebar' });
+        this.elements = {}; // Store references to important elements
+        this.build();
+    }
 
-        this.el = document.createElement('div');
-        this.el.classList.add('notes-sidebar');
+    build() {
+        this.el.innerHTML = ''; // Clear existing content
 
-        const toolbar = new NotesToolbar();
-        this.el.appendChild(toolbar.render());
+        // Create and append the "Notes" heading
+        const notesHeading = createElement('h2', {}, 'Notes');
+        this.el.appendChild(notesHeading);
 
-		const createNoteButton = new CreateNoteButton(this.app, this.notesView);
-        this.el.appendChild(createNoteButton.render());
+        // Create and append the notes list
+        this.elements.notesList = createElement('ul', { id: 'notes-list', className: 'notes-list' });
+        this.el.appendChild(this.elements.notesList);
 
-        this.notesList = document.createElement('ul');
-        this.notesList.className = 'notes-list';
-        this.el.appendChild(this.notesList);
+        // Create and append the "Add" button (but don't add it to the list yet)
+        this.elements.addButton = this.newAddButton();
 
-        this.elements = {
-            notesList: this.notesList
-        };
+        // Append the sidebar to the main container
+        this.el.appendChild(this.elements.addButton);
+    }
+
+    newAddButton() {
+        const addButton = createElement('button', {}, 'Add Note');
+        addButton.addEventListener('click', async () => {
+            await this.noteView.createNote();
+        });
+        return addButton;
     }
 
     render() {
