@@ -128,9 +128,11 @@ export class NoteView extends HTMLElement {
 
         const nameElement = document.createElement('div');
         nameElement.style.fontWeight = 'bold';
-        // nameElement.textContent = `Note ID: ${noteId.substring(0, 8)}...`; // Display a shortened note ID for now
-        // TODO [NOTELIST-1]: Fetch note name from Yjs and display it
-        nameElement.textContent = `Note ID: ${noteId.substring(0, 8)}...`; // Placeholder, replace with actual note name
+
+        // NOTELIST-1: Fetch note name from Yjs and display it
+        const yNoteMap = this.yDoc.getMap('notes').get(noteId);
+        const noteName = yNoteMap ? yNoteMap.get('name') : `Note ID: ${noteId.substring(0, 8)}...`; // Fallback to ID if name not found
+        nameElement.textContent = noteName;
 
         liContent.appendChild(nameElement);
 
