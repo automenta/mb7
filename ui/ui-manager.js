@@ -1,54 +1,61 @@
-import {View} from "./view.js";
-import {renderNetworkStatus, renderNostrFeed} from "./content-view-renderer.js";
+import { createLayout } from './layout.js';
+import {NoteView} from "./view.note";
+import {FriendsView} from "./view.friends";
+import {SettingsView} from "./view.settings";
+import {ContentView} from "./ui-manager";
 
-/**
- * Manages the main content area of the application.
- */
-class ContentView extends View {
+export class UIManager {
     constructor(app) {
-        super();
         this.app = app;
-        this.elements = {};
-        this.el = document.createElement('div');
-        this.el.id = 'content-view';
     }
 
-    build() {
-        const heading = document.createElement('h2');
-        heading.textContent = 'Content';
+    async setupUI(appDiv) {
+        document.title = "Netention"; // Set the document title
+        const {noteView, friendsView, settingsView, contentView} = this.initializeViews(this.app);
+        this.setupDefaultView(this.app, noteView, contentView);
+        const {menubar, mainContent} = createLayout(this.app, appDiv, noteView, friendsView, settingsView, contentView);
 
-        const filterInput = document.createElement('input');
-        filterInput.type = 'text';
-        filterInput.id = 'filter';
-        filterInput.placeholder = 'Filter';
+        // Select the first note if no notes exist
+        let notes;
+        try {
+            notes = await this.app.db.getAll();
+            if (!notes || notes.length === 0) {
+                await this.app.noteManager.createDefaultNote();
+            }
+        } catch (error) {
+            this.app.errorHandler.handleError(error, 'Error loading notes or creating default note');
+        }
 
-        const objectListDiv = document.createElement('div');
-        objectListDiv.id = 'object-list';
+        // Display the name of the note in the editor title
+        document.title = this.app.selected ? `Netention - ${this.app.selected.name}` : "Netention";
+    }
 
-        const nostrFeedDiv = document.createElement('div');
-        nostrFeedDiv.id = 'nostr-feed';
+    initializeViews(app) {
+        const noteView = new NoteView(app, app.db, app.nostr);
+        const friendsView = new FriendsView(app, app.db, app.nostr);
+        const settingsView = new SettingsView(app, app.db, app.nostr);
+        const contentView = new ContentView(app);
 
-        const networkStatusDiv = document.createElement('div');
-        networkStatusDiv.id = 'network-status';
+        return {noteView, friendsView, settingsView, contentView};
+    }
 
-        this.el.appendChild(heading);
-        this.el.appendChild(filterInput);
-        this.el.appendChild(objectListDiv);
-        this.el.appendChild(nostrFeedDiv);
-        this.el.appendChild(networkStatusDiv);
+    async setupDefaultView(app, noteView, contentView) {
+        // Default to showing the NoteView
+        app.viewManager.showView(noteView);
 
-        this.elements.filter = filterInput;
-        this.elements.objectList = objectListDiv;
-
-        renderNostrFeed(this.app, this.el);
-        renderNetworkStatus(this.app, this.el);
-
-        this.elements.filter.addEventListener('input', () => {
-            // TODO: Implement filtering logic
-            console.log('Filtering...');
-        });
+        // Load the first note if no note is selected
+        if (!app.selected) {
+            let notes;
+            try {
+                notes = await app.db.getAll();
+                if (notes && notes.length > 0) {
+                    await noteView.selectNote(notes[0].id);
+                } else {
+                    console.warn('No notes available to select.');
+                }
+            } catch (error) {
+                app.errorHandler.handleError(error, 'Error loading notes');
+            }
+        }
     }
 }
-
-
-export {ContentView};
