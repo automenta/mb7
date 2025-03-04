@@ -249,6 +249,9 @@ class Edit {
         // Restore cursor position after tag insertion/replacement
         this.editorArea.focus();
         this.editorArea.setSelectionRange(newCursorPosition, newCursorPosition);
+
+        // Trigger autosuggest after saving
+        this.autosuggest.apply();
     }
 
     async deleteTag() {
