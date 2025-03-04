@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>NoteView Component Dev UI</title>
+    <title>Component Dev UI</title>
     <style>
         body { font-family: sans-serif; }
         .dev-ui-container { display: flex; }
@@ -19,38 +19,75 @@
             border: 1px dashed blue; /* Example border to visualize NoteView area */
             padding: 10px;
         }
+        #tag-input-container {
+            border: 1px dashed green;
+            padding: 10px;
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body>
-    <h1>NoteView Component Dev UI</h1>
+    <h1>Component Dev UI</h1>
     <div class="dev-ui-container">
         <div class="component-preview-area">
             <h2>NoteView Component Preview</h2>
             <div id="note-view-container">
                 <!-- NoteView component will be rendered here -->
             </div>
+
+            <h2>TagInput Component Preview</h2>
+            <div id="tag-input-container">
+                <!-- TagInput component will be rendered here -->
+            </div>
         </div>
         <div class="controls-panel">
             <h2>Controls</h2>
             <div id="note-loading-controls">
-                <h3>Load Notes</h3>
+                <h3>NoteView Controls</h3>
                 <button id="load-note-1-button">Load Note 1</button><br><br>
                 <button id="load-note-2-button">Load Note 2</button><br><br>
+            </div>
+
+            <div id="tag-input-controls">
+                <h3>TagInput Controls</h3>
+                <label for="tag-name-select">Tag Definition:</label>
+                <select id="tag-name-select">
+                    <option value="location">location</option>
+                    <option value="time">time</option>
+                    <option value="string">string</option>
+                    <option value="number">number</option>
+                    <option value="boolean">boolean</option>
+                    <!-- Add more tag options as needed -->
+                </select><br><br>
+
+                <label for="tag-value-input">Value:</label>
+                <input type="text" id="tag-value-input" value=""><br><br>
+
+                <label for="tag-condition-select">Condition:</label>
+                <select id="tag-condition-select">
+                    <!-- Options will be populated dynamically based on tag definition -->
+                </select><br><br>
+
+                <button id="render-tag-input-button">Render TagInput</button>
+                <div id="tag-input-output"></div> <!-- For displaying output/messages -->
             </div>
         </div>
     </div>
 
     <script type="module">
         import { NoteView } from './ui/view.note.js';
+        import { TagInput } from './ui/tag-input.js';
         import { createAppMock } from './test/test-utils.js';
+        import { Ontology, getTagDefinition } from './core/ontology.js'; // Import Ontology and getTagDefinition
         import * as Y from 'yjs';
 
         document.addEventListener('DOMContentLoaded', () => {
+            // --- NoteView Dev UI ---
             const noteViewContainer = document.getElementById('note-view-container');
             const loadNote1Button = document.getElementById('load-note-1-button');
             const loadNote2Button = document.getElementById('load-note-2-button');
-
             let noteViewInstance;
+            // ... (NoteView Dev UI setup - same as before) ...
             let appMock = createAppMock(); // Get a base mock app object
 
             // Mock DB.get to return different notes for note1 and note2
@@ -63,16 +100,8 @@
                 return null; // Or handle default case
             };
 
-            // Mock getTagDefinition - for simplicity, return a default string tag definition
-            appMock.getTagDefinition = (tagName) => {
-                return {
-                    name: tagName,
-                    label: tagName,
-                    ui: { type: "text" },
-                    validate: () => true,
-                    conditions: ["is", "contains"]
-                };
-            };
+            // Mock getTagDefinition - use actual getTagDefinition from ontology
+            appMock.getTagDefinition = getTagDefinition;
             appMock.schema = {}; // Mock schema if needed
             appMock.store = { // Mock store for NoteView
                 dispatch: () => {},
@@ -83,7 +112,7 @@
             appMock.noteManager = { saveObject: () => {}, createNote: () => {} }; // Mock noteManager
             appMock.noteYjsHandler = { getYNoteMap: () => {} }; // Mock noteYjsHandler
             appMock.notificationManager = { showNotification: console.log }; // Mock notificationManager
-            appMock.ontology = {}; // Mock ontology
+            appMock.ontology = Ontology; // Use actual Ontology for TagInput testing
 
             noteViewInstance = new NoteView( // Create NoteView instance
                 appMock.store,
@@ -103,6 +132,63 @@
 
             loadNote2Button.addEventListener('click', () => {
                 noteViewInstance.loadNote('note2');
+            });
+
+
+            // --- TagInput Dev UI ---
+            const tagInputContainer = document.getElementById('tag-input-container');
+            const tagNameSelect = document.getElementById('tag-name-select');
+            const tagValueInput = document.getElementById('tag-value-input');
+            const tagConditionSelect = document.getElementById('tag-condition-select');
+            const renderTagInputButton = document.getElementById('render-tag-input-button');
+            const tagInputOutput = document.getElementById('tag-input-output');
+
+            let tagInputInstance;
+
+            // Function to render TagInput based on selected tag definition
+            const renderTagInput = () => {
+                tagInputContainer.innerHTML = ''; // Clear previous TagInput
+                tagInputOutput.innerHTML = ''; // Clear output messages
+
+                const selectedTagName = tagNameSelect.value;
+                const tagDefinition = Ontology[selectedTagName]; // Get tag definition from Ontology
+                const initialValue = tagValueInput.value;
+
+                // Populate condition options based on tagDefinition
+                tagConditionSelect.innerHTML = ''; // Clear previous options
+                if (tagDefinition && tagDefinition.conditions) {
+                    tagDefinition.conditions.forEach(condition => {
+                        const option = document.createElement('option');
+                        option.value = condition;
+                        option.textContent = condition;
+                        tagConditionSelect.appendChild(option);
+                    });
+                }
+
+                if (tagDefinition) {
+                    tagInputInstance = new TagInput(
+                        tagDefinition,
+                        initialValue,
+                        tagConditionSelect.value, // Use selected condition
+                        (newValue, newCondition) => {
+                            tagInputOutput.textContent = `TagInput onChange: Value: ${newValue}, Condition: ${newCondition}`;
+                        }
+                    );
+                    tagInputContainer.appendChild(tagInputInstance);
+                } else {
+                    tagInputOutput.textContent = `Tag definition not found for: ${selectedTagName}`;
+                }
+            };
+
+            renderTagInputButton.addEventListener('click', renderTagInput);
+
+            tagNameSelect.addEventListener('change', () => {
+                renderTagInput(); // Re-render TagInput when tag definition changes
+            });
+            tagConditionSelect.addEventListener('change', () => {
+                if (tagInputInstance) {
+                    tagInputInstance.onChange(tagValueInput.value, tagConditionSelect.value); // Simulate onChange when condition changes
+                }
             });
         });
     </script>
