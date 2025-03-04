@@ -193,5 +193,3 @@ class Edit {
         }
     }
 }
-
-export { Edit };
