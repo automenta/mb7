@@ -103,6 +103,11 @@ export class NoteDetails extends HTMLElement {
                 ${this.createPrivacyEdit().outerHTML}
                 <div class="note-tags-container">
                     <input type="text" id="new-tag-name" placeholder="Tag Name">
+                    <select id="new-tag-condition">
+                        <option value="is">is</option>
+                        <option value="contains">contains</option>
+                    </select>
+                    <input type="text" id="new-tag-value" placeholder="Tag Value">
                     <button id="add-tag-button">Add Tag</button>
                 </div>
             </div>
@@ -113,9 +118,15 @@ export class NoteDetails extends HTMLElement {
         addTagButton.addEventListener('click', () => {
             const tagNameInput = this.shadow.getElementById('new-tag-name');
             const tagName = tagNameInput.value.trim();
+            const tagConditionSelect = this.shadow.getElementById('new-tag-condition');
+            const tagCondition = tagConditionSelect.value;
+            const tagValueInput = this.shadow.getElementById('new-tag-value');
+            const tagValue = tagValueInput.value.trim();
+
             if (tagName) {
-                this.createTag(tagName);
+                this.createTag(tagName, tagValue, tagCondition);
                 tagNameInput.value = '';
+                tagValueInput.value = '';
             }
         });
     }

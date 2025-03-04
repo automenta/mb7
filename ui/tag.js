@@ -152,6 +152,11 @@ class Tag extends HTMLElement {
                     margin-right: 4px;
                 }
 
+                .tag-condition {
+                    font-style: italic;
+                    margin-right: 4px;
+                }
+
                 .tag > button {
                     background-color: transparent;
                     border: none;
@@ -204,7 +209,7 @@ class Tag extends HTMLElement {
             title: `Remove ${this.tagDefinition.name}`
         }, 'X');
         removeButton.addEventListener('click', () => {
-            this.remove();
+            this.removeTag();
         });
         el.appendChild(removeButton);
 
@@ -236,6 +241,34 @@ class Tag extends HTMLElement {
 
     getCondition() {
         return this.condition;
+    }
+
+        async removeTag() {
+        try {
+            const tagName = this.tagDefinition.name;
+            const noteDetails = this.closest('note-details');
+            if (noteDetails) {
+                const noteView = noteDetails.noteView;
+                if (noteView && noteView.selectedNote) {
+                    const note = noteView.selectedNote;
+                    const tagIndex = note.tags.findIndex(tag => tag.name === tagName);
+                    if (tagIndex !== -1) {
+                        note.tags.splice(tagIndex, 1);
+                        await noteView.app.db.saveObject(note, false);
+                        noteDetails.renderTags();
+                        noteView.displayTags(note.id);
+                    } else {
+                        console.error('Tag not found');
+                    }
+                } else {
+                    console.error('NoteView or selectedNote not found');
+                }
+            } else {
+                console.error('NoteDetails component not found');
+            }
+        } catch (error) {
+            console.error('Error removing tag:', error);
+        }
     }
 
     getTagDefinition() {
