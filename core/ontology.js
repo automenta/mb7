@@ -20,9 +20,23 @@ export const Ontology = {
             }
             return isValidDate(value);
         },
-        serialize: (value) => typeof value === 'object' && value !== null ?
-            {start: formatISO(parseISO(value.start)), end: formatISO(parseISO(value.end))} : formatISO(parseISO(value)),
-        deserialize: (value) => value
+        serialize: (value) => {
+            if (typeof value === 'object' && value !== null) {
+                return JSON.stringify({start: formatISO(parseISO(value.start)), end: formatISO(parseISO(value.end))});
+            }
+            return formatISO(parseISO(value));
+        },
+        deserialize: (value) => {
+            try {
+                const parsed = JSON.parse(value);
+                if (parsed && typeof parsed === 'object' && parsed.start && parsed.end) {
+                    return { start: parsed.start, end: parsed.end };
+                }
+            } catch (e) {
+                // Ignore JSON parsing errors, assume it's a single date
+            }
+            return value;
+        }
     },
     "string": {
         conditions: ["is", "contains", "matches regex"],
@@ -41,11 +55,21 @@ export const Ontology = {
         },
         serialize: (value) => {
             if (typeof value === 'object' && value !== null) {
-                return {lower: String(value.lower), upper: String(value.upper)};
+                return JSON.stringify({lower: String(value.lower), upper: String(value.upper)});
             }
             return String(value)
         },
-        deserialize: (value) => value,
+        deserialize: (value) => {
+            try {
+                const parsed = JSON.parse(value);
+                if (parsed && typeof parsed === 'object' && parsed.lower && parsed.upper) {
+                    return { lower: parsed.lower, upper: parsed.upper };
+                }
+            } catch (e) {
+                // Ignore JSON parsing errors, assume it's a single number
+            }
+            return value;
+        },
         ui: {
             type: "number",
             unit: "meters",
@@ -59,8 +83,8 @@ export const Ontology = {
         validate: (value, condition) => {
             return typeof value === 'object';
         },
-        serialize: (value) => value,
-        deserialize: (value) => value
+        serialize: (value) => JSON.stringify(value),
+        deserialize: (value) => JSON.parse(value)
     },
     "Emotion": {
         conditions: ["is", "is between", "is below", "is above"],
@@ -73,11 +97,21 @@ export const Ontology = {
         },
         serialize: (value) => {
             if (typeof value === 'object' && value !== null) {
-                return {lower: String(value.lower), upper: String(value.upper)};
+                return JSON.stringify({lower: String(value.lower), upper: String(value.upper)});
             }
             return String(value)
         },
-        deserialize: (value) => value
+        deserialize: (value) => {
+            try {
+                const parsed = JSON.parse(value);
+                if (parsed && typeof parsed === 'object' && parsed.lower && parsed.upper) {
+                    return { lower: parsed.lower, upper: parsed.upper };
+                }
+            } catch (e) {
+                // Ignore JSON parsing errors, assume it's a single number
+            }
+            return value;
+        }
     },
     "Business": {
         conditions: ["is one of"],
@@ -88,21 +122,31 @@ export const Ontology = {
     "Data": {
         conditions: ["is one of"],
         validate: (value, condition) => Array.isArray(value),
-        serialize: (value) => value,
-        deserialize: (value) => value
+        serialize: (value) => JSON.stringify(value),
+        deserialize: (value) => JSON.parse(value)
     },
     "DueDate": {
         conditions: ["is", "before", "after", "between"],
         validate: (value, condition) => condition === "between" ? isValidDate(value.start) && isValidDate(value.end) : isValidDate(value),
-        serialize: (value) => typeof value === 'object' && value !== null ? {start: value.start, end: value.end} : value,
-        deserialize: (value) => value
+        serialize: (value) => typeof value === 'object' && value !== null ? JSON.stringify({start: value.start, end: value.end}) : value,
+        deserialize: (value) => {
+            try {
+                const parsed = JSON.parse(value);
+                if (parsed && typeof parsed === 'object' && parsed.start && parsed.end) {
+                    return { start: parsed.start, end: parsed.end };
+                }
+            } catch (e) {
+                // Ignore JSON parsing errors, assume it's a single date
+            }
+            return value;
+        }
     },
     "List": {
         conditions: ["is"],
         type: "list",
         validate: (value, condition) => Array.isArray(value),
-        serialize: (value) => value,
-        deserialize: (value) => value
+        serialize: (value) => JSON.stringify(value),
+        deserialize: (value) => JSON.parse(value)
     },
     "Settings": {
         conditions: ["is"],
@@ -113,42 +157,54 @@ export const Ontology = {
                 required: false,
                 label: "Nostr Relays",
                 description: "Comma-separated list of Nostr relay URLs.",
-                validate: (value, condition) => typeof value === "string"
+                validate: (value, condition) => typeof value === "string",
+                serialize: (value) => value,
+                deserialize: (value) => value
             },
             "webrtcNostrRelays": {
                 type: "string",
                 required: false,
                 label: "WebRTC Nostr Relays",
                 description: "Comma-separated list of WebRTC Nostr relay URLs.",
-                validate: (value, condition) => typeof value === "string"
+                validate: (value, condition) => typeof value === "string",
+                serialize: (value) => value,
+                deserialize: (value) => value
             },
             "privateKey": {
                 type: "string",
                 required: false,
                 label: "Nostr Private Key",
                 description: "Your Nostr private key (hex or npriv).",
-                validate: (value, condition) => typeof value === "string"
+                validate: (value, condition) => typeof value === "string",
+                serialize: (value) => value,
+                deserialize: (value) => value
             },
             "dateFormat": {
                 type: "string",
                 required: false,
                 label: "Date Format",
                 description: "The format for displaying dates.",
-                validate: (value, condition) => typeof value === "string"
+                validate: (value, condition) => typeof value === "string",
+                serialize: (value) => value,
+                deserialize: (value) => value
             },
             "profileName": {
                 type: "string",
                 required: false,
                 label: "Profile Name",
                 description: "Your profile name.",
-                validate: (value, condition) => typeof value === "string"
+                validate: (value, condition) => typeof value === "string",
+                serialize: (value) => value,
+                deserialize: (value) => value
             },
             "profilePicture": {
                 type: "string",
                 required: false,
                 label: "Profile Picture URL",
                 description: "URL for your profile picture.",
-                validate: (value, condition) => typeof value === "string"
+                validate: (value, condition) => typeof value === "string",
+                serialize: (value) => value,
+                deserialize: (value) => value
             },
             "signalingStrategy": {
                 type: "select",
@@ -156,14 +212,18 @@ export const Ontology = {
                 label: "Signaling Strategy",
                 description: "The signaling strategy to use for WebRTC.",
                 options: ["nostr", "webrtc"],
-                validate: (value, condition) => ["nostr", "webrtc"].includes(value)
+                validate: (value, condition) => ["nostr", "webrtc"].includes(value),
+                serialize: (value) => value,
+                deserialize: (value) => value
             },
             "word2vecModelPath": {
                 type: "string",
                 required: false,
                 label: "Word2Vec Model Path",
                 description: "Path to the Word2Vec model file.",
-                validate: (value, condition) => typeof value === "string"
+                validate: (value, condition) => typeof value === "string",
+                serialize: (value) => value,
+                deserialize: (value) => value
             }
         }
     },
@@ -181,8 +241,8 @@ Ontology.Note = {
     validate: (value, condition) => {
         return typeof value === 'object';
     },
-    serialize: (value) => value,
-    deserialize: (value) => value
+    serialize: (value) => JSON.stringify(value),
+    deserialize: (value) => JSON.parse(value)
 };
 
 Ontology.Event = {
@@ -191,8 +251,8 @@ Ontology.Event = {
     validate: (value, condition) => {
         return typeof value === 'object';
     },
-    serialize: (value) => value,
-    deserialize: (value) => value
+    serialize: (value) => JSON.stringify(value),
+    deserialize: (value) => JSON.parse(value)
 };
 
 Ontology.Relay = {
@@ -201,8 +261,8 @@ Ontology.Relay = {
     validate: (value, condition) => {
         return typeof value === 'object';
     },
-    serialize: (value) => value,
-    deserialize: (value) => value
+    serialize: (value) => JSON.stringify(value),
+    deserialize: (value) => JSON.parse(value)
 };
 
 const isValidDate = (dateString) => {
