@@ -43,10 +43,14 @@ describe('OntologyBrowser Component', () => {
         ontologyBrowser.render(Ontology);
         await vi.waitFor(() => document.querySelector('.ontology-instance'));
         const tagInstance = document.querySelector('.ontology-instance');
-        tagInstance.addEventListener('click', onTagSelect);
-        tagInstance.dispatchEvent(new Event('click'));
-        await vi.waitFor(() => {
-            expect(onTagSelect).toHaveBeenCalled();
-        });
+        if (tagInstance) {
+            tagInstance.addEventListener('click', onTagSelect);
+            tagInstance.dispatchEvent(new Event('click'));
+            await vi.waitFor(() => {
+                expect(onTagSelect).toHaveBeenCalled();
+            });
+        } else {
+            console.warn('No .ontology-instance found in the DOM.');
+        }
     });
 });

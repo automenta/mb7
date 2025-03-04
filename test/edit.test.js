@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest';
-import {Edit} from '../ui/edit/edit';
+import {Edit} from '../ui/edit/edit.js';
 import {Ontology} from '../core/ontology';
 
 describe('Edit Autosuggest', () => {

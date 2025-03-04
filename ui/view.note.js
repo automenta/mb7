@@ -1,7 +1,7 @@
 import * as Y from 'yjs';
 import { NoteUI } from './note/note.ui.js';
 import {NoteList} from "./note/note-list";
-import {NoteDetails} from "./note/note/note-details.js";
+import {NoteDetails} from "./note/note.details.js";
 import {TagDisplay} from "./tag-display";
 import {MyObjectsList} from "./my-objects-list";
 import {NoteYjsManager} from "../core/note.yjs.manager";
