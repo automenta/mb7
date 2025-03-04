@@ -84,8 +84,13 @@ class Edit {
      * Renders the content of the editor area, including text and tags.
      */
     renderContent() {
+        // Save current selection
+        const selection = window.getSelection();
+        const range = selection.rangeCount > 0 ? selection.getRangeAt(0) : false;
+
         // Clear the editor area
         this.editorArea.innerHTML = '';
+
 
         // Get the current text from Yjs
         const text = this.yText.toString();
@@ -121,6 +126,15 @@ class Edit {
         // Add the remaining text after the last tag
         if (lastIndex < text.length) {
             this.editorArea.appendChild(document.createTextNode(text.substring(lastIndex)));
+        }
+
+        // Restore selection if it existed
+        if (range) {
+            selection.removeAllRanges();
+            selection.addRange(range);
+        } else {
+            // If no selection to restore, place cursor at the end
+            this.editorArea.focus();
         }
     }
 

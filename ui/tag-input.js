@@ -70,6 +70,9 @@ class TagInput extends HTMLElement {
         let inputElement;
 
         switch (uiType) {
+            case 'boolean':
+                inputElement = createElement('input', {type: 'checkbox', checked: this.value === 'true'});
+                break;
             case 'text':
                 inputElement = createElement('input', {type: 'text', value: this.value || ''});
                 break;
@@ -83,9 +86,14 @@ class TagInput extends HTMLElement {
                 inputElement = createElement('input', {type: 'text', value: this.value || ''});
         }
 
-        inputElement.addEventListener('input', (e) => {
-            this.value = e.target.value;
-            this.onChange(this.value, this.condition);
+        inputElement.addEventListener('change', (e) => {
+            if (inputElement.type === 'checkbox') {
+                this.value = e.target.checked ? 'true' : 'false'; // Store boolean as string 'true' or 'false'
+            } else {
+                this.value = e.target.value;
+            }
+            this.onChange(this.value, this.condition); // Notify parent component of value and condition changes
+            this.updateSuggestions(this.value);
         });
 
         this.appendChild(inputElement);

@@ -62,7 +62,7 @@ export const Ontology = {
         validate: (value, condition) => typeof value === "string" && value.length > 0,
         serialize: (value) => value,
         deserialize: (value) => value,
-        ui: {type: "text", placeholder: "Enter a location", icon: "📍"}
+        ui: { type: "text", placeholder: "Enter a location", icon: "📍" }
     },
     "time": {
         conditions: ["is", "before", "after", "between"],
@@ -74,7 +74,7 @@ export const Ontology = {
         conditions: ["is", "contains", "matches regex"],
         validate: (value, condition) => typeof value === "string",
         serialize: (value) => value,
-        deserialize: (value) => value
+        deserialize: (value) => value,
     },
     "number": {
         conditions: ["is", "greater than", "less than", "between"],
@@ -240,8 +240,9 @@ export const Ontology = {
     "Public": {
         conditions: ["is"],
         validate: (value, condition) => typeof value === "boolean",
-        serialize: (value) => value.toString(),
-        deserialize: (value) => value === "true"
+        serialize: (value) => value.toString(), // Serialize boolean to string
+        deserialize: (value) => value === "true",
+        ui: { type: "boolean" }
     },
     "textarea": {
         conditions: ["is", "contains"],
@@ -255,7 +256,14 @@ export const Ontology = {
         validate: (value, condition) => condition === "between" ? isValidDate(value.start) && isValidDate(value.end) : isValidDate(value),
         serialize: serializeDate,
         deserialize: deserializeDate,
-        ui: {type: "date"}
+        ui: { type: "date" }
+    },
+    "boolean": { // Added boolean tag definition
+        conditions: ["is"],
+        validate: (value, condition) => typeof value === "boolean",
+        serialize: (value) => value.toString(), // Serialize boolean to string
+        deserialize: (value) => value === "true",
+        ui: { type: "boolean" } // Define UI type for boolean tags
     }
 };
 
