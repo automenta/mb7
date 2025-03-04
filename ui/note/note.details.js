@@ -69,10 +69,6 @@ export class NoteDetails extends HTMLElement {
         return tagsContainer;
     }
 
-    async createTag(tagName, tagValue = '', tagCondition = 'is') {
-        this.noteView.addTagToNote(tagName, tagValue, tagCondition);
-    }
-
     render() {
         this.shadow.innerHTML = `
             <style>
@@ -105,10 +101,23 @@ export class NoteDetails extends HTMLElement {
             <div class="note-details-container">
                 <div class="priority-edit-container">${this.createPriorityEdit().outerHTML}</div>
                 ${this.createPrivacyEdit().outerHTML}
-                <div class="note-tags-container"></div>
+                <div class="note-tags-container">
+                    <input type="text" id="new-tag-name" placeholder="Tag Name">
+                    <button id="add-tag-button">Add Tag</button>
+                </div>
             </div>
         `;
         this.renderTags();
+
+        const addTagButton = this.shadow.getElementById('add-tag-button');
+        addTagButton.addEventListener('click', () => {
+            const tagNameInput = this.shadow.getElementById('new-tag-name');
+            const tagName = tagNameInput.value.trim();
+            if (tagName) {
+                this.createTag(tagName);
+                tagNameInput.value = '';
+            }
+        });
     }
 
     async renderTags() {
@@ -124,6 +133,10 @@ export class NoteDetails extends HTMLElement {
                 tagsContainer.appendChild(tagElement);
             });
         }
+    }
+
+    async createTag(tagName, tagValue = '', tagCondition = 'is') {
+        this.noteView.addTagToNote(tagName, tagValue, tagCondition);
     }
 }
 
