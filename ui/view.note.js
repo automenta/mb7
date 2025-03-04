@@ -63,8 +63,8 @@ export class NoteView extends HTMLElement {
 
         this.yDoc = new Y.Doc();
         this.noteUI = new NoteUI();
-        this.notesListComponent = new GenericListComponent(this.renderNoteItem.bind(this), 'notes-list');
         this.noteList = new NoteList(this.store, this, this.yDoc, this.yDoc.getMap('notes'));
+        this.notesListComponent = new GenericListComponent(this.renderNoteItem.bind(this), this.noteList.yNotesList);
         this.noteDetails = new NoteDetails(this);
         this.tagDisplay = new TagDisplay();
         this.myObjectsList = new MyObjectsList(this, this.yDoc.getArray('myObjects'));
