@@ -16,16 +16,58 @@ class TagSerializer {
     }
 }
 
-class EditorContentHandler {
-    constructor(editor, autosuggest, yDoc, yText, yName, app) {
-        this.editor = editor;
-        this.autosuggest = autosuggest;
+class YjsContentManager {
+    constructor(yDoc, yText) {
         this.yDoc = yDoc;
         this.yText = yText;
-        this.yName = yName;
+    }
+
+    setName(name) {
+        this.yDoc.transact(() => {
+            this.yName.delete(0, this.yName.length);
+            this.yName.insert(0, name);
+        });
+    }
+
+    setContent(html) {
+        this.updateYjsContent(html);
+    }
+
+    updateYjsContent(html) {
+        this.yDoc.transact(() => {
+            this.yText.delete(0, this.yText.length);
+            this.yText.insert(0, html);
+        });
+    }
+
+    observeYjsChanges(updateEditorArea) {
+        this.yText.observe(() => {
+            const html = this.yText.toString();
+            updateEditorArea(html);
+        });
+    }
+}
+
+class HTMLSanitizer {
+    sanitizeHTML(html) {
+        return DOMPurify.sanitize(html, {
+            ALLOWED_TAGS: ["br", "b", "i", "span", "u", "a"],
+            ALLOWED_ATTR: ["class", "contenteditable", "tabindex", "id", "href", "target"]
+        });
+    }
+}
+
+class EditorContentHandler {
+    constructor(editor, autosuggest, yDoc, yText, app) {
+        this.editor = editor;
+        this.autosuggest = autosuggest;
         this.app = app;
         this.lastValidRange = null; // Store the last valid range within the editor for handling tag insertions
-        this.observeYjsChanges();
+        this.tagSerializer = new TagSerializer();
+        this.yjsContentManager = new YjsContentManager(yDoc, yText);
+        this.htmlSanitizer = new HTMLSanitizer();
+
+        this.yjsContentManager.observeYjsChanges(this.updateEditorArea.bind(this));
     }
 
     insertLineBreak() {
@@ -149,16 +191,9 @@ class EditorContentHandler {
         }
     }
 
-    setName(name) {
-        this.yDoc.transact(() => {
-            this.yName.delete(0, this.yName.length);
-            this.yName.insert(0, name);
-        });
-    }
-
     setContent(html) {
         console.log('Edit.setContent called', html);
-        this.updateYjsContent(html);
+        this.yjsContentManager.setContent(html);
         this.editor.autosuggest.apply();
         const text = this.serialize();
         //if (text.includes('[TAG:{"name":"Public"}')) {
@@ -166,29 +201,12 @@ class EditorContentHandler {
         //}
     }
 
-    updateYjsContent(html) {
-        this.yDoc.transact(() => {
-            this.yText.delete(0, this.yText.length);
-            this.yText.insert(0, html);
-        });
-    }
-
     sanitizeHTML(html) {
-        return DOMPurify.sanitize(html, {
-            ALLOWED_TAGS: ["br", "b", "i", "span", "u", "a"],
-            ALLOWED_ATTR: ["class", "contenteditable", "tabindex", "id", "href", "target"]
-        });
+        return this.htmlSanitizer.sanitizeHTML(html);
     }
 
     updateEditorArea(html) {
         this.editor.editorArea.innerHTML = html;
-    }
-
-    observeYjsChanges() {
-        this.yText.observe(() => {
-            const html = this.yText.toString();
-            this.updateEditorArea(html);
-        });
     }
 }
 
