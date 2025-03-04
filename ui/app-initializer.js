@@ -19,13 +19,24 @@ async function createApp(appDiv) {
     const nostrInitializer = new NostrInitializer(db, errorHandler);
     const nostr = await nostrInitializer.initNostr();
     const matcher = new Matcher();
-    const settingsManager = new SettingsManager(db, errorHandler);
+
+    // Load the ontology
+    let ontology = null;
+    try {
+        const response = await fetch('core/ontology.json');
+        ontology = await response.json();
+    } catch (error) {
+        errorHandler.handleError(error, 'Failed to load ontology.json');
+        ontology = {}; // Use an empty object if loading fails
+    }
+
+    const settingsManager = new SettingsManager(db, errorHandler, ontology);
     const noteManager = new NoteManager(db, errorHandler, matcher, nostr, notificationManager);
     const viewManager = new ViewManager();
     const uiManager = new UIManager();
 
-    const app = new App(db, nostr, matcher, errorHandler, notificationManager, monitoring, settingsManager, noteManager, viewManager, uiManager);
-    app.settings = await app.db.getSettings();
+    const app = new App(db, nostr, matcher, errorHandler, notificationManager, monitoring, settingsManager, noteManager, viewManager, uiManager, ontology);
+    app.settings = await app.settingsManager.getSettings();
     return app;
 }
 

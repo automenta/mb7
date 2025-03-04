@@ -1,0 +1,17 @@
+{
+  "settings": {
+    "signalingStrategy": {
+      "type": "select",
+      "default": "nostr",
+      "options": ["nostr", "webrtc"]
+    },
+    "nostrRelays": {
+      "type": "string",
+      "default": ""
+    },
+    "nostrPrivateKey": {
+      "type": "string",
+      "default": ""
+    }
+  }
+}
