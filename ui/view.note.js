@@ -438,7 +438,17 @@ export class NoteView extends HTMLElement {
         while (tagList.firstChild) {
             tagList.removeChild(tagList.firstChild);
         }
-        this.getNoteTags(noteId).then(tags => {
+        this.renderTags(noteId);
+    }
+
+    async renderTags(noteId) {
+        const tagList = this.el.querySelector('.note-tag-list');
+        while (tagList.firstChild) {
+            tagList.removeChild(tagList.firstChild);
+        }
+
+        const tags = await this.getNoteTags(noteId);
+        if (tags && tags.length > 0) {
             tags.forEach(tag => {
                 const tagItem = document.createElement('li');
                 tagItem.className = 'tag-item';
@@ -452,7 +462,7 @@ export class NoteView extends HTMLElement {
                 tagItem.appendChild(tagComponent);
                 tagList.appendChild(tagItem);
             });
-        });
+        }
     }
 
     async updateTag(noteId, tagName, newValue, newCondition) {
