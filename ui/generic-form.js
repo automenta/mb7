@@ -14,33 +14,82 @@ export class GenericForm {
 
     async build() {
         this.el.innerHTML = "";
-        const form = createElement("form");
+        const form = createElement("form", { className: 'generic-form-form' });
+
         for (const property in this.schema.tags) {
+            if (!this.schema.tags.hasOwnProperty(property)) continue;
+
             const propertySchema = this.schema.tags[property];
-            const label = createElement("label", {for: property}, propertySchema.label || property);
+            const label = createElement("label", {
+                for: property,
+                className: 'generic-form-label'
+            }, propertySchema.label || property);
+
             let input;
+
             switch (propertySchema.type) {
                 case "string":
-                    input = createElement("input", { type: "text", id: property, name: property });
+                    input = createElement("input", {
+                        type: "text",
+                        id: property,
+                        name: property,
+                        className: 'generic-form-input'
+                    });
                     break;
                 case "number":
-                    input = createElement("input", { type: "number", id: property, name: property });
+                    input = createElement("input", {
+                        type: "number",
+                        id: property,
+                        name: property,
+                        className: 'generic-form-input'
+                    });
                     break;
                 case "boolean":
-                    input = createElement("input", { type: "checkbox", id: property, name: property });
+                    input = createElement("input", {
+                        type: "checkbox",
+                        id: property,
+                        name: property,
+                        className: 'generic-form-input'
+                    });
                     break;
                 case "select":
-                    input = createElement("select", { id: property, name: property });
+                    input = createElement("select", {
+                        id: property,
+                        name: property,
+                        className: 'generic-form-input'
+                    });
                     if (propertySchema.options && Array.isArray(propertySchema.options)) {
                         propertySchema.options.forEach(option => {
-                            const optionElement = createElement("option", {value: option}, option);
+                            const optionElement = createElement("option", { value: option }, option);
                             input.appendChild(optionElement);
                         });
                     }
                     break;
+                case "textarea":
+                    input = createElement("textarea", {
+                        id: property,
+                        name: property,
+                        className: 'generic-form-input',
+                        rows: 4 // Default rows
+                    });
+                    break;
+                case "date":
+                    input = createElement("input", {
+                        type: "date",
+                        id: property,
+                        name: property,
+                        className: 'generic-form-input'
+                    });
+                    break;
                 default:
-                    input = createElement("input", { type: "text", id: property, name: property });
+                    input = createElement("input", {
+                        type: "text",
+                        id: property,
+                        name: property,
+                        className: 'generic-form-input'
+                    });
             }
+
             input.addEventListener('change', () => {
                 let value = input.type === 'checkbox' ? input.checked : input.value;
                 if (propertySchema && propertySchema.validate) {
@@ -53,6 +102,7 @@ export class GenericForm {
                 YjsHelper.updateYMapValue(this.yDoc, this.yMap, property, value);
                 if (this.saveCallback) this.saveCallback();
             });
+
             let initialValue = this.yMap.has(property) ? this.yMap.get(property) : propertySchema.default;
             if (initialValue !== undefined) {
                 if (input.type === 'checkbox') {
@@ -64,9 +114,23 @@ export class GenericForm {
                 if (propertySchema.type === 'boolean') this.yMap.set(property, false);
                 else this.yMap.set(property, "");
             }
-            form.append(label, input);
+
+            const formGroup = createElement('div', { className: 'generic-form-group' });
+            formGroup.append(label, input);
+            form.appendChild(formGroup);
         }
-        this.el.append(form);
+
+        this.el.appendChild(form);
+
+        // Basic Styling
+        this.el.style.padding = '10px';
+        this.el.style.border = '1px solid #ccc';
+        this.el.style.borderRadius = '5px';
+
+        form.style.display = 'flex';
+        form.style.flexDirection = 'column';
+        form.style.gap = '5px';
+
         return this.el;
     }
 }
