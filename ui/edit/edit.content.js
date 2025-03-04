@@ -161,9 +161,9 @@ class EditorContentHandler {
         this.updateYjsContent(html);
         this.editor.autosuggest.apply();
         const text = this.serialize();
-        if (text.includes('[TAG:{"name":"Public"}')) {
-            this.app.publishNoteToNostr(this.app.selectedNote);
-        }
+        //if (text.includes('[TAG:{"name":"Public"}')) {
+        //    this.app.publishNoteToNostr(this.app.selectedNote);
+        //}
     }
 
     updateYjsContent(html) {

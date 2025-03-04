@@ -84,11 +84,16 @@ class App {
             object.tags = [];
         }
 
-        // Remove existing visibility tag
-        object.tags = object.tags.filter(tag => tag[0] !== 'visibility');
+        const publicTag = object.tags.find(tag => tag.name === 'Public');
+        const isPublic = publicTag && publicTag.value === 'true';
 
-        // Add visibility tag
-        object.tags.push(['visibility', isPrivate ? 'private' : 'public']);
+        // Remove existing visibility tag
+        object.tags = object.tags.filter(tag => tag.name !== 'visibility');
+
+        if (!isPublic) {
+            // Add visibility tag
+            object.tags.push({ name: 'visibility', value: isPrivate ? 'private' : 'public' });
+        }
     }
 
     async publishObject(object) {
