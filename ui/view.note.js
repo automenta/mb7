@@ -172,7 +172,7 @@ export class NoteView extends HTMLElement {
         this.contentArea = this.noteUI.createContentArea();
         this.todoArea = this.noteUI.createTodoArea();
 
-        this.editor = new Edit(this.selectedNote, this.yDoc, this.app, null, null, null, this.app.getTagDefinition, this.schema);
+        this.editor = new Edit(this.selectedNote, this.yDoc, this.app);
 
         this.tagManager = new TagManager(this.app, this.selectedNote);
 

@@ -8,7 +8,12 @@ class Tag extends HTMLElement {
     }
 
     connectedCallback() {
-        this.tagDefinition = JSON.parse(this.getAttribute('tag-definition'));
+        try {
+            this.tagDefinition = JSON.parse(this.getAttribute('tag-definition'));
+        } catch (error) {
+            console.error('Error parsing tag-definition:', error);
+            this.tagDefinition = {}; // Provide a default value
+        }
         this.value = this.getAttribute('value') || '';
         this.condition = this.getAttribute('condition') || 'is';
 
