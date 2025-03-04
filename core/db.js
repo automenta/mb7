@@ -71,10 +71,9 @@ export class DB {
 
     /**
      * Constructor for the DB class.
-     * @param {object} app - The application object.
      * @param {object} errorHandler - The error handler object.
      */
-    constructor(app, errorHandler) {
+    constructor(errorHandler) {
         this.errorHandler = errorHandler;
     }
 
