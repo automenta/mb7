@@ -1,6 +1,14 @@
 import { createElement } from './utils';
 import { TagInput } from './tag-input';
 
+const debounce = (fn, delay) => {
+    let timeoutId;
+    return (...args) => {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => fn(...args), delay);
+    };
+};
+
 class TagManager extends HTMLElement {
     constructor(app, note) {
         super();
@@ -93,25 +101,18 @@ class TagManager extends HTMLElement {
         this.addTagButton = this.shadow.querySelector('.add-tag-button');
         this.tagSuggestions = this.shadow.querySelector('.tag-suggestions');
 
-        this.tagInput.addEventListener('input', this.debounce(() => this.suggestTags(), 200));
+        this.debouncedSuggestTags = debounce(this.suggestTags.bind(this), 200);
+        this.tagInput.addEventListener('input', this.debouncedSuggestTags);
         this.tagInput.addEventListener('keydown', (e) => this.handleTagInputKeyDown(e));
         this.addTagButton.addEventListener('click', () => this.addTagToNote(this.tagInput.value));
 
         this.renderTags();
     }
 
-    debounce(func, delay) {
-        let timeout;
-        return function(...args) {
-            const context = this;
-            clearTimeout(timeout);
-            timeout = setTimeout(() => func.apply(context, args), delay);
-        };
-    }
-
     handleTagInputKeyDown(event) {
-        if (this.tagSuggestions.style.display === 'block') {
-            switch (event.key) {
+        if (this.tagSuggestions.style.display !== 'block') return;
+
+        switch (event.key) {
                 case 'ArrowDown':
                     event.preventDefault();
                     this.moveTagSuggestionSelection(1);
@@ -128,7 +129,6 @@ class TagManager extends HTMLElement {
                     this.clearTagSuggestions();
                     break;
             }
-        }
     }
 
     moveTagSuggestionSelection(direction) {
