@@ -1,5 +1,5 @@
 import {createElement, debounce} from '../utils';
-import {TagInput} from '../tag-input';
+import {TagManager} from '../tag-manager';
 
 import {OntologyBrowser} from './ontology-browser';
 
@@ -38,28 +38,6 @@ class Edit {
         persistentQueryContainer.append(persistentQueryLabel, this.persistentQueryCheckbox);
         menu.append(persistentQueryContainer);
 
-        this.tagList = document.createElement('ul');
-        this.tagList.className = 'tag-list';
-
-        this.tagInput = document.createElement('input');
-        this.tagInput.type = 'text';
-        this.tagInput.placeholder = 'Add a tag';
-        this.tagInput.className = 'tag-input';
-        this.tagInput.addEventListener('input', debounce(() => this.suggestTags(), 200));
-        this.tagInput.addEventListener('keydown', (e) => this.handleTagInputKeyDown(e));
-
-        this.addTagButton = createElement('button', { className: 'add-tag-button', title: 'Add Tag' }, 'Add Tag');
-        this.addTagButton.addEventListener('click', () => this.addTagToNote(this.tagInput.value));
-
-        this.tagSuggestions = document.createElement('ul');
-        this.tagSuggestions.className = 'tag-suggestions';
-        this.tagSuggestions.style.display = 'none'; // Initially hide the suggestions
-
-        const tagInputContainer = createElement('div', { className: 'tag-input-container' });
-        tagInputContainer.append(this.tagInput, this.addTagButton);
-
-        menu.append(this.tagList, tagInputContainer, this.tagSuggestions);
-
         this.suggestionDropdown = new SuggestionDropdown();
         this.autosuggest = autosuggest || new Autosuggest(this);
         this.contentHandler = contentHandler || new EditorContentHandler(this, this.autosuggest, this.yDoc, this.yText);
@@ -68,6 +46,9 @@ class Edit {
 
         menu.append(this.toolbar.getElement(), this.ontologyBrowser.getElement());
 
+        this.tagManager = new TagManager(this.app, this.note);
+        menu.append(this.tagManager);
+
         this.setupEditorEvents();
 
         // Save function
@@ -75,171 +56,6 @@ class Edit {
             const isPersistentQuery = this.persistentQueryCheckbox.checked;
             this.app.db.saveObject(object, isPersistentQuery).catch(error => this.app.errorHandler.handleError(error, "Failed to save object"));
         };
-        this.renderTags();
-    }
-
-    handleTagInputKeyDown(event) {
-        if (this.tagSuggestions.style.display === 'block') {
-            switch (event.key) {
-                case 'ArrowDown':
-                    event.preventDefault();
-                    this.moveTagSuggestionSelection(1);
-                    break;
-                case 'ArrowUp':
-                    event.preventDefault();
-                    this.moveTagSuggestionSelection(-1);
-                    break;
-                case 'Enter':
-                    event.preventDefault();
-                    this.selectTagSuggestion();
-                    break;
-                case 'Escape':
-                    this.clearTagSuggestions();
-                    break;
-            }
-        }
-    }
-
-    moveTagSuggestionSelection(direction) {
-        const suggestions = this.tagSuggestions.querySelectorAll('li');
-        if (suggestions.length === 0) return;
-
-        let selectedIndex = -1;
-        suggestions.forEach((suggestion, index) => {
-            if (suggestion.classList.contains('selected')) {
-                selectedIndex = index;
-                suggestion.classList.remove('selected');
-            }
-        });
-
-        let newIndex = selectedIndex + direction;
-        if (newIndex < 0) {
-            newIndex = suggestions.length - 1;
-        } else if (newIndex >= suggestions.length) {
-            newIndex = 0;
-        }
-
-        suggestions[newIndex].classList.add('selected');
-    }
-
-    selectTagSuggestion() {
-        const selectedSuggestion = this.tagSuggestions.querySelector('li.selected');
-        if (selectedSuggestion) {
-            this.addTagToNote(selectedSuggestion.textContent);
-        }
-    }
-
-    async renderTags() {
-        this.tagList.innerHTML = ''; // Clear existing tags
-        if (this.note && this.note.tags) {
-            for (const tag of this.note.tags) {
-                this.renderTag(tag);
-            }
-        }
-    }
-
-    renderTag(tag) {
-        const tagDefinition = this.getTagDefinition(tag.name);
-        const tagComponent = document.createElement('data-tag');
-        tagComponent.setAttribute('tag-definition', JSON.stringify(tagDefinition));
-        tagComponent.setAttribute('value', tag.value);
-        tagComponent.setAttribute('condition', tag.condition);
-
-        const listItem = createElement('li', { className: 'tag-list-item' });
-        listItem.appendChild(tagComponent);
-        listItem.addEventListener('tag-removed', () => {
-            this.removeTagFromNote(tag.name);
-        });
-        this.tagList.appendChild(listItem);
-    }
-
-    async addTagToNote(tagName) {
-        try {
-            if (!this.note || !this.note.id) {
-                console.error('No note selected');
-                return;
-            }
-
-            if (this.note.tags.some(tag => tag.name === tagName)) {
-                console.warn('Tag already exists on this note.');
-                this.clearTagInput();
-                this.clearTagSuggestions();
-                this.editorArea.focus();
-                return;
-            }
-
-            const tagDefinition = this.getTagDefinition(tagName);
-            if (!tagDefinition) {
-                console.error('Tag definition not found:', tagName);
-                return;
-            }
-
-            const newTag = { name: tagName, value: '', condition: 'is' };
-            this.note.tags.push(newTag);
-            await this.app.db.saveObject(this.note, false);
-            this.renderTags();
-            this.clearTagInput();
-            this.clearTagSuggestions();
-            this.editorArea.focus();
-        } catch (error) {
-            console.error('Error adding tag to note:', error);
-        }
-    }
-
-    async removeTagFromNote(tagName) {
-        try {
-            if (!this.note || !this.note.id) {
-                console.error('No note selected');
-                return;
-            }
-
-            this.note.tags = this.note.tags.filter(tag => tag.name !== tagName);
-            await this.app.db.saveObject(this.note, false);
-            this.renderTags();
-        } catch (error) {
-            console.error('Error removing tag from note:', error);
-        }
-    }
-
-    suggestTags() {
-        const searchText = this.tagInput.value.toLowerCase();
-        const suggestions = Object.keys(this.getTagDefinition())
-            .filter(tagName => tagName.toLowerCase().startsWith(searchText))
-            .slice(0, 5); // Limit to 5 suggestions
-
-        this.displayTagSuggestions(suggestions);
-    }
-
-    displayTagSuggestions(suggestions) {
-        this.tagSuggestions.innerHTML = '';
-        if (suggestions.length === 0) {
-            this.tagSuggestions.style.display = 'none';
-            return;
-        }
-
-        suggestions.forEach(suggestion => {
-            const suggestionItem = createElement('li', {}, suggestion);
-            suggestionItem.addEventListener('click', () => {
-                this.addTagToNote(suggestion);
-            });
-            this.tagSuggestions.appendChild(suggestionItem);
-        });
-
-        this.tagSuggestions.style.display = 'block';
-
-        // Select the first suggestion by default
-        if (suggestions.length > 0) {
-            this.tagSuggestions.firstChild.classList.add('selected');
-        }
-    }
-
-    clearTagInput() {
-        this.tagInput.value = '';
-    }
-
-    clearTagSuggestions() {
-        this.tagSuggestions.innerHTML = '';
-        this.tagSuggestions.style.display = 'none';
     }
 
     createEditorArea() {

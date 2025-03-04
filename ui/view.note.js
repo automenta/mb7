@@ -1,4 +1,5 @@
-import {Edit} from './edit/edit.js';
+import { Edit } from './edit/edit.js';
+import { TagManager } from './tag-manager.js';
 import * as Y from 'yjs';
 
 import {NotesSidebar} from './note/note.sidebar.js';
@@ -58,6 +59,9 @@ export class NoteView extends HTMLElement {
 
         this.editor = new Edit(this.selectedNote, this.yDoc, this.app, null, null, null, this.app.getTagDefinition, this.schema);
         this.mainArea.appendChild(this.editor.el);
+
+        this.tagManager = new TagManager(this.app, this.selectedNote);
+        this.mainArea.appendChild(this.tagManager);
 
         this.mainArea.appendChild(this.myObjectsArea);
 
@@ -436,125 +440,6 @@ export class NoteView extends HTMLElement {
             }
         } catch (error) {
             console.error('Error updating note priority:', error);
-        }
-    }
-
-    displayTags(noteId) {
-        const tagList = this.el.querySelector('.note-tag-list');
-        while (tagList.firstChild) {
-            tagList.removeChild(tagList.firstChild);
-        }
-        this.renderTags(noteId);
-    }
-
-    async renderTags(noteId) {
-        const tagList = this.el.querySelector('.note-tag-list');
-        while (tagList.firstChild) {
-            tagList.removeChild(tagList.firstChild);
-        }
-
-        const tags = await this.getNoteTags(noteId);
-        if (tags && tags.length > 0) {
-            tags.forEach(tag => {
-                const tagItem = document.createElement('li');
-                tagItem.className = 'tag-item';
-                const tagDefinition = this.app.getTagDefinition(tag.name);
-                const tagComponent = new Tag(tagDefinition, tag.value, tag.condition, (updatedTag) => {
-                    this.updateTag(noteId, tag.name, updatedTag.getValue(), updatedTag.getCondition());
-                });
-                tagItem.addEventListener('tag-removed', () => {
-                    this.removeTagFromNote(noteId, tag.name);
-                });
-                tagItem.appendChild(tagComponent);
-                tagList.appendChild(tagItem);
-            });
-        }
-    }
-
-    async updateTag(noteId, tagName, newValue, newCondition) {
-        try {
-            const note = await this.app.db.get(noteId);
-            if (note) {
-                const tagIndex = note.tags.findIndex(tag => tag.name === tagName);
-                if (tagIndex !== -1) {
-                    note.tags[tagIndex].value = newValue;
-                    note.tags[tagIndex].condition = newCondition;
-                    await this.app.db.saveObject(note, false);
-                    this.displayTags(noteId);
-                } else {
-                    console.error('Tag not found');
-                }
-            } else {
-                console.error('Note not found');
-            }
-        } catch (error) {
-            console.error('Error updating tag:', error);
-        }
-    }
-
-    async removeTagFromNote(noteId, tagName) {
-        try {
-            const note = await this.app.db.get(noteId);
-            if (note) {
-                note.tags = note.tags.filter(tag => tag.name !== tagName);
-                await this.app.db.saveObject(note, false);
-                this.displayTags(noteId);
-            } else {
-                console.error('Note not found');
-            }
-        } catch (error) {
-            console.error('Error removing tag from note:', error);
-        }
-    }
-
-    // displayTagSuggestions(suggestions) {
-    //
-    //     const tagArea = this.el.querySelector('.note-tag-area');
-    //     let suggestionsList = tagArea.querySelector('.note-tag-suggestions');
-    //     if (!suggestionsList) {
-    //         suggestionsList = document.createElement('ul');
-    //         suggestionsList.className = 'note-tag-suggestions';
-    //         tagArea.appendChild(suggestionsList);
-    //     }
-    //     while (suggestionsList.firstChild) {
-    //         suggestionsList.removeChild(suggestionsList.firstChild);
-    //     }
-    //     suggestions.forEach(suggestion => {
-    //         const suggestionItem = document.createElement('li');
-    //         suggestionItem.textContent = suggestion;
-    //         suggestionItem.addEventListener('click', () => {
-    //             const tagInput = this.el.querySelector('.note-tag-input');
-    //             tagInput.value = suggestion;
-    //             this.addTagToNote(suggestion);
-    //             while (suggestionsList.firstChild) {
-    //                 suggestionsList.removeChild(suggestionsList.firstChild);
-    //             }
-    //         });
-    //         suggestionsList.appendChild(suggestionItem);
-    //     });
-    // }
-
-    async addTagToNote(tagName, tagValue = '', tagCondition = 'is') {
-        try {
-            if (!this.selectedNote || !this.selectedNote.id) {
-                console.error('No note selected');
-                return;
-            }
-            const noteId = this.selectedNote.id;
-            const note = await this.app.db.get(noteId);
-            if (note) {
-                if (!note.tags) {
-                    note.tags = [];
-                }
-                note.tags.push({name: tagName, value: tagValue, condition: tagCondition});
-                await this.app.db.saveObject(note, false);
-                this.displayTags(noteId);
-                this.edit.contentHandler.insertTagAtSelection(tagName);
-            } else {
-                console.error('Note not found');
-            }
-        } catch (error) {
-            console.error('Error adding tag to note:', error);
         }
     }
 }
