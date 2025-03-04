@@ -10,52 +10,63 @@ import { NotificationManager } from './notification-manager.js';
 import { createAppMainContent, createLayout } from './layout.js';
 import { initializeViews } from './views.js';
 
-/**
- * The main application class.
- * Manages the database, Nostr connection, and UI.
- */
-class App {
-    constructor(db, nostr, matcher, errorHandler, notificationManager, monitoring) {
+class SettingsManager {
+    constructor(db, errorHandler) {
         this.db = db;
-        this.nostr = nostr;
-        this.matcher = matcher;
         this.errorHandler = errorHandler;
-        this.notificationManager = notificationManager;
-        this.monitoring = monitoring;
-        this.selected = null;
-        this.elements = {};
-
-        this.elements.notificationArea = document.createElement('div');
-        this.elements.notificationArea.id = 'notification-area';
     }
 
-    static async initialize(appDiv) {
-        const errorHandler = new ErrorHandler(appDiv);
-        const db = new DB(errorHandler);
-        let signalingStrategy = "nostr"; // Provide a default value in case of error
-        let nostrRelays = "";
-        let nostrPrivateKey = "";
-
+    async getSettings() {
         try {
-            const settingsObject = await db.getSettings() || {};
+            const settingsObject = await this.db.getSettings() || {};
             const settingsTags = settingsObject.tags || [];
             const findTag = (tagName) => settingsTags.find(tag => tag[0] === tagName)?.[1];
-            signalingStrategy = findTag('signalingStrategy') || "nostr";
-            nostrRelays = findTag('relays') || "";
-            nostrPrivateKey = findTag('privateKey') || "";
+            return {
+                signalingStrategy: findTag('signalingStrategy') || "nostr",
+                nostrRelays: findTag('relays') || "",
+                nostrPrivateKey: findTag('privateKey') || ""
+            };
         } catch (error) {
-            errorHandler.handleError(error, 'Error getting settings from db');
+            this.errorHandler.handleError(error, 'Error getting settings from db');
+            return {signalingStrategy: "nostr", nostrRelays: "", nostrPrivateKey: ""};
         }
-        const nostr = new Nostr(this, signalingStrategy, nostrRelays, nostrPrivateKey);
-        nostr.connect();
-        const matcher = new Matcher(this);
+    }
+}
 
-        // Initialize NotificationManager and Monitoring here, after db is ready
-        const notificationManager = new NotificationManager();
-        const monitoring = new Monitoring();
-        await monitoring.start();
+class NoteManager {
+    constructor(db, errorHandler, matcher, nostr, notificationManager) {
+        this.db = db;
+        this.errorHandler = errorHandler;
+        this.matcher = matcher;
+        this.nostr = nostr;
+        this.notificationManager = notificationManager;
+    }
 
-        return {db, nostr, matcher, errorHandler, notificationManager, monitoring};
+    async createNote(name = 'New Note') {
+        const newNote = {
+            id: uuidv4(),
+            name: name,
+            content: '',
+            tags: [],
+            isPersistentQuery: false,
+            private: false
+        };
+        await this.saveObject(newNote);
+        return newNote;
+    }
+
+    async createDefaultNote() {
+        const defaultNote = {
+            id: 'default',
+            name: 'Welcome to Netention!',
+            content: 'This is your first note. Edit it to get started.',
+            private: true,
+            tags: [],
+            priority: 'Medium',
+            isPersistentQuery: false
+        };
+        await this.db.save(defaultNote);
+        return defaultNote;
     }
 
     async saveObject(object) {
@@ -108,10 +119,69 @@ class App {
 
         try {
             await this.nostr.publish(object);
-            this.showNotification('Published to Nostr!', 'success');
+            this.notificationManager.showNotification('Published to Nostr!', 'success');
         } catch (error) {
             this.errorHandler.handleError(error, 'Error publishing to Nostr');
         }
+    }
+
+    async publishMatches(matches) {
+        console.log('publishMatches called with matches:', matches);
+        if (!matches || matches.length === 0) {
+            console.log('No matches to publish.');
+            return;
+        }
+        try {
+            for (const match of matches) {
+                await this.nostr.publish(match);
+                this.notificationManager.showNotification('Published match to Nostr!', 'success');
+            }
+        } catch (error) {
+            this.errorHandler.handleError(error, 'Error publishing to Nostr');
+        }
+    }
+}
+
+/**
+ * The main application class.
+ * Manages the database, Nostr connection, and UI.
+ */
+class App {
+    constructor(db, nostr, matcher, errorHandler, notificationManager, monitoring) {
+        this.db = db;
+        this.nostr = nostr;
+        this.matcher = matcher;
+        this.errorHandler = errorHandler;
+        this.notificationManager = notificationManager;
+        this.monitoring = monitoring;
+        this.selected = null;
+        this.elements = {};
+
+        this.settingsManager = new SettingsManager(db, errorHandler);
+        this.noteManager = new NoteManager(db, errorHandler, matcher, nostr, notificationManager);
+
+        this.elements.notificationArea = document.createElement('div');
+        this.elements.notificationArea.id = 'notification-area';
+    }
+
+    static async initialize(appDiv) {
+        const errorHandler = new ErrorHandler(appDiv);
+        const db = new DB(errorHandler);
+        const notificationManager = new NotificationManager();
+        const monitoring = new Monitoring();
+        await monitoring.start();
+        const nostr = await App.initNostr(db, errorHandler);
+        const matcher = new Matcher(this);
+
+        return {db, nostr, matcher, errorHandler, notificationManager, monitoring};
+    }
+
+    static async initNostr(db, errorHandler) {
+        const settingsManager = new SettingsManager(db, errorHandler);
+        const {signalingStrategy, nostrRelays, nostrPrivateKey} = await settingsManager.getSettings();
+        const nostr = new Nostr(this, signalingStrategy, nostrRelays, nostrPrivateKey);
+        nostr.connect();
+        return nostr;
     }
 
     showView(view) {
@@ -136,49 +206,6 @@ class App {
 
     showNotification(message, type) {
         this.notificationManager.showNotification(message, type);
-    }
-
-    async publishMatches(matches) {
-        console.log('publishMatches called with matches:', matches);
-        if (!matches || matches.length === 0) {
-            console.log('No matches to publish.');
-            return;
-        }
-        try {
-            for (const match of matches) {
-                await this.nostr.publish(match);
-                this.showNotification('Published match to Nostr!', 'success');
-            }
-        } catch (error) {
-            this.errorHandler.handleError(error, 'Error publishing to Nostr');
-        }
-    }
-
-    async createNote(name = 'New Note') {
-        const newNote = {
-            id: uuidv4(),
-            name: name,
-            content: '',
-            tags: [],
-            isPersistentQuery: false,
-            private: false
-        };
-        await this.saveObject(newNote);
-        return newNote;
-    }
-
-    async createDefaultNote(db) {
-        const defaultNote = {
-            id: 'default',
-            name: 'Welcome to Netention!',
-            content: 'This is your first note. Edit it to get started.',
-            private: true,
-            tags: [],
-            priority: 'Medium',
-            isPersistentQuery: false
-        };
-        await db.save(defaultNote);
-        return defaultNote;
     }
 }
 
@@ -209,7 +236,7 @@ async function setupUI() {
     try {
         notes = await app.db.getAll();
         if (!notes || notes.length === 0) {
-            await app.createDefaultNote(app.db);
+            await app.noteManager.createDefaultNote();
         }
     } catch (error) {
         app.errorHandler.handleError(error, 'Error loading notes or creating default note');

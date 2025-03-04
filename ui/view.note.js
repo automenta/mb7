@@ -16,6 +16,130 @@ import {
     createTextView
 } from './note/note.ui.js';
 
+class NoteList {
+    constructor(app, noteView, yNotesList, notesListComponent) {
+        this.app = app;
+        this.noteView = noteView;
+        this.yNotesList = yNotesList;
+        this.notesListComponent = notesListComponent;
+    }
+
+    async handleDeleteNote(note) {
+        try {
+            if (note) {
+                await this.app.db.delete(note.id);
+                this.yDoc.transact(() => {
+                    const index = this.yNotesList.toArray().findIndex(item => item[0] === note.id);
+                    if (index !== -1) {
+                        this.yNotesList.delete(index);
+                    }
+                });
+                await this.notesListComponent.fetchDataAndRender();
+                this.noteView.showMessage('Deleted');
+            }
+        } catch (error) {
+            console.error('Error deleting note:', error);
+        }
+    }
+
+    async addNoteToList(noteId) {
+        console.log('yDoc in addNoteToList:', this.yDoc);
+        console.log('yNotesList in addNoteToList:', this.yNotesList);
+        try {
+            this.yDoc.transact(() => {
+                this.yNotesList.push([noteId]);
+            });
+        } catch (error) {
+            console.error("Yjs error:", error);
+        }
+    }
+
+    renderNoteItem(noteIdArray) { // Renamed from renderNObject to renderNoteItem, used by GenericListComponent, now receives noteId
+        const noteId = noteIdArray[0];
+        const li = document.createElement('li');
+        li.dataset.id = noteId;
+        li.classList.add('note-list-item');
+        const nameElement = document.createElement('div');
+        nameElement.style.fontWeight = 'bold';
+        li.appendChild(nameElement);
+        const deleteButton = document.createElement('button');
+        deleteButton.textContent = 'Delete';
+        deleteButton.addEventListener('click', async (event) => {
+            event.stopPropagation(); // Prevent note selection
+            const note = await this.app.db.get(noteId);
+            if (note) {
+                await this.handleDeleteNote(note);
+            }
+        });
+        li.appendChild(deleteButton);
+
+        li.addEventListener('click', async () => {
+            await this.noteView.selectNote(noteId);
+        });
+
+        return li;
+    }
+}
+
+class NoteDetails extends HTMLElement {
+    constructor(noteView) {
+        super();
+        this.noteView = noteView;
+    }
+
+    populateNoteDetails(note) {
+        const titleInput = this.noteView.el.querySelector('.note-title-input');
+        const privacyCheckbox = this.shadow.querySelector('.privacy-checkbox');
+        const prioritySelect = this.shadow.querySelector('.priority-select');
+
+        if (titleInput) {
+            titleInput.value = note.name;
+        }
+
+        if (privacyCheckbox) {
+            privacyCheckbox.checked = note.private;
+        }
+
+        if (prioritySelect) {
+            prioritySelect.value = note.priority;
+        }
+    }
+
+    async updateNotePrivacy(noteId, isPrivate) {
+        try {
+            const note = await this.app.db.get(noteId);
+            if (note) {
+                note.private = isPrivate;
+                await this.app.db.saveObject(note, false);
+                console.log(`Note ${noteId} privacy updated to ${isPrivate}`);
+            } else {
+                console.error(`Note ${noteId} not found`);
+            }
+        } catch (error) {
+            console.error('Error updating note privacy:', error);
+        }
+    }
+
+    async updateNotePriority(noteId, priority) {
+        try {
+            const note = await this.app.db.get(noteId);
+            if (note) {
+                note.priority = priority;
+                await this.app.db.saveObject(note, false);
+                console.log(`Note ${noteId} priority updated to ${priority}`);
+            } else {
+                console.error(`Note ${noteId} not found`);
+            }
+        } catch (error) {
+            console.error('Error updating note priority:', error);
+        }
+    }
+}
+
+if (!customElements.get('note-details')) {
+    customElements.define('note-details', NoteDetails);
+}
+
 export class NoteView extends HTMLElement {
     constructor(app, db, nostr) {
         super();
@@ -84,6 +208,8 @@ export class NoteView extends HTMLElement {
         this.sidebar.elements.notesList.replaceWith(this.notesListComponent.el);
         this.sidebar.el.insertBefore(this.newAddButton(), this.notesListComponent.el);
 
+        this.noteList = new NoteList(this.app, this, this.yNotesList, this.notesListComponent);
+
         this.el.appendChild(this.mainArea);
 
         this.selectedNote = null;
@@ -99,24 +225,6 @@ export class NoteView extends HTMLElement {
         const prioritySelect = document.createElement('select');
         prioritySelect.className = 'note-priority-select';
         return prioritySelect;
-    }
-
-    async handleDeleteNote(note) {
-        try {
-            if (note) {
-                await this.app.db.delete(note.id);
-                this.yDoc.transact(() => {
-                    const index = this.yNotesList.toArray().findIndex(item => item[0] === note.id);
-                    if (index !== -1) {
-                        this.yNotesList.delete(index);
-                    }
-                });
-                await this.notesListComponent.fetchDataAndRender();
-                this.showMessage('Deleted');
-            }
-        } catch (error) {
-            console.error('Error deleting note:', error);
-        }
     }
 
     createMainArea() {
@@ -228,7 +336,7 @@ export class NoteView extends HTMLElement {
                         this.yMap.set(newObject.id, newYNoteMap);
                     });
                 }
-                await this.addNoteToList(newObject.id);
+                await this.noteList.addNoteToList(newObject.id);
                 await this.notesListComponent.fetchDataAndRender();
                 this.showMessage('Saved');
                 await this.selectNote(newObject.id);
@@ -243,64 +351,6 @@ export class NoteView extends HTMLElement {
     }
 
     async selectNote(noteId) {
-        await this.loadNote(noteId);
-    }
-
-    async deleteNote(note) {
-        try {
-            if (note) {
-                await this.app.db.delete(note.id);
-                await this.loadNotes();
-                this.showMessage('Deleted');
-            }
-        } catch (error) {
-            console.error('Error deleting note:', error);
-        }
-    }
-
-    async addNoteToList(noteId) {
-        console.log('yDoc in addNoteToList:', this.yDoc);
-        console.log('yNotesList in addNoteToList:', this.yNotesList);
-        try {
-            this.yDoc.transact(() => {
-                this.yNotesList.push([noteId]);
-            });
-        } catch (error) {
-            console.error("Yjs error:", error);
-        }
-    }
-
-    render() {
-        return this.el;
-    }
-
-    renderNoteItem(noteIdArray) { // Renamed from renderNObject to renderNoteItem, used by GenericListComponent, now receives noteId
-        const noteId = noteIdArray[0];
-        const li = document.createElement('li');
-        li.dataset.id = noteId;
-        li.classList.add('note-list-item');
-        const nameElement = document.createElement('div');
-        nameElement.style.fontWeight = 'bold';
-        li.appendChild(nameElement);
-        const deleteButton = document.createElement('button');
-        deleteButton.textContent = 'Delete';
-        deleteButton.addEventListener('click', async (event) => {
-            event.stopPropagation(); // Prevent note selection
-            const note = await this.app.db.get(noteId);
-            if (note) {
-                await this.handleDeleteNote(note);
-            }
-        });
-        li.appendChild(deleteButton);
-
-        li.addEventListener('click', async () => {
-            await this.selectNote(noteId);
-        });
-
-        return li;
-    }
-
-    async loadNote(noteId) {
         try {
             const note = await this.app.db.get(noteId);
             if (note) {
@@ -311,7 +361,7 @@ export class NoteView extends HTMLElement {
                 }
 
                 this.selectedNote = note;
-                this.populateNoteDetails(note);
+                this.noteDetailsComponent.populateNoteDetails(note);
                 if (this.edit && this.edit.contentHandler) {
                     this.edit.contentHandler.deserialize(note.content);
                 }
@@ -341,25 +391,6 @@ export class NoteView extends HTMLElement {
             this.app.errorHandler.handleError(error, 'Error selecting note');
         }
     }
-    populateNoteDetails(note) {
-        const titleInput = this.el.querySelector('.note-title-input');
-        const privacyCheckbox = this.el.querySelector('.privacy-checkbox');
-        const prioritySelect = this.el.querySelector('.note-priority-select');
-
-        if (titleInput) {
-            titleInput.value = note.name;
-        }
-
-        const privacyCheckbox = this.noteDetailsComponent.shadow.querySelector('.privacy-checkbox');
-        if (privacyCheckbox) {
-            privacyCheckbox.checked = note.private;
-        }
-
-        const prioritySelect = this.noteDetailsComponent.shadow.querySelector('.priority-select');
-        if (prioritySelect) {
-            prioritySelect.value = note.priority;
-        }
-    }
 
     renderMyObjectItem(objectId) {
         const li = document.createElement('li');
@@ -385,21 +416,6 @@ export class NoteView extends HTMLElement {
         setTimeout(() => {
             this.el.removeChild(e);
         }, 3000);
-    }
-
-    async updateNotePrivacy(noteId, isPrivate) {
-        try {
-            const note = await this.app.db.get(noteId);
-            if (note) {
-                note.private = isPrivate;
-                await this.app.db.saveObject(note, false);
-                console.log(`Note ${noteId} privacy updated to ${isPrivate}`);
-            } else {
-                console.error(`Note ${noteId} not found`);
-            }
-        } catch (error) {
-            console.error('Error updating note privacy:', error);
-        }
     }
 
     async displayTags(noteId) {
@@ -441,21 +457,6 @@ export class NoteView extends HTMLElement {
             if (titleInput) {
                 titleInput.value = this.yName.toString(); // Get name from Yjs
             }
-        }
-    }
-
-    async updateNotePriority(noteId, priority) {
-        try {
-            const note = await this.app.db.get(noteId);
-            if (note) {
-                note.priority = priority;
-                await this.app.db.saveObject(note, false);
-                console.log(`Note ${noteId} priority updated to ${priority}`);
-            } else {
-                console.error(`Note ${noteId} not found`);
-            }
-        } catch (error) {
-            console.error('Error updating note priority:', error);
         }
     }
 }
