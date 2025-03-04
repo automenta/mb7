@@ -53,11 +53,16 @@ export class GenericForm {
 
             //Yjs binding
             input.addEventListener('change', () => {
-                const value = input.value;
+                let value;
+                if (input.type === 'checkbox') {
+                    value = input.checked;
+                } else {
+                    value = input.value;
+                }
 
                 // Validate the input using the Ontology
-                if (this.schema.tags[property] && this.schema.validate) {
-                    const isValid = this.schema.validate({[property]: value}, 'is');
+                if (propertySchema && propertySchema.validate) {
+                    const isValid = propertySchema.validate(value, 'is');
                     if (!isValid) {
                         //alert(`Invalid input for ${property}`);
                         this.el.dispatchEvent(new CustomEvent('notify', {
@@ -77,6 +82,11 @@ export class GenericForm {
 
             if (this.yMap.has(property)) {
                 input.value = this.yMap.get(property)
+                if (input.type === 'checkbox') {
+                    input.checked = input.value === 'true';
+                } else {
+                    input.value = this.yMap.get(property)
+                }
             } else {
                 this.yMap.set(property, "")
             }
