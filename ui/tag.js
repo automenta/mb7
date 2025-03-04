@@ -40,14 +40,21 @@ class Tag extends HTMLElement {
         this.shadow.innerHTML = '';
         this.el = document.createElement('div');
         this.el.className = 'tag';
+        this.el.dataset.tagName = this.tagDefinition.name;
 
         if (this.tagDefinition.conditions && this.tagDefinition.conditions.length) {
             this.el.classList.add('conditional');
         }
 
         const icon = this.tagDefinition.ui?.icon || '🏷️';
-        const display = createElement('span', {}, `${icon} ${this.tagDefinition.name}: ${this.value}`);
+        const display = createElement('span', {}, `${icon} ${this.tagDefinition.name}: ${this.value} `);
         this.el.appendChild(display);
+
+        const editButton = createElement('button', { className: 'edit-tag-button' }, 'Edit');
+        editButton.addEventListener('click', () => {
+            this.editTag();
+        });
+        this.el.appendChild(editButton);
 
         const removeButton = createElement('button', { className: 'remove-tag-button' }, 'X');
         removeButton.addEventListener('click', () => {
@@ -65,6 +72,11 @@ class Tag extends HTMLElement {
 
     isValid() {
         return this.tagDefinition.validate(this.value, this.condition);
+    }
+
+    editTag() {
+        // Logic to handle tag editing
+        console.log('Editing tag:', this.tagDefinition.name);
     }
 
     getValue() {
