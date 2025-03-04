@@ -37,7 +37,45 @@ class Tag extends HTMLElement {
     }
 
     render() {
-        this.shadow.innerHTML = '';
+        this.shadow.innerHTML = `
+            <style>
+                .tag {
+                    display: inline-flex;
+                    align-items: center;
+                    background-color: #f0f0f0;
+                    border: 1px solid #ccc;
+                    border-radius: 4px;
+                    padding: 2px 4px;
+                    margin: 2px;
+                    font-size: 0.8em;
+                }
+
+                .tag.conditional {
+                    background-color: #e0e0e0;
+                }
+
+                .tag.invalid {
+                    background-color: #ffdddd;
+                }
+
+                .tag > span {
+                    margin-right: 4px;
+                }
+
+                .tag > button {
+                    background-color: transparent;
+                    border: none;
+                    cursor: pointer;
+                    font-size: 1em;
+                    padding: 0;
+                    margin: 0;
+                }
+
+                .tag > button:hover {
+                    color: #007bff;
+                }
+            </style>
+        `;
         this.el = document.createElement('div');
         this.el.className = 'tag';
         this.el.dataset.tagName = this.tagDefinition.name;
