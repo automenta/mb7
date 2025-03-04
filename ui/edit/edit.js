@@ -9,6 +9,161 @@ import {SuggestionDropdown} from './suggest.dropdown';
 import {EditorContentHandler} from './edit.content';
 import {Toolbar} from './edit.toolbar';
 
+class EditorEventHandler {
+    constructor(edit) {
+        this.edit = edit;
+        this.editorArea = this.edit.editorArea;
+        this.suggestionDropdown = this.edit.suggestionDropdown;
+        this.autosuggest = this.edit.autosuggest;
+        this.contentHandler = this.edit.contentHandler;
+
+        this.setupEditorAreaEvents();
+        this.setupDocumentEvents();
+    }
+
+    setupEditorAreaEvents() {
+        this.editorArea.addEventListener("keyup", (event) => this.handleEditorKeyUp(event));
+        this.editorArea.addEventListener("click", (event) => this.handleEditorClick(event));
+        this.editorArea.addEventListener("keydown", (event) => this.handleEditorKeyDown(event));
+    }
+
+    setupDocumentEvents() {
+        document.addEventListener("keydown", (event) => this.handleDropdownKeys(event));
+        document.addEventListener("click", (event) => this.handleDocumentClick(event));
+    }
+
+    handleEditorKeyUp(event) {
+        if (this.suggestionDropdown.el.style.display !== 'block') {
+            this.autosuggest.apply();
+        }
+        this.updateLastValidRange();
+    }
+
+    handleEditorClick(event) {
+        if (event.target.classList.contains("autosuggest")) {
+            event.stopPropagation();
+            this.showSuggestionsForSpan(event.target);
+        }
+        this.updateLastValidRange();
+    }
+
+    handleEditorKeyDown(event) {
+        if (event.key === "Enter") {
+            event.preventDefault();
+            this.contentHandler.insertLineBreak();
+        }
+    }
+
+    handleDropdownKeys(event) {
+        if (this.suggestionDropdown.el.style.display !== "block") return;
+        switch (event.key) {
+            case "ArrowDown":
+            case "ArrowUp":
+                event.preventDefault();
+                this.suggestionDropdown.moveSelection(event.key === "ArrowDown" ? 1 : -1);
+                break;
+            case "Enter":
+                event.preventDefault();
+                if (this.suggestionDropdown.getSelectedSuggestion()) {
+                    // Use content handler for consistency
+                    const suggestion = this.edit.findSuggestion(this.suggestionDropdown.getSelectedSuggestion());
+                    if (suggestion) this.contentHandler.insertTagFromSuggestion(suggestion);
+                }
+                this.suggestionDropdown.hide();
+                break;
+            case "Escape":
+                this.suggestionDropdown.hide();
+                break;
+        }
+    }
+
+    handleDocumentClick(event) {
+        if (!this.editorArea.contains(event.target) &&
+            !this.edit.ontologyBrowser.getElement().contains(event.target) &&
+            !this.suggestionDropdown.el.contains(event.target)) {
+            this.suggestionDropdown.hide();
+        }
+    }
+
+    updateLastValidRange() {
+        const selection = window.getSelection();
+        if (selection.rangeCount > 0 && this.editorArea.contains(selection.anchorNode)) {
+            this.contentHandler.lastValidRange = selection.getRangeAt(0).cloneRange();
+        }
+    }
+
+    showSuggestionsForSpan(span) {
+        const suggestions = [];
+        const word = span.textContent.toLowerCase();
+
+        const rect = span.getBoundingClientRect();
+        this.suggestionDropdown.show(suggestions, rect.left + window.scrollX, rect.bottom + window.scrollY, this.contentHandler.insertTagFromSuggestion.bind(this.contentHandler));
+    }
+}
+
+class SuggestionHandler {
+    constructor(edit) {
+        this.edit = edit;
+        this.suggestionDropdown = this.edit.suggestionDropdown;
+    }
+
+    createSuggestion(tagData, span = null) {
+        return {displayText: tagData.name, tagData, span};
+    }
+
+    /**
+     * Checks if a word matches any tag name or condition in the ontology.
+     */
+    matchesOntology(word) {
+        const tagDefinition = this.edit.getTagDefinition(word);
+        return !!tagDefinition;
+    }
+
+    /**
+     * Adds a tag to the note's content.
+     */
+    addTag(tagName) {
+        const tagDefinition = this.edit.getTagDefinition(tagName);
+        if (!tagDefinition) {
+            console.error('Tag definition not found:', tagName);
+            return;
+        }
+
+        const initialValue = '';
+        const initialCondition = tagDefinition.conditions[0]; // Default condition
+
+        const tagComponent = new Tag(
+            tagDefinition,
+            initialValue,
+            initialCondition,
+            (updatedTag) => {
+                // Handle tag update (e.g., save to database)
+                console.log('Tag updated:', updatedTag.getValue(), updatedTag.getCondition());
+            }
+        );
+    }
+
+    async updateTag(tagName, newValue, newCondition) {
+        try {
+            if (this.edit.note) {
+                const tagIndex = this.edit.note.tags.findIndex(tag => tag.name === tagName);
+                if (tagIndex !== -1) {
+                    this.edit.note.tags[tagIndex].value = newValue;
+                    this.edit.note.tags[tagIndex].condition = newCondition;
+                    await this.edit.app.db.saveObject(this.edit.note, false);
+                    this.edit.renderTags();
+                } else {
+                    console.error('Tag not found');
+                }
+            } else {
+                console.error('Note not found');
+            }
+        } catch (error) {
+            console.error('Error updating tag:', error);
+        }
+    }
+}
+
 /**
  * The main editor class.
  * Manages the editor area, autosuggestions, ontology browser, and toolbar.
@@ -26,8 +181,6 @@ class Edit {
         this.app = autosuggest.app;
         this.el.appendChild(this.editorArea);
 
-        this.setupEditorAreaEvents();
-
         const menu = createElement('div');
         this.el.append(menu, this.editorArea);
 
@@ -43,6 +196,8 @@ class Edit {
         this.contentHandler = contentHandler || new EditorContentHandler(this, this.autosuggest, this.yDoc, this.yText, this.app);
         this.ontologyBrowser = ontologyBrowser || new OntologyBrowser(this, (tag) => this.contentHandler.insertTagAtSelection(tag));
         this.toolbar = toolbar || new Toolbar(this);
+        this.eventHandler = new EditorEventHandler(this);
+        this.suggestionHandler = new SuggestionHandler(this);
 
         menu.append(this.toolbar.getElement(), this.ontologyBrowser.getElement());
 
@@ -76,30 +231,6 @@ class Edit {
         this.contentHandler.setContent(html);
     }
 
-    /**
-     * Adds a tag to the note's content.
-     */
-    addTag(tagName) {
-        const tagDefinition = this.getTagDefinition(tagName);
-        if (!tagDefinition) {
-            console.error('Tag definition not found:', tagName);
-            return;
-        }
-
-        const initialValue = '';
-        const initialCondition = tagDefinition.conditions[0]; // Default condition
-
-        const tagComponent = new Tag(
-            tagDefinition,
-            initialValue,
-            initialCondition,
-            (updatedTag) => {
-                // Handle tag update (e.g., save to database)
-                console.log('Tag updated:', updatedTag.getValue(), updatedTag.getCondition());
-            }
-        );
-    }
-
     findSuggestion(name) {
         const tagDefinition = this.getTagDefinition(name);
         if (tagDefinition) {
@@ -114,136 +245,7 @@ class Edit {
         return null;
     }
 
-    handleDropdownKeys(event) {
-        if (this.suggestionDropdown.el.style.display !== "block") return;
-        switch (event.key) {
-            case "ArrowDown":
-            case "ArrowUp":
-                event.preventDefault();
-                this.suggestionDropdown.moveSelection(event.key === "ArrowDown" ? 1 : -1);
-                break;
-            case "Enter":
-                event.preventDefault();
-                if (this.suggestionDropdown.getSelectedSuggestion()) {
-                    // Use content handler for consistency
-                    const suggestion = this.findSuggestion(this.suggestionDropdown.getSelectedSuggestion());
-                    if (suggestion) this.contentHandler.insertTagFromSuggestion(suggestion);
-                }
-                this.suggestionDropdown.hide();
-                break;
-            case "Escape":
-                this.suggestionDropdown.hide();
-                break;
-        }
-    }
-
     setupEditorEvents() {
-        this.editorArea.addEventListener("keyup", (event) => this.handleEditorKeyUp(event));
-        this.editorArea.addEventListener("click", (event) => this.handleEditorClick(event));
-        this.editorArea.addEventListener("keydown", (event) => this.handleEditorKeyDown(event));
-        document.addEventListener("keydown", (event) => this.handleDropdownKeys(event));
-        document.addEventListener("click", (event) => this.handleDocumentClick(event));
-    }
-
-    handleEditorKeyUp(event) {
-        if (this.suggestionDropdown.el.style.display !== 'block') {
-            this.autosuggest.apply();
-        }
-        this.updateLastValidRange();
-    }
-
-    handleEditorClick(event) {
-        if (event.target.classList.contains("autosuggest")) {
-            event.stopPropagation();
-            this.showSuggestionsForSpan(event.target);
-        }
-        this.updateLastValidRange();
-    }
-
-    handleEditorKeyDown(event) {
-        if (event.key === "Enter") {
-            event.preventDefault();
-            this.contentHandler.insertLineBreak();
-        }
-    }
-
-    handleDocumentClick(event) {
-        if (!this.editorArea.contains(event.target) &&
-            !this.ontologyBrowser.getElement().contains(event.target) &&
-            !this.suggestionDropdown.el.contains(event.target)) {
-            this.suggestionDropdown.hide();
-        }
-    }
-
-    updateLastValidRange() {
-        const selection = window.getSelection();
-        if (selection.rangeCount > 0 && this.editorArea.contains(selection.anchorNode)) {
-            this.contentHandler.lastValidRange = selection.getRangeAt(0).cloneRange();
-        }
-    }
-
-    showSuggestionsForSpan(span) {
-        const suggestions = [];
-        const word = span.textContent.toLowerCase();
-
-        const rect = span.getBoundingClientRect();
-        this.suggestionDropdown.show(suggestions, rect.left + window.scrollX, rect.bottom + window.scrollY, this.contentHandler.insertTagFromSuggestion.bind(this.contentHandler));
-    }
-
-    createSuggestion(tagData, span = null) {
-        return {displayText: tagData.name, tagData, span};
-    }
-
-    /**
-     * Checks if a word matches any tag name or condition in the ontology.
-     */
-    matchesOntology(word) {
-        const tagDefinition = this.getTagDefinition(word);
-        return !!tagDefinition;
-    }
-
-    /**
-     * Adds a tag to the note's content.
-     */
-    addTag(tagName) {
-        const tagDefinition = this.getTagDefinition(tagName);
-        if (!tagDefinition) {
-            console.error('Tag definition not found:', tagName);
-            return;
-        }
-
-        const initialValue = '';
-        const initialCondition = tagDefinition.conditions[0]; // Default condition
-
-        const tagComponent = new Tag(
-            tagDefinition,
-            initialValue,
-            initialCondition,
-            (updatedTag) => {
-                // Handle tag update (e.g., save to database)
-                console.log('Tag updated:', updatedTag.getValue(), updatedTag.getCondition());
-            }
-        );
-    }
-
-    async updateTag(tagName, newValue, newCondition) {
-        try {
-            if (this.note) {
-                const tagIndex = this.note.tags.findIndex(tag => tag.name === tagName);
-                if (tagIndex !== -1) {
-                    this.note.tags[tagIndex].value = newValue;
-                    this.note.tags[tagIndex].condition = newCondition;
-                    await this.app.db.saveObject(this.note, false);
-                    this.renderTags();
-                } else {
-                    console.error('Tag not found');
-                }
-            } else {
-                console.error('Note not found');
-            }
-        } catch (error) {
-            console.error('Error updating tag:', error);
-        }
     }
 }
 

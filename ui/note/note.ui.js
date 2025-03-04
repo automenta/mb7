@@ -18,7 +18,9 @@ export class NoteUI {
         titleInput.type = 'text';
         titleInput.placeholder = 'Note Title';
         titleInput.className = 'note-title-input';
-        titleInput.addEventListener('input', onInput);
+        titleInput.addEventListener('input', () => {
+            onInput(titleInput.value);
+        });
         return titleInput;
     }
 
@@ -36,5 +38,22 @@ export class NoteUI {
     createPrivacyCheckbox() {
         const privacyCheckbox = createElement('input', { type: 'checkbox', id: 'privacyCheckbox' });
         return privacyCheckbox;
+    }
+
+    createPrivacyEdit() {
+        const container = this.createPrivacyContainer();
+        const label = this.createPrivacyLabel();
+        const checkbox = this.createPrivacyCheckbox();
+        container.appendChild(label);
+        container.appendChild(checkbox);
+        return container;
+    }
+
+    createLinkedView() {
+        return this.createTextView('Linked View');
+    }
+
+    createMatchesView() {
+        return this.createTextView('Matches View');
     }
 }
