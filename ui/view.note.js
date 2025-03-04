@@ -7,6 +7,8 @@ import {MyObjectsList} from "./my-objects-list.js";
 import {NoteYjsHandler} from "./note-yjs-handler.js";
 import {GenericListComponent} from "../generic-list-component";
 import {NotesSidebar} from "./note.sidebar";
+import {Edit} from "../edit/edit";
+import {getTagDefinition} from "../../core/ontology";
 
 class NoteCreator {
     constructor(noteManager, noteYjsHandler, yDoc) {
@@ -54,7 +56,7 @@ class NoteViewElements {
 }
 
 export class NoteView extends HTMLElement {
-    constructor(store, db, errorHandler, noteManager, noteYjsHandler, notificationManager) {
+    constructor(store, db, errorHandler, noteManager, noteYjsHandler, notificationManager, ontology) {
         super();
         this.store = store;
         this.db = db;
@@ -62,6 +64,7 @@ export class NoteView extends HTMLElement {
         this.noteManager = noteManager;
         this.noteYjsHandler = noteYjsHandler;
         this.notificationManager = notificationManager;
+        this.ontology = ontology;
 
         this.yDoc = new Y.Doc();
         this.noteUI = new NoteUI();
@@ -73,6 +76,8 @@ export class NoteView extends HTMLElement {
         this.noteCreator = new NoteCreator(noteManager, noteYjsHandler, this.yDoc);
         this.noteElements = new NoteViewElements();
         this.notesSidebar = new NotesSidebar(this, this);
+        this.edit = null; // Initialize edit to null
+        this.selectedNote = null;
 
         this.el = this.noteElements.createElement('div', {className: 'notes-view'});
         this.el.style.flexDirection = 'row';
@@ -89,6 +94,28 @@ export class NoteView extends HTMLElement {
         this.el.appendChild(this.myObjectsList.render());
         this.el.appendChild(await this.noteCreator.createNote());
         document.body.appendChild(this.el);
+
+        this.store.subscribe(() => {
+            this.updateView();
+        });
+    }
+
+    async updateView() {
+        const selectedNoteId = this.store.getState().selectedNoteId;
+        if (selectedNoteId && selectedNoteId !== this.selectedNote?.id) {
+            await this.loadNote(selectedNoteId);
+        }
+    }
+
+    async loadNote(noteId) {
+        this.selectedNote = await this.db.get(noteId);
+        if (this.selectedNote) {
+            if (this.edit) {
+                this.edit.el.remove();
+            }
+            this.edit = new Edit(this.selectedNote, this.yDoc, this.app, getTagDefinition, this.ontology);
+            this.el.appendChild(this.edit.el);
+        }
     }
 
     renderNoteItem(noteIdArray) { // Renamed from renderNObject to renderNoteItem, used by GenericListComponent, now receives noteId
