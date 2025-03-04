@@ -12,12 +12,10 @@ export class SuggestionDropdown {
     show(suggestions, x, y, onSelect) {
         this.el.innerHTML = "";
         this.onSelectCallback = onSelect;
-
         if (!suggestions.length) {
             this.hide();
             return;
         }
-
         suggestions.forEach(suggestion => {
             const suggestionElement = createElement("div", {class: "suggestion-item"}, suggestion.displayText);
             suggestionElement.addEventListener("click", () => {
@@ -27,7 +25,6 @@ export class SuggestionDropdown {
             suggestionElement.suggestion = suggestion;
             this.el.appendChild(suggestionElement);
         });
-
         this.el.style.position = 'fixed';
         this.el.style.left = `${x}px`;
         this.el.style.top = `${y}px`;
@@ -58,8 +55,6 @@ export class SuggestionDropdown {
 
     updateSelection(selectedIndex = this.selectedIndex) {
         this.selectedIndex = selectedIndex;
-        Array.from(this.el.children).forEach((child, i) =>
-            child.classList.toggle("selected", i === this.selectedIndex)
-        );
+        Array.from(this.el.children).forEach((child, i) => child.classList.toggle("selected", i === this.selectedIndex));
     }
 }

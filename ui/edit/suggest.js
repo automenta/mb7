@@ -1,4 +1,4 @@
-class Autosuggest {
+export class Autosuggest {
     constructor(editor) {
         this.editor = editor;
         this.suggestionDropdown = editor.suggestionDropdown;
@@ -12,26 +12,22 @@ class Autosuggest {
     debounce(func, delay) {
         let timeout;
         return function(...args) {
-            const context = this;
             clearTimeout(timeout);
-            timeout = setTimeout(() => func.apply(context, args), delay);
-        };
+            timeout = setTimeout(() => func.apply(this, args), delay);
+        }
     }
 
     apply() {
-        const { editorArea, suggestionDropdown, schema } = this;
-
+        const { editorArea, suggestionDropdown } = this;
         const selection = window.getSelection();
         if (!selection.rangeCount) {
             suggestionDropdown.hide();
             return;
         }
-
         const range = selection.getRangeAt(0);
         const cursorPosition = range.getBoundingClientRect();
         const text = editorArea.textContent;
         const cursorIndex = selection.anchorOffset;
-
         let tagStart = -1;
         for (let i = cursorIndex - 1; i >= 0; i--) {
             if (text[i] === '[') {
@@ -39,33 +35,24 @@ class Autosuggest {
                 break;
             }
         }
-
         if (tagStart === -1) {
             suggestionDropdown.hide();
             return;
         }
-
         const tagName = text.substring(tagStart + 1, cursorIndex).trim();
         if (!tagName) {
             suggestionDropdown.hide();
             return;
         }
-
         const suggestions = this.getSuggestions(tagName);
         if (!suggestions.length) {
             suggestionDropdown.hide();
             return;
         }
-
         this.selectedIndex = -1;
-        suggestionDropdown.show(
-            suggestions,
-            cursorPosition.x,
-            cursorPosition.bottom,
-            (selectedSuggestion) => {
-                this.selectSuggestion(selectedSuggestion, tagStart, cursorIndex, text);
-            }
-        );
+        suggestionDropdown.show(suggestions, cursorPosition.x, cursorPosition.bottom, (selectedSuggestion) => {
+            this.selectSuggestion(selectedSuggestion, tagStart, cursorIndex, text);
+        });
     }
 
     getSuggestions(tagName) {
@@ -85,10 +72,7 @@ class Autosuggest {
     }
 
     handleKeyDown(event) {
-        if (!this.suggestionDropdown.isVisible()) {
-            return;
-        }
-
+        if (!this.suggestionDropdown.isVisible()) return;
         switch (event.key) {
             case 'ArrowUp':
                 event.preventDefault();
@@ -114,15 +98,12 @@ class Autosuggest {
     moveSelection(direction) {
         const suggestionCount = this.suggestionDropdown.getSuggestionCount();
         if (suggestionCount === 0) return;
-
         this.selectedIndex += direction;
-
         if (this.selectedIndex < 0) {
             this.selectedIndex = suggestionCount - 1;
         } else if (this.selectedIndex >= suggestionCount) {
             this.selectedIndex = 0;
         }
-
         this.suggestionDropdown.updateSelection(this.selectedIndex);
     }
 
@@ -134,5 +115,3 @@ class Autosuggest {
         }
     }
 }
-
-export { Autosuggest };

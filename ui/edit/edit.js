@@ -24,37 +24,19 @@ class Edit {
 
     async render() {
         this.el.innerHTML = '';
-
-        this.editorArea = createElement('div', {
-            className: 'editor-area',
-            contentEditable: true,
-            spellCheck: false
-        });
-
+        this.editorArea = createElement('div', { className: 'editor-area', contentEditable: true, spellCheck: false });
         this.el.appendChild(this.editorArea);
         this.autosuggest.apply();
-
         this.detailsArea = createElement('div', { className: 'details-area' });
         this.el.appendChild(this.detailsArea);
-
         this.ontologyBrowser = new OntologyBrowser(this, this.handleTagSelected.bind(this));
         this.el.appendChild(this.ontologyBrowser.getElement());
         this.ontologyBrowser.render(this.schema);
-
         this.tagEditArea = createElement('div', { className: 'tag-edit-area', style: 'display:none;' });
         this.el.appendChild(this.tagEditArea);
-
-        this.editorArea.addEventListener('input', () => {
-            this.autosuggest.debouncedApply();
-        });
-
-        this.editorArea.addEventListener('keydown', (event) => {
-            this.autosuggest.handleKeyDown(event);
-        });
-
-        this.el.addEventListener('notify', (event) => {
-            this.app.showNotification(event.detail.message, event.detail.type);
-        });
+        this.editorArea.addEventListener('input', () => this.autosuggest.debouncedApply());
+        this.editorArea.addEventListener('keydown', (event) => this.autosuggest.handleKeyDown(event));
+        this.el.addEventListener('notify', (event) => this.app.showNotification(event.detail.message, event.detail.type));
     }
 
     handleTagSelected(tagDefinition) {
@@ -65,9 +47,7 @@ class Edit {
     async showTagEditForm(tagDefinition) {
         this.tagEditArea.innerHTML = '';
         this.tagEditArea.style.display = 'block';
-
         this.tagYDoc.getMap('data').clear();
-
         this.tagForm = new GenericForm(tagDefinition, this.tagYDoc, 'tag', this.saveTag.bind(this));
         await this.tagForm.build();
         this.tagEditArea.appendChild(this.tagForm.el);
@@ -75,19 +55,14 @@ class Edit {
 
     async saveTag() {
         console.log('Saving tag data...');
-
         const tagData = {};
         const yMap = this.tagYDoc.getMap('data');
-
         for (const key in this.selectedTag.tags) {
             const tagDefinition = this.selectedTag.tags[key];
             const yValue = yMap.get(key);
             tagData[key] = tagDefinition.deserialize(yValue !== undefined ? yValue : tagDefinition.default);
         }
-
         console.log('tagData', tagData);
         // TODO: Integrate the tagData into the main note's Yjs document
     }
 }
-
-export { Edit };

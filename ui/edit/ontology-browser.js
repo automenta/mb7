@@ -14,9 +14,7 @@ export class OntologyBrowser {
             const category = ontology[categoryName];
             const categoryDiv = createElement("div", {class: "ontology-category"});
             categoryDiv.append(createElement("h3", {}, categoryName));
-
             const instancesDiv = createElement("div", {class: "ontology-instances"});
-
             if (category.tags && Array.isArray(category.tags)) {
                 for (const tagName in category.tags) {
                     const tag = category.tags[tagName];
@@ -29,7 +27,6 @@ export class OntologyBrowser {
                     instancesDiv.append(instanceButton);
                 }
             }
-
             categoryDiv.append(instancesDiv);
             this.container.append(categoryDiv);
         }

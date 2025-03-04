@@ -15,39 +15,22 @@ export class GenericForm {
     async build() {
         this.el.innerHTML = "";
         const form = createElement("form");
-
         for (const property in this.schema.tags) {
             const propertySchema = this.schema.tags[property];
             const label = createElement("label", {for: property}, propertySchema.label || property);
             let input;
-
             switch (propertySchema.type) {
                 case "string":
-                    input = createElement("input", {
-                        type: "text",
-                        id: property,
-                        name: property,
-                    });
+                    input = createElement("input", { type: "text", id: property, name: property });
                     break;
                 case "number":
-                    input = createElement("input", {
-                        type: "number",
-                        id: property,
-                        name: property,
-                    });
+                    input = createElement("input", { type: "number", id: property, name: property });
                     break;
                 case "boolean":
-                    input = createElement("input", {
-                        type: "checkbox",
-                        id: property,
-                        name: property,
-                    });
+                    input = createElement("input", { type: "checkbox", id: property, name: property });
                     break;
                 case "select":
-                    input = createElement("select", {
-                        id: property,
-                        name: property,
-                    });
+                    input = createElement("select", { id: property, name: property });
                     if (propertySchema.options && Array.isArray(propertySchema.options)) {
                         propertySchema.options.forEach(option => {
                             const optionElement = createElement("option", {value: option}, option);
@@ -56,46 +39,21 @@ export class GenericForm {
                     }
                     break;
                 default:
-                    input = createElement("input", {
-                        type: "text",
-                        id: property,
-                        name: property,
-                    });
+                    input = createElement("input", { type: "text", id: property, name: property });
             }
-
             input.addEventListener('change', () => {
-                let value;
-                if (input.type === 'checkbox') {
-                    value = input.checked;
-                } else {
-                    value = input.value;
-                }
-
+                let value = input.type === 'checkbox' ? input.checked : input.value;
                 if (propertySchema && propertySchema.validate) {
                     const isValid = propertySchema.validate(value, 'is');
                     if (!isValid) {
-                        this.el.dispatchEvent(new CustomEvent('notify', {
-                            detail: {
-                                message: `Invalid input for ${propertySchema.label || property}`,
-                                type: 'error'
-                            }
-                        }));
+                        this.el.dispatchEvent(new CustomEvent('notify', { detail: { message: `Invalid input for ${propertySchema.label || property}`, type: 'error' } }));
                         return;
                     }
                 }
                 YjsHelper.updateYMapValue(this.yDoc, this.yMap, property, value);
-                if (this.saveCallback) {
-                    this.saveCallback();
-                }
-            })
-
-            let initialValue;
-            if (this.yMap.has(property)) {
-                initialValue = this.yMap.get(property);
-            } else {
-                initialValue = propertySchema.default;
-            }
-
+                if (this.saveCallback) this.saveCallback();
+            });
+            let initialValue = this.yMap.has(property) ? this.yMap.get(property) : propertySchema.default;
             if (initialValue !== undefined) {
                 if (input.type === 'checkbox') {
                     input.checked = initialValue;
@@ -103,20 +61,12 @@ export class GenericForm {
                     input.value = initialValue;
                 }
             } else {
-                if (propertySchema.type === 'boolean') {
-                    this.yMap.set(property, false);
-                } else {
-                    this.yMap.set(property, "");
-                }
+                if (propertySchema.type === 'boolean') this.yMap.set(property, false);
+                else this.yMap.set(property, "");
             }
-
             form.append(label, input);
         }
-
         this.el.append(form);
         return this.el;
-    }
-
-    async bindEvents() {
     }
 }
