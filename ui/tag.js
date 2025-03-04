@@ -1,1 +1,7 @@
-ui/tag.js
+class Tag extends HTMLElement {
+  constructor() {
+    super();
+  }
+}
+
+export { Tag };
