@@ -153,6 +153,21 @@ class NoteManager {
     }
 }
 
+class NostrInitializer {
+    constructor(db, errorHandler) {
+        this.db = db;
+        this.errorHandler = errorHandler;
+        this.settingsManager = new SettingsManager(db, errorHandler);
+    }
+
+    async initNostr() {
+        const {signalingStrategy, nostrRelays, nostrPrivateKey} = await this.settingsManager.getSettings();
+        const nostr = new Nostr(this, signalingStrategy, nostrRelays, nostrPrivateKey);
+        nostr.connect();
+        return nostr;
+    }
+}
+
 /**
  * The main application class.
  * Manages the database, Nostr connection, and UI.
@@ -179,18 +194,11 @@ class App {
         const notificationManager = new NotificationManager(app);
         const monitoring = new Monitoring();
         await monitoring.start();
-        const nostr = await App.initNostr(db, errorHandler);
+        const nostrInitializer = new NostrInitializer(db, errorHandler);
+        const nostr = await nostrInitializer.initNostr();
         const matcher = new Matcher(this);
 
         return {db, nostr, matcher, errorHandler, notificationManager, monitoring};
-    }
-
-    static async initNostr(db, errorHandler) {
-        const settingsManager = new SettingsManager(db, errorHandler);
-        const {signalingStrategy, nostrRelays, nostrPrivateKey} = await settingsManager.getSettings();
-        const nostr = new Nostr(this, signalingStrategy, nostrRelays, nostrPrivateKey);
-        nostr.connect();
-        return nostr;
     }
 
     showView(view) {
