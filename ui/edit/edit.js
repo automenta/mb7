@@ -139,8 +139,8 @@ class Edit {
 
     displayTagSuggestions(suggestions) {
         this.tagSuggestions.innerHTML = '';
-        suggestions.forEach(suggestion => {
-            const suggestionItem = createElement('li', { className: 'tag-suggestion-item' }, suggestion);
+        suggestions.forEach((suggestion, index) => {
+            const suggestionItem = createElement('li', { className: 'tag-suggestion-item', 'data-index': index }, suggestion);
             suggestionItem.addEventListener('click', () => {
                 this.tagInput.value = suggestion;
                 this.addTagToNote(suggestion);
