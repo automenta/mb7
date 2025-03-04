@@ -231,10 +231,10 @@ class Edit {
                 this.editTag(tagContent);
             });
 
-            // Basic styling for span tag (EDIT-RENDER-1)
-            tagElement.style.backgroundColor = '#eee';
-            tagElement.style.color = '#555';
-            tagElement.style.border = '1px dashed #ccc';
+            // Basic styling for span tag (EDIT-RENDER-1) - slightly improved
+            tagElement.style.backgroundColor = '#e0f7fa'; // Light cyan background
+            tagElement.style.color = '#004d40'; // Dark teal text
+            tagElement.style.border = '1px solid #b2ebf2'; // Light cyan border
             tagElement.style.borderRadius = '4px';
             tagElement.style.padding = '2px 4px';
             tagElement.style.margin = '2px';
