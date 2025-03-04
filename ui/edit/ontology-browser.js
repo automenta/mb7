@@ -1,4 +1,4 @@
-import {createElement} from '../utils';
+import {createElement} from '../ui/utils';
 import {Tag} from '../tag.js';
 
 export class OntologyBrowser {
@@ -17,16 +17,17 @@ export class OntologyBrowser {
 
             const instancesDiv = createElement("div", {class: "ontology-instances"});
 
-            if (category.instances && Array.isArray(category.instances)) {
-                category.instances.forEach(instance => {
+            if (category.tags && Array.isArray(category.tags)) {
+                for (const tagName in category.tags) {
+                    const tag = category.tags[tagName];
                     const instanceButton = createElement("button", {
-                       title: `Add tag ${instance.name}`,
-                        onclick: () => {
-                            this.onTagSelect(instance.name);
-                        }
-                    }, instance.name);
+                            title: `Add tag ${tag.label}`,
+                            onclick: () => {
+                                this.onTagSelect(tag);
+                            }
+                        }, tag.label);
                     instancesDiv.append(instanceButton);
-                });
+                }
             }
 
             categoryDiv.append(instancesDiv);
