@@ -110,7 +110,25 @@ class NoteSelector {
     displayMatch(event) {
         // Create a new element to display the match
         const matchElement = document.createElement('div');
-        matchElement.textContent = event.content;
+        matchElement.style.border = '1px solid #ccc';
+        matchElement.style.padding = '5px';
+        matchElement.style.margin = '5px';
+
+        // Display the author's name
+        const authorElement = document.createElement('div');
+        authorElement.textContent = `Author: ${event.pubkey}`; // Replace with actual name if available
+        matchElement.appendChild(authorElement);
+
+        // Display the timestamp
+        const timestampElement = document.createElement('div');
+        const date = new Date(event.created_at * 1000);
+        timestampElement.textContent = `Timestamp: ${date.toLocaleString()}`;
+        matchElement.appendChild(timestampElement);
+
+        // Display the content
+        const contentElement = document.createElement('div');
+        contentElement.textContent = `Content: ${event.content}`;
+        matchElement.appendChild(contentElement);
 
         // Append the match element to the matchesView container
         this.matchesView.appendChild(matchElement);
