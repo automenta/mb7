@@ -77,6 +77,7 @@ export class DB {
     constructor(app, errorHandler) {
         this.app = app;
         this.errorHandler = errorHandler;
+        this.executePersistentQueries = this.executePersistentQueries.bind(this);
     }
 
     /**
