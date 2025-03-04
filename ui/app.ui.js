@@ -3,6 +3,7 @@ import {View} from "./view"
 import {NoteView} from "./view.note";
 import {FriendsView} from "./view.friends";
 import {SettingsView} from "./view.settings";
+import {Ontology} from "../core/ontology";
 
 export class AppUI {
     constructor(store, viewManager, noteManager, db, errorHandler, nostr, noteYjsHandler, notificationManager) {
@@ -14,6 +15,7 @@ export class AppUI {
         this.nostr = nostr;
         this.noteYjsHandler = noteYjsHandler;
         this.notificationManager = notificationManager;
+        this.ontology = Ontology;
     }
 
     async setupUI(appDiv) {
@@ -38,7 +40,7 @@ export class AppUI {
     }
 
     initializeViews() {
-        const noteView = new NoteView(this.store, this.db, this.errorHandler, this.noteManager, this.noteYjsHandler, this.notificationManager);
+        const noteView = new NoteView(this.store, this.db, this.errorHandler, this.noteManager, this.noteYjsHandler, this.notificationManager, this.ontology);
         const friendsView = new FriendsView(this.store, this.db, this.nostr.addFriend.bind(this.nostr), this.nostr.removeFriend.bind(this.nostr), this.nostr.subscribeToPubkey.bind(this.nostr), this.nostr.unsubscribeToPubkey.bind(this.nostr), this.notificationManager.showNotification.bind(this.notificationManager));
         const settingsView = new SettingsView(this.store, this.db, this.nostr.updateSettings.bind(this.nostr), this.notificationManager.showNotification.bind(this.notificationManager));
         const contentView = new ContentView(this.store);
