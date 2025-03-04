@@ -25,13 +25,14 @@ const DOMPURIFY_CONFIG = {
 };
 import DOMPurify from 'dompurify';
 import {openDB} from 'idb';
-import * as Y from 'yjs'
 
-import {encrypt} from './crypto';
 import {addFriend, removeFriend, updateFriendProfile} from './friend';
 import {saveSettings} from './settings';
 import {createDefaultObject} from './db.utils';
 import {loadKeys} from './db.keys';
+import {saveYDoc, getYDoc} from './db.ydoc';
+import {enforcePrivacy} from './db.privacy';
+import {formatDate} from "../ui/content-view-renderer";
 
 const DB_NAME = 'nostr-app-db';
 const DB_VERSION = 2;
@@ -170,32 +171,17 @@ export class DB {
                 }
             }
 
-            // TODO: Retrieve the user's encryption key instead of generating a new one.
-            // TODO: Store the encryption key ID with the object.
-            // Enforce privacy by encrypting the object's content
             o.isPersistentQuery = isPersistentQuery;
-            await this.enforcePrivacy(o);
+
+            // Enforce privacy
+            await enforcePrivacy(this, o);
+
+            // Save the object
             await DB.db.put(OBJECTS_STORE, o);
 
+            // Yjs integration
             try {
-                // Yjs integration - enables collaborative editing and offline support
-                // Operational Transformation (OT) for text-based NObjects
-                console.log('Using OT for text-based NObject');
-
-                // Get the YDoc for the object, create if it doesn't exist
-                let yDoc = await this.getYDoc(o.id) || new Y.Doc();
-
-                // Get the YText object from the YDoc
-                const yText = yDoc.getText('content');
-
-                // Apply the changes to the YText object within a transaction
-                yDoc.transact(() => {
-                    yText.delete(0, yText.length);
-                    yText.insert(0, o.content);
-                });
-
-                // Save the YDoc
-                await this.saveYDoc(o.id, yDoc);
+                await saveYDoc(this, o);
             } catch (error) {
                 this.errorHandler.handleError(error, "Failed to integrate with Yjs", error);
                 console.error("Failed to integrate with Yjs:", error);
@@ -304,32 +290,8 @@ export class DB {
         }
     }
 
-    async saveYDoc(id, yDoc) {
-        try {
-            const yDocData = Y.encodeStateAsUpdate(yDoc);
-            await DB.db.put(OBJECTS_STORE, {id: `${id}-ydoc`, yDocData: yDocData});
-        } catch (error) {
-            this.errorHandler.handleError(error, `Failed to save YDoc with ID: ${id}`, error);
-            console.error(`Failed to save YDoc with ID: ${id}`, error);
-        }
-    }
-
     async getYDoc(id) {
-        await DB.the();
-        try {
-            const yDocObject = await DB.db.get(OBJECTS_STORE, `${id}-ydoc`);
-            if (yDocObject) {
-                const yDoc = new Y.Doc();
-                Y.applyUpdate(yDoc, yDocObject.yDocData);
-                return yDoc;
-            } else {
-                return null;
-            }
-        } catch (error) {
-            this.errorHandler.handleError(error, "Failed to get YDoc", error);
-            console.error("Failed to get YDoc:", error);
-            return null;
-        }
+        return await getYDoc(this, id);
     }
 
     async deleteCurrentObject(note) {
@@ -362,31 +324,6 @@ export class DB {
     }
 
     /**
-     * Implements privacy controls to ensure NObjects are private by default.
-     * @param {object} object - The NObject to apply privacy controls to.
-     * Enforces privacy by encrypting the object's content.
-     *
-     * This function encrypts the object's content to ensure privacy.
-     */
-    async enforcePrivacy(object) {
-        try {
-            const keys = await this.getKeys();
-            if (!keys || !keys.encryptionKey) {
-                return;
-            }
-
-            const encryptedData = await encrypt(object.content, keys.encryptionKey);
-            object.content = `ENCRYPTED:${encryptedData}`;
-            object.private = true;
-            // object.encryptionKeyId = keys.encryptionKey.id; // Store key ID if needed - encryptionKey object doesn't have id field
-            console.log(`Enforcing privacy for object: ${object.id}`);
-        } catch (error) {
-            this.errorHandler.handleError(error, "Failed to enforce privacy", error);
-            console.error("Failed to enforce privacy:", error);
-        }
-    }
-
-    /**
      * Executes persistent queries and notifies the user of any new matches.
      */
     async executePersistentQueries() {
@@ -414,4 +351,4 @@ export class DB {
 
 setInterval(() => {
     DB.the().then(db => db.executePersistentQueries());
-}, 60000); // Run every minute
+}, 60000);

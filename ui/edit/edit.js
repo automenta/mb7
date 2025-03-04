@@ -178,9 +178,9 @@ class EditorMenu {
 }
 
 class EditorSaveHandler {
-    constructor(app, persistentQueryCheckbox) {
+    constructor(app) {
         this.app = app;
-        this.persistentQueryCheckbox = persistentQueryCheckbox;
+        this.persistentQueryCheckbox = document.getElementById('persistentQueryCheckbox');
     }
 
     save(object) {
@@ -210,34 +210,31 @@ class SuggestionFinder {
 }
 
 class Edit {
-    constructor(note, yDoc, app, autosuggest, contentHandler, ontologyBrowser, toolbar, getTagDefinition, schema) {
+    constructor(note, yDoc, app, getTagDefinition, schema) {
         this.note = note;
         this.getTagDefinition = getTagDefinition;
         this.schema = schema;
         this.yDoc = yDoc;
         this.yText = this.yDoc.getText('content');
         this.el = createElement('div', { className: 'edit-view' });
-
-        this.editorArea = new EditorArea().el;
         this.app = app;
-        this.el.appendChild(this.editorArea);
 
+        // Initialize sub-components
+        this.editorArea = new EditorArea().el;
         this.suggestionDropdown = new SuggestionDropdown();
-        this.autosuggest = autosuggest || new Autosuggest(this);
-        this.contentHandler = contentHandler || new EditorContentHandler(this, this.autosuggest, this.yDoc, this.yText, this.app);
-        this.ontologyBrowser = ontologyBrowser || new OntologyBrowser(this, (tag) => this.contentHandler.insertTagAtSelection(tag));
-        this.toolbar = toolbar || new Toolbar(this);
+        this.autosuggest = new Autosuggest(this);
+        this.contentHandler = new EditorContentHandler(this, this.autosuggest, this.yDoc, this.yText, this.app);
+        this.ontologyBrowser = new OntologyBrowser(this, (tag) => this.contentHandler.insertTagAtSelection(tag));
+        this.toolbar = new Toolbar(this);
+        this.saveHandler = new EditorSaveHandler(this.app);
+        this.menu = new EditorMenu(this.app, this.saveHandler);
+        this.tagManager = new TagManager(this.app, this.note);
+        this.suggestionFinder = new SuggestionFinder(getTagDefinition);
         this.eventHandler = new EditorEventHandler(this);
         this.suggestionHandler = new SuggestionHandler(this);
-        this.suggestionFinder = new SuggestionFinder(getTagDefinition);
-
-        this.saveHandler = new EditorSaveHandler(this.app, this.persistentQueryCheckbox);
-        this.menu = new EditorMenu(this.app, this.saveHandler);
 
         this.el.append(this.menu.getElement(), this.editorArea);
         this.menu.getElement().append(this.toolbar.getElement(), this.ontologyBrowser.getElement());
-
-        this.tagManager = new TagManager(this.app, this.note);
         this.menu.getElement().append(this.tagManager);
 
         this.setupEditorEvents();
