@@ -1,60 +1,37 @@
-import {createElement} from '../ui/utils.js';
+import {createElement} from '../../ui/utils.js';
 
 export class SuggestionDropdown {
     constructor() {
-        this.el = createElement("div", {id: "suggestion-dropdown", class: "suggestion-dropdown"});
-        document.body.append(this.el);
-        this.selectedIndex = -1;
-        this.onSelectCallback = null;
-        this.hide();
+        this.el = createElement('div', {className: 'suggestion-dropdown'});
+        this.list = createElement('ul');
+        this.el.appendChild(this.list);
+        this.visible = false;
     }
 
-    show(suggestions, x, y, onSelect) {
-        this.el.innerHTML = "";
-        this.onSelectCallback = onSelect;
-        if (!suggestions.length) {
-            this.hide();
-            return;
-        }
+    show(suggestions, onSelect) {
+        this.list.innerHTML = '';
         suggestions.forEach(suggestion => {
-            const suggestionElement = createElement("div", {class: "suggestion-item"}, suggestion.displayText);
-            suggestionElement.addEventListener("click", () => {
+            const item = createElement('li', {}, suggestion);
+            item.addEventListener('click', () => {
                 onSelect(suggestion);
                 this.hide();
             });
-            suggestionElement.suggestion = suggestion;
-            this.el.appendChild(suggestionElement);
+            this.list.appendChild(item);
         });
-        this.el.style.position = 'fixed';
-        this.el.style.left = `${x}px`;
-        this.el.style.top = `${y}px`;
-        this.el.style.display = 'block';
-        this.updateSelection();
+        this.visible = true;
+        return this.el;
     }
 
     hide() {
-        this.el.style.display = 'none';
-        this.selectedIndex = -1;
-        this.onSelectCallback = null;
+        this.visible = false;
+        this.el.innerHTML = '';
     }
 
     isVisible() {
-        return this.el.style.display === 'block';
+        return this.visible;
     }
 
-    getSuggestionCount() {
-        return this.el.children.length;
-    }
-
-    getSelectedSuggestion(selectedIndex) {
-        if (selectedIndex >= 0 && selectedIndex < this.getSuggestionCount()) {
-            return this.el.children[selectedIndex];
-        }
-        return null;
-    }
-
-    updateSelection(selectedIndex = this.selectedIndex) {
-        this.selectedIndex = selectedIndex;
-        Array.from(this.el.children).forEach((child, i) => child.classList.toggle("selected", i === this.selectedIndex));
+    getElement() {
+        return this.el;
     }
 }

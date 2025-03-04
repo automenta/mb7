@@ -21,7 +21,7 @@ describe('OntologyBrowser Component', () => {
 
         for (const categoryName in Ontology) {
             const category = Ontology[categoryName];
-            if (category.instances && Array.isArray(category.instances)) {
+            if (category.tags && Array.isArray(category.tags)) {
                 const h3Elements = document.querySelectorAll('.ontology-category h3');
                 let categoryDiv = null;
                 for (let i = 0; i < h3Elements.length; i++) {
@@ -34,13 +34,14 @@ describe('OntologyBrowser Component', () => {
 
                 const instancesDiv = categoryDiv.querySelector('.ontology-instances');
                 expect(instancesDiv).not.toBeNull();
-                expect(instancesDiv.children.length).toBe(category.instances.length);
+                expect(instancesDiv.children.length).toBe(category.tags.length);
             }
         }
     });
 
     it('should call the onTagSelect callback when a tag instance is clicked', async () => {
         ontologyBrowser.render(Ontology);
+        await vi.waitFor(() => document.querySelector('.ontology-instance'));
         const tagInstance = document.querySelector('.ontology-instance');
         tagInstance.addEventListener('click', onTagSelect);
         tagInstance.dispatchEvent(new Event('click'));
