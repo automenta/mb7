@@ -72,18 +72,22 @@ class Edit {
         this.tagList.innerHTML = ''; // Clear existing tags
         if (this.note && this.note.tags) {
             for (const tag of this.note.tags) {
-                const tagDefinition = this.getTagDefinition(tag.name);
-                const tagComponent = new Tag(tagDefinition, tag.value, tag.condition, (updatedTag) => {
-                    this.updateTag(tag.name, updatedTag.getValue(), updatedTag.getCondition());
-                });
-                const listItem = createElement('li', { className: 'tag-list-item' });
-                listItem.appendChild(tagComponent);
-                listItem.addEventListener('tag-removed', () => {
-                    this.removeTagFromNote(tag.name);
-                });
-                this.tagList.appendChild(listItem);
+                this.renderTag(tag);
             }
         }
+    }
+
+    renderTag(tag) {
+        const tagDefinition = this.getTagDefinition(tag.name);
+        const tagComponent = new Tag(tagDefinition, tag.value, tag.condition, (updatedTag) => {
+            this.updateTag(tag.name, updatedTag.getValue(), updatedTag.getCondition());
+        });
+        const listItem = createElement('li', { className: 'tag-list-item' });
+        listItem.appendChild(tagComponent);
+        listItem.addEventListener('tag-removed', () => {
+            this.removeTagFromNote(tag.name);
+        });
+        this.tagList.appendChild(listItem);
     }
 
     async addTagToNote(tagName) {
@@ -102,7 +106,7 @@ class Edit {
             const newTag = { name: tagName, value: '', condition: 'is' };
             this.note.tags.push(newTag);
             await this.app.db.saveObject(this.note, false);
-            this.renderTags();
+            this.renderTag(newTag);
             this.tagInput.value = ''; // Clear the input field
         } catch (error) {
             console.error('Error adding tag to note:', error);
