@@ -6,6 +6,7 @@ import {TagDisplay} from "./tag-display.js";
 import {MyObjectsList} from "./my-objects-list.js";
 import {NoteYjsHandler} from "./note-yjs-handler.js";
 import {GenericListComponent} from "../generic-list-component";
+import {NotesSidebar} from "./note.sidebar";
 
 class NoteCreator {
     constructor(noteManager, noteYjsHandler, yDoc) {
@@ -53,23 +54,25 @@ class NoteViewElements {
 }
 
 export class NoteView extends HTMLElement {
-    constructor(store, db, errorHandler, noteManager, noteYjsHandler) {
+    constructor(store, db, errorHandler, noteManager, noteYjsHandler, notificationManager) {
         super();
         this.store = store;
         this.db = db;
         this.errorHandler = errorHandler;
         this.noteManager = noteManager;
         this.noteYjsHandler = noteYjsHandler;
+        this.notificationManager = notificationManager;
 
         this.yDoc = new Y.Doc();
         this.noteUI = new NoteUI();
-        this.noteList = new NoteList(this.store, this, this.yDoc, this.yDoc.getMap('notes'));
+        this.noteList = new NoteList(this.store, this, this.yDoc, this.yDoc.getArray('notesList'));
         this.notesListComponent = new GenericListComponent(this.renderNoteItem.bind(this), this.noteList.yNotesList);
         this.noteDetails = new NoteDetails(this);
         this.tagDisplay = new TagDisplay();
         this.myObjectsList = new MyObjectsList(this, this.yDoc.getArray('myObjects'));
         this.noteCreator = new NoteCreator(noteManager, noteYjsHandler, this.yDoc);
         this.noteElements = new NoteViewElements();
+        this.notesSidebar = new NotesSidebar(this, this);
 
         this.el = this.noteElements.createElement('div', {className: 'notes-view'});
         this.el.style.flexDirection = 'row';
@@ -79,6 +82,7 @@ export class NoteView extends HTMLElement {
     }
 
     async build() {
+        this.el.appendChild(this.notesSidebar.render());
         this.el.appendChild(this.notesListComponent.render());
         this.el.appendChild(this.noteDetails.render());
         this.el.appendChild(this.tagDisplay.render());

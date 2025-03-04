@@ -14,6 +14,7 @@ export class NoteDetails extends HTMLElement {
      */
     connectedCallback() {
         this.shadow.addEventListener('tag-removed', this.handleTagRemoved.bind(this));
+        this.render();
     }
 
     /**

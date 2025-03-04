@@ -4,6 +4,23 @@ export class NoteList {
         this.noteView = noteView;
         this.yDoc = yDoc;
         this.yNotesList = yNotesList;
+        this.loadNotes(); // Load notes on initialization
+    }
+
+    async loadNotes() {
+        try {
+            const notes = await this.app.db.getAll();
+            this.yDoc.transact(() => {
+                this.yNotesList.deleteRange(0, this.yNotesList.length); // Clear existing notes
+                notes.forEach(note => {
+                    this.yNotesList.push([note.id]); // Add note IDs to the Yjs array
+                });
+            });
+            this.app.notificationManager.showNotification('Notes loaded', 'success');
+        } catch (error) {
+            console.error('Error loading notes:', error);
+            this.app.notificationManager.showNotification('Error loading notes', 'error');
+        }
     }
 
     async handleDeleteNote(note) {
@@ -16,11 +33,11 @@ export class NoteList {
                         this.yNotesList.delete(index);
                     }
                 });
-                await this.noteView.notesListComponent.fetchDataAndRender();
                 this.app.notificationManager.showNotification('Deleted', 'success');
             }
         } catch (error) {
             console.error('Error deleting note:', error);
+            this.app.notificationManager.showNotification('Error deleting note', 'error');
         }
     }
 
