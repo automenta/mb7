@@ -145,6 +145,7 @@ class Edit {
                 this.tagInput.value = suggestion;
                 this.addTagToNote(suggestion);
                 this.tagSuggestions.innerHTML = ''; // Clear suggestions after selection
+                this.editorArea.focus(); // Focus editor after adding tag
             });
             this.tagSuggestions.appendChild(suggestionItem);
         });

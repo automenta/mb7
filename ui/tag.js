@@ -90,12 +90,13 @@ class Tag extends HTMLElement {
         }
 
         const icon = this.tagDefinition.ui?.icon || '🏷️';
-        const display = createElement('span', {}, `${icon} ${this.tagDefinition.name}: ${this.value} `);
+        const display = createElement('span', {}, `${icon} ${this.tagDefinition.name}: ${this.value || ''} `);
         this.el.appendChild(display);
 
         this.editButton = createElement('button', {
             className: 'edit-tag-button',
-            'aria-label': `Edit ${this.tagDefinition.name}`
+            'aria-label': `Edit ${this.tagDefinition.name}`,
+            title: `Edit ${this.tagDefinition.name}`
         }, 'Edit');
         this.editButton.addEventListener('click', () => {
             this.editTag();
@@ -104,7 +105,8 @@ class Tag extends HTMLElement {
 
         const removeButton = createElement('button', {
             className: 'remove-tag-button',
-            'aria-label': `Remove ${this.tagDefinition.name}`
+            'aria-label': `Remove ${this.tagDefinition.name}`,
+            title: `Remove ${this.tagDefinition.name}`
         }, 'X');
         removeButton.addEventListener('click', () => {
             this.remove();
