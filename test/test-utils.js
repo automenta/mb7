@@ -1,4 +1,3 @@
-test/test-utils.js
 import { vi } from 'vitest';
 
 export function createAppMock() {
@@ -10,6 +9,8 @@ export function createAppMock() {
             save: vi.fn(),
             get: vi.fn(),
             getAll: vi.fn(),
+            delete: vi.fn(), // Added delete mock
+            updateFriendProfile: vi.fn(), // Added updateFriendProfile mock
         },
         errorHandler: {
             handleError: vi.fn(),
@@ -38,6 +39,24 @@ export function createAppMock() {
             errorCount: 0,
         },
         showNotification: vi.fn(),
+        getTagDefinition: vi.fn().mockReturnValue({ // Mock getTagDefinition
+            name: 'MockTag',
+            label: 'Mock Tag',
+            ui: { type: "text" },
+            validate: () => true,
+            conditions: ["is", "contains"]
+        }),
+        schema: {}, // Mock schema
+        friendsView: { // Mock friendsView for handleKind0 test
+            loadFriends: vi.fn()
+        },
+        mainContent: { // Mock mainContent for handleKind0 test
+            currentView: null
+        },
+        SettingsView: class MockSettingsView { // Mock SettingsView for handleKind0 test
+            displayProfile: vi.fn()
+        },
+        FriendsView: class MockFriendsView {} // Mock FriendsView for handleKind0 test
     };
     return app;
 }

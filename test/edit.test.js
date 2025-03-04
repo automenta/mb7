@@ -8,11 +8,10 @@ describe('Edit Autosuggest', () => {
     it('should suggest tag names from ontology', async () => {
         const yDoc = new Y.Doc();
         const appMock = createAppMock();
-        const getTagDefinition = (name) => Ontology[name];
-        appMock.getTagDefinition = getTagDefinition;
+        appMock.getTagDefinition = (name) => Ontology[name];
         appMock.ontology = Ontology;
 
-        const edit = new Edit({}, yDoc, appMock, getTagDefinition, {});
+        const edit = new Edit({}, yDoc, appMock, appMock.getTagDefinition, {});
 
         const query = 'Per';
         const suggestions = Object.keys(appMock.ontology)

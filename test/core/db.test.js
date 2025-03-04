@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DB } from '@/core/db.js';
 import { openDB } from 'idb';
+import { createAppMock } from '../test-utils.js';
 
 vi.mock('idb', () => ({
     openDB: vi.fn(),
@@ -15,9 +16,8 @@ describe('DB', () => {
     const existingObjectData = { id: testId, 'test-data': 'existing' };
 
     beforeEach(() => {
-        errorHandler = {
-            handleError: vi.fn(),
-        };
+        const appMock = createAppMock();
+        errorHandler = appMock.errorHandler;
         db = new DB(errorHandler);
         openDB.mockClear();
     });

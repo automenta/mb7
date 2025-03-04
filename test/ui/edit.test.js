@@ -12,14 +12,6 @@ describe('Edit Component - Cursor Preservation', () => {
     beforeEach(() => {
         yDoc = new Y.Doc();
         appMock = createAppMock();
-        appMock.getTagDefinition = (tagName) => ({
-            name: tagName,
-            label: tagName,
-            ui: { type: "text" },
-            validate: () => true,
-            conditions: ["is", "contains"]
-        });
-        appMock.schema = {};
 
         editInstance = new Edit(
             { id: 'test-note', content: '' },
