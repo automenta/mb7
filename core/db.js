@@ -397,6 +397,7 @@ export class DB {
     }
 }
 
-setInterval(() => {
-    DB.the().then(db => db.executePersistentQueries());
+setInterval(async () => {
+    const db = await DB.the();
+    db.executePersistentQueries();
 }, 60000);
