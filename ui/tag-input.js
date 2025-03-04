@@ -54,18 +54,18 @@ class TagInput extends HTMLElement {
         this.appendChild(inputElement);
 
         // Add datalist for suggestions
-        const datalist = createElement('datalist', {id: `tag-suggestions-${this.tagDefinition.name}`});
+        const datalist = createElement('datalist', { id: `tag-suggestions-${this.tagDefinition.name}` });
         inputElement.setAttribute('list', `tag-suggestions-${this.tagDefinition.name}`);
         this.appendChild(datalist);
 
-       this.updateSuggestions = (inputValue) => {
+        this.updateSuggestions = (inputValue) => {
             datalist.innerHTML = ''; // Clear existing suggestions
             const tagSuggestions = this.tagDefinition.suggestions || [];
             const filteredSuggestions = tagSuggestions.filter(suggestion =>
                 suggestion.toLowerCase().startsWith(inputValue.toLowerCase())
             );
             filteredSuggestions.forEach(suggestion => {
-                const option = createElement('option', {value: suggestion});
+                const option = createElement('option', { value: suggestion });
                 datalist.appendChild(option);
             });
         };
@@ -80,4 +80,4 @@ class TagInput extends HTMLElement {
 
 customElements.define('tag-input', TagInput);
 
-export {TagInput};
+export { TagInput };
