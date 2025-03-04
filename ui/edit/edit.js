@@ -38,6 +38,15 @@ class Edit {
         persistentQueryContainer.append(persistentQueryLabel, this.persistentQueryCheckbox);
         menu.append(persistentQueryContainer);
 
+        this.tagList = document.createElement('ul');
+        this.tagInput = document.createElement('input');
+        this.tagInput.type = 'text';
+        this.tagInput.placeholder = 'Add a tag';
+        this.addTagButton = createElement('button', { className: 'add-tag-button' }, 'Add Tag');
+        this.addTagButton.addEventListener('click', () => this.addTagToNote(this.tagInput.value));
+
+        menu.append(this.tagList, this.tagInput, this.addTagButton);
+
         this.suggestionDropdown = new SuggestionDropdown();
         this.autosuggest = autosuggest || new Autosuggest(this);
         this.contentHandler = contentHandler || new EditorContentHandler(this, this.autosuggest, this.yDoc, this.yText);
@@ -53,6 +62,11 @@ class Edit {
             const isPersistentQuery = this.persistentQueryCheckbox.checked;
             this.app.db.saveObject(object, isPersistentQuery).catch(error => this.app.errorHandler.handleError(error, "Failed to save object"));
         };
+    }
+
+    addTagToNote(tagName) {
+        // TODO: Implement the logic to add the tag to the note
+        console.log('Adding tag:', tagName);
     }
 
     createEditorArea() {
