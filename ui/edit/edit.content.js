@@ -2,6 +2,20 @@ import {createElement} from '../utils';
 import {Tag} from '../tag.js'; // Import the new Tag component
 import DOMPurify from 'dompurify';
 
+class TagSerializer {
+    static serialize(tagEl) {
+        const tagName = tagEl.getAttribute('tag-definition');
+        const tagValue = tagEl.getAttribute('value') || '';
+        const tagCondition = tagEl.getAttribute('condition') || 'is';
+        return `[TAG:${tagName}:${tagValue}:${tagCondition}]`;
+    }
+
+    static deserialize(tagContent) {
+        const [tagName, tagValue = '', tagCondition = 'is'] = tagContent.split(':');
+        return { tagName, tagValue, tagCondition };
+    }
+}
+
 class EditorContentHandler {
     constructor(editor, autosuggest, yDoc, yText, yName, app) {
         this.editor = editor;
@@ -92,10 +106,8 @@ class EditorContentHandler {
     serialize() {
         const clonedEditor = this.editor.editorArea.cloneNode(true);
         clonedEditor.querySelectorAll("data-tag").forEach(tagEl => {
-            const tagName = tagEl.getAttribute('tagName');
-            const tagValue = tagEl.getAttribute('value') || '';
-            const tagCondition = tagEl.getAttribute('condition') || 'is';
-            tagEl.replaceWith(`[TAG:${tagName}:${tagValue}:${tagCondition}]`);
+            const serializedTag = TagSerializer.serialize(tagEl);
+            tagEl.replaceWith(serializedTag);
         });
         return clonedEditor.innerHTML.replace(/<br\s*\/?>/gi, "\n");
     }
@@ -113,11 +125,10 @@ class EditorContentHandler {
             }
             try {
                 const tagContent = match[1];
-                const [tagName, tagValue = '', tagCondition = 'is'] = tagContent.split(':');
+                const { tagName, tagValue, tagCondition } = TagSerializer.deserialize(tagContent);
                 const tagDefinition = this.editor.getTagDefinition(tagName);
                 if (tagDefinition) {
                     const tag = document.createElement('data-tag');
-                    tag.setAttribute('tagName', tagName);
                     tag.setAttribute('tag-definition', JSON.stringify(tagDefinition));
                     tag.setAttribute('value', tagValue);
                     tag.setAttribute('condition', tagCondition);

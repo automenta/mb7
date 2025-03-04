@@ -40,7 +40,7 @@ class Edit {
 
         this.suggestionDropdown = new SuggestionDropdown();
         this.autosuggest = autosuggest || new Autosuggest(this);
-        this.contentHandler = contentHandler || new EditorContentHandler(this, this.autosuggest, this.yDoc, this.yText);
+        this.contentHandler = contentHandler || new EditorContentHandler(this, this.autosuggest, this.yDoc, this.yText, this.app);
         this.ontologyBrowser = ontologyBrowser || new OntologyBrowser(this, (tag) => this.contentHandler.insertTagAtSelection(tag));
         this.toolbar = toolbar || new Toolbar(this);
 
