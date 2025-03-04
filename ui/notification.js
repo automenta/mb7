@@ -1,4 +1,3 @@
-ui/notification.js
 class Notification {
     constructor(message, type = "info") {
         this.message = message;
@@ -52,5 +51,3 @@ class Notification {
         this.element.remove();
     }
 }
-
-export { Notification };

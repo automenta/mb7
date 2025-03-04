@@ -1,4 +1,3 @@
-ui/edit/ontology-browser.js
 import { createElement } from '../utils.js';
 
 export class OntologyBrowser {
@@ -21,6 +20,7 @@ export class OntologyBrowser {
                     const tagElement = createElement("div", {class: "ontology-tag"}, tagName);
                     tagElement.addEventListener('click', () => {
                         this.onTagSelect(tagName);
+                        this.editor.insertTag(tagName);
                     });
                     instancesDiv.append(tagElement);
                 }

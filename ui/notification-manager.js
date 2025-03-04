@@ -1,6 +1,3 @@
-ui/notification-manager.js
-import { Notification } from './notification.js';
-
 export class NotificationManager {
     constructor(app) {
         this.app = app;
@@ -26,9 +23,9 @@ export class NotificationManager {
         notification.appendTo(notificationArea);
 
         await notification.animateIn();
-        this.notificationTimeout = setTimeout(async () => {
-            await this.animateAndRemoveNotification(notification);
-        }, 3000);
+        this.notificationTimeout = setTimeout(() => {
+            this.animateAndRemoveNotification(notification);
+        }, 3000); // Duration notification is visible
     }
 
 

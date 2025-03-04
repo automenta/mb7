@@ -1,4 +1,3 @@
-ui/view.js
 export class View {
     constructor(app, el) {
         this.app = app;

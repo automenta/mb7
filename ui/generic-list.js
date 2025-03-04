@@ -1,4 +1,3 @@
-ui/generic-list.js
 import { UIComponent } from './component.js';
 
 export class GenericListComponent extends UIComponent {
@@ -17,21 +16,17 @@ export class GenericListComponent extends UIComponent {
 
     renderList() {
         this.listElement.innerHTML = '';
-        const data = this.yArray.toArray();
-        if (data.length === 0) {
-            // No default "No items yet." text.
-        } else {
-            data.forEach(item => {
-                const listItem = this.createListItem(item);
-                this.listElement.appendChild(listItem);
-            });
-        }
+        this.yArray.forEach(yMap => {
+            const listItem = this.createListItem(yMap);
+            this.listElement.appendChild(listItem);
+        });
     }
 
-    createListItem(item) {
+    createListItem(yMap) {
         const listItem = document.createElement('li');
-        const listItemContent = this.renderer.renderListItem(item);
-        listItem.appendChild(listItemContent);
+        listItem.className = 'list-item';
+        const renderedItem = this.renderer.render(yMap);
+        listItem.appendChild(renderedItem);
         return listItem;
     }
 

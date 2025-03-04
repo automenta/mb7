@@ -1,13 +1,6 @@
-ui/edit/edit.js
-import * as Y from 'yjs';
-import { YjsHelper } from '../yjs-helper.js';
 import { createElement } from '../utils.js';
 import { SuggestionDropdown } from './suggestion-dropdown.js';
-import { OntologyBrowser } from './ontology-browser.js';
-import { renderContent } from '../content-view-renderer.js';
-import { TagManager } from '../tag-manager.js';
-import { EditToolbar } from './edit.toolbar.js';
-
+import { YjsHelper } from '../../core/yjs-helper.js';
 
 class Edit {
     constructor(note, yDoc, app, getTagDefinition, schema) {
@@ -19,12 +12,7 @@ class Edit {
         this.el = createElement('div', {className: 'edit-view'});
         this.app = app;
         this.suggestionDropdown = new SuggestionDropdown();
-        this.autosuggest = this.createAutosuggest();
-        this.ontologyBrowser = new OntologyBrowser(this, this.handleTagSelection.bind(this));
-        this.tagManager = new TagManager(note, app, getTagDefinition);
-        this.editToolbar = new EditToolbar(this);
     }
-
 
     render() {
         this.el.innerHTML = '';
@@ -38,83 +26,76 @@ class Edit {
         return this.el;
     }
 
-
     renderEditorArea() {
         this.editorArea = createElement('div', {className: 'editor-area'});
-        this.editorArea.contentEditable = true;
-        this.editorArea.setAttribute('contenteditable', 'true');
-        this.editorArea.setAttribute('spellcheck', 'true');
-        this.editorArea.setAttribute('autocorrect', 'true');
-        this.editorArea.setAttribute('autocomplete', 'off');
-        this.editorArea.setAttribute('data-gramm_editor', 'false');
-        this.el.appendChild(this.editorArea);
+        this.editor = createElement('div', {
+            className: 'editor',
+            contentEditable: true,
+            spellcheck: false
+        });
+        this.editorArea.append(this.editor);
+        this.el.append(this.editorArea);
     }
 
     renderDetailsArea() {
         this.detailsArea = createElement('div', {className: 'details-area'});
-        this.detailsArea.innerHTML = `<h2>Details</h2>`;
-        this.el.appendChild(this.detailsArea);
+        this.el.append(this.detailsArea);
     }
 
     renderOntologyBrowser() {
-        this.ontologyBrowserContainer = createElement('div', {className: 'ontology-browser-container'});
-        this.ontologyBrowserContainer.appendChild(this.ontologyBrowser.container);
-        this.el.appendChild(this.ontologyBrowserContainer);
+        this.ontologyBrowser = this.app.createOntologyBrowser(this);
+        this.el.append(this.ontologyBrowser.render(this.app.ontology));
     }
 
     renderTagEditArea() {
         this.tagEditArea = createElement('div', {className: 'tag-edit-area'});
-        this.tagEditArea.appendChild(this.tagManager.render());
-        this.el.appendChild(this.tagEditArea);
+        this.el.append(this.tagEditArea);
     }
-
 
     attachEventListeners() {
-        this.editorArea.addEventListener('input', () => this.handleInput());
-        this.editorArea.addEventListener('keydown', (event) => this.handleKeyDown(event));
-        this.editorArea.addEventListener('keyup', () => this.handleInput());
-    }
+        this.editor.addEventListener('input', () => {
+            YjsHelper.applyLocalChange(this.yDoc, () => {
+                this.yText.set('content', this.editor.textContent);
+            });
+        });
 
+        this.editor.addEventListener('keydown', (event) => {
+            if (event.key === '@') {
+                this.handleAtSymbol(event);
+            } else if (this.suggestionDropdown.isVisible()) {
+                if (event.key === 'Escape') {
+                    this.suggestionDropdown.hide();
+                    event.preventDefault();
+                } else if (event.key === 'Enter' && this.suggestionDropdown.hasActiveSuggestion()) {
+                    this.handleSuggestionSelection(event);
+                } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+                    this.suggestionDropdown.navigateSuggestions(event.key);
+                    event.preventDefault();
+                }
+            }
+        });
 
-    renderContent() {
-        this.editorArea.innerHTML = '';
-        this.editorArea.appendChild(renderContent(this.yText));
-    }
-
-
-    handleInput() {
-        const text = this.editorArea.textContent;
-        this.yDoc.transact(() => {
-            this.yText.delete(0, this.yText.length);
-            this.yText.insert(0, text);
+        this.suggestionDropdown.onSuggestionSelected(suggestion => {
+            this.handleSuggestionSelection(null, suggestion);
         });
     }
 
 
-    handleKeyDown(event) {
-        if (event.key === 'Enter') {
-            this.handleInput();
-            event.preventDefault();
-        }
-        if (event.key === ' ' && this.suggestionDropdown.isVisible()) {
-            event.preventDefault();
-            const selectedSuggestion = this.suggestionDropdown.getSelectedSuggestion();
-            if (selectedSuggestion) {
-                this.applySuggestion(selectedSuggestion);
-            }
-            this.suggestionDropdown.hide();
-        }
-        if (event.key === 'Escape' && this.suggestionDropdown.isVisible()) {
-            this.suggestionDropdown.hide();
-        }
-        if (event.key === 'ArrowDown' && this.suggestionDropdown.isVisible()) {
-            event.preventDefault();
-            this.suggestionDropdown.selectNextSuggestion();
-        }
-        if (event.key === 'ArrowUp' && this.suggestionDropdown.isVisible()) {
-            event.preventDefault();
-            this.suggestionDropdown.selectPreviousSuggestion();
-        }
+    renderContent() {
+        this.editor.textContent = this.yText.get('content') || '';
+    }
+
+
+    handleAtSymbol(event) {
+        const rect = this.editor.getBoundingClientRect();
+        const caretPosition = this.getCaretPosition();
+        const x = caretPosition.x - rect.left;
+        const y = caretPosition.y - rect.top + 20; // Offset to appear below the line
+
+        this.suggestionDropdown.show(x, y, this.editorArea,
+            this.createAutosuggest(),
+            (suggestion) => this.handleSuggestionSelection(event, suggestion)
+        );
     }
 
 
@@ -129,67 +110,56 @@ class Edit {
 
             renderSuggestions: (suggestions) => {
                 this.suggestionDropdown.clear();
-                if (suggestions.length > 0) {
-                    suggestions.forEach(suggestion => {
-                        this.suggestionDropdown.addSuggestion(suggestion);
-                    });
-                    this.suggestionDropdown.show(this.editorArea);
-                } else {
-                    this.suggestionDropdown.hide();
-                }
+                suggestions.forEach(suggestion => {
+                    this.suggestionDropdown.addSuggestion(suggestion.name, suggestion);
+                });
             },
 
-            clearSuggestions: () => {
-                this.suggestionDropdown.clear();
-                this.suggestionDropdown.hide();
+            onSuggestionSelected: (suggestion) => {
+                this.handleSuggestionSelection(null, suggestion);
             }
         };
     }
 
 
-    async handleTagSelection(tagName) {
-        const tagDef = this.getTagDefinition(tagName);
-        if (tagDef) {
-            this.tagManager.addTag(tagName, tagDef);
-        } else {
-            console.warn(`No tag definition found for ${tagName}`);
+    handleSuggestionSelection(event, suggestion) {
+        if (event) {
+            event.preventDefault(); // Prevent inserting the default character
         }
+        const selectedTag = suggestion.name;
+        this.insertTag(selectedTag);
+        this.suggestionDropdown.hide();
     }
 
 
-    applySuggestion(suggestion) {
-        const cursorPosition = this.editorArea.selectionStart;
-        const textBeforeCursor = this.editorArea.textContent.substring(0, cursorPosition);
-        const lastWordMatch = textBeforeCursor.match(/(\w+)$/);
-        if (lastWordMatch) {
-            const wordToReplace = lastWordMatch[1];
-            const replacementText = suggestion.name + ' ';
-            const newText = textBeforeCursor.replace(/(\w+)$/, replacementText) + this.editorArea.textContent.substring(cursorPosition);
+    insertTag(tagName) {
+        // Insert tag at the current cursor position in the editor
+        const selection = window.getSelection();
+        if (!selection.rangeCount) return;
+        const range = selection.getRangeAt(0);
+        range.deleteContents(); // Delete any selected text
 
-            this.yDoc.transact(() => {
-                this.yText.delete(0, this.yText.length);
-                this.yText.insert(0, newText);
-            });
-            this.renderContent();
-            const newCursorPosition = textBeforeCursor.length - wordToReplace.length + replacementText.length;
-            this.editorArea.focus();
-            document.getSelection().collapse(this.editorArea.childNodes[0], newCursorPosition);
+        // Create a text node for the tag
+        const tagText = document.createTextNode(`#${tagName} `);
+        range.insertNode(tagText);
 
-        }
+        // Move the cursor to the end of the inserted tag
+        range.collapse(false);
+        selection.removeAllRanges();
+        selection.addRange(range);
     }
 
 
-    async triggerAutosuggest(query) {
-        if (query.trim() === '') {
-            this.autosuggest.clearSuggestions();
-            return;
+    getCaretPosition() {
+        let x = 0, y = 0;
+        const selection = window.getSelection();
+        if (selection.rangeCount) {
+            const range = selection.getRangeAt(0).cloneRange();
+            range.collapse(false);
+            const rect = range.getBoundingClientRect();
+            x = rect.left;
+            y = rect.top;
         }
-
-        try {
-            const suggestions = await this.autosuggest.suggestTags(query);
-            this.autosuggest.renderSuggestions(suggestions);
-        } catch (error) {
-            console.error("Error fetching suggestions:", error);
-        }
+        return {x, y};
     }
 }

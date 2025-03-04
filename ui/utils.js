@@ -1,4 +1,3 @@
-ui/utils.js
 export const createElement = (tag, attrs = {}, text = "") => {
     const element = document.createElement(tag);
     for (const key in attrs) {

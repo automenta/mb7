@@ -1,6 +1,4 @@
-ui/note/note.details.js
 import { createElement } from '../utils.js';
-import { formatDate } from '../content-view-renderer.js';
 
 export class NoteDetails extends HTMLElement {
     constructor(app, noteView) {
@@ -13,13 +11,11 @@ export class NoteDetails extends HTMLElement {
 
     connectedCallback() {
         this.render();
+        this.noteView.addEventListener('note-selected', (event) => {
+            this.selectedNote = event.detail.note;
+            this.render();
+        });
     }
-
-    setSelectedNote(note) {
-        this.selectedNote = note;
-        this.render();
-    }
-
 
     render() {
         if (!this.selectedNote) {
@@ -31,10 +27,10 @@ export class NoteDetails extends HTMLElement {
             <style>
                 .note-details-container {
                     padding: 10px;
-                    font-family: sans-serif;
                 }
-                .detail-row {
+                .detail-item {
                     margin-bottom: 8px;
+                    font-size: 14px;
                 }
                 .detail-label {
                     font-weight: bold;
@@ -42,22 +38,12 @@ export class NoteDetails extends HTMLElement {
                 }
             </style>
             <div class="note-details-container">
-                <div class="detail-row">
-                    <span class="detail-label">Name:</span><span>${this.selectedNote.name}</span>
-                </div>
-                <div class="detail-row">
-                    <span class="detail-label">Created:</span><span>${formatDate(this.selectedNote.created)}</span>
-                </div>
-                <div class="detail-row">
-                    <span class="detail-label">Modified:</span><span>${formatDate(this.selectedNote.modified)}</span>
-                </div>
-                <div class="detail-row">
-                    <span class="detail-label">ID:</span><span>${this.selectedNote.id}</span>
-                </div>
+                <div class="detail-item"><span class="detail-label">ID:</span> ${this.selectedNote.id}</div>
+                <div class="detail-item"><span class="detail-label">Created:</span> ${this.selectedNote.createdAt}</div>
+                <div class="detail-item"><span class="detail-label">Updated:</span> ${this.selectedNote.updatedAt}</div>
+                <div class="detail-item"><span class="detail-label">Kind:</span> ${this.selectedNote.kind}</div>
             </div>
         `;
         return this;
     }
 }
-
-customElements.define('note-details', NoteDetails);

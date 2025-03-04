@@ -1,8 +1,8 @@
-ui/view.settings.js
-import { View } from '../view.js';
-import { createElement } from '../utils.js';
-import * as Y from 'yjs';
-import { GenericForm } from '../generic-form.js';
+import { View } from './view.js';
+import { createElement } from './utils.js';
+import * as ace from 'ace-builds';
+import 'ace-builds/src-noconflict/mode-json';
+import 'ace-builds/src-noconflict/theme- Cobolt';
 
 export class SettingsView extends View {
     constructor(app, db, nostr) {
@@ -26,26 +26,34 @@ export class SettingsView extends View {
         });
         this.el.appendChild(jsonEditor);
 
+        // Initialize Ace Editor
+        const editor = ace.edit(jsonEditor, {
+            mode: 'ace/mode/json',
+            theme: 'ace/theme/cobalt',
+            value: JSON.stringify(settings, null, 2),
+            minLines: 10,
+            maxLines: 30,
+        });
+        editor.session.setUseWrapMode(true);
+        editor.session.setWrapLimitRange(null, null);
+
+
         const saveButton = createElement('button', {}, 'Save Settings');
         saveButton.addEventListener('click', async () => {
             try {
-                const settingsData = JSON.parse(jsonEditor.value);
-                await this.app.settingsManager.saveSettings(settingsData);
-                this.showNotification('Settings saved!', 'success');
+                const updatedSettings = JSON.parse(editor.getValue());
+                await this.db.saveSettings(updatedSettings);
+                this.app.notificationManager.showNotification('Settings saved successfully!', 'success');
             } catch (error) {
-                console.error("Error saving settings:", error);
-                this.showNotification(`Failed to save settings: ${error.message}`, 'error');
+                console.error('Error saving settings:', error);
+                this.app.notificationManager.showNotification(`Failed to save settings: ${error.message}`, 'error');
             }
         });
         this.el.appendChild(saveButton);
-        return this.el;
     }
-
 
     render() {
         this.build();
         return this.el;
     }
 }
-
-customElements.define('settings-view', SettingsView);
