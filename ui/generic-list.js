@@ -8,6 +8,7 @@ export class GenericListComponent extends UIComponent {
         this.listElement = this.el; // Get the ul element
 
         this.renderList = this.renderList.bind(this);
+        this.createListItem = this.createListItem.bind(this); // Bind createListItem
 
         // Observe Yjs array changes
         if (this.yArray) {
@@ -26,11 +27,16 @@ export class GenericListComponent extends UIComponent {
             this.listElement.textContent = 'No items yet.';
         } else {
             data.forEach(item => { // item is noteId
-                const listItemContent = this.renderer.renderListItem(item); // Use the renderer.renderListItem function to get the content
-                const listItem = document.createElement('li'); // Create the <li> element
-                listItem.appendChild(listItemContent); // Append the content to the <li> element
+                const listItem = this.createListItem(item); // Use createListItem to create the <li> element
                 this.listElement.appendChild(listItem); // Append the <li> element to the list
             });
         }
+    }
+
+    createListItem(item) {
+        const listItem = document.createElement('li'); // Create the <li> element
+        const listItemContent = this.renderer.renderListItem(item); // Use the renderer.renderListItem function to get the content
+        listItem.appendChild(listItemContent); // Append the content to the <li> element
+        return listItem; // Return the complete <li> element
     }
 }

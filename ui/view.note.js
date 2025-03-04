@@ -4,7 +4,7 @@ import {NoteList} from "@/ui/note/note-list.js";
 import {NoteDetails} from "@/ui/note/note.details.js";
 import {TagDisplay} from "@/ui/note/tag-display.js";
 import {MyObjectsList} from "@/ui/note/my-objects-list.js";
-import {GenericListComponent} from "@/ui/generic-list-component.js";
+import {GenericListComponent} from "@/ui/generic-list.js"; // Corrected path
 import {NotesSidebar} from "@/ui/note/note.sidebar.js";
 import {Edit} from "@/ui/edit/edit.js";
 import {getTagDefinition} from "@/core/ontology.js";
@@ -32,6 +32,7 @@ class NoteCreator {
             }
         } catch (error) {
             console.error("Error creating note:", error);
+            this.app.notificationManager.showNotification(`Failed to create note: ${error.message}`, 'error'); // Notify user about error
         }
     }
 }
@@ -55,8 +56,9 @@ class NoteViewElements {
 }
 
 export class NoteView extends HTMLElement {
-    constructor(store, db, errorHandler, noteManager, noteYjsHandler, notificationManager, ontology) {
+    constructor(app, store, db, errorHandler, noteManager, noteYjsHandler, notificationManager, ontology) { // Added app as constructor parameter
         super();
+        this.app = app; // Assign app to this.app
         this.store = store;
         this.db = db;
         this.errorHandler = errorHandler;
@@ -68,7 +70,7 @@ export class NoteView extends HTMLElement {
         this.yDoc = new Y.Doc();
         this.noteUI = new NoteUI();
         this.noteList = new NoteList(this.app, this, this.yDoc, this.yDoc.getArray('notesList'));
-        this.notesListComponent = new GenericListComponent(this.renderNoteItem.bind(this), this.noteList.yNotesList);
+        this.notesListComponent = new GenericListComponent(this, this.noteList.yNotesList); // Pass 'this' (NoteView) as the renderer
         this.noteDetails = new NoteDetails(this, this.app);
         this.tagDisplay = new TagDisplay(this.app);
         this.myObjectsList = new MyObjectsList(this, this.yDoc.getArray('myObjects'));
@@ -77,11 +79,10 @@ export class NoteView extends HTMLElement {
         this.notesSidebar = new NotesSidebar(this.app, this);
         this.edit = null; // Initialize edit to null
         this.selectedNote = null;
-        this.app = app;
 
         this.el = this.noteElements.createElement('div', {className: 'notes-view'});
-        this.el.style.flexDirection = 'row';
         this.el.style.display = 'flex';
+        this.el.style.flexDirection = 'row';
 
         this.build();
     }
@@ -92,8 +93,8 @@ export class NoteView extends HTMLElement {
         this.el.appendChild(this.noteDetails.render());
         this.el.appendChild(this.tagDisplay.render());
         this.el.appendChild(this.myObjectsList.render());
-        this.el.appendChild(await this.noteCreator.createNote());
-        document.body.appendChild(this.el);
+        await this.createNote(); // Moved note creation here to ensure build order
+        this.appendChild(this.el); // Append to shadow DOM
 
         await this.store.subscribe(() => {
             this.updateView();
@@ -119,14 +120,20 @@ export class NoteView extends HTMLElement {
         }
     }
 
-    renderNoteItem(noteIdArray) { // Renamed from renderNObject to renderNoteItem, used by GenericListComponent, now receives noteId
+    renderListItem(noteIdArray) { // This is now the renderer for notesListComponent
         const noteId = noteIdArray[0];
-        const li = document.createElement('li');
-        li.dataset.id = noteId;
-        li.classList.add('note-list-item');
+        const liContent = document.createElement('div'); // Create a div for the content
+        liContent.dataset.id = noteId;
+        liContent.classList.add('note-list-item');
+
         const nameElement = document.createElement('div');
         nameElement.style.fontWeight = 'bold';
-        li.appendChild(nameElement);
+        // nameElement.textContent = `Note ID: ${noteId.substring(0, 8)}...`; // Display a shortened note ID for now
+        // TODO [NOTELIST-1]: Fetch note name from Yjs and display it
+        nameElement.textContent = `Note ID: ${noteId.substring(0, 8)}...`; // Placeholder, replace with actual note name
+
+        liContent.appendChild(nameElement);
+
         const deleteButton = document.createElement('button');
         deleteButton.textContent = 'Delete';
         deleteButton.addEventListener('click', async (event) => {
@@ -136,14 +143,15 @@ export class NoteView extends HTMLElement {
                 await this.noteList.handleDeleteNote(note);
             }
         });
-        li.appendChild(deleteButton);
+        liContent.appendChild(deleteButton);
 
-        li.addEventListener('click', async () => {
+        liContent.addEventListener('click', async () => {
             await this.selectNote(noteId);
         });
 
-        return li;
+        return liContent; // Return the content div, GenericListComponent will wrap it in <li>
     }
+
 
     async createNote() {
         await this.noteCreator.createNote();
