@@ -60,7 +60,129 @@ class Edit {
         await this.app.noteManager.saveObject(this.note);
     }
 
-    // ... (rest of edit.js content - no changes needed in other functions) ...
+    /**
+     * Serializes the content from the editor area, converting HTML-like tags to plain text.
+     * @returns {string} Plain text content.
+     */
+    serializeContent() {
+        return this.editorArea.innerHTML;
+    }
+
+    /**
+     * Renders the content into the editor area, parsing tags and applying formatting.
+     */
+    renderContent() {
+        // Save cursor position
+        const selection = window.getSelection();
+        let range;
+        if (selection.rangeCount > 0) {
+            range = selection.getRangeAt(0);
+        }
+
+        this.editorArea.innerHTML = this.note.content;
+
+        // Restore cursor position if a range was saved
+        if (range) {
+            selection.removeAllRanges();
+            selection.addRange(range);
+        }
+    }
+
+
+    debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                timeout = null;
+                func.apply(this, args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+
+    getElement() {
+        return this.el;
+    }
+
+    handleTagSelected(tagDefinition) {
+        if (this.selectedTag) {
+            this.tagEditArea.style.display = 'none';
+            this.tagEditArea.innerHTML = '';
+            this.selectedTag = null;
+        }
+
+        this.selectedTag = tagDefinition;
+        this.tagEditArea.style.display = 'block';
+
+        const yTagMap = YjsHelper.createYMap(this.tagYDoc, tagDefinition.name);
+
+        const form = new GenericForm(
+            {tags: {[tagDefinition.name]: tagDefinition}},
+            this.tagYDoc,
+            this.note.id,
+            () => { /* this.saveTag(tagDefinition.name); */ }, // Save callback - currently empty
+            this.app // Pass the app instance
+        );
+
+        form.build().then(formElement => {
+            this.tagEditArea.appendChild(formElement);
+        });
+
+        const saveButton = createElement('button', {className: 'save-button'}, 'Save Tag');
+        saveButton.addEventListener('click', () => this.saveTag(tagDefinition.name));
+        this.tagEditArea.appendChild(saveButton);
+
+        const deleteTagButton = createElement('button', {className: 'delete-tag-button'}, 'Delete Tag');
+        deleteTagButton.addEventListener('click', () => this.deleteTag(tagDefinition.name));
+        this.tagEditArea.appendChild(deleteTagButton);
+    }
+
+    async saveTag(tagName) {
+        const tagValue = this.tagYDoc.getMap('data').get(tagName);
+        if (tagValue !== undefined) {
+            // Assuming 'tags' is an array in your note object
+            if (!this.note.tags) {
+                this.note.tags = [];
+            }
+            const existingTagIndex = this.note.tags.findIndex(tag => tag.name === tagName);
+            if (existingTagIndex > -1) {
+                this.note.tags[existingTagIndex].value = tagValue; // Update existing tag
+            } else {
+                this.note.tags.push({name: tagName, value: tagValue}); // Add new tag
+            }
+            await this.app.noteManager.saveObject(this.note);
+            this.app.notificationManager.showNotification(`Tag '${tagName}' saved successfully.`, 'success');
+            this.tagEditArea.style.display = 'none';
+            this.tagEditArea.innerHTML = '';
+            this.selectedTag = null;
+            this.tagYDoc = new Y.Doc(); // Clear the tag YDoc after saving
+            this.renderContent(); // Re-render content to reflect tag changes
+        } else {
+            this.app.notificationManager.showNotification(`Value for tag '${tagName}' is undefined. Tag not saved.`, 'warning');
+        }
+    }
+
+
+    async deleteTag(tagName) {
+        if (this.note.tags) {
+            const tagIndex = this.note.tags.findIndex(tag => tag.name === tagName);
+            if (tagIndex > -1) {
+                this.note.tags.splice(tagIndex, 1); // Remove tag
+                await this.app.noteManager.saveObject(this.note);
+                this.app.notificationManager.showNotification(`Tag '${tagName}' deleted successfully.`, 'success');
+                this.tagEditArea.style.display = 'none';
+                this.tagEditArea.innerHTML = '';
+                this.selectedTag = null;
+                this.tagYDoc = new Y.Doc(); // Clear the tag YDoc after deleting
+                this.renderContent(); // Re-render content to reflect tag changes
+            } else {
+                this.app.notificationManager.showNotification(`Tag '${tagName}' not found in note.`, 'warning');
+            }
+        } else {
+            this.app.notificationManager.showNotification(`No tags to delete in this note.`, 'info');
+        }
+    }
 }
 
 export {Edit};
