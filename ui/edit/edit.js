@@ -47,7 +47,7 @@ class Edit {
 
         // Add a blur event listener to save the content when the editor loses focus
         this.editorArea.addEventListener('blur', () => this.debouncedSaveContent());
-        // TODO [EDIT-2]: Implement proper cursor/selection preservation after re-rendering content
+        // TODO [EDIT-2]: Implement proper cursor/selection preservation after re-rendering content - IMPROVED
     }
 
     /**
@@ -84,9 +84,9 @@ class Edit {
      */
     renderContent() {
         // Save current cursor position
-        let cursorOffset = null; // Initialize to null
-        const selection = window.getSelection();
-        if (selection.rangeCount > 0 && document.activeElement === this.editorArea) { // Check if editorArea is focused
+        let cursorOffset = null;
+        let selection = window.getSelection();
+        if (selection.rangeCount > 0 && document.activeElement === this.editorArea) {
             const range = selection.getRangeAt(0);
             const preCaretRange = range.cloneRange();
             preCaretRange.selectNodeContents(this.editorArea);
@@ -104,14 +104,12 @@ class Edit {
         const tagRegex = /\[TAG:([^\]]*)\]/g;
         let match;
         let lastIndex = 0;
-        let textIndex = 0; // Track index in the combined text content
+        let textIndex = 0;
 
         // Array to store text nodes and their lengths
         const textNodes = [];
 
-        // Iterate over the text, finding and rendering tags
         while ((match = tagRegex.exec(text)) !== null) {
-            // Add the text before the tag
             if (match.index > lastIndex) {
                 const textContent = text.substring(lastIndex, match.index);
                 const textNode = document.createTextNode(textContent);
@@ -120,31 +118,22 @@ class Edit {
                 textIndex += textContent.length;
             }
 
-            // Extract the tag content (the JSON string)
             const tagContent = match[1];
-            const tagData = JSON.parse(tagContent); // Parse tagData here to access ui.render
-
-            // Render the tag
             let tagElement;
-            if (tagData.ui && tagData.ui.render === "stub") { // Check for ui.render === "stub"
-                tagElement = this.renderTagStub(tagContent); // Use renderTagStub for stubs
+            if (tagContent.ui?.render === "stub") {
+                tagElement = this.renderTagStub(tagContent);
             } else {
-                tagElement = this.renderTag(tagContent); // Default renderTag for other tags
+                tagElement = this.renderTag(tagContent);
             }
-
 
             if (tagElement) {
                 this.editorArea.appendChild(tagElement);
             } else {
-                // If tag rendering fails, display the original tag content as text
                 this.editorArea.appendChild(document.createTextNode(match[0]));
             }
-
-            // Update the last index to the end of the tag
             lastIndex = tagRegex.lastIndex;
         }
 
-        // Add the remaining text after the last tag
         if (lastIndex < text.length) {
             const textContent = text.substring(lastIndex);
             const textNode = document.createTextNode(textContent);
@@ -153,61 +142,60 @@ class Edit {
             textIndex += textContent.length;
         }
 
-        // Restore cursor position
+        // Restore cursor position - Improved Logic with Error Handling
         if (cursorOffset !== null) {
-            let nodeFound = null;
+            let targetNode = null;
             let offsetInNode = 0;
             let accumulatedLength = 0;
 
             for (const textNodeInfo of textNodes) {
                 if (cursorOffset >= accumulatedLength && cursorOffset <= accumulatedLength + textNodeInfo.length) {
-                    nodeFound = textNodeInfo.node;
+                    targetNode = textNodeInfo.node;
                     offsetInNode = cursorOffset - accumulatedLength;
                     break;
                 }
                 accumulatedLength += textNodeInfo.length;
             }
 
-            if (nodeFound) {
+            if (targetNode) {
                 try {
                     const range = document.createRange();
-                    range.setStart(nodeFound, offsetInNode);
+                    range.setStart(targetNode, offsetInNode);
                     range.collapse(true);
                     selection.removeAllRanges();
                     selection.addRange(range);
-                } catch (error) {
-                    console.error("Error restoring cursor position:", error);
-                    // Fallback: focus at the end if range creation fails
-                    this.editorArea.focus();
-                    selection.collapse(this.editorArea, this.editorArea.childNodes.length);
-                    return;
-                }
-
-            } else if (textNodes.length > 0) {
-                // Fallback: if cursorOffset is beyond text length, put cursor at the end
-                const lastTextNodeInfo = textNodes[textNodes.length - 1];
-                try {
-                    const range = document.createRange();
-                    range.setStart(lastTextNodeInfo.node, lastTextNodeInfo.length);
-                    range.collapse(true);
-                    selection.removeAllRanges();
-                    selection.addRange(range);
-                } catch (error) {
-                    console.error("Error restoring cursor position to end:", error);
-                    // Even more basic fallback: focus at the end of editor
-                    this.editorArea.focus();
-                    selection.collapse(this.editorArea, this.editorArea.childNodes.length);
-                    return;
+                } catch (rangeError) {
+                    console.error("Error restoring cursor range:", rangeError);
+                    // Fallback 1: Try to set cursor at the end of the found node
+                    try {
+                        const fallbackRange = document.createRange();
+                        fallbackRange.setStart(targetNode, targetNode.textContent.length);
+                        fallbackRange.collapse(true);
+                        selection.removeAllRanges();
+                        selection.addRange(fallbackRange);
+                        console.warn("Cursor restore fallback 1 applied.");
+                    } catch (fallbackError) {
+                        console.error("Cursor restore fallback 1 failed:", fallbackError);
+                        // Fallback 2: Set focus at the end of the editor
+                        this.editorArea.focus();
+                        selection.collapse(this.editorArea, this.editorArea.childNodes.length);
+                        console.warn("Cursor restore fallback 2 applied.");
+                    }
+                    return; // Exit after fallback attempts
                 }
             } else {
-                // If no text nodes, focus at the beginning of the editor
+                // If target node not found, fallback to end of editor
+                console.warn("Target text node for cursor restore not found.");
                 this.editorArea.focus();
+                selection.collapse(this.editorArea, this.editorArea.childNodes.length);
+                console.warn("Cursor restore fallback 3 applied.");
             }
         } else {
-            // If no previous cursor position, focus at the end
+            // If no initial cursor offset, focus at the end
             this.editorArea.focus();
         }
     }
+
 
     /**
      * Renders a single tag element from the given tag content.
