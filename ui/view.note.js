@@ -29,74 +29,50 @@ export class NoteView extends HTMLElement {
         this.el.style.flexDirection = 'row';
         this.el.style.display = 'flex';
 
-        const noteDetails = new NoteDetails(this);
+        this.sidebar = new NotesSidebar(app, this);
+        this.noteDetails = new NoteDetails(this);
 
-        const mainArea = document.createElement('div');
-        mainArea.style.flex = '1';
-        mainArea.style.flexGrow = '1';
-        mainArea.style.padding = '10px';
-
-        this.el.appendChild(sidebar.render());
-
-        mainArea.appendChild(this.newTitleEdit());
-
-        // Details
+        this.mainArea = this.createMainArea();
         this.privacyContainer = this.createPrivacyContainer();
         this.privacyLabel = this.createPrivacyLabel();
         this.privacyCheckbox = this.createPrivacyCheckbox();
+        this.contentArea = this.createContentArea();
+        this.todoArea = this.createTodoArea();
+        this.tagArea = this.createTagArea();
+        this.myObjectsArea = this.createMyObjectsArea();
 
+        this.el.appendChild(this.sidebar.render());
+
+        this.mainArea.appendChild(this.newTitleEdit());
         this.privacyContainer.appendChild(this.privacyLabel);
         this.privacyContainer.appendChild(this.privacyCheckbox);
-
-        mainArea.appendChild(this.newPrivacyEdit());
-        mainArea.appendChild(noteDetails.render());
-
-        // Content area
-        const contentArea = document.createElement('div');
-        contentArea.className = 'note-content-area';
-        contentArea.style.padding = '10px';
-        mainArea.appendChild(contentArea);
-
-        // TODO Area
-        const todoArea = document.createElement('div');
-        todoArea.className = 'note-todo-area';
-        todoArea.style.padding = '10px';
-        mainArea.appendChild(todoArea);
-
-        // Tag Area
-        const tagArea = document.createElement('div');
-        tagArea.className = 'note-tag-area';
-        tagArea.style.padding = '10px';
-        mainArea.appendChild(this.newLinkedView());
-        mainArea.appendChild(this.newMatchesView());
-
-        this.el.appendChild(mainArea);
+        this.mainArea.appendChild(this.newPrivacyEdit());
+        this.mainArea.appendChild(this.noteDetails.render());
+        this.mainArea.appendChild(this.contentArea);
+        this.mainArea.appendChild(this.todoArea);
+        this.mainArea.appendChild(this.newLinkedView());
+        this.mainArea.appendChild(this.newMatchesView());
 
         this.editor = new Edit(this.selectedNote, this.yDoc, this.app, null, null, null, this.app.getTagDefinition, this.schema);
-        mainArea.appendChild(this.editor.el);
+        this.mainArea.appendChild(this.editor.el);
 
-        // My Objects List
-        const myObjectsArea = document.createElement('div');
-        myObjectsArea.className = 'my-objects-area';
-        myObjectsArea.style.padding = '10px';
-        mainArea.appendChild(myObjectsArea);
-
-        const myObjectsTitle = document.createElement('h2');
-        myObjectsTitle.textContent = 'My Objects';
-        myObjectsArea.appendChild(myObjectsTitle);
+        this.mainArea.appendChild(this.myObjectsArea);
 
         this.myObjectsListComponent = new GenericListComponent(this.renderMyObjectItem.bind(this), this.yMyObjectsList);
-        myObjectsArea.appendChild(this.myObjectsListComponent.el);
+        this.myObjectsArea.appendChild(this.myObjectsListComponent.el);
 
         const createObjectButton = document.createElement('button');
         createObjectButton.textContent = 'Create New Object';
-        myObjectsArea.appendChild(createObjectButton);
+        this.myObjectsArea.appendChild(createObjectButton);
+
         this.noteListRenderer = NoteListRenderer;
 
-        // Initialize GenericListComponent for notes list
         this.notesListComponent = new GenericListComponent(this.noteListRenderer, this.yNotesList);
-        sidebar.elements.notesList.replaceWith(this.notesListComponent.el);
-        sidebar.el.insertBefore(this.newAddButton(), this.notesListComponent.el);
+        this.sidebar.elements.notesList.replaceWith(this.notesListComponent.el);
+        this.sidebar.el.insertBefore(this.newAddButton(), this.notesListComponent.el);
+
+        this.el.appendChild(this.mainArea);
+
         this.selectedNote = null;
     }
 
@@ -128,6 +104,42 @@ export class NoteView extends HTMLElement {
         } catch (error) {
             console.error('Error deleting note:', error);
         }
+    }
+
+    createMainArea() {
+        const mainArea = document.createElement('div');
+        mainArea.style.flex = '1';
+        mainArea.style.flexGrow = '1';
+        mainArea.style.padding = '10px';
+        return mainArea;
+    }
+
+    createContentArea() {
+        const contentArea = document.createElement('div');
+        contentArea.className = 'note-content-area';
+        contentArea.style.padding = '10px';
+        return contentArea;
+    }
+
+    createTodoArea() {
+        const todoArea = document.createElement('div');
+        todoArea.className = 'note-todo-area';
+        todoArea.style.padding = '10px';
+        return todoArea;
+    }
+
+    createTagArea() {
+        const tagArea = document.createElement('div');
+        tagArea.className = 'note-tag-area';
+        tagArea.style.padding = '10px';
+        return tagArea;
+    }
+
+    createMyObjectsArea() {
+        const myObjectsArea = document.createElement('div');
+        myObjectsArea.className = 'my-objects-area';
+        myObjectsArea.style.padding = '10px';
+        return myObjectsArea;
     }
 
     newTitleEdit() {
