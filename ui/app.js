@@ -147,6 +147,20 @@ class App {
         await this.saveObject(newNote);
         return newNote;
     }
+
+    async createDefaultNote(db) {
+        const defaultNote = {
+            id: 'default',
+            name: 'Welcome to Netention!',
+            content: 'This is your first note. Edit it to get started.',
+            private: true,
+            tags: [],
+            priority: 'Medium',
+            isPersistentQuery: false
+        };
+        await db.save(defaultNote);
+        return defaultNote;
+    }
 }
 
 
