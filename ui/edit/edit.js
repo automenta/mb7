@@ -1,11 +1,8 @@
 import {createElement, debounce} from '../utils';
 import {TagManager} from '../tag-manager';
-
 import {OntologyBrowser} from './ontology-browser';
-
 import {Autosuggest} from './suggest';
 import {SuggestionDropdown} from './suggest.dropdown';
-
 import {EditorContentHandler} from './edit.content';
 import {Toolbar} from './edit.toolbar';
 
@@ -65,7 +62,6 @@ class EditorEventHandler {
             case "Enter":
                 event.preventDefault();
                 if (this.suggestionDropdown.getSelectedSuggestion()) {
-                    // Use content handler for consistency
                     const suggestion = this.edit.findSuggestion(this.suggestionDropdown.getSelectedSuggestion());
                     if (suggestion) this.contentHandler.insertTagFromSuggestion(suggestion);
                 }
@@ -111,36 +107,9 @@ class SuggestionHandler {
         return {displayText: tagData.name, tagData, span};
     }
 
-    /**
-     * Checks if a word matches any tag name or condition in the ontology.
-     */
     matchesOntology(word) {
         const tagDefinition = this.edit.getTagDefinition(word);
         return !!tagDefinition;
-    }
-
-    /**
-     * Adds a tag to the note's content.
-     */
-    addTag(tagName) {
-        const tagDefinition = this.edit.getTagDefinition(tagName);
-        if (!tagDefinition) {
-            console.error('Tag definition not found:', tagName);
-            return;
-        }
-
-        const initialValue = '';
-        const initialCondition = tagDefinition.conditions[0]; // Default condition
-
-        const tagComponent = new Tag(
-            tagDefinition,
-            initialValue,
-            initialCondition,
-            (updatedTag) => {
-                // Handle tag update (e.g., save to database)
-                console.log('Tag updated:', updatedTag.getValue(), updatedTag.getCondition());
-            }
-        );
     }
 
     async updateTag(tagName, newValue, newCondition) {
@@ -151,7 +120,6 @@ class SuggestionHandler {
                     this.edit.note.tags[tagIndex].value = newValue;
                     this.edit.note.tags[tagIndex].condition = newCondition;
                     await this.edit.app.db.saveObject(this.edit.note, false);
-                    this.edit.renderTags();
                 } else {
                     console.error('Tag not found');
                 }
@@ -211,16 +179,12 @@ class EditorSaveHandler {
     }
 }
 
-/**
- * The main editor class.
- * Manages the editor area, autosuggestions, ontology browser, and toolbar.
- */
 class Edit {
     constructor(note, yDoc, app, autosuggest, contentHandler, ontologyBrowser, toolbar, getTagDefinition, schema) {
         this.note = note;
         this.getTagDefinition = getTagDefinition;
         this.schema = schema;
-        this.yDoc = yDoc; // Use the passed Y.Doc instance
+        this.yDoc = yDoc;
         this.yText = this.yDoc.getText('content');
         this.el = createElement('div', { className: 'edit-view' });
 
@@ -247,7 +211,6 @@ class Edit {
 
         this.setupEditorEvents();
 
-        // Save function
         this.save = (object) => {
             this.saveHandler.save(object);
         };

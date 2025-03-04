@@ -1,16 +1,109 @@
 import { Edit } from './edit/edit.js';
 import { TagManager } from './tag-manager.js';
 import * as Y from 'yjs';
-
 import { NotesSidebar } from './note/note.sidebar.js';
 import { GenericListComponent } from './generic-list.js';
 import { NoteUI } from './note/note.ui.js';
-import { createElement } from '../utils.js';
 import {NoteList} from "./note/note-list";
 import {NoteDetails} from "./note/note-details";
 import {TagDisplay} from "./note/tag-display";
 import {NoteYjsHandler} from "./note/note-yjs-handler";
 import {MyObjectsList} from "./note/my-objects-list";
+
+class NoteViewRenderer {
+    constructor(noteView, noteUI) {
+        this.noteView = noteView;
+        this.noteUI = noteUI;
+    }
+
+    renderMainArea() {
+        const mainArea = this.noteUI.createMainArea();
+        mainArea.appendChild(this.noteUI.createTitleInput(this.noteView.handleTitleInputChange.bind(this.noteView)));
+        mainArea.appendChild(this.noteUI.createPrivacyEdit());
+        mainArea.appendChild(this.noteView.noteDetails);
+        mainArea.appendChild(this.noteView.contentArea);
+        mainArea.appendChild(this.noteView.todoArea);
+        mainArea.appendChild(this.noteUI.createLinkedView());
+        mainArea.appendChild(this.noteUI.createMatchesView());
+        mainArea.appendChild(this.noteView.editor.el);
+        mainArea.appendChild(this.noteView.tagManager);
+        mainArea.appendChild(this.noteView.myObjectsList.render());
+        return mainArea;
+    }
+}
+
+class NoteViewEventHandler {
+    constructor(noteView) {
+        this.noteView = noteView;
+    }
+
+    async handleCreateNote() {
+        try {
+            const newObject = await this.noteView.app.noteManager.createNote();
+            if (newObject) {
+                const yNoteMap = this.noteView.noteYjsHandler.getYNoteMap(newObject.id);
+                if (!yNoteMap) {
+                    this.noteView.yDoc.transact(() => {
+                        const newYNoteMap = new Y.Map();
+                        newYNoteMap.set('name', 'New Note');
+                        newYNoteMap.set('content', '');
+                        this.noteView.noteYjsHandler.yMap.set(newObject.id, newYNoteMap);
+                    });
+                }
+                await this.noteView.noteList.addNoteToList(newObject.id);
+                await this.noteView.notesListComponent.fetchDataAndRender();
+                this.noteView.app.notificationManager.showNotification('Saved', 'success');
+                await this.noteView.selectNote(newObject.id);
+                this.noteView.editor.contentHandler.deserialize(newObject.content);
+                this.noteView.focusTitleInput();
+            } else {
+                console.error('Error creating note: newObject is null');
+            }
+        } catch (error) {
+            console.error('Error creating note:', error);
+        }
+    }
+
+    async handleSelectNote(noteId) {
+        try {
+            const note = await this.noteView.app.db.get(noteId);
+            if (note) {
+                const previousSelected = this.noteView.el.querySelector('.note-list-item.selected');
+                if (previousSelected) {
+                    previousSelected.classList.remove('selected');
+                }
+
+                this.noteView.selectedNote = note;
+                this.noteView.noteDetails.populateNoteDetails(note);
+                if (this.noteView.editor && this.noteView.editor.contentHandler) {
+                    this.noteView.editor.contentHandler.deserialize(note.content);
+                }
+                await this.noteView.tagDisplay.displayTags(this.noteView, noteId);
+
+                const listItem = this.noteView.el.querySelector(`.note-list-item[data-id="${noteId}"]`);
+                if (listItem) {
+                    listItem.classList.add('selected');
+                }
+
+                const yNoteMap = this.noteView.noteYjsHandler.getYNoteMap(noteId);
+                const nameElement = listItem?.querySelector('.note-name');
+                if (yNoteMap && nameElement) {
+                    yNoteMap.observe((event) => {
+                        if (event.changes.keys.has("name")) {
+                            nameElement.textContent = yNoteMap.get("name");
+                        }
+                        if (event.changes.keys.has("content") && this.noteView.editor.contentHandler) {
+                            this.noteView.editor.contentHandler.deserialize(yNoteMap.get("content"));
+                        }
+                    });
+                    nameElement.textContent = yNoteMap.get("name") || note.name;
+                }
+            }
+        } catch (error) {
+            this.noteView.app.errorHandler.handleError(error, 'Error selecting note');
+        }
+    }
+}
 
 export class NoteView extends HTMLElement {
     constructor(app, db, nostr) {
@@ -33,37 +126,24 @@ export class NoteView extends HTMLElement {
         this.tagDisplay = new TagDisplay(app);
         this.myObjectsList = new MyObjectsList(this, this.noteYjsHandler.yMyObjectsList);
 
-        this.mainArea = this.noteUI.createMainArea();
         this.contentArea = this.noteUI.createContentArea();
         this.todoArea = this.noteUI.createTodoArea();
-        this.tagArea = this.noteUI.createTagArea();
-
-        this.el.appendChild(this.sidebar.render());
-
-        this.mainArea.appendChild(this.noteUI.createTitleInput(this.handleTitleInputChange.bind(this)));
-        this.mainArea.appendChild(this.noteUI.createPrivacyEdit());
-
-        this.mainArea.appendChild(this.noteDetails);
-
-        this.mainArea.appendChild(this.contentArea);
-        this.mainArea.appendChild(this.todoArea);
-        this.mainArea.appendChild(this.noteUI.createLinkedView());
-        this.mainArea.appendChild(this.noteUI.createMatchesView());
 
         this.editor = new Edit(this.selectedNote, this.yDoc, this.app, null, null, null, this.app.getTagDefinition, this.schema);
-        this.mainArea.appendChild(this.editor.el);
 
         this.tagManager = new TagManager(this.app, this.selectedNote);
-        this.mainArea.appendChild(this.tagManager);
 
-        this.mainArea.appendChild(this.myObjectsList.render());
-
-        this.noteList = new NoteList(this.app, this, this.yDoc, this.noteYjsHandler.yNotesList, this.notesListComponent);
+        this.noteList = new NoteList(this.app, this, this.yDoc, this.noteYjsHandler.yNotesList, null);
         this.notesListComponent = new GenericListComponent(this.noteList.renderNoteItem.bind(this.noteList), this.noteYjsHandler.yNotesList);
         this.sidebar.elements.notesList.replaceWith(this.notesListComponent.el);
         this.sidebar.el.insertBefore(this.newAddButton(), this.notesListComponent.el);
 
+        this.noteViewRenderer = new NoteViewRenderer(this, this.noteUI);
+        this.mainArea = this.noteViewRenderer.renderMainArea();
+        this.el.appendChild(this.sidebar.render());
         this.el.appendChild(this.mainArea);
+
+        this.noteViewEventHandler = new NoteViewEventHandler(this);
 
         this.selectedNote = null;
     }
@@ -91,74 +171,11 @@ export class NoteView extends HTMLElement {
     }
 
     async createNote() {
-        console.time('createNote');
-        try {
-            const newObject = await this.app.noteManager.createNote();
-            console.timeEnd('createNote');
-            if (newObject) {
-                const yNoteMap = this.noteYjsHandler.getYNoteMap(newObject.id);
-                if (!yNoteMap) {
-                    this.yDoc.transact(() => {
-                        const newYNoteMap = new Y.Map();
-                        newYNoteMap.set('name', 'New Note');
-                        newYNoteMap.set('content', '');
-                        this.noteYjsHandler.yMap.set(newObject.id, newYNoteMap);
-                    });
-                }
-                await this.noteList.addNoteToList(newObject.id);
-                await this.notesListComponent.fetchDataAndRender();
-                this.app.notificationManager.showNotification('Saved', 'success');
-                await this.selectNote(newObject.id);
-                this.editor.contentHandler.deserialize(newObject.content);
-                this.focusTitleInput();
-            } else {
-                console.error('Error creating note: newObject is null');
-            }
-        } catch (error) {
-            console.error('Error creating note:', error);
-        }
+        await this.noteViewEventHandler.handleCreateNote();
     }
 
     async selectNote(noteId) {
-        try {
-            const note = await this.app.db.get(noteId);
-            if (note) {
-                // Deselect previously selected note
-                const previousSelected = this.el.querySelector('.note-list-item.selected');
-                if (previousSelected) {
-                    previousSelected.classList.remove('selected');
-                }
-
-                this.selectedNote = note;
-                this.noteDetails.populateNoteDetails(note);
-                if (this.editor && this.editor.contentHandler) {
-                    this.editor.contentHandler.deserialize(note.content);
-                }
-                await this.tagDisplay.displayTags(this, noteId);
-
-                // Add 'selected' class to the clicked list item
-                const listItem = this.el.querySelector(`.note-list-item[data-id="${noteId}"]`);
-                if (listItem) {
-                    listItem.classList.add('selected');
-                }
-
-                const yNoteMap = this.noteYjsHandler.getYNoteMap(noteId);
-                const nameElement = listItem?.querySelector('.note-name');
-                if (yNoteMap && nameElement) {
-                    yNoteMap.observe((event) => {
-                        if (event.changes.keys.has("name")) {
-                            nameElement.textContent = yNoteMap.get("name");
-                        }
-                        if (event.changes.keys.has("content") && this.editor.contentHandler) {
-                            this.editor.contentHandler.deserialize(yNoteMap.get("content"));
-                        }
-                    });
-                    nameElement.textContent = yNoteMap.get("name") || note.name;
-                }
-            }
-        } catch (error) {
-            this.app.errorHandler.handleError(error, 'Error selecting note');
-        }
+        await this.noteViewEventHandler.handleSelectNote(noteId);
     }
 
     async getNoteTags(noteId) {
@@ -178,7 +195,7 @@ export class NoteView extends HTMLElement {
         if (this.selectedNote) {
             const titleInput = this.el.querySelector('.note-title-input');
             if (titleInput) {
-                titleInput.value = this.noteYjsHandler.yName.toString(); // Get name from Yjs
+                titleInput.value = this.noteYjsHandler.yName.toString();
             }
         }
     }

@@ -1,5 +1,5 @@
 import {createElement} from '../utils';
-import {Tag} from '../tag.js'; // Import the new Tag component
+import {Tag} from '../tag.js';
 import DOMPurify from 'dompurify';
 
 class TagConverter {
@@ -36,13 +36,6 @@ class YjsContentManager {
         this.yText = yText;
     }
 
-    setName(name) {
-        this.yDoc.transact(() => {
-            this.yName.delete(0, this.yName.length);
-            this.yName.insert(0, name);
-        });
-    }
-
     setContent(html) {
         this.updateYjsContent(html);
     }
@@ -63,8 +56,12 @@ class YjsContentManager {
 }
 
 class HTMLSanitizer {
-    sanitizeHTML(html) {
-        return DOMPurify.sanitize(html, {
+    constructor() {
+        this.purifier = DOMPurify;
+    }
+
+    sanitize(html) {
+        return this.purifier.sanitize(html, {
             ALLOWED_TAGS: ["br", "b", "i", "span", "u", "a"],
             ALLOWED_ATTR: ["class", "contenteditable", "tabindex", "id", "href", "target"]
         });
@@ -76,7 +73,7 @@ class EditorContentHandler {
         this.editor = editor;
         this.autosuggest = autosuggest;
         this.app = app;
-        this.lastValidRange = null; // Store the last valid range within the editor for handling tag insertions
+        this.lastValidRange = null;
         this.tagConverter = TagConverter;
         this.yjsContentManager = new YjsContentManager(yDoc, yText);
         this.htmlSanitizer = new HTMLSanitizer();
@@ -98,9 +95,8 @@ class EditorContentHandler {
 
         selection.removeAllRanges();
         selection.addRange(newRange);
-        this.lastValidRange = selection.getRangeAt(0).cloneRange(); // Save range for future tag insertions
+        this.lastValidRange = selection.getRangeAt(0).cloneRange();
     }
-
 
     insertTagAtSelection(tagName) {
         const editorArea = this.editor.editorArea;
@@ -119,8 +115,8 @@ class EditorContentHandler {
             this.insertNodeAtRange(range, tag);
         }
 
-        this.lastValidRange = range.cloneRange();  // Update the last valid range
-        this.autosuggest.apply(); // Refresh suggestions
+        this.lastValidRange = range.cloneRange();
+        this.autosuggest.apply();
     }
 
     getSelectionRange(editorArea, selection) {
@@ -151,12 +147,11 @@ class EditorContentHandler {
         this.restoreSelection(window.getSelection(), range);
     }
 
-
     insertTagFromSuggestion(suggestion) {
         if (!suggestion?.span) return;
         const newTag = new Tag(suggestion.tagData, () => this.editor.autosuggest.apply());
         suggestion.span.replaceWith(newTag);
-        this.autosuggest.apply(); //apply after insertion
+        this.autosuggest.apply();
     }
 
     serialize() {
@@ -201,24 +196,13 @@ class EditorContentHandler {
     }
 
     setContent(html) {
-        console.log('Edit.setContent called', html);
         this.yjsContentManager.setContent(html);
         this.editor.autosuggest.apply();
-        const text = this.serialize();
-        //if (text.includes('[TAG:{"name":"Public"}')) {
-        //    this.app.publishNoteToNostr(this.app.selectedNote);
-        //}
-    }
-
-    sanitizeHTML(html) {
-        return this.htmlSanitizer.sanitizeHTML(html);
     }
 
     updateEditorArea(html) {
         this.editor.editorArea.innerHTML = html;
     }
 }
-
-const tagDataMap = new WeakMap();
 
 export {EditorContentHandler};
