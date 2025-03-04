@@ -428,10 +428,6 @@ class Edit {
 
 export { Edit };
 
-.tag-list-item {
-    margin: 2px;
-}
-
 .tag-input-container {
     display: flex;
 }
