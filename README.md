@@ -46,6 +46,7 @@ analysis.
 - Deduplicate and unify redundant declarations
 - Use descriptive test names
 - Combine related test cases
+- Maximally leverage Ontology and Tag semantics to drive application functionality (elegant dogfooding)
 
 ## UI Design
 - *Progressive Disclosure*: This was a recurring theme. Hiding complexity until it's needed (e.g., the "Edit Details"
