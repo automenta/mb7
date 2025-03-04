@@ -23,9 +23,11 @@ describe('Edit Autosuggest', () => {
             constructor() {
                 // Mock constructor
             }
+
             show(suggestions, onSelect) {
                 // Mock show method
             }
+
             hide() {
                 // Mock hide method
             }
@@ -36,9 +38,11 @@ describe('Edit Autosuggest', () => {
                 this.editor = editor;
                 this.onTagSelect = onTagSelect;
             }
+
             render(ontology) {
                 // Mock render method
             }
+
             getElement() {
                 return document.createElement('div'); // Mock getElement
             }
@@ -50,7 +54,8 @@ describe('Edit Autosuggest', () => {
         const edit = new Edit({}, yDoc, app, getTagDefinition, Ontology);
         edit.autosuggest = new MockAutosuggest(edit); // Mock autosuggest
         edit.suggestionDropdown = new MockSuggestionDropdown(); // Mock suggestionDropdown
-        edit.ontologyBrowser = new MockOntologyBrowser(edit, () => {}); // Mock ontologyBrowser
+        edit.ontologyBrowser = new MockOntologyBrowser(edit, () => {
+        }); // Mock ontologyBrowser
 
         edit.matchesOntology = (word) => {
             const suggestions = [];

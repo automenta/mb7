@@ -1,6 +1,5 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { Tag } from '@/ui/tag.js'; // Corrected import path
-import { createElement } from '@/ui/utils.js'; // Corrected import path
+import {beforeEach, describe, expect, it, vi} from 'vitest';
+import {Tag} from '@/ui/tag.js'; // Corrected import path
 
 describe('Tag Component', () => {
     beforeEach(() => {
@@ -12,7 +11,7 @@ describe('Tag Component', () => {
         const tagDef = {
             name: 'testTag',
             label: 'Test Tag',
-            ui: { icon: '🧪' },
+            ui: {icon: '🧪'},
             conditions: ['is', 'not'],
             validate: () => true,
         };
@@ -40,7 +39,7 @@ describe('Tag Component', () => {
         const tagDef = {
             name: 'testTag',
             label: 'Test Tag',
-            ui: { icon: '🧪' },
+            ui: {icon: '🧪'},
             conditions: ['is', 'not'],
             validate: () => true,
         };
@@ -66,7 +65,7 @@ describe('Tag Component', () => {
         const tagDef = {
             name: 'testTag',
             label: 'Test Tag',
-            ui: { icon: '🧪' },
+            ui: {icon: '🧪'},
             conditions: ['is', 'not'],
             validate: () => true,
         };

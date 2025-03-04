@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { Edit } from './ui/edit/edit.js';
-import { createAppMock } from './test/test-utils.js';
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+import {Edit} from './ui/edit/edit.js';
+import {createAppMock} from './test/test-utils.js';
 import * as Y from 'yjs';
 
 describe('Edit Component - Cursor Preservation', () => {
@@ -15,14 +15,14 @@ describe('Edit Component - Cursor Preservation', () => {
         appMock.getTagDefinition = (tagName) => ({
             name: tagName,
             label: tagName,
-            ui: { type: "text" },
+            ui: {type: "text"},
             validate: () => true,
             conditions: ["is", "contains"]
         });
         appMock.schema = {};
 
         editInstance = new Edit(
-            { id: 'test-note', content: '' },
+            {id: 'test-note', content: ''},
             yDoc,
             appMock,
             appMock.getTagDefinition,
