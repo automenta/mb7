@@ -150,6 +150,7 @@ export class GenericForm {
             console.warn("App or app settings not available.  Returning empty overrides.");
             return {};
         }
-        return this.app.settings.tagUIOverrides || {};
+        let settings = await this.app.db.getSettings();
+        return settings.tagUIOverrides || {};
     }
 }
