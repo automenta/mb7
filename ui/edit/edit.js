@@ -102,6 +102,14 @@ class Edit {
                 this.editTag(tagContent);
             });
 
+            // Basic styling
+            tagElement.style.backgroundColor = '#f0f0f0';
+            tagElement.style.border = '1px solid #ccc';
+            tagElement.style.borderRadius = '4px';
+            tagElement.style.padding = '2px 4px';
+            tagElement.style.margin = '2px';
+            tagElement.style.cursor = 'pointer';
+
             return tagElement;
         } catch (error) {
             console.error("Error rendering tag:", error);
@@ -170,6 +178,11 @@ class Edit {
         this.tagForm = new GenericForm(tagDefinition, this.tagYDoc, 'tag', this.saveTag.bind(this));
         await this.tagForm.build();
         this.tagEditArea.appendChild(this.tagForm.el);
+
+        // Add Delete Button
+        const deleteButton = createElement('button', { className: 'delete-tag-button' }, 'Delete Tag');
+        deleteButton.addEventListener('click', () => this.deleteTag());
+        this.tagEditArea.appendChild(deleteButton);
     }
 
     async saveTag() {
@@ -204,6 +217,9 @@ class Edit {
         const tagContent = JSON.stringify(tagData);
         const tagPlaceholder = `[TAG:${tagContent}]`;
 
+        // Get current cursor position
+        const cursorPosition = this.editorArea.selectionStart;
+
         this.yDoc.transact(() => {
             if (this.editingTagContent) {
                 // Replace the existing tag
@@ -213,19 +229,44 @@ class Edit {
                 if (index !== -1) {
                     this.yText.delete(index, tagToReplace.length);
                     this.yText.insert(index, tagPlaceholder);
+                    // Restore cursor position
                 } else {
                     console.warn("Tag to replace not found in Yjs text!");
                     this.app.showNotification("Tag to replace not found in Yjs text!", 'warning');
-                    this.yText.insert(this.editorArea.selectionStart, tagPlaceholder);
+                    this.yText.insert(cursorPosition, tagPlaceholder);
                 }
             }
             else {
                 // Insert the tag placeholder into the Yjs text
-                this.yText.insert(this.editorArea.selectionStart, tagPlaceholder);
+                this.yText.insert(cursorPosition, tagPlaceholder);
             }
         });
 
         console.log('tagData', tagData);
         this.editingTagContent = null; // Reset editingTagContent
+
+        // Restore cursor position after tag insertion/replacement
+        this.editorArea.focus();
+        this.editorArea.setSelectionRange(cursorPosition + tagPlaceholder.length, cursorPosition + tagPlaceholder.length);
+    }
+
+    async deleteTag() {
+        if (this.editingTagContent) {
+            const text = this.yText.toString();
+            const tagToDelete = `[TAG:${this.editingTagContent}]`;
+            const index = text.indexOf(tagToDelete);
+
+            if (index !== -1) {
+                this.yDoc.transact(() => {
+                    this.yText.delete(index, tagToDelete.length);
+                });
+            } else {
+                console.warn("Tag to delete not found in Yjs text!");
+                this.app.showNotification("Tag to delete not found in Yjs text!", 'warning');
+            }
+
+            this.tagEditArea.style.display = 'none';
+            this.editingTagContent = null;
+        }
     }
 }
