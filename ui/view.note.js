@@ -84,8 +84,8 @@ class NoteDetails {
 
     populateNoteDetails(note) {
         const titleInput = this.noteView.el.querySelector('.note-title-input');
-        const privacyCheckbox = this.noteView.shadow.querySelector('.privacy-checkbox');
-        const prioritySelect = this.noteView.shadow.querySelector('.priority-select');
+        const privacyCheckbox = this.noteView.el.querySelector('#privacyCheckbox');
+        const prioritySelect = this.noteView.el.querySelector('.note-priority-select');
 
         if (titleInput) {
             titleInput.value = note.name;
