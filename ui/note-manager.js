@@ -3,10 +3,20 @@ import { v4 as uuidv4 } from 'uuid';
 /** @typedef {import('../core/types').Tag} Tag */
 import {NObject, Tag} from "../core/types";
 
-class TagProcessor {
+export class NoteManager {
+    constructor(app, db, errorHandler, matcher, nostr, notificationManager) {
+        this.app = app;
+        this.db = db;
+        this.errorHandler = errorHandler;
+        this.matcher = matcher;
+        this.nostr = nostr;
+        this.notificationManager = notificationManager;
+    }
+
     /**
-     * @param {NObject} object
-     * @param {boolean} isPrivate
+     * Processes the tags of an object, ensuring visibility is correctly set.
+     * @param {NObject} object - The object whose tags need processing.
+     * @param {boolean} isPrivate - Whether the object is private.
      */
     processTags(object, isPrivate) {
         const { tags = [] } = object;
@@ -22,17 +32,10 @@ class TagProcessor {
             object.tags.push(visibilityTag);
         }
     }
-}
-
-class NotePublisher {
-    constructor(nostr, notificationManager, errorHandler) {
-        this.nostr = nostr;
-        this.notificationManager = notificationManager;
-        this.errorHandler = errorHandler;
-    }
 
     /**
-     * @param {NObject} object
+     * Publishes an object to Nostr, if it's not private.
+     * @param {NObject} object - The object to publish.
      */
     async publishObject(object) {
         console.log('publishObject called with object:', object);
@@ -55,7 +58,8 @@ class NotePublisher {
     }
 
     /**
-     * @param {NObject[]} matches
+     * Publishes matches to Nostr.
+     * @param {NObject[]} matches - The matches to publish.
      */
     async publishMatches(matches) {
         console.log('publishMatches called with matches:', matches);
@@ -72,11 +76,10 @@ class NotePublisher {
             this.errorHandler.handleError(error, 'Error publishing to Nostr');
         }
     }
-}
 
-class ObjectPreparer {
     /**
-     * @param {NObject} object
+     * Prepares an object for saving, validating its tags.
+     * @param {NObject} object - The object to prepare.
      */
     prepareObjectForSaving(object) {
         if (!object.tags || !Array.isArray(object.tags)) return;
@@ -84,20 +87,6 @@ class ObjectPreparer {
         if (invalidTag) {
             throw new Error(`Tag name is required. Invalid tag: ${JSON.stringify(invalidTag)}`);
         }
-    }
-}
-
-export class NoteManager {
-    constructor(app, db, errorHandler, matcher, nostr, notificationManager) {
-        this.app = app;
-        this.db = db;
-        this.errorHandler = errorHandler;
-        this.matcher = matcher;
-        this.nostr = nostr;
-        this.notificationManager = notificationManager;
-        this.tagProcessor = new TagProcessor();
-        this.notePublisher = new NotePublisher(nostr, notificationManager, errorHandler);
-        this.objectPreparer = new ObjectPreparer();
     }
 
     async createNote(name = 'New Note') {
@@ -140,15 +129,15 @@ export class NoteManager {
             return null;
         }
 
-        this.objectPreparer.prepareObjectForSaving(object);
+        this.prepareObjectForSaving(object);
         /** @type {NObject} */
         const newObject = {id: object.id, name: object.name, content: object.content, tags: object.tags || [], isPersistentQuery: object.isPersistentQuery, private: object.private};
-        this.tagProcessor.processTags(newObject, object.private);
+        this.processTags(newObject, object.private);
         try {
             await this.db.save(newObject, object.isPersistentQuery);
             const matches = await this.matcher.findMatches(newObject);
-            await this.notePublisher.publishObject(newObject);
-            await this.notePublisher.publishMatches(matches);
+            await this.publishObject(newObject);
+            await this.publishMatches(matches);
             return newObject;
         } catch (error) {
             this.errorHandler.handleError(error, 'Error saving or publishing object');
