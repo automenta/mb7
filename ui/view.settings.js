@@ -1,8 +1,6 @@
 import {View} from './view';
 import {createElement} from './utils.js';
-import {GenericForm} from "./generic-form.js";
 import * as Y from 'yjs';
-import {Ontology} from "../core/ontology";
 
 export class SettingsView extends View {
     constructor(app, db, nostr) {

@@ -65,7 +65,7 @@ class Edit {
      */
     serializeContent() {
         let content = '';
-        for (let i = 0;i < this.editorArea.childNodes.length; i++) {
+        for (let i = 0; i < this.editorArea.childNodes.length; i++) {
             const node = this.editorArea.childNodes[i];
             if (node.nodeType === Node.TEXT_NODE) {
                 content += node.textContent;
@@ -360,7 +360,7 @@ class Edit {
 
     debounce(func, delay) {
         let timeout;
-        return function(...args) {
+        return function (...args) {
             const context = this;
             clearTimeout(timeout);
             timeout = setTimeout(() => func.apply(context, args), delay);

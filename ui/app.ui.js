@@ -34,7 +34,10 @@ export class AppUI {
             this.errorHandler.handleError(error, 'Error loading notes or creating default note');
         }
 
-        const {menubar, mainContent} = createLayout(appDiv, noteView, friendsView, settingsView, contentView, this.store);
+        const {
+            menubar,
+            mainContent
+        } = createLayout(appDiv, noteView, friendsView, settingsView, contentView, this.store);
         // Display the name of the note in the editor title
         document.title = this.store.getState().selectedNoteId ? `Netention - ${this.store.getState().selectedNoteId.name}` : "Netention";
     }

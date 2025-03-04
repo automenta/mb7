@@ -4,7 +4,6 @@ import {NoteList} from "./note/note-list.js";
 import {NoteDetails} from "./note/note.details.js";
 import {TagDisplay} from "./tag-display.js";
 import {MyObjectsList} from "./my-objects-list.js";
-import {NoteYjsHandler} from "./note-yjs-handler.js";
 import {GenericListComponent} from "../generic-list-component";
 import {NotesSidebar} from "./note.sidebar";
 import {Edit} from "../edit/edit";
@@ -156,6 +155,7 @@ export class NoteView extends HTMLElement {
     async selectNote(noteId) {
         this.store.dispatch({type: 'SET_SELECTED_NOTE', payload: noteId});
     }
+
     // TODO [NOTEVIEW-4]: Implement a split-view or tabbed interface for editing and viewing notes side-by-side
 }
 

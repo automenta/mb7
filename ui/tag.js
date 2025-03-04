@@ -143,51 +143,60 @@ class Tag extends HTMLElement {
             this.value = newValue;
             this.condition = newCondition;
             this.render();
-   set app(value) {
-       this._app = value;
-   }
-    getValue() {
-        return this.value;
-    }
-
-    getCondition() {
-   get app() {
-       return this._app;
-   }
-    
-   async removeTag() {
-       try {
-            const tagName = this.tagDefinition.name;
-            const noteDetails = this.closest('note-details');
-            if (noteDetails) {
-                const noteView = noteDetails.noteView;
-                if (noteView && noteView.selectedNote) {
-                    const note = noteView.selectedNote;
-                    const tagIndex = note.tags.findIndex(tag => tag.name === tagName);
-                    if (tagIndex !== -1) {
-                        note.tags.splice(tagIndex, 1);
-                        await noteView.app.db.saveObject(note, false);
-                        noteDetails.renderTags();
-                        noteView.displayTags(note.id);
-                    } else {
-                        console.error('Tag not found');
-                    }
-                } else {
-                    console.error('NoteView or selectedNote not found');
-                }
-            } else {
-                console.error('NoteDetails component not found');
+            set
+            app(value)
+            {
+                this._app = value;
             }
-        } catch (error) {
-            console.error('Error removing tag:', error);
-        }
-    }
+            getValue()
+            {
+                return this.value;
+            }
 
-    getTagDefinition() {
-        return this.tagDefinition;
-    }
-}
+            getCondition()
+            {
+                get
+                app()
+                {
+                    return this._app;
+                }
 
-if (!customElements.get('data-tag')) {
-    customElements.define('data-tag', Tag);
-}
+                async
+                removeTag()
+                {
+                    try {
+                        const tagName = this.tagDefinition.name;
+                        const noteDetails = this.closest('note-details');
+                        if (noteDetails) {
+                            const noteView = noteDetails.noteView;
+                            if (noteView && noteView.selectedNote) {
+                                const note = noteView.selectedNote;
+                                const tagIndex = note.tags.findIndex(tag => tag.name === tagName);
+                                if (tagIndex !== -1) {
+                                    note.tags.splice(tagIndex, 1);
+                                    await noteView.app.db.saveObject(note, false);
+                                    noteDetails.renderTags();
+                                    noteView.displayTags(note.id);
+                                } else {
+                                    console.error('Tag not found');
+                                }
+                            } else {
+                                console.error('NoteView or selectedNote not found');
+                            }
+                        } else {
+                            console.error('NoteDetails component not found');
+                        }
+                    } catch (error) {
+                        console.error('Error removing tag:', error);
+                    }
+                }
+
+                getTagDefinition()
+                {
+                    return this.tagDefinition;
+                }
+            }
+
+            if (!customElements.get('data-tag')) {
+                customElements.define('data-tag', Tag);
+            }

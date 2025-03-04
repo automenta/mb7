@@ -62,7 +62,7 @@ export const Ontology = {
         validate: (value, condition) => typeof value === "string" && value.length > 0,
         serialize: (value) => value,
         deserialize: (value) => value,
-        ui: { type: "text", placeholder: "Enter a location", icon: "📍" }
+        ui: {type: "text", placeholder: "Enter a location", icon: "📍"}
     },
     "time": {
         conditions: ["is", "before", "after", "between"],
@@ -75,7 +75,7 @@ export const Ontology = {
         validate: (value, condition) => typeof value === "string",
         serialize: (value) => value,
         deserialize: (value) => value,
-        ui: { type: "text" } // Ensure string tags also use text input
+        ui: {type: "text"} // Ensure string tags also use text input
     },
     "number": {
         conditions: ["is", "greater than", "less than", "between"],
@@ -128,7 +128,7 @@ export const Ontology = {
         validate: (value, condition) => condition === "between" ? isValidDate(value.start) && isValidDate(value.end) : isValidDate(value),
         serialize: serializeDate,
         deserialize: deserializeDate,
-        ui: { type: "text" } // Changed to text input for simplicity
+        ui: {type: "text"} // Changed to text input for simplicity
     },
     "List": {
         conditions: ["is"],
@@ -157,7 +157,7 @@ export const Ontology = {
                 serialize: (value) => value,
                 deserialize: (value) => value,
                 default: "",
-                 ui: { type: "text" } // Ensure settings use text input
+                ui: {type: "text"} // Ensure settings use text input
             },
             "webrtcNostrRelays": {
                 type: "string",
@@ -168,7 +168,7 @@ export const Ontology = {
                 serialize: (value) => value,
                 deserialize: (value) => value,
                 default: "",
-                 ui: { type: "text" } // Ensure settings use text input
+                ui: {type: "text"} // Ensure settings use text input
             },
             "privateKey": {
                 type: "string",
@@ -179,7 +179,7 @@ export const Ontology = {
                 serialize: (value) => value,
                 deserialize: (value) => value,
                 default: "",
-                 ui: { type: "text" } // Ensure settings use text input
+                ui: {type: "text"} // Ensure settings use text input
             },
             "dateFormat": {
                 type: "string",
@@ -190,7 +190,7 @@ export const Ontology = {
                 serialize: (value) => value,
                 deserialize: (value) => value,
                 default: "yyyy-MM-dd",
-                 ui: { type: "text" } // Ensure settings use text input
+                ui: {type: "text"} // Ensure settings use text input
             },
             "profileName": {
                 type: "string",
@@ -201,7 +201,7 @@ export const Ontology = {
                 serialize: (value) => value,
                 deserialize: (value) => value,
                 default: "",
-                 ui: { type: "text" } // Ensure settings use text input
+                ui: {type: "text"} // Ensure settings use text input
             },
             "profilePicture": {
                 type: "string",
@@ -212,7 +212,7 @@ export const Ontology = {
                 serialize: (value) => value,
                 deserialize: (value) => value,
                 default: "",
-                 ui: { type: "text" } // Ensure settings use text input
+                ui: {type: "text"} // Ensure settings use text input
             },
             "signalingStrategy": {
                 type: "select",
@@ -223,7 +223,7 @@ export const Ontology = {
                 validate: (value, condition) => ["nostr", "webrtc"].includes(value),
                 serialize: (value) => value,
                 deserialize: (value) => value,
-                 ui: { type: "text" } // Changed to text input for simplicity
+                ui: {type: "text"} // Changed to text input for simplicity
             },
             "word2vecModelPath": {
                 type: "string",
@@ -234,7 +234,7 @@ export const Ontology = {
                 serialize: (value) => value,
                 deserialize: (value) => value,
                 default: "",
-                 ui: { type: "text" } // Ensure settings use text input
+                ui: {type: "text"} // Ensure settings use text input
             }
         },
         serialize: (value) => JSON.stringify(value),
@@ -246,14 +246,14 @@ export const Ontology = {
                 return {};
             }
         },
-         ui: { type: "text" } // Ensure settings use text input - although GenericForm will decide
+        ui: {type: "text"} // Ensure settings use text input - although GenericForm will decide
     },
     "Public": {
         conditions: ["is"],
         validate: (value, condition) => typeof value === "boolean",
         serialize: (value) => value.toString(), // Serialize boolean to string
         deserialize: (value) => value === "true",
-        ui: { type: "text" } // Changed to text input for simplicity - although TagInput will only render text
+        ui: {type: "text"} // Changed to text input for simplicity - although TagInput will only render text
     },
     "textarea": {
         conditions: ["is", "contains"],
@@ -267,14 +267,14 @@ export const Ontology = {
         validate: (value, condition) => condition === "between" ? isValidDate(value.start) && isValidDate(value.end) : isValidDate(value),
         serialize: serializeDate,
         deserialize: deserializeDate,
-        ui: { type: "text" } // Changed to text input for simplicity
+        ui: {type: "text"} // Changed to text input for simplicity
     },
     "boolean": { // Added boolean tag definition
         conditions: ["is"],
         validate: (value, condition) => typeof value === "boolean",
         serialize: (value) => value.toString(), // Serialize boolean to string
         deserialize: (value) => value === "true",
-        ui: { type: "text" } // Changed to text input for simplicity - although TagInput will only render text
+        ui: {type: "text"} // Changed to text input for simplicity - although TagInput will only render text
     }
 };
 
@@ -292,7 +292,7 @@ export const Ontology = {
                 return {};
             }
         },
-         ui: { type: "text" } // Changed to text input for simplicity
+        ui: {type: "text"} // Changed to text input for simplicity
     };
 });
 
