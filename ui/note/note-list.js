@@ -16,7 +16,7 @@ export class NoteList {
                         this.yNotesList.delete(index);
                     }
                 });
-                await this.notesListComponent.fetchDataAndRender();
+                await this.noteView.notesListComponent.fetchDataAndRender();
                 this.app.notificationManager.showNotification('Deleted', 'success');
             }
         } catch (error) {

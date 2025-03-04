@@ -77,6 +77,7 @@ async function createApp(appDiv) {
 document.addEventListener("DOMContentLoaded", async () => {
     const appDiv = document.getElementById('app');
     const app = await createApp(appDiv);
+    window.app = app; // Make app globally accessible
     await app.uiManager.setupUI(appDiv);
 });
 

@@ -400,10 +400,13 @@ setInterval(async () => {
     // Assuming 'app' is globally accessible or can be obtained here
     // You might need to adjust this part based on how 'app' is managed in your application
     const app = window.app; // Example: Assuming 'app' is a global variable
-    if (app) {
-        const db = await DB.the(app);
-        db.executePersistentQueries(app);
+    if (app && app.db) {
+        try {
+            await app.db.executePersistentQueries(app);
+        } catch (error) {
+            console.error("Error executing persistent queries:", error);
+        }
     } else {
-        console.warn("App instance not available, skipping executePersistentQueries");
+        console.warn("App or DB instance not available, skipping executePersistentQueries");
     }
 }, 60000);

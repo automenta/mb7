@@ -1,4 +1,5 @@
 import {createElement} from './utils';
+import {createMenuBar} from './menu-bar.js';
 
 function createAppMainContent() {
     const mainContent = createElement('main', {id: 'main-content'});
