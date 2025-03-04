@@ -137,18 +137,15 @@ class Edit {
         this.displayTagSuggestions(suggestions);
     }
 
-    displayTagSuggestions(suggestions) {
-        this.tagSuggestions.innerHTML = '';
-        suggestions.forEach((suggestion, index) => {
-            const suggestionItem = createElement('li', { className: 'tag-suggestion-item', 'data-index': index }, suggestion);
-            suggestionItem.addEventListener('click', () => {
-                this.tagInput.value = suggestion;
-                this.addTagToNote(suggestion);
-                this.tagSuggestions.innerHTML = ''; // Clear suggestions after selection
-                this.editorArea.focus(); // Focus editor after adding tag
-            });
-            this.tagSuggestions.appendChild(suggestionItem);
-        });
+    clearTagInput() {
+        this.tagInput.value = '';
+    }
+
+    selectSuggestion(suggestion) {
+        this.tagInput.value = suggestion;
+        this.addTagToNote(suggestion);
+        this.tagSuggestions.innerHTML = ''; // Clear suggestions after selection
+        this.editorArea.focus(); // Focus editor after adding tag
     }
 
     createEditorArea() {
