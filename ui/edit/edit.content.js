@@ -2,9 +2,10 @@ import {createElement} from '../utils';
 import {Tag} from '../tag.js'; // Import the new Tag component
 import DOMPurify from 'dompurify';
 
-class TagSerializer {
+class TagConverter {
     static serialize(tagEl) {
-        const tagName = tagEl.getAttribute('tag-definition');
+        const tagDefinition = JSON.parse(tagEl.getAttribute('tag-definition'));
+        const tagName = tagDefinition.name;
         const tagValue = tagEl.getAttribute('value') || '';
         const tagCondition = tagEl.getAttribute('condition') || 'is';
         return `[TAG:${tagName}:${tagValue}:${tagCondition}]`;
@@ -13,6 +14,19 @@ class TagSerializer {
     static deserialize(tagContent) {
         const [tagName, tagValue = '', tagCondition = 'is'] = tagContent.split(':');
         return { tagName, tagValue, tagCondition };
+    }
+
+    static createTagElement(tagName, tagValue, tagCondition, getTagDefinition) {
+        const tagDefinition = getTagDefinition(tagName);
+        if (!tagDefinition) {
+            console.warn("Tag definition not found:", tagName);
+            return null;
+        }
+        const tag = document.createElement('data-tag');
+        tag.setAttribute('tag-definition', JSON.stringify(tagDefinition));
+        tag.setAttribute('value', tagValue);
+        tag.setAttribute('condition', tagCondition);
+        return tag;
     }
 }
 
@@ -63,7 +77,7 @@ class EditorContentHandler {
         this.autosuggest = autosuggest;
         this.app = app;
         this.lastValidRange = null; // Store the last valid range within the editor for handling tag insertions
-        this.tagSerializer = new TagSerializer();
+        this.tagConverter = TagConverter;
         this.yjsContentManager = new YjsContentManager(yDoc, yText);
         this.htmlSanitizer = new HTMLSanitizer();
 
@@ -148,7 +162,7 @@ class EditorContentHandler {
     serialize() {
         const clonedEditor = this.editor.editorArea.cloneNode(true);
         clonedEditor.querySelectorAll("data-tag").forEach(tagEl => {
-            const serializedTag = TagSerializer.serialize(tagEl);
+            const serializedTag = TagConverter.serialize(tagEl);
             tagEl.replaceWith(serializedTag);
         });
         return clonedEditor.innerHTML.replace(/<br\s*\/?>/gi, "\n");
@@ -167,16 +181,11 @@ class EditorContentHandler {
             }
             try {
                 const tagContent = match[1];
-                const { tagName, tagValue, tagCondition } = TagSerializer.deserialize(tagContent);
-                const tagDefinition = this.editor.getTagDefinition(tagName);
-                if (tagDefinition) {
-                    const tag = document.createElement('data-tag');
-                    tag.setAttribute('tag-definition', JSON.stringify(tagDefinition));
-                    tag.setAttribute('value', tagValue);
-                    tag.setAttribute('condition', tagCondition);
-                    this.editor.editorArea.append(tag);
+                const { tagName, tagValue, tagCondition } = TagConverter.deserialize(tagContent);
+                const tagElement = TagConverter.createTagElement(tagName, tagValue, tagCondition, this.editor.getTagDefinition);
+                if (tagElement) {
+                    this.editor.editorArea.append(tagElement);
                 } else {
-                    console.warn("Tag definition not found:", tagName);
                     this.editor.editorArea.append(document.createTextNode(match[0]));
                 }
             } catch (error) {
