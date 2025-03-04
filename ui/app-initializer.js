@@ -9,6 +9,7 @@ import { NostrInitializer } from "./nostr-initializer";
 import { NoteManager } from "./note-manager";
 import { ViewManager } from "./view-manager";
 import { UIManager } from "./ui-manager";
+import * as Y from 'yjs';
 
 async function createApp(appDiv) {
     const errorHandler = new ErrorHandler(appDiv);
@@ -35,7 +36,10 @@ async function createApp(appDiv) {
     const viewManager = new ViewManager();
     const uiManager = new UIManager();
 
-    const app = new App(db, nostr, matcher, errorHandler, notificationManager, monitoring, settingsManager, noteManager, viewManager, uiManager, ontology);
+    // Create a Yjs document
+    const yDoc = new Y.Doc();
+
+    const app = new App(db, nostr, matcher, errorHandler, notificationManager, monitoring, settingsManager, noteManager, viewManager, uiManager, yDoc);
     app.settings = await app.settingsManager.getSettings();
     return app;
 }

@@ -16,7 +16,7 @@ import { createApp } from './app-initializer';
  * Manages the database, Nostr connection, and UI.
  */
 class App {
-    constructor(db, nostr, matcher, errorHandler, notificationManager, monitoring, settingsManager, noteManager, viewManager, uiManager) {
+    constructor(db, nostr, matcher, errorHandler, notificationManager, monitoring, settingsManager, noteManager, viewManager, uiManager, yDoc) {
         this.db = db;
         this.nostr = nostr;
         this.matcher = matcher;
@@ -30,6 +30,7 @@ class App {
         this.noteManager = noteManager;
         this.viewManager = viewManager;
         this.uiManager = uiManager;
+        this.yDoc = yDoc; // Store the Yjs document
     }
 
     async relayConnected(relay) {

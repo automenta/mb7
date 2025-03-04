@@ -50,7 +50,8 @@ class Monitoring {
         this.metrics.cpuUsage = await this.getCpuUsage();
         this.metrics.memoryUsage = await this.getMemoryUsage();
         this.metrics.networkIO = await this.getNetworkIO();
-        this.metrics.dataConsistency = await this.getDataConsistency();
+        // Pass the Yjs document to getDataConsistency()
+        this.metrics.dataConsistency = await this.getDataConsistency(this.app.yDoc);
     }
 
     async storeMetrics() {
@@ -171,12 +172,13 @@ class Monitoring {
      * periodically compare the state of the Yjs document on different clients.
      * You could calculate a hash of the document content and compare the hashes.
      * If the hashes don't match, it indicates a data consistency issue.
+     * @param {Y.Doc} yDoc - The Yjs document to check.
      * @returns {number} A value indicating the data consistency (e.g., 0 for inconsistent, 1 for consistent).
      */
-    async getDataConsistency() {
+    async getDataConsistency(yDoc) {
         try {
             // Get the content of the Yjs document
-            const yDocContent = this.app.yDoc.getText('content').toString();
+            const yDocContent = yDoc.getText('content').toString();
 
             // Calculate the hash of the content
             const currentDataHash = sha256(yDocContent);
