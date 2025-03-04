@@ -20,8 +20,6 @@ export class GenericForm {
         const tagUIOverrides = await this.loadTagUIOverrides();
 
         for (const property in this.schema.tags) {
-            if (!this.schema.tags.hasOwnProperty(property)) continue;
-
             const tagDef = this.schema.tags[property];
 
             if (!tagDef) {

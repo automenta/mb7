@@ -132,7 +132,7 @@ class Edit {
             {tags: {[tagDefinition.name]: tagDefinition}},
             this.tagYDoc,
             this.note.id,
-            () => { /* this.saveTag(tagDefinition.name); */ },
+            () => {},
             this.app
         );
 
