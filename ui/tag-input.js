@@ -65,11 +65,19 @@
 
         this.querySelector('.tag-input').addEventListener('input', (event) => {
             this.value = event.target.value;
+            if (this.tagDefinition.validate && !this.tagDefinition.validate(this.value, this.condition)) {
+                alert(`Invalid value for tag '${this.tagDefinition.name}' with condition '${this.condition}'.`);
+                return;
+            }
             this.onChange(this.tagDefinition, this.condition, this.value);
         });
 
         this.querySelector('.tag-condition').addEventListener('change', (event) => {
             this.condition = event.target.value;
+            if (this.tagDefinition.validate && !this.tagDefinition.validate(this.value, this.condition)) {
+                alert(`Invalid value for tag '${this.tagDefinition.name}' with condition '${this.condition}'.`);
+                return;
+            }
             this.onChange(this.tagDefinition, this.condition, this.value);
         });
 
