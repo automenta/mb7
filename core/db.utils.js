@@ -20,6 +20,13 @@ export async function createDefaultObject(db, id, kind = 30000) {
         };
     }
 
+    if (id === 'settings') {
+        object = {
+            ...object,
+            tagUIOverrides: {} // Initialize tagUIOverrides
+        };
+    }
+
     await db.put('objects', object);
     return object;
 }
