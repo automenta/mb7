@@ -90,13 +90,13 @@ class Tag extends HTMLElement {
         }
 
         const icon = this.tagDefinition.ui?.icon || '🏷️';
-        const display = createElement('span', {}, `${icon} ${this.tagDefinition.name}: ${this.value || ''}`);
+        const display = createElement('span', {}, `${icon} ${this.tagDefinition.name}: ${this.value}`);
         this.el.appendChild(display);
 
         this.editButton = createElement('button', {
             className: 'edit-tag-button',
             'aria-label': `Edit ${this.tagDefinition.name}`,
-            title: `Edit ${this.tagDefinition.name}`
+            title: `Edit ${this.tagDefinition.name} Value`
         }, 'Edit');
         this.editButton.addEventListener('click', () => {
             this.editTag();

@@ -39,16 +39,26 @@ class Edit {
         menu.append(persistentQueryContainer);
 
         this.tagList = document.createElement('ul');
+        this.tagList.className = 'tag-list';
+
         this.tagInput = document.createElement('input');
         this.tagInput.type = 'text';
         this.tagInput.placeholder = 'Add a tag';
+        this.tagInput.className = 'tag-input';
         this.tagInput.addEventListener('input', debounce(() => this.suggestTags(), 200));
+        this.tagInput.addEventListener('keydown', (e) => this.handleTagInputKeyDown(e));
+
         this.addTagButton = createElement('button', { className: 'add-tag-button' }, 'Add Tag');
         this.addTagButton.addEventListener('click', () => this.addTagToNote(this.tagInput.value));
 
         this.tagSuggestions = document.createElement('ul');
         this.tagSuggestions.className = 'tag-suggestions';
-        menu.append(this.tagList, this.tagInput, this.tagSuggestions, this.addTagButton);
+        this.tagSuggestions.style.display = 'none'; // Initially hide the suggestions
+
+        const tagInputContainer = createElement('div', { className: 'tag-input-container' });
+        tagInputContainer.append(this.tagInput, this.addTagButton);
+
+        menu.append(this.tagList, tagInputContainer, this.tagSuggestions);
 
         this.suggestionDropdown = new SuggestionDropdown();
         this.autosuggest = autosuggest || new Autosuggest(this);
@@ -68,6 +78,52 @@ class Edit {
         this.renderTags();
     }
 
+    handleTagInputKeyDown(event) {
+        if (this.tagSuggestions.style.display === 'block') {
+            if (event.key === 'ArrowDown') {
+                event.preventDefault();
+                this.moveTagSuggestionSelection(1);
+            } else if (event.key === 'ArrowUp') {
+                event.preventDefault();
+                this.moveTagSuggestionSelection(-1);
+            } else if (event.key === 'Enter') {
+                event.preventDefault();
+                this.selectTagSuggestion();
+            } else if (event.key === 'Escape') {
+                this.clearTagSuggestions();
+            }
+        }
+    }
+
+    moveTagSuggestionSelection(direction) {
+        const suggestions = this.tagSuggestions.querySelectorAll('li');
+        if (suggestions.length === 0) return;
+
+        let selectedIndex = -1;
+        suggestions.forEach((suggestion, index) => {
+            if (suggestion.classList.contains('selected')) {
+                selectedIndex = index;
+                suggestion.classList.remove('selected');
+            }
+        });
+
+        let newIndex = selectedIndex + direction;
+        if (newIndex < 0) {
+            newIndex = suggestions.length - 1;
+        } else if (newIndex >= suggestions.length) {
+            newIndex = 0;
+        }
+
+        suggestions[newIndex].classList.add('selected');
+    }
+
+    selectTagSuggestion() {
+        const selectedSuggestion = this.tagSuggestions.querySelector('li.selected');
+        if (selectedSuggestion) {
+            this.addTagToNote(selectedSuggestion.textContent);
+        }
+    }
+
     async renderTags() {
         this.tagList.innerHTML = ''; // Clear existing tags
         if (this.note && this.note.tags) {
@@ -79,9 +135,7 @@ class Edit {
 
     renderTag(tag) {
         const tagDefinition = this.getTagDefinition(tag.name);
-        const tagComponent = new Tag(tagDefinition, tag.value, tag.condition, (updatedTag) => {
-            this.updateTag(tag.name, updatedTag.getValue(), updatedTag.getCondition());
-        });
+        const tagComponent = new Tag(tagDefinition, tag.value, tag.condition);
         const listItem = createElement('li', { className: 'tag-list-item' });
         listItem.appendChild(tagComponent);
         listItem.addEventListener('tag-removed', () => {
@@ -97,6 +151,14 @@ class Edit {
                 return;
             }
 
+            if (this.note.tags.some(tag => tag.name === tagName)) {
+                console.warn('Tag already exists on this note.');
+                this.clearTagInput();
+                this.clearTagSuggestions();
+                this.editorArea.focus();
+                return;
+            }
+
             const tagDefinition = this.getTagDefinition(tagName);
             if (!tagDefinition) {
                 console.error('Tag definition not found:', tagName);
@@ -106,8 +168,10 @@ class Edit {
             const newTag = { name: tagName, value: '', condition: 'is' };
             this.note.tags.push(newTag);
             await this.app.db.saveObject(this.note, false);
-            this.renderTag(newTag);
-            this.tagInput.value = ''; // Clear the input field
+            this.renderTags();
+            this.clearTagInput();
+            this.clearTagSuggestions();
+            this.editorArea.focus();
         } catch (error) {
             console.error('Error adding tag to note:', error);
         }
@@ -137,19 +201,36 @@ class Edit {
         this.displayTagSuggestions(suggestions);
     }
 
+    displayTagSuggestions(suggestions) {
+        this.tagSuggestions.innerHTML = '';
+        if (suggestions.length === 0) {
+            this.tagSuggestions.style.display = 'none';
+            return;
+        }
+
+        suggestions.forEach(suggestion => {
+            const suggestionItem = createElement('li', {}, suggestion);
+            suggestionItem.addEventListener('click', () => {
+                this.addTagToNote(suggestion);
+            });
+            this.tagSuggestions.appendChild(suggestionItem);
+        });
+
+        this.tagSuggestions.style.display = 'block';
+
+        // Select the first suggestion by default
+        if (suggestions.length > 0) {
+            this.tagSuggestions.firstChild.classList.add('selected');
+        }
+    }
+
     clearTagInput() {
         this.tagInput.value = '';
     }
 
     clearTagSuggestions() {
         this.tagSuggestions.innerHTML = '';
-    }
-
-    selectSuggestion(suggestion) {
-        this.tagInput.value = suggestion;
-        this.addTagToNote(suggestion);
-        this.clearTagSuggestions();
-        this.editorArea.focus();
+        this.tagSuggestions.style.display = 'none';
     }
 
     createEditorArea() {
@@ -168,6 +249,30 @@ class Edit {
 
     setContent(html) {
         this.contentHandler.setContent(html);
+    }
+
+    /**
+     * Adds a tag to the note's content.
+     */
+    addTag(tagName) {
+        const tagDefinition = this.getTagDefinition(tagName);
+        if (!tagDefinition) {
+            console.error('Tag definition not found:', tagName);
+            return;
+        }
+
+        const initialValue = '';
+        const initialCondition = tagDefinition.conditions[0]; // Default condition
+
+        const tagComponent = new Tag(
+            tagDefinition,
+            initialValue,
+            initialCondition,
+            (updatedTag) => {
+                // Handle tag update (e.g., save to database)
+                console.log('Tag updated:', updatedTag.getValue(), updatedTag.getCondition());
+            }
+        );
     }
 
     findSuggestion(name) {
@@ -318,3 +423,145 @@ class Edit {
 }
 
 export { Edit };
+
+// Add CSS styles
+const style = document.createElement('style');
+style.textContent = `
+.tag-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.tag-list-item {
+    margin: 2px;
+}
+
+.tag-input-container {
+    display: flex;
+}
+
+.tag-input {
+    flex-grow: 1;
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    margin-right: 5px;
+}
+
+.add-tag-button {
+    padding: 5px 10px;
+    border: none;
+    background-color: #007bff;
+    color: white;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.tag-suggestions {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    position: absolute;
+    z-index: 10;
+    background-color: white;
+    display: none;
+}
+
+.tag-suggestions li {
+    padding: 5px;
+    cursor: pointer;
+}
+
+                .tag > button {
+                    background-color: transparent;
+                    border: none;
+                    cursor: pointer;
+                    font-size: 1em;
+                    padding: 0;
+                    margin: 0;
+                }
+
+                .tag > button:hover {
+                    color: #007bff;
+                }
+
+                .tag:hover {
+                    background-color: #ddd;
+                }
+            </style>
+        `;
+        this.el = document.createElement('div');
+        this.el.className = 'tag';
+        this.el.dataset.tagName = this.tagDefinition.name;
+
+        if (this.tagDefinition.conditions && this.tagDefinition.conditions.length) {
+            this.el.classList.add('conditional');
+        }
+
+        const icon = this.tagDefinition.ui?.icon || '🏷️';
+        const display = createElement('span', {}, `${icon} ${this.tagDefinition.name}: ${this.value}`);
+        this.el.appendChild(display);
+
+        this.editButton = createElement('button', {
+            className: 'edit-tag-button',
+            'aria-label': `Edit ${this.tagDefinition.name}`,
+            title: `Edit ${this.tagDefinition.name} Value`
+        }, 'Edit');
+        this.editButton.addEventListener('click', () => {
+            this.editTag();
+        });
+        this.el.appendChild(this.editButton);
+
+        const removeButton = createElement('button', {
+            className: 'remove-tag-button',
+            'aria-label': `Remove ${this.tagDefinition.name}`,
+            title: `Remove ${this.tagDefinition.name}`
+        }, 'X');
+        removeButton.addEventListener('click', () => {
+            this.remove();
+        });
+        this.el.appendChild(removeButton);
+
+        if (!this.tagDefinition.validate(this.value, this.condition)) {
+            this.el.classList.add('invalid');
+            this.el.title = 'Invalid tag value'; // Add tooltip
+        }
+
+        this.shadow.appendChild(this.el);
+    }
+
+    isValid() {
+        return this.tagDefinition.validate(this.value, this.condition);
+    }
+
+    editTag() {
+        this.shadow.innerHTML = '';
+        const tagInput = new TagInput(this.tagDefinition, this.value, this.condition, (newValue, newCondition) => {
+            this.value = newValue;
+            this.condition = newCondition;
+            this.render();
+        });
+        this.shadow.appendChild(tagInput);
+    }
+
+    getValue() {
+        return this.value;
+    }
+
+    getCondition() {
+        return this.condition;
+    }
+
+    getTagDefinition() {
+        return this.tagDefinition;
+    }
+}
+
+if (!customElements.get('data-tag')) {
+    customElements.define('data-tag', Tag);
+}
