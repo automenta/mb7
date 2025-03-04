@@ -97,11 +97,11 @@ class EditorContentHandler {
             const tagCondition = tagEl.getAttribute('condition') || 'is';
             tagEl.replaceWith(`[TAG:${tagName}:${tagValue}:${tagCondition}]`);
         });
-        return clonedEditor.innerHTML.replace(/<br\\s*\\/?>/g, "\\n");
+        return clonedEditor.innerHTML.replace(/<br\s*\/?>/gi, "\n");
     }
 
     deserialize(text) {
-        this.updateYjsContent("");
+        this.editor.editorArea.innerHTML = "";
         const tagRegex = /\[TAG:([^\]]*)\]/g;
 
         let lastIndex = 0;
