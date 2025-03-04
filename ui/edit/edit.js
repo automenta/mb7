@@ -36,13 +36,46 @@ class Edit {
         this.el.appendChild(this.tagEditArea);
         this.editorArea.addEventListener('input', () => this.autosuggest.debouncedApply());
         this.editorArea.addEventListener('keydown', (event) => this.autosuggest.handleKeyDown(event));
-        this.el.addEventListener('notify', (event) => this.app.showNotification(event.detail.message, event.detail.type));
+        this.el.addEventListener('notify', (event) => this.app.notificationManager.showNotification(event.detail.message, event.detail.type));
 
         // Initialize the editor with existing content and render tags
         this.renderContent();
 
         // Observe changes to the Yjs text and re-render the content
         this.yText.observe(() => this.renderContent());
+
+        // Add a blur event listener to save the content when the editor loses focus
+        this.editorArea.addEventListener('blur', () => this.saveContent());
+    }
+
+    /**
+     * Saves the content of the editor to the database.
+     */
+    async saveContent() {
+        const content = this.serializeContent();
+        this.note.content = content;
+        await this.app.noteManager.saveObject(this.note);
+    }
+
+    /**
+     * Serializes the content of the editor area, including text and tags.
+     * @returns {string} - The serialized content of the editor area.
+     */
+    serializeContent() {
+        let content = '';
+        for (let i = 0; i < this.editorArea.childNodes.length; i++) {
+            const node = this.editorArea.childNodes[i];
+            if (node.nodeType === Node.TEXT_NODE) {
+                content += node.textContent;
+            } else if (node.nodeType === Node.ELEMENT_NODE) {
+                if (node.classList.contains('tag-element')) {
+                    content += `[TAG:${node.dataset.tagContent}]`;
+                } else if (node.tagName === 'BR') {
+                    content += '\n';
+                }
+            }
+        }
+        return content;
     }
 
     /**
