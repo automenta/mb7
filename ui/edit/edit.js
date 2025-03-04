@@ -42,10 +42,13 @@ class Edit {
         this.tagInput = document.createElement('input');
         this.tagInput.type = 'text';
         this.tagInput.placeholder = 'Add a tag';
+        this.tagInput.addEventListener('input', debounce(() => this.suggestTags(), 200));
         this.addTagButton = createElement('button', { className: 'add-tag-button' }, 'Add Tag');
         this.addTagButton.addEventListener('click', () => this.addTagToNote(this.tagInput.value));
 
-        menu.append(this.tagList, this.tagInput, this.addTagButton);
+        this.tagSuggestions = document.createElement('ul');
+        this.tagSuggestions.className = 'tag-suggestions';
+        menu.append(this.tagList, this.tagInput, this.tagSuggestions, this.addTagButton);
 
         this.suggestionDropdown = new SuggestionDropdown();
         this.autosuggest = autosuggest || new Autosuggest(this);
@@ -67,6 +70,28 @@ class Edit {
     addTagToNote(tagName) {
         // TODO: Implement the logic to add the tag to the note
         console.log('Adding tag:', tagName);
+    }
+
+    suggestTags() {
+        const searchText = this.tagInput.value.toLowerCase();
+        const suggestions = Object.keys(this.getTagDefinition())
+            .filter(tagName => tagName.toLowerCase().startsWith(searchText))
+            .slice(0, 5); // Limit to 5 suggestions
+
+        this.displayTagSuggestions(suggestions);
+    }
+
+    displayTagSuggestions(suggestions) {
+        this.tagSuggestions.innerHTML = '';
+        suggestions.forEach(suggestion => {
+            const suggestionItem = createElement('li', { className: 'tag-suggestion-item' }, suggestion);
+            suggestionItem.addEventListener('click', () => {
+                this.tagInput.value = suggestion;
+                this.addTagToNote(suggestion);
+                this.tagSuggestions.innerHTML = ''; // Clear suggestions after selection
+            });
+            this.tagSuggestions.appendChild(suggestionItem);
+        });
     }
 
     createEditorArea() {
