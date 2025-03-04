@@ -1,6 +1,7 @@
 import { createElement } from './utils';
 import { TagInput } from './tag-input';
 /** @typedef {import('../core/types').Tag} Tag */
+import {Tag} from "../core/types";
 
 const debounce = (func, delay) => {
     let timeout;
@@ -170,6 +171,9 @@ class TagManager extends HTMLElement {
         }
     }
 
+    /**
+     * @param {Tag} tag
+     */
     renderTag(tag) {
         const tagDefinition = this.app.getTagDefinition(tag.name);
         const tagComponent = document.createElement('data-tag');

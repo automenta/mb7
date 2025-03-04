@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 /** @typedef {import('../core/types').NObject} NObject */
 /** @typedef {import('../core/types').Tag} Tag */
+import {NObject, Tag} from "../core/types";
 
 class TagProcessor {
     /**
@@ -30,6 +31,9 @@ class NotePublisher {
         this.errorHandler = errorHandler;
     }
 
+    /**
+     * @param {NObject} object
+     */
     async publishObject(object) {
         console.log('publishObject called with object:', object);
         const visibilityTag = object.tags.find(tag => tag.name === 'visibility');
@@ -48,6 +52,9 @@ class NotePublisher {
         }
     }
 
+    /**
+     * @param {NObject[]} matches
+     */
     async publishMatches(matches) {
         console.log('publishMatches called with matches:', matches);
         if (!matches || matches.length === 0) {
@@ -66,6 +73,9 @@ class NotePublisher {
 }
 
 class ObjectPreparer {
+    /**
+     * @param {NObject} object
+     */
     prepareObjectForSaving(object) {
         if (!object.tags || !Array.isArray(object.tags)) return;
         const invalidTag = object.tags.find(tag => !tag.name);
@@ -89,6 +99,7 @@ export class NoteManager {
     }
 
     async createNote(name = 'New Note') {
+        /** @type {NObject} */
         const newNote = {
             id: uuidv4(),
             name: name,
@@ -103,6 +114,7 @@ export class NoteManager {
     }
 
     async createDefaultNote() {
+        /** @type {NObject} */
         const defaultNote = {
             id: 'default',
             name: 'Welcome to Netention!',

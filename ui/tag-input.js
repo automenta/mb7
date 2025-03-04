@@ -1,5 +1,6 @@
 import {createElement} from './utils';
 /** @typedef {import('../core/types').Tag} Tag */
+import {Tag} from "../core/types";
 
 class TagInput extends HTMLElement {
     /**
