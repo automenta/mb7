@@ -75,7 +75,6 @@ export class DB {
      * @param {object} errorHandler - The error handler object.
      */
     constructor(app, errorHandler) {
-        this.app = app;
         this.errorHandler = errorHandler;
     }
 
@@ -83,7 +82,7 @@ export class DB {
      * Initializes the database.
      * @returns {Promise<DB>} - The database object.
      */
-    static async the(app) {
+    static async the() {
         if (this.db) return this.db;
 
         console.log("DB.the - opening database");
@@ -365,14 +364,14 @@ export class DB {
     /**
      * Executes persistent queries and notifies the user of any new matches.
      */
-    async executePersistentQueries(app) {
+    async executePersistentQueries(matcher, notificationManager) {
         try {
             const persistentQueries = await this.getAll().filter(obj => obj.isPersistentQuery === true);
 
             await Promise.all(persistentQueries.map(async query => {
-                const matches = await app.matcher.findMatches(query);
+                const matches = await matcher.findMatches(query);
                 if (matches.length > 0) {
-                    this.notifyPersistentQueryMatches(query, matches);
+                    this.notifyPersistentQueryMatches(query, matches, notificationManager);
                 }
             }));
         } catch (error) {
@@ -386,27 +385,34 @@ export class DB {
      * @param {object} query - The persistent query object.
      * @param {array} matches - The array of matched objects.
      */
-    notifyPersistentQueryMatches(query, matches) {
+    notifyPersistentQueryMatches(query, matches, notificationManager) {
         // Deduplicate matches
         const uniqueMatches = [...new Set(matches.map(m => m.id))].map(id => matches.find(m => m.id === id));
 
         const message = `Match in ${uniqueMatches.length} object(s) for persistent query <em>${query.name}</em>:<br>${uniqueMatches.map(m => `<em>${m.name}</em> (updated ${formatDate(m.updatedAt)})`).join("<br>")}`;
 
-        this.app.showNotification(message);
+        notificationManager.showNotification(message);
     }
 }
 
-setInterval(async () => {
-    // Assuming 'app' is globally accessible or can be obtained here
-    // You might need to adjust this part based on how 'app' is managed in your application
-    const app = window.app; // Example: Assuming 'app' is a global variable
-    if (app && app.db) {
+async function executePersistentQueries(db, matcher, notificationManager) {
+    if (db) {
         try {
-            await app.db.executePersistentQueries(app);
+            await db.executePersistentQueries(matcher, notificationManager);
         } catch (error) {
             console.error("Error executing persistent queries:", error);
         }
     } else {
-        console.warn("App or DB instance not available, skipping executePersistentQueries");
+        console.warn("DB instance not available, skipping executePersistentQueries");
+    }
+}
+
+setInterval(async () => {
+    // Access the DB, Matcher, and NotificationManager instances
+    // from the global scope (or a more appropriate scope if available)
+    if (window.app) {
+        await executePersistentQueries(window.app.db, window.app.matcher, window.app.notificationManager);
+    } else {
+        console.warn("App not available");
     }
 }, 60000);

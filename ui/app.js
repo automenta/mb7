@@ -75,6 +75,7 @@ async function createApp(appDiv) {
     const uiManager = new UIManager(store, viewManager, noteManager, db, errorHandler);
 
     const app = new App(db, nostr, matcher, errorHandler, notificationManager, monitoring, settingsManager, noteManager, viewManager, uiManager, Ontology, store);
+    window.app = app;
     return app;
 }
 
