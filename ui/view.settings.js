@@ -1,7 +1,6 @@
 import {View} from "./view.js";
-import {GenericForm} from "./generic-form.js";
 import {Ontology} from "../core/ontology.js";
-import { createElement } from '../utils.js';
+import { createElement } from '../ui/utils.js';
 
 export class SettingsView extends View {
     constructor(app, db, nostr) {
@@ -26,15 +25,17 @@ export class SettingsView extends View {
                 name: "Settings",
             };
             await this.db.saveObject(settingsObject);
-            yDoc = new Y.Doc()
         }
+
+        // Load settings from DB
+        this.app.settings = settingsObject?.content || {};
 
         // Use the Settings ontology to build the form
         const settingsOntology = Ontology.Settings;
         if (settingsOntology && settingsOntology.tags) {
             for (const property in settingsOntology.tags) {
                 const settingDefinition = settingsOntology.tags[property];
-                const label = createElement("label", {for: property}, settingDefinition.label || property);
+                const label = createElement("label", { htmlFor: property }, settingDefinition.label || property);
                 let input;
 
                 switch (settingDefinition.type) {
@@ -43,7 +44,7 @@ export class SettingsView extends View {
                             type: "text",
                             id: property,
                             name: property,
-                            value: this.app.settings[property] || settingDefinition.default || ''
+                            value: this.app.settings[property] !== undefined ? settingDefinition.serialize(this.app.settings[property]) : settingDefinition.default || ''
                         });
                         break;
                     case "number":
@@ -51,7 +52,7 @@ export class SettingsView extends View {
                             type: "number",
                             id: property,
                             name: property,
-                            value: this.app.settings[property] || settingDefinition.default || ''
+                            value: this.app.settings[property] !== undefined ? settingDefinition.serialize(this.app.settings[property]) : settingDefinition.default || ''
                         });
                         break;
                     case "boolean":
@@ -59,7 +60,7 @@ export class SettingsView extends View {
                             type: "checkbox",
                             id: property,
                             name: property,
-                            checked: this.app.settings[property] || settingDefinition.default || false
+                            checked: this.app.settings[property] !== undefined ? settingDefinition.serialize(this.app.settings[property]) === 'true' : settingDefinition.default || false
                         });
                         break;
                     case "select":
@@ -69,10 +70,10 @@ export class SettingsView extends View {
                         });
                         if (settingDefinition.options && Array.isArray(settingDefinition.options)) {
                             settingDefinition.options.forEach(option => {
-                                const optionElement = createElement("option", {value: option}, option);
+                                const optionElement = createElement("option", { value: option }, option);
                                 input.appendChild(optionElement);
                             });
-                            input.value = this.app.settings[property] || settingDefinition.default || settingDefinition.options[0];
+                            input.value = this.app.settings[property] !== undefined ? settingDefinition.serialize(this.app.settings[property]) : settingDefinition.default || settingDefinition.options[0];
                         }
                         break;
                     default:
@@ -80,13 +81,13 @@ export class SettingsView extends View {
                             type: "text",
                             id: property,
                             name: property,
-                            value: this.app.settings[property] || settingDefinition.default || ''
+                            value: this.app.settings[property] !== undefined ? settingDefinition.serialize(this.app.settings[property]) : settingDefinition.default || ''
                         });
                 }
 
                 // Add description if available
                 if (settingDefinition.description) {
-                    const description = createElement("p", {class: "setting-description"}, settingDefinition.description);
+                    const description = createElement("p", { className: "setting-description" }, settingDefinition.description);
                     this.el.appendChild(description);
                 }
 
@@ -95,13 +96,9 @@ export class SettingsView extends View {
             }
         }
 
-        const saveButton = createElement("button", {id: "save-settings-btn"}, "Save Settings");
+        const saveButton = createElement("button", { id: "save-settings-btn" }, "Save Settings");
         this.el.appendChild(saveButton);
         saveButton.addEventListener("click", () => this.saveSettings());
-    }
-
-    async bindEvents() {
-        // No need to bind events for GenericForm, as it's not used anymore
     }
 
     async saveSettings() {
@@ -114,30 +111,44 @@ export class SettingsView extends View {
                 const inputElement = this.el.querySelector(`#${property}`);
 
                 if (inputElement) {
+                    let value;
                     switch (settingDefinition.type) {
                         case "string":
-                            settings[property] = inputElement.value;
+                            value = inputElement.value;
                             break;
                         case "number":
-                            settings[property] = parseFloat(inputElement.value);
+                            value = parseFloat(inputElement.value);
                             break;
                         case "boolean":
-                            settings[property] = inputElement.checked;
+                            value = inputElement.checked;
                             break;
                         case "select":
-                            settings[property] = inputElement.value;
+                            value = inputElement.value;
                             break;
                         default:
-                            settings[property] = inputElement.value;
+                            value = inputElement.value;
                     }
+                    settings[property] = settingDefinition.deserialize(value);
                 }
             }
         }
 
-        await this.app.settingsManager.saveSettings(settings);
+        // Save settings to DB
+        const settingsObjectId = 'settings';
+        let settingsObject = await this.db.get(settingsObjectId);
+        if (!settingsObject) {
+            settingsObject = {
+                id: settingsObjectId,
+                name: "Settings",
+            };
+        }
+        settingsObject.content = settings;
+        await this.db.saveObject(settingsObject);
+
+        this.app.settingsManager.saveSettings(settings);
         this.app.settings = settings;
-        this.app.nostr.nostrRelays = settings.nostrRelays;
-        this.app.nostr.nostrPrivateKey = settings.nostrPrivateKey;
+        this.app.nostr.nostrRelays = settings.relays;
+        this.app.nostr.nostrPrivateKey = settings.privateKey;
         await this.app.nostr.connectToRelays();
         this.app.showNotification('Settings saved');
     }
