@@ -1,3 +1,5 @@
+/** @typedef {import('./ui/core/types').Tag} Tag */
+
 class Tag extends HTMLElement {
     constructor() {
         super();

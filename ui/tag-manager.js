@@ -1,5 +1,6 @@
 import { createElement } from './utils';
 import { TagInput } from './tag-input';
+/** @typedef {import('../core/types').Tag} Tag */
 
 const debounce = (func, delay) => {
     let timeout;
@@ -204,6 +205,7 @@ class TagManager extends HTMLElement {
                 return;
             }
 
+            /** @type {Tag} */
             const newTag = { name: tagName, value: '', condition: 'is' };
             this.note.tags.push(newTag);
             await this.app.db.saveObject(this.note, false);

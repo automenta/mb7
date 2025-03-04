@@ -1,6 +1,13 @@
 import {createElement} from './utils';
+/** @typedef {import('../core/types').Tag} Tag */
 
 class TagInput extends HTMLElement {
+    /**
+     * @param {any} tagDefinition
+     * @param {string} value
+     * @param {string} condition
+     * @param {function} onChange
+     */
     constructor(tagDefinition, value, condition, onChange) {
         super();
         this.tagDefinition = tagDefinition;

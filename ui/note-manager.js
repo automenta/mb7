@@ -1,6 +1,12 @@
 import { v4 as uuidv4 } from 'uuid';
+/** @typedef {import('../core/types').NObject} NObject */
+/** @typedef {import('../core/types').Tag} Tag */
 
 class TagProcessor {
+    /**
+     * @param {NObject} object
+     * @param {boolean} isPrivate
+     */
     processTags(object, isPrivate) {
         const { tags = [] } = object;
 
@@ -10,7 +16,9 @@ class TagProcessor {
         object.tags = tags.filter(tag => tag.name !== 'visibility');
 
         if (!isPublic) {
-            object.tags.push({ name: 'visibility', value: isPrivate ? 'private' : 'public' });
+            /** @type {Tag} */
+            const visibilityTag = { name: 'visibility', value: isPrivate ? 'private' : 'public', condition: 'is' };
+            object.tags.push(visibilityTag);
         }
     }
 }
@@ -108,6 +116,10 @@ export class NoteManager {
         return defaultNote;
     }
 
+    /**
+     * @param {NObject} object
+     * @returns {Promise<NObject | null>}
+     */
     async saveObject(object) {
         if (!object || !object.id) {
             this.errorHandler.handleError(new Error('Object must have an id'), 'Validation error saving object');
@@ -115,7 +127,8 @@ export class NoteManager {
         }
 
         this.objectPreparer.prepareObjectForSaving(object);
-        const newObject = {id: object.id, name: object.name, content: object.content, tags: object.tags || []};
+        /** @type {NObject} */
+        const newObject = {id: object.id, name: object.name, content: object.content, tags: object.tags || [], isPersistentQuery: object.isPersistentQuery, private: object.private};
         this.tagProcessor.processTags(newObject, object.private);
         try {
             await this.db.save(newObject, object.isPersistentQuery);
