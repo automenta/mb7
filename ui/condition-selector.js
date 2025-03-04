@@ -7,26 +7,40 @@ class ConditionSelector extends HTMLElement {
         this.selectedCondition = selectedCondition;
         this.onChange = onChange;
         this.render();
+        this.select = null;
+    }
+
+    connectedCallback() {
+        this.render();
+    }
+
+    disconnectedCallback() {
+        // Clean up event listeners
+        if (this.select) {
+            this.select.removeEventListener('change', this.handleConditionChange);
+        }
+    }
+
+    handleConditionChange = (e) => {
+        this.selectedCondition = e.target.value;
+        this.onChange(this.selectedCondition);
     }
 
     render() {
         this.innerHTML = '';
-        const select = createElement('select', {
-            onchange: (e) => {
-                this.selectedCondition = e.target.value;
-                this.onChange(this.selectedCondition);
-            }
-        });
+
+        this.select = createElement('select', {});
+        this.select.addEventListener('change', this.handleConditionChange);
 
         this.tagDefinition.conditions.forEach(condition => {
             const option = createElement('option', {
                 value: condition,
                 selected: condition === this.selectedCondition
             }, condition);
-            select.appendChild(option);
+            this.select.appendChild(option);
         });
 
-        this.appendChild(select);
+        this.appendChild(this.select);
     }
 }
 
