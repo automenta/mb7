@@ -1,5 +1,7 @@
 // core/monitoring.js
 
+import { sha256 } from 'js-sha256';
+
 class Monitoring {
     constructor(app) {
         this.app = app;
@@ -7,6 +9,7 @@ class Monitoring {
         this.errorCount = 0;
         this.syncLatencies = [];
         this.maxSyncLatenciesLength = 100;
+        this.previousDataHash = null;
     }
 
     async start() {
@@ -171,11 +174,26 @@ class Monitoring {
      * @returns {number} A value indicating the data consistency (e.g., 0 for inconsistent, 1 for consistent).
      */
     async getDataConsistency() {
-        // This is a placeholder.  The actual implementation will depend on how
-        // Yjs is used in the application.  It will likely involve calculating
-        // a hash of the document content and comparing the hashes on different
-        // clients.
-        return 0;
+        try {
+            // Get the content of the Yjs document
+            const yDocContent = this.app.yDoc.getText('content').toString();
+
+            // Calculate the hash of the content
+            const currentDataHash = sha256(yDocContent);
+
+            // Compare the current hash with the previous hash
+            if (this.previousDataHash && this.previousDataHash !== currentDataHash) {
+                console.warn('Data consistency issue detected!');
+                return 0; // Inconsistent
+            }
+
+            // Store the current hash for the next comparison
+            this.previousDataHash = currentDataHash;
+            return 1; // Consistent
+        } catch (error) {
+            console.error('Error getting data consistency:', error);
+            return 0; // Inconsistent
+        }
     }
 }
 
