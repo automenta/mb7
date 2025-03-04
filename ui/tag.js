@@ -4,7 +4,6 @@ import {TagInput} from './tag-input';
 class Tag extends HTMLElement {
     constructor() {
         super();
-        this.app = null;
         this.shadow = this.attachShadow({mode: 'open'});
     }
 
@@ -16,13 +15,7 @@ class Tag extends HTMLElement {
         this.tagDefinition = JSON.parse(this.getAttribute('tag-definition'));
         this.value = this.getAttribute('value') || '';
         this.condition = this.getAttribute('condition') || 'is';
-        this.app = this.getApp();
         this.render();
-    }
-
-    getApp() {
-        // Traverse up the DOM tree to find the app instance
-        return document.querySelector('notes-view')?.app;
     }
 
     attributeChangedCallback(name, oldValue, newValue) {
@@ -150,20 +143,20 @@ class Tag extends HTMLElement {
             this.value = newValue;
             this.condition = newCondition;
             this.render();
-        });
-        this.shadow.appendChild(tagInput);
-    }
-
+   set app(value) {
+       this._app = value;
+   }
     getValue() {
         return this.value;
     }
 
     getCondition() {
-        return this.condition;
-    }
-
-    async removeTag() {
-        try {
+   get app() {
+       return this._app;
+   }
+    
+   async removeTag() {
+       try {
             const tagName = this.tagDefinition.name;
             const noteDetails = this.closest('note-details');
             if (noteDetails) {
