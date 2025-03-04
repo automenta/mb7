@@ -9,8 +9,8 @@ export function createAppMock() {
             save: vi.fn(),
             get: vi.fn(),
             getAll: vi.fn(),
-            delete: vi.fn(), // Added delete mock
-            updateFriendProfile: vi.fn(), // Added updateFriendProfile mock
+            delete: vi.fn(),
+            updateFriendProfile: vi.fn(),
         },
         errorHandler: {
             handleError: vi.fn(),
@@ -39,24 +39,24 @@ export function createAppMock() {
             errorCount: 0,
         },
         showNotification: vi.fn(),
-        getTagDefinition: vi.fn().mockReturnValue({ // Mock getTagDefinition
+        getTagDefinition: vi.fn().mockReturnValue({
             name: 'MockTag',
             label: 'Mock Tag',
             ui: { type: "text" },
             validate: () => true,
             conditions: ["is", "contains"]
         }),
-        schema: {}, // Mock schema
-        friendsView: { // Mock friendsView for handleKind0 test
+        schema: {},
+        friendsView: {
             loadFriends: vi.fn()
         },
-        mainContent: { // Mock mainContent for handleKind0 test
+        mainContent: {
             currentView: null
         },
-        SettingsView: class MockSettingsView { // Mock SettingsView for handleKind0 test
+        SettingsView: class MockSettingsView {
             displayProfile: vi.fn()
         },
-        FriendsView: class MockFriendsView {} // Mock FriendsView for handleKind0 test
+        FriendsView: class MockFriendsView { }
     };
     return app;
 }
