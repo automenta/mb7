@@ -122,9 +122,17 @@ class Edit {
 
             // Extract the tag content (the JSON string)
             const tagContent = match[1];
+            const tagData = JSON.parse(tagContent); // Parse tagData here to access ui.render
 
             // Render the tag
-            const tagElement = this.renderTag(tagContent);
+            let tagElement;
+            if (tagData.ui && tagData.ui.render === "stub") { // Check for ui.render === "stub"
+                tagElement = this.renderTagStub(tagContent); // Use renderTagStub for stubs
+            } else {
+                tagElement = this.renderTag(tagContent); // Default renderTag for other tags
+            }
+
+
             if (tagElement) {
                 this.editorArea.appendChild(tagElement);
             } else {
@@ -194,8 +202,8 @@ class Edit {
             // Deserialize the tag content
             const tagData = JSON.parse(tagContent);
 
-            // Create a button element for the tag
-            const tagElement = createElement('button', {className: 'tag-element'}, tagData.name);
+            // Create a button element for the tag - default rendering as button
+            const tagElement = createElement('button', {className: 'tag-element'}, tagData.name); // Still create button for default
 
             // Add a data attribute to store the tag content
             tagElement.dataset.tagContent = tagContent;
@@ -206,7 +214,7 @@ class Edit {
                 this.editTag(tagContent);
             });
 
-            // Basic styling
+            // Basic styling - for default button rendering
             tagElement.style.backgroundColor = '#f0f0f0';
             tagElement.style.border = '1px solid #ccc';
             tagElement.style.borderRadius = '4px';
@@ -220,6 +228,35 @@ class Edit {
             return null;
         }
     }
+
+    /**
+     * Renders a stub tag element as a plain text span.
+     * @param {string} tagContent - The JSON string representing the tag data.
+     * @returns {HTMLElement | null} - The rendered tag stub element, or null if rendering fails.
+     */
+    renderTagStub(tagContent) {
+        try {
+            // Deserialize the tag content
+            const tagData = JSON.parse(tagContent);
+
+            // Create a span element for the tag stub - plain text rendering
+            const tagElement = createElement('span', {className: 'tag-stub'}, `[${tagData.name}]`); // Render as plain text span
+
+            // Basic styling for stub
+            tagElement.style.backgroundColor = '#eee'; // Different background for stubs
+            tagElement.style.color = '#555';
+            tagElement.style.border = '1px dashed #ccc'; // Dashed border to indicate stub
+            tagElement.style.borderRadius = '4px';
+            tagElement.style.padding = '2px 4px';
+            tagElement.style.margin = '2px';
+
+            return tagElement;
+        } catch (error) {
+            console.error("Error rendering tag stub:", error);
+            return null;
+        }
+    }
+
 
     /**
      * Opens the tag edit form for the given tag content.

@@ -62,7 +62,7 @@ export const Ontology = {
         validate: (value, condition) => typeof value === "string" && value.length > 0,
         serialize: (value) => value,
         deserialize: (value) => value,
-        ui: {type: "text", placeholder: "Enter a location", icon: "📍"}
+        ui: {type: "text", placeholder: "Enter a location", icon: "📍", render: "stub"} // Added render: "stub"
     },
     "time": {
         conditions: ["is", "before", "after", "between"],
