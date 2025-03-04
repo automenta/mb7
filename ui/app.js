@@ -39,9 +39,10 @@ class App {
         try {
             const settingsObject = await db.getSettings() || {};
             const settingsTags = settingsObject.tags || [];
-            signalingStrategy = settingsTags.find(tag => tag[0] === 'signalingStrategy')?.[1] || "nostr";
-            nostrRelays = settingsTags.find(tag => tag[0] === 'relays')?.[1] || "";
-            nostrPrivateKey = settingsTags.find(tag => tag[0] === 'privateKey')?.[1] || "";
+            const findTag = (tagName) => settingsTags.find(tag => tag[0] === tagName)?.[1];
+            signalingStrategy = findTag('signalingStrategy') || "nostr";
+            nostrRelays = findTag('relays') || "";
+            nostrPrivateKey = findTag('privateKey') || "";
         } catch (error) {
             errorHandler.handleError(error, 'Error getting settings from db');
         }

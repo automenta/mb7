@@ -10,11 +10,3 @@ export const createElement = (tag, attrs = {}, text = "") => {
     el.textContent = text;
     return el;
 };
-
-export const debounce = (fn, delay) => {
-    let timeoutId;
-    return (...args) => {
-        clearTimeout(timeoutId);
-        timeoutId = setTimeout(() => fn(...args), delay);
-    };
-};

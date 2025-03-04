@@ -91,18 +91,8 @@ export const Ontology = {
     },
     "DueDate": {
         conditions: ["is", "before", "after", "between"],
-        validate: (value, condition) => {
-            if (condition === "between") {
-                return isValidDate(value.start) && isValidDate(value.end);
-            }
-            return isValidDate(value);
-        },
-        serialize: (value) => {
-            if (typeof value === 'object' && value !== null) {
-                return {start: value.start, end: value.end};
-            }
-            return value;
-        },
+        validate: (value, condition) => condition === "between" ? isValidDate(value.start) && isValidDate(value.end) : isValidDate(value),
+        serialize: (value) => typeof value === 'object' && value !== null ? {start: value.start, end: value.end} : value,
         deserialize: (value) => value
     },
     "List": {

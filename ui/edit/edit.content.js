@@ -92,12 +92,12 @@ class EditorContentHandler {
     serialize() {
         const clonedEditor = this.editor.editorArea.cloneNode(true);
         clonedEditor.querySelectorAll("data-tag").forEach(tagEl => {
-            const tagName = tagEl.dataset.tagName;
+            const { tagName } = tagEl.dataset;
             const tagValue = tagEl.getAttribute('value') || '';
             const tagCondition = tagEl.getAttribute('condition') || 'is';
             tagEl.replaceWith(`[TAG:${tagName}:${tagValue}:${tagCondition}]`);
         });
-        return clonedEditor.innerHTML.replace(/<br\s*\/?>/g, "\\n");
+        return clonedEditor.innerHTML.replace(/<br\\s*\\/?>/g, "\\n");
     }
 
     deserialize(text) {

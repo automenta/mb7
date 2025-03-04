@@ -1,11 +1,12 @@
 import { createElement } from './utils';
 import { TagInput } from './tag-input';
 
-const debounce = (fn, delay) => {
-    let timeoutId;
-    return (...args) => {
-        clearTimeout(timeoutId);
-        timeoutId = setTimeout(() => fn(...args), delay);
+const debounce = (func, delay) => {
+    let timeout;
+    return function(...args) {
+        const context = this;
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(context, args), delay);
     };
 };
 
@@ -15,7 +16,6 @@ class TagManager extends HTMLElement {
         this.app = app;
         this.note = note;
         this.shadow = this.attachShadow({ mode: 'open' });
-        this.render();
     }
 
     connectedCallback() {
@@ -113,22 +113,22 @@ class TagManager extends HTMLElement {
         if (this.tagSuggestions.style.display !== 'block') return;
 
         switch (event.key) {
-                case 'ArrowDown':
-                    event.preventDefault();
-                    this.moveTagSuggestionSelection(1);
-                    break;
-                case 'ArrowUp':
-                    event.preventDefault();
-                    this.moveTagSuggestionSelection(-1);
-                    break;
-                case 'Enter':
-                    event.preventDefault();
-                    this.selectTagSuggestion();
-                    break;
-                case 'Escape':
-                    this.clearTagSuggestions();
-                    break;
-            }
+            case 'ArrowDown':
+                event.preventDefault();
+                this.moveTagSuggestionSelection(1);
+                break;
+            case 'ArrowUp':
+                event.preventDefault();
+                this.moveTagSuggestionSelection(-1);
+                break;
+            case 'Enter':
+                event.preventDefault();
+                this.selectTagSuggestion();
+                break;
+            case 'Escape':
+                this.clearTagSuggestions();
+                break;
+        }
     }
 
     moveTagSuggestionSelection(direction) {
@@ -241,7 +241,7 @@ class TagManager extends HTMLElement {
 
     displayTagSuggestions(suggestions) {
         this.tagSuggestions.innerHTML = '';
-        if (suggestions.length === 0) {
+        if (!suggestions.length) {
             this.tagSuggestions.style.display = 'none';
             return;
         }
