@@ -176,7 +176,7 @@ export class NoteView extends HTMLElement {
 
         this.tagManager = new TagManager(this.app, this.selectedNote);
 
-        this.noteList = new NoteList(this.app, this, this.yDoc, this.noteYjsManager.yNotesList, null);
+        this.noteList = new NoteList(this.app, this, this.yDoc, this.noteYjsManager.yNotesList);
         this.notesListComponent = new GenericListComponent(this.noteList.renderNoteItem.bind(this.noteList), this.noteYjsManager.yNotesList);
         this.sidebar.elements.notesList.replaceWith(this.notesListComponent.el);
         this.sidebar.el.insertBefore(this.newAddButton(), this.notesListComponent.el);
