@@ -6,6 +6,13 @@ import {signEvent} from 'nostr-tools';
 import {encrypt, decrypt} from './crypto';
 
 export class Nostr {
+    /**
+     * Constructor for the Nostr class.
+     * @param {object} app - The application object.
+     * @param {string} signalingStrategy - The signaling strategy.
+     * @param {string} nostrRelays - The Nostr relays.
+     * @param {string} nostrPrivateKey - The Nostr private key.
+     */
     constructor(app, signalingStrategy, nostrRelays, nostrPrivateKey) {
         this.app = app;
         this.signalingStrategy = signalingStrategy;
@@ -17,10 +24,16 @@ export class Nostr {
         this.relayObjects = {};
     }
 
+    /**
+     * Initializes the Nostr connection.
+     */
     async init() {
         await this.connectToRelays();
     }
 
+    /**
+     * Connects to the configured Nostr relays.
+     */
     async connectToRelays() {
         const relaysToConnect = this.nostrRelays ? this.nostrRelays.split(',').map(url => url.trim()) : this.relays;
 
@@ -40,6 +53,11 @@ export class Nostr {
         }
     }
 
+    /**
+     * Handles the relay connect event.
+     * @param {string} relayUrl - The URL of the relay.
+     * @param {object} relay - The relay object.
+     */
     handleRelayConnect(relayUrl, relay) {
         console.log(`Connected to relay: ${relayUrl}`);
         this.relayStatuses[relayUrl] = 'connected';
@@ -47,6 +65,10 @@ export class Nostr {
         this.relayObjects[relayUrl] = relay;
     }
 
+    /**
+     * Handles the relay disconnect event.
+     * @param {string} relayUrl - The URL of the relay.
+     */
     handleRelayDisconnect(relayUrl) {
         console.log(`Disconnected from relay: ${relayUrl}`);
         this.relayStatuses[relayUrl] = 'disconnected';
@@ -54,6 +76,10 @@ export class Nostr {
         delete this.relayObjects[relayUrl];
     }
 
+    /**
+     * Handles the relay error event.
+     * @param {string} relayUrl - The URL of the relay.
+     */
     handleRelayError(relayUrl) {
         console.error(`Error connecting to relay: ${relayUrl}`);
         this.relayStatuses[relayUrl] = 'error';
@@ -122,6 +148,11 @@ export class Nostr {
         this.lastPublishTime = Date.now();
     }
 
+    /**
+     * Subscribes to events from a specific pubkey.
+     * @param {string} pubkey - The pubkey to subscribe to.
+     * @param {function} callback - The callback function to call when an event is received.
+     */
     async subscribeToPubkey(pubkey, callback) {
         if (!pubkey) {
             console.warn('subscribeToPubkey called with empty pubkey');
@@ -175,6 +206,10 @@ export class Nostr {
         }
     }
 
+    /**
+     * Unsubscribes from events from a specific pubkey.
+     * @param {string} subscriptionId - The ID of the subscription to unsubscribe from.
+     */
     async unsubscribeToPubkey(subscriptionId) {
         if (!subscriptionId) {
             console.warn('unsubscribeToPubkey called with empty subscriptionId');
