@@ -32,7 +32,7 @@ class EditorContentHandler {
     }
 
 
-    insertTagAtSelection(tag) {
+    insertTagAtSelection(tagName) {
         const editorArea = this.editor.editorArea;
         const selection = window.getSelection();
         let range = this.getSelectionRange(editorArea, selection);
@@ -40,7 +40,14 @@ class EditorContentHandler {
         editorArea.focus();
         this.restoreSelection(selection, range);
 
-        this.insertNodeAtRange(range, tag);
+        const tagDefinition = this.editor.getTagDefinition(tagName);
+        if (tagDefinition) {
+            const tag = document.createElement('data-tag');
+            tag.setAttribute('tag-definition', JSON.stringify(tagDefinition));
+            tag.setAttribute('value', '');
+            tag.setAttribute('condition', 'is');
+            this.insertNodeAtRange(range, tag);
+        }
 
         this.lastValidRange = range.cloneRange();  // Update the last valid range
         this.autosuggest.apply(); // Refresh suggestions
