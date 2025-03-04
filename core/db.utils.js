@@ -3,7 +3,7 @@
  */
 export async function createDefaultObject(db, id, kind = 30000) {
     const now = new Date().toISOString();
-    const object = {
+    let object = {
         id,
         kind,
         content: '',
@@ -12,6 +12,14 @@ export async function createDefaultObject(db, id, kind = 30000) {
         updatedAt: now,
         isPersistentQuery: false,
     };
+
+    if (id === 'settings') {
+        object = {
+            ...object,
+            tagUIOverrides: {} // Initialize tagUIOverrides
+        };
+    }
+
     await db.put('objects', object);
     return object;
 }
