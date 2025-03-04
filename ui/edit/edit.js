@@ -37,6 +37,71 @@ class Edit {
         this.editorArea.addEventListener('input', () => this.autosuggest.debouncedApply());
         this.editorArea.addEventListener('keydown', (event) => this.autosuggest.handleKeyDown(event));
         this.el.addEventListener('notify', (event) => this.app.showNotification(event.detail.message, event.detail.type));
+
+        // Initialize the editor with existing content and render tags
+        this.renderContent();
+
+        // Observe changes to the Yjs text and re-render the content
+        this.yText.observe(() => this.renderContent());
+    }
+
+    renderContent() {
+        // Clear the editor area
+        this.editorArea.innerHTML = '';
+
+        // Get the current text from Yjs
+        const text = this.yText.toString();
+
+        // Regular expression to find tag placeholders
+        const tagRegex = /\[TAG:([^\]]*)\]/g;
+        let match;
+        let lastIndex = 0;
+
+        while ((match = tagRegex.exec(text)) !== null) {
+            // Add the text before the tag
+            if (match.index > lastIndex) {
+                this.editorArea.appendChild(document.createTextNode(text.substring(lastIndex, match.index)));
+            }
+
+            // Extract the tag content
+            const tagContent = match[1];
+
+            // Render the tag
+            const tagElement = this.renderTag(tagContent);
+            if (tagElement) {
+                this.editorArea.appendChild(tagElement);
+            } else {
+                // If tag rendering fails, display the original tag content as text
+                this.editorArea.appendChild(document.createTextNode(match[0]));
+            }
+
+            lastIndex = tagRegex.lastIndex;
+        }
+
+        // Add the remaining text after the last tag
+        if (lastIndex < text.length) {
+            this.editorArea.appendChild(document.createTextNode(text.substring(lastIndex)));
+        }
+    }
+
+    renderTag(tagContent) {
+        try {
+            // Deserialize the tag content
+            const tagData = JSON.parse(tagContent);
+
+            // Create a span element for the tag
+            const tagElement = document.createElement('span');
+            tagElement.className = 'tag-element';
+            tagElement.textContent = tagData.name; // Display the tag name
+
+            // Add a data attribute to store the tag content
+            tagElement.dataset.tagContent = tagContent;
+
+            return tagElement;
+        } catch (error) {
+            console.error("Error rendering tag:", error);
+            return null;
+        }
     }
 
     handleTagSelected(tagDefinition) {
@@ -62,7 +127,21 @@ class Edit {
             const yValue = yMap.get(key);
             tagData[key] = tagDefinition.deserialize(yValue !== undefined ? yValue : tagDefinition.default);
         }
+
+        // Create a unique ID for the tag
+        const tagId = Math.random().toString(36).substring(2, 15);
+        tagData.id = tagId;
+        tagData.name = this.selectedTag.label;
+
+        // Serialize the tag data to JSON
+        const tagContent = JSON.stringify(tagData);
+
+        // Insert the tag placeholder into the Yjs text
+        const tagPlaceholder = `[TAG:${tagContent}]`;
+        this.yDoc.transact(() => {
+            this.yText.insert(this.editorArea.selectionStart, tagPlaceholder);
+        });
+
         console.log('tagData', tagData);
-        // TODO: Integrate the tagData into the main note's Yjs document
     }
 }
