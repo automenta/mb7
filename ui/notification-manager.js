@@ -3,7 +3,8 @@ import Notification from './notification.js';
 const NOTIFICATION_DURATION = 4000;
 
 export class NotificationManager {
-    constructor() {
+    constructor(app) {
+        this.app = app;
         this.notificationQueue = [];
         this.notificationTimeout = null;
     }

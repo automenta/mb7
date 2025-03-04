@@ -170,9 +170,6 @@ class App {
 
         this.settingsManager = new SettingsManager(db, errorHandler);
         this.noteManager = new NoteManager(this, db, errorHandler, matcher, nostr, notificationManager);
-
-        this.elements.notificationArea = document.createElement('div');
-        this.elements.notificationArea.id = 'notification-area';
     }
 
     static async initialize(appDiv) {
