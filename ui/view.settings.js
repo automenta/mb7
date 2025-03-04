@@ -35,7 +35,13 @@ export class SettingsView extends View {
         const yMap = this.yDoc.getMap('data');
         for (const key in Ontology.Settings.tags) {
             const settingDefinition = Ontology.Settings.tags[key];
-            const value = this.app.settings[key] !== undefined ? this.app.settings[key] : settingDefinition.default;
+            let value = this.app.settings[key] !== undefined ? this.app.settings[key] : settingDefinition.default;
+
+            // Deserialize the value when loading from settings
+            if (this.app.settings[key] !== undefined && settingDefinition.deserialize) {
+                value = settingDefinition.deserialize(value);
+            }
+
             yMap.set(key, value);
         }
 
@@ -61,7 +67,13 @@ export class SettingsView extends View {
         for (const key in Ontology.Settings.tags) {
             const settingDefinition = Ontology.Settings.tags[key];
             const yValue = yMap.get(key);
-            settings[key] = settingDefinition.deserialize(yValue !== undefined ? yValue : settingDefinition.default);
+            let value = yValue !== undefined ? yValue : settingDefinition.default;
+
+            // Serialize the value before saving to settings
+             if (settingDefinition.serialize) {
+                 value = settingDefinition.serialize(value);
+             }
+            settings[key] = value;
         }
 
         // Save settings to DB
