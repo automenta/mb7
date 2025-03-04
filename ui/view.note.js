@@ -68,16 +68,17 @@ export class NoteView extends HTMLElement {
 
         this.yDoc = new Y.Doc();
         this.noteUI = new NoteUI();
-        this.noteList = new NoteList(this.store, this, this.yDoc, this.yDoc.getArray('notesList'));
+        this.noteList = new NoteList(this.app, this, this.yDoc, this.yDoc.getArray('notesList'));
         this.notesListComponent = new GenericListComponent(this.renderNoteItem.bind(this), this.noteList.yNotesList);
-        this.noteDetails = new NoteDetails(this);
-        this.tagDisplay = new TagDisplay();
+        this.noteDetails = new NoteDetails(this, this.app);
+        this.tagDisplay = new TagDisplay(this.app);
         this.myObjectsList = new MyObjectsList(this, this.yDoc.getArray('myObjects'));
         this.noteCreator = new NoteCreator(noteManager, noteYjsHandler, this.yDoc);
         this.noteElements = new NoteViewElements();
-        this.notesSidebar = new NotesSidebar(this, this);
+        this.notesSidebar = new NotesSidebar(this.app, this);
         this.edit = null; // Initialize edit to null
         this.selectedNote = null;
+        this.app = app;
 
         this.el = this.noteElements.createElement('div', {className: 'notes-view'});
         this.el.style.flexDirection = 'row';
@@ -111,6 +112,7 @@ export class NoteView extends HTMLElement {
         this.selectedNote = await this.db.get(noteId);
         if (this.selectedNote) {
             if (this.edit) {
+                // TODO [NOTEVIEW-1]: Remove the previous edit component before creating a new one
                 this.edit.el.remove();
             }
             this.edit = new Edit(this.selectedNote, this.yDoc, this.app, getTagDefinition, this.ontology);
@@ -155,6 +157,7 @@ export class NoteView extends HTMLElement {
     async selectNote(noteId) {
         this.store.dispatch({type: 'SET_SELECTED_NOTE', payload: noteId});
     }
+    // TODO [NOTEVIEW-4]: Implement a split-view or tabbed interface for editing and viewing notes side-by-side
 }
 
 customElements.define('note-view', NoteView);

@@ -5,6 +5,13 @@ export class NoteList {
         this.yDoc = yDoc;
         this.yNotesList = yNotesList;
         this.loadNotes(); // Load notes on initialization
+
+        // Observe Yjs array changes
+        this.yNotesList.observe(() => {
+            this.loadNotes();
+        });
+        // TODO [NOTELIST-2]: Implement lazy loading or pagination for very long note lists
+        // TODO [NOTELIST-3]: Consider adding visual cues for note status (e.g., syncing, private, etc.) in the list
     }
 
     async loadNotes() {

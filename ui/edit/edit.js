@@ -20,6 +20,7 @@ class Edit {
         this.selectedTag = null;
         this.tagYDoc = new Y.Doc();
         this.render();
+        this.debouncedSaveContent = this.debounce(this.saveContent, 500); // Debounce saveContent
     }
 
     async render() {
@@ -45,7 +46,8 @@ class Edit {
         this.yText.observe(() => this.renderContent());
 
         // Add a blur event listener to save the content when the editor loses focus
-        this.editorArea.addEventListener('blur', () => this.saveContent());
+        this.editorArea.addEventListener('blur', () => this.debouncedSaveContent());
+        // TODO [EDIT-2]: Implement proper cursor/selection preservation after re-rendering content
     }
 
     /**
@@ -63,7 +65,7 @@ class Edit {
      */
     serializeContent() {
         let content = '';
-        for (let i = 0; i < this.editorArea.childNodes.length; i++) {
+        for (let i = 0;i < this.editorArea.childNodes.length; i++) {
             const node = this.editorArea.childNodes[i];
             if (node.nodeType === Node.TEXT_NODE) {
                 content += node.textContent;
@@ -338,5 +340,14 @@ class Edit {
             this.tagEditArea.style.display = 'none';
             this.editingTagContent = null;
         }
+    }
+
+    debounce(func, delay) {
+        let timeout;
+        return function(...args) {
+            const context = this;
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(context, args), delay);
+        };
     }
 }
