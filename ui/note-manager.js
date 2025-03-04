@@ -24,8 +24,8 @@ class NotePublisher {
 
     async publishObject(object) {
         console.log('publishObject called with object:', object);
-        const visibilityTag = object.tags.find(tag => tag[0] === 'visibility');
-        const isPrivate = visibilityTag && visibilityTag[1] === 'private';
+        const visibilityTag = object.tags.find(tag => tag.name === 'visibility');
+        const isPrivate = visibilityTag && visibilityTag.value === 'private';
 
         if (isPrivate) {
             console.log('Object is private, not publishing to Nostr.');
