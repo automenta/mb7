@@ -53,6 +53,7 @@ class NoteManager {
             private: false
         };
         await this.saveObject(newNote);
+        this.notificationManager.showNotification('Note created', 'success');
         return newNote;
     }
 

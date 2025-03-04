@@ -30,7 +30,7 @@ class NoteList {
                     }
                 });
                 await this.notesListComponent.fetchDataAndRender();
-                this.noteView.showMessage('Deleted');
+                this.app.notificationManager.showNotification('Deleted', 'success');
             }
         } catch (error) {
             console.error('Error deleting note:', error);
@@ -304,24 +304,7 @@ export class NoteView extends HTMLElement {
     async createNote() {
         console.time('createNote');
         try {
-            const timestamp = Date.now();
-            // Log the state of this.editor and this.editor.contentHandler
-            console.log('createNote function called');
-            console.log('app.saveOrUpdateObject called');
-            console.log("createNote: this.editor", this.editor);
-            if (this.editor) {
-                console.log("createNote: this.editor.contentHandler", this.editor.contentHandler);
-            }
-
-            const newObject = await this.app.db.save({
-                id: timestamp.toString(),
-                name: 'New Note',
-                content: '',
-                private: true,
-                tags: [],
-                priority: 'Medium',
-                isPersistentQuery: false
-            });
+            const newObject = await this.app.noteManager.createNote();
             console.timeEnd('createNote');
             if (newObject) {
                 const yNoteMap = this.noteYjsHandler.getYNoteMap(newObject.id);
@@ -335,7 +318,7 @@ export class NoteView extends HTMLElement {
                 }
                 await this.noteList.addNoteToList(newObject.id);
                 await this.notesListComponent.fetchDataAndRender();
-                this.showMessage('Saved');
+                this.app.notificationManager.showNotification('Saved', 'success');
                 await this.selectNote(newObject.id);
                 this.editor.contentHandler.deserialize(newObject.content);
                 this.focusTitleInput();
@@ -393,21 +376,6 @@ export class NoteView extends HTMLElement {
         const li = document.createElement('li');
         li.textContent = objectId;
         return li;
-    }
-
-    showMessage(message) {
-        const e = document.createElement('div');
-        e.textContent = message;
-        const es = e.style;
-        es.position = 'absolute';
-        es.top = '0';
-        es.left = '0';
-        es.backgroundColor = 'lightgreen';
-        es.padding = '10px';
-        this.el.appendChild(e);
-        setTimeout(() => {
-            this.el.removeChild(e);
-        }, 3000);
     }
 
     async getNoteTags(noteId) {
