@@ -86,95 +86,6 @@ class Tag extends HTMLElement {
                 }
             </style>
         `;
-    }
-import { createElement } from './utils';
-import { TagInput } from './tag-input';
-
-class Tag extends HTMLElement {
-    constructor() {
-        super();
-        this.shadow = this.attachShadow({ mode: 'open' });
-    }
-
-    connectedCallback() {
-        this.tagDefinition = JSON.parse(this.getAttribute('tag-definition'));
-        this.value = this.getAttribute('value') || '';
-        this.condition = this.getAttribute('condition') || 'is';
-        this.render();
-    }
-
-    static get observedAttributes() {
-        return ['tag-definition', 'value', 'condition'];
-    }
-
-    attributeChangedCallback(name, oldValue, newValue) {
-        if (name === 'tag-definition') {
-            this.tagDefinition = JSON.parse(newValue);
-        }
-        if (this.isConnected) {
-            this.render();
-        }
-    }
-
-    remove() {
-        const event = new CustomEvent('tag-removed', {
-            detail: { tag: this },
-            bubbles: true,
-            composed: true
-        });
-        this.dispatchEvent(event);
-    }
-
-    render() {
-        this.shadow.innerHTML = `
-            <style>
-                .tag {
-                    display: inline-flex;
-                    align-items: center;
-                    background-color: #f0f0f0;
-                    border: 1px solid #ccc;
-                    border-radius: 4px;
-                    padding: 2px 4px;
-                    margin: 2px;
-                    font-size: 0.8em;
-                    transition: background-color 0.2s ease-in-out;
-                }
-
-                .tag.conditional {
-                    background-color: #e0e0e0;
-                }
-
-                .tag.invalid {
-                    background-color: #ffdddd;
-                }
-
-                .tag > span {
-                    margin-right: 4px;
-                }
-
-                .tag-condition {
-                    font-style: italic;
-                    margin-right: 4px;
-                }
-
-                .tag > button {
-                    background-color: transparent;
-                    border: none;
-                    cursor: pointer;
-                    font-size: 1em;
-                    padding: 0;
-                    margin: 0;
-                }
-
-                .tag > button:hover {
-                    color: #007bff;
-                }
-
-                .tag:hover {
-                    background-color: #ddd;
-                }
-            </style>
-        `;
         const el = document.createElement('div');
         el.className = 'tag';
         el.dataset.tagName = this.tagDefinition.name;
@@ -183,8 +94,9 @@ class Tag extends HTMLElement {
             el.classList.add('conditional');
         }
 
-        const icon = this.tagDefinition.ui?.icon || '🏷️';
-        const display = createElement('span', {}, `${icon} ${this.tagDefinition.name}:`);
+        const { ui, name } = this.tagDefinition;
+        const icon = ui?.icon || '🏷️';
+        const display = createElement('span', {}, `${icon} ${name}:`);
         el.appendChild(display);
 
         if (this.condition) {
@@ -197,7 +109,7 @@ class Tag extends HTMLElement {
 
         this.editButton = createElement('button', {
             className: 'edit-tag-button',
-            title: `Edit ${this.tagDefinition.name} Value`
+            title: `Edit ${name} Value`
         }, 'Edit');
         this.editButton.addEventListener('click', () => {
             this.editTag();
@@ -206,7 +118,7 @@ class Tag extends HTMLElement {
 
         const removeButton = createElement('button', {
             className: 'remove-tag-button',
-            title: `Remove ${this.tagDefinition.name}`
+            title: `Remove ${name}`
         }, 'X');
         removeButton.addEventListener('click', () => {
             this.removeTag();
