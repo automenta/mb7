@@ -1,5 +1,4 @@
 import {createElement} from "./utils.js";
-import * as Y from 'yjs';
 import {YjsHelper} from '../core/yjs-helper.js';
 
 export class GenericForm {
@@ -15,7 +14,7 @@ export class GenericForm {
 
     async build() {
         this.el.innerHTML = "";
-        const form = createElement("form", { className: 'generic-form-form' });
+        const form = createElement("form", {className: 'generic-form-form'});
 
         // Load tagUIOverrides from Settings
         const tagUIOverrides = await this.loadTagUIOverrides();
@@ -33,7 +32,7 @@ export class GenericForm {
 
             // Apply UI overrides from settings
             const uiOverrides = tagUIOverrides[property] || {}; // Use property as the key
-            const ui = { ...propertySchema.ui, ...uiOverrides };
+            const ui = {...propertySchema.ui, ...uiOverrides};
 
             switch (propertySchema.type) {
                 case "string":
@@ -70,7 +69,7 @@ export class GenericForm {
                     });
                     if (propertySchema.options && Array.isArray(propertySchema.options)) {
                         propertySchema.options.forEach(option => {
-                            const optionElement = createElement("option", { value: option }, option);
+                            const optionElement = createElement("option", {value: option}, option);
                             input.appendChild(optionElement);
                         });
                     }
@@ -105,7 +104,12 @@ export class GenericForm {
                 if (propertySchema && propertySchema.validate) {
                     const isValid = propertySchema.validate(value, 'is');
                     if (!isValid) {
-                        this.el.dispatchEvent(new CustomEvent('notify', { detail: { message: `Invalid input for ${propertySchema.label || property}`, type: 'error' } }));
+                        this.el.dispatchEvent(new CustomEvent('notify', {
+                            detail: {
+                                message: `Invalid input for ${propertySchema.label || property}`,
+                                type: 'error'
+                            }
+                        }));
                         return;
                     }
                 }
@@ -125,7 +129,7 @@ export class GenericForm {
                 else this.yMap.set(property, "");
             }
 
-            const formGroup = createElement('div', { className: 'generic-form-group' });
+            const formGroup = createElement('div', {className: 'generic-form-group'});
             formGroup.append(label, input);
             form.appendChild(formGroup);
         }

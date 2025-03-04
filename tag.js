@@ -1,10 +1,13 @@
 /** @typedef {import('./ui/core/types').Tag} Tag */
-import {Tag} from "./ui/core/types";
 
 class Tag extends HTMLElement {
     constructor() {
         super();
-        this.shadow = this.attachShadow({ mode: 'open' });
+        this.shadow = this.attachShadow({mode: 'open'});
+    }
+
+    static get observedAttributes() {
+        return ['value', 'condition'];
     }
 
     connectedCallback() {
@@ -18,10 +21,6 @@ class Tag extends HTMLElement {
         this.condition = this.getAttribute('condition') || 'is';
 
         this.render();
-    }
-
-    static get observedAttributes() {
-        return ['value', 'condition'];
     }
 
     attributeChangedCallback(name, oldValue, newValue) {
@@ -91,7 +90,7 @@ class Tag extends HTMLElement {
 
     remove() {
         const event = new CustomEvent('tag-removed', {
-            detail: { tag: this },
+            detail: {tag: this},
             bubbles: true,
             composed: true
         });

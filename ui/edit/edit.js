@@ -1,9 +1,9 @@
-import { createElement } from '../../ui/utils.js';
-import { YjsHelper } from '../../core/yjs-helper';
-import { SuggestionDropdown } from './suggest.dropdown.js';
-import { Autosuggest } from './suggest.js';
-import { OntologyBrowser } from './ontology-browser.js';
-import { GenericForm } from '../generic-form.js';
+import {createElement} from '../../ui/utils.js';
+import {YjsHelper} from '../../core/yjs-helper';
+import {SuggestionDropdown} from './suggest.dropdown.js';
+import {Autosuggest} from './suggest.js';
+import {OntologyBrowser} from './ontology-browser.js';
+import {GenericForm} from '../generic-form.js';
 import * as Y from 'yjs';
 
 class Edit {
@@ -13,7 +13,7 @@ class Edit {
         this.schema = schema;
         this.yDoc = yDoc;
         this.yText = YjsHelper.createYMap(this.yDoc, 'content');
-        this.el = createElement('div', { className: 'edit-view' });
+        this.el = createElement('div', {className: 'edit-view'});
         this.app = app;
         this.suggestionDropdown = new SuggestionDropdown();
         this.autosuggest = new Autosuggest(this);
@@ -24,15 +24,15 @@ class Edit {
 
     async render() {
         this.el.innerHTML = '';
-        this.editorArea = createElement('div', { className: 'editor-area', contentEditable: true, spellCheck: false });
+        this.editorArea = createElement('div', {className: 'editor-area', contentEditable: true, spellCheck: false});
         this.el.appendChild(this.editorArea);
         this.autosuggest.apply();
-        this.detailsArea = createElement('div', { className: 'details-area' });
+        this.detailsArea = createElement('div', {className: 'details-area'});
         this.el.appendChild(this.detailsArea);
         this.ontologyBrowser = new OntologyBrowser(this, this.handleTagSelected.bind(this));
         this.el.appendChild(this.ontologyBrowser.getElement());
         this.ontologyBrowser.render(this.schema);
-        this.tagEditArea = createElement('div', { className: 'tag-edit-area', style: 'display:none;' });
+        this.tagEditArea = createElement('div', {className: 'tag-edit-area', style: 'display:none;'});
         this.el.appendChild(this.tagEditArea);
         this.editorArea.addEventListener('input', () => this.autosuggest.debouncedApply());
         this.editorArea.addEventListener('keydown', (event) => this.autosuggest.handleKeyDown(event));
@@ -100,7 +100,7 @@ class Edit {
             const tagData = JSON.parse(tagContent);
 
             // Create a button element for the tag
-            const tagElement = createElement('button', { className: 'tag-element' }, tagData.name);
+            const tagElement = createElement('button', {className: 'tag-element'}, tagData.name);
 
             // Add a data attribute to store the tag content
             tagElement.dataset.tagContent = tagContent;
@@ -200,7 +200,7 @@ class Edit {
         this.tagEditArea.appendChild(this.tagForm.el);
 
         // Add Delete Button
-        const deleteButton = createElement('button', { className: 'delete-tag-button' }, 'Delete Tag');
+        const deleteButton = createElement('button', {className: 'delete-tag-button'}, 'Delete Tag');
         deleteButton.addEventListener('click', () => this.deleteTag());
         this.tagEditArea.appendChild(deleteButton);
     }
@@ -267,8 +267,7 @@ class Edit {
                     this.app.showNotification("Tag to replace not found in Yjs text!", 'warning');
                     this.yText.insert(cursorPosition, tagPlaceholder);
                 }
-            }
-            else {
+            } else {
                 // Insert the tag placeholder into the Yjs text
                 this.yText.insert(cursorPosition, tagPlaceholder);
             }

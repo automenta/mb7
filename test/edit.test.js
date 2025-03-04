@@ -1,8 +1,9 @@
-import { describe, expect, it, vi } from 'vitest';
+import {describe, expect, it, vi} from 'vitest';
 import * as EditModule from '../ui/edit/edit.js';
-const { Edit } = EditModule;
-import { Ontology } from '../core/ontology.js';
+import {Ontology} from '../core/ontology.js';
 import * as Y from 'yjs';
+
+const {Edit} = EditModule;
 
 describe('Edit Autosuggest', () => {
     it('should suggest tag names from ontology', () => {
@@ -28,8 +29,8 @@ describe('Edit Autosuggest', () => {
         }
 
         const contentHandler = new MockContentHandler(); // Mock ContentHandler
-        const ontologyBrowser = { getElement: () => ({}) }; // Mock OntologyBrowser
-        const toolbar = { getElement: () => ({}) }; // Mock Toolbar
+        const ontologyBrowser = {getElement: () => ({})}; // Mock OntologyBrowser
+        const toolbar = {getElement: () => ({})}; // Mock Toolbar
         const schema = Ontology; // Mock Schema
         const app = {showNotification: vi.fn()}
 

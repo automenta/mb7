@@ -5,7 +5,7 @@ import {addFriend, removeFriend, updateFriendProfile} from './friend';
 import {saveSettings} from './settings';
 import {createDefaultObject} from './db.utils';
 import {loadKeys} from './db.keys';
-import {saveYDoc, getYDoc} from './db.ydoc';
+import {getYDoc, saveYDoc} from './db.ydoc';
 import {enforcePrivacy} from './db.privacy';
 import {formatDate} from "../ui/content-view-renderer";
 

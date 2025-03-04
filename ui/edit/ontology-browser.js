@@ -19,11 +19,11 @@ export class OntologyBrowser {
                 for (const tagName in category.tags) {
                     const tag = category.tags[tagName];
                     const instanceButton = createElement("button", {
-                            title: `Add tag ${tag.label}`,
-                            onclick: () => {
-                                this.onTagSelect(tag);
-                            }
-                        }, tag.label);
+                        title: `Add tag ${tag.label}`,
+                        onclick: () => {
+                            this.onTagSelect(tag);
+                        }
+                    }, tag.label);
                     instancesDiv.append(instanceButton);
                 }
             }

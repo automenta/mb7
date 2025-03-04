@@ -1,11 +1,10 @@
-import { createElement } from './utils';
-import { TagInput } from './tag-input';
+import {createElement} from './utils';
 /** @typedef {import('../core/types').Tag} Tag */
 import {Tag} from "../core/types";
 
 const debounce = (func, delay) => {
     let timeout;
-    return function(...args) {
+    return function (...args) {
         const context = this;
         clearTimeout(timeout);
         timeout = setTimeout(() => func.apply(context, args), delay);
@@ -22,7 +21,7 @@ class TagManager extends HTMLElement {
         super();
         this.app = app;
         this.note = note;
-        this.shadow = this.attachShadow({ mode: 'open' });
+        this.shadow = this.attachShadow({mode: 'open'});
     }
 
     /**
@@ -207,7 +206,7 @@ class TagManager extends HTMLElement {
         tagComponent.setAttribute('value', tag.value);
         tagComponent.setAttribute('condition', tag.condition);
 
-        const listItem = createElement('li', { className: 'tag-list-item' });
+        const listItem = createElement('li', {className: 'tag-list-item'});
         listItem.appendChild(tagComponent);
         listItem.addEventListener('tag-removed', () => {
             this.removeTagFromNote(tag.name);
@@ -241,7 +240,7 @@ class TagManager extends HTMLElement {
 
             const defaultValue = tagDefinition.default || '';
             /** @type {Tag} */
-            const newTag = { name: tagName, value: defaultValue, condition: 'is' };
+            const newTag = {name: tagName, value: defaultValue, condition: 'is'};
             this.note.tags.push(newTag);
             await this.app.db.saveObject(this.note, false);
             this.renderTags();
@@ -328,4 +327,4 @@ class TagManager extends HTMLElement {
 
 customElements.define('tag-manager', TagManager);
 
-export { TagManager };
+export {TagManager};

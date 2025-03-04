@@ -1,6 +1,7 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
 import * as TagModule from '../ui/tag.js';
-const { Tag } = TagModule;
+
+const {Tag} = TagModule;
 
 describe('Tag Component', () => {
     let tag;
@@ -12,14 +13,14 @@ describe('Tag Component', () => {
             name: 'Test Tag',
             emoji: '🧪',
             type: 'string',
-            conditions: { is: 'Is' },
+            conditions: {is: 'Is'},
             condition: 'is',
             value: 'Test Value',
         };
         onUpdate = vi.fn();
         tag = new Tag();
         tag.app = {showNotification: vi.fn()}
-        tag.shadow = tag.attachShadow({ mode: 'open' });
+        tag.shadow = tag.attachShadow({mode: 'open'});
         tag.tagDefinition = tagData;
         document.body.appendChild(tag); // Append to document so connectedCallback is called
         tag.render()

@@ -1,6 +1,6 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest';
-import { NoteView } from '../ui/view.note.js';
-import { createAppMock } from './test-utils.js';
+import {NoteView} from '../ui/view.note.js';
+import {createAppMock} from './test-utils.js';
 
 describe('NoteView', () => {
     let noteView;
@@ -16,9 +16,9 @@ describe('NoteView', () => {
     });
 
     it('should create a new note', async () => {
-        const newNote = { name: 'Test Note', content: 'Test Content' };
+        const newNote = {name: 'Test Note', content: 'Test Content'};
         app.noteManager = {
-            createNote: vi.fn().mockResolvedValue({ id: 'test-id' })
+            createNote: vi.fn().mockResolvedValue({id: 'test-id'})
         };
         await noteView.createNote();
         expect(app.db.save).toHaveBeenCalled();

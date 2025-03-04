@@ -1,9 +1,8 @@
 import Fuse from 'fuse.js';
 import {formatDate} from '../ui/content-view-renderer.js';
 import {nip19} from 'nostr-tools';
-import {getTagDefinition, Ontology} from './ontology';
-import natural from 'natural';
-import {format, formatISO, isValid as isValidDate, parseISO} from "date-fns";
+import {getTagDefinition} from './ontology';
+import {isValid as isValidDate, parseISO} from "date-fns";
 
 export class Matcher {
     /**
@@ -98,10 +97,7 @@ export class Matcher {
 
         if (!tagDef.validate(value, condition)) return false;
 
-        const checkTime = (val) => {
-            return false;
-        };
-
+        const natural = require('natural');
         const stemmer = natural.PorterStemmer;
         const tokenizer = new natural.WordTokenizer();
         const Analyzer = natural.SentimentAnalyzer;

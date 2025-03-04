@@ -1,9 +1,5 @@
-import {nip19} from 'nostr-tools';
-import {relayInit} from 'nostr-tools';
-import {generatePrivateKey, getPublicKey} from 'nostr-tools';
-import {signEvent} from 'nostr-tools';
-
-import {encrypt, decrypt} from './crypto';
+import {finalizeEvent, getPublicKey} from 'nostr-tools'; //TODO use generateSecretKey in crypto.js?
+import {Relay} from 'nostr-tools/relay'
 
 export class Nostr {
     /**
@@ -39,13 +35,15 @@ export class Nostr {
 
         for (const relayUrl of relaysToConnect) {
             try {
-                const relay = relayInit(relayUrl);
+                const relay = await Relay.connect(relayUrl)
 
-                relay.on('connect', () => this.handleRelayConnect(relayUrl, relay));
-                relay.on('disconnect', () => this.handleRelayDisconnect(relayUrl));
-                relay.on('error', () => this.handleRelayError(relayUrl));
+                if (relay) {
+                    // relay.on('connect', () => this.handleRelayConnect(relayUrl, relay));
+                    // relay.on('disconnect', () => this.handleRelayDisconnect(relayUrl));
+                    // relay.on('error', () => this.handleRelayError(relayUrl));
+                    await relay.connect();
+                }
 
-                await relay.connect();
             } catch (error) {
                 console.error(`Failed to connect to relay ${relayUrl}:`, error);
                 this.app.notificationManager.showNotification(`Failed to connect to relay ${relayUrl}: ${error.message}`, 'error');
@@ -111,7 +109,7 @@ export class Nostr {
             pubkey: getPublicKey(this.nostrPrivateKey),
         };
 
-        event = signEvent(event, this.nostrPrivateKey);
+        event = finalizeEvent(event, this.nostrPrivateKey);
 
         // Publish to relays
         const relaysToPublish = this.nostrRelays ? this.nostrRelays.split(',').map(url => url.trim()) : this.relays;

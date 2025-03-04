@@ -1,9 +1,9 @@
-import { createElement } from './utils.js';
+import {createElement} from './utils.js';
 
 export class Settings {
     constructor(app) {
         this.app = app;
-        this.el = createElement('div', { className: 'settings-view' });
+        this.el = createElement('div', {className: 'settings-view'});
     }
 
     async render() {
@@ -22,7 +22,7 @@ export class Settings {
         this.el.appendChild(jsonEditor);
 
         // Add a save button
-        const saveButton = createElement('button', { className: 'save-button' }, 'Save Settings');
+        const saveButton = createElement('button', {className: 'save-button'}, 'Save Settings');
         saveButton.addEventListener('click', async () => {
             try {
                 // Parse the JSON from the editor

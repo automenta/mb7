@@ -1,9 +1,9 @@
 // ui/note/note.ui.js
-import { createElement } from '../utils.js';
+import {createElement} from '../utils.js';
 
 export class NoteUI {
     createPrivacyContainer() {
-        const privacyContainer = createElement('div', { className: 'privacy-container' });
+        const privacyContainer = createElement('div', {className: 'privacy-container'});
         return privacyContainer;
     }
 
@@ -31,12 +31,12 @@ export class NoteUI {
     }
 
     createPrivacyLabel() {
-        const privacyLabel = createElement('label', { htmlFor: 'privacyCheckbox' }, 'Private:');
+        const privacyLabel = createElement('label', {htmlFor: 'privacyCheckbox'}, 'Private:');
         return privacyLabel;
     }
 
     createPrivacyCheckbox() {
-        const privacyCheckbox = createElement('input', { type: 'checkbox', id: 'privacyCheckbox' });
+        const privacyCheckbox = createElement('input', {type: 'checkbox', id: 'privacyCheckbox'});
         return privacyCheckbox;
     }
 
@@ -54,10 +54,10 @@ export class NoteUI {
     }
 
     createMatchesView() {
-         const matchesView = document.createElement('div');
-         matchesView.className = 'matches-view';
-         matchesView.style.padding = '10px';
-         return matchesView;
+        const matchesView = document.createElement('div');
+        matchesView.className = 'matches-view';
+        matchesView.style.padding = '10px';
+        return matchesView;
     }
 
     createOriginalNoteView() {

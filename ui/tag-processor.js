@@ -8,7 +8,7 @@ export class TagProcessor {
      * @param {boolean} isPrivate - Whether the object is private.
      */
     processTags(object, isPrivate) {
-        const { tags = [] } = object;
+        const {tags = []} = object;
 
         const publicTag = tags.find(tag => tag.name === 'Public');
         const isPublic = publicTag && publicTag.value === 'true';
@@ -17,7 +17,7 @@ export class TagProcessor {
 
         if (!isPublic) {
             /** @type {Tag} */
-            const visibilityTag = { name: 'visibility', value: isPrivate ? 'private' : 'public', condition: 'is' };
+            const visibilityTag = {name: 'visibility', value: isPrivate ? 'private' : 'public', condition: 'is'};
             object.tags.push(visibilityTag);
         }
     }

@@ -1,6 +1,6 @@
 // core/monitoring.js
 
-import { sha256 } from 'js-sha256';
+import {sha256} from 'js-sha256';
 
 class Monitoring {
     constructor(app) {

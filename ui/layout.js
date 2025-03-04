@@ -1,4 +1,4 @@
-import { createElement } from './utils';
+import {createElement} from './utils';
 
 function createAppMainContent() {
     const mainContent = createElement('main', {id: 'main-content'});
@@ -15,4 +15,4 @@ function createLayout(app, appDiv, noteView, friendsView, settingsView, contentV
     return {menubar, mainContent};
 }
 
-export { createAppMainContent, createLayout };
+export {createAppMainContent, createLayout};

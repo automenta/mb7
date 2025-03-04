@@ -1,11 +1,11 @@
-import { createElement } from '../utils.js';
+import {createElement} from '../utils.js';
 
 export class NotesSidebar extends HTMLElement {
     constructor(app, noteView) {
         super();
         this.app = app;
         this.noteView = noteView;
-        this.el = createElement('aside', { id: 'notes-sidebar', className: 'notes-sidebar' });
+        this.el = createElement('aside', {id: 'notes-sidebar', className: 'notes-sidebar'});
         this.elements = {}; // Store references to important elements
         this.build();
     }
@@ -18,7 +18,7 @@ export class NotesSidebar extends HTMLElement {
         this.el.appendChild(notesHeading);
 
         // Create and append the notes list
-        this.elements.notesList = createElement('ul', { id: 'notes-list', className: 'notes-list' });
+        this.elements.notesList = createElement('ul', {id: 'notes-list', className: 'notes-list'});
         this.el.appendChild(this.elements.notesList);
 
         // Create and append the "Add" button (but don't add it to the list yet)

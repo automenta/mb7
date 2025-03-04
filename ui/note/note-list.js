@@ -1,5 +1,3 @@
-import { createElement } from '../utils.js';
-
 export class NoteList {
     constructor(app, noteView, yDoc, yNotesList, notesListComponent) {
         this.app = app;

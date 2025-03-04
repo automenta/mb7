@@ -1,5 +1,3 @@
-import { createElement } from '../utils.js';
-
 export class NoteDetails extends HTMLElement {
     /**
      * Constructor for the NoteDetails class.
@@ -8,7 +6,7 @@ export class NoteDetails extends HTMLElement {
     constructor(noteView) {
         super();
         this.noteView = noteView;
-        this.shadow = this.attachShadow({ mode: 'open' });
+        this.shadow = this.attachShadow({mode: 'open'});
     }
 
     /**

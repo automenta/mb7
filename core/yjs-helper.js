@@ -45,7 +45,7 @@ export class YjsHelper {
      */
     static setSyncLatencyHook(yDoc, addSyncLatency) {
         yDoc.on('beforeTransaction', transaction => {
-            transaction.origin = { timestamp: Date.now() };
+            transaction.origin = {timestamp: Date.now()};
         });
 
         yDoc.on('afterTransaction', transaction => {

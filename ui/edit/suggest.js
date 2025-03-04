@@ -11,14 +11,14 @@ export class Autosuggest {
 
     debounce(func, delay) {
         let timeout;
-        return function(...args) {
+        return function (...args) {
             clearTimeout(timeout);
             timeout = setTimeout(() => func.apply(this, args), delay);
         }
     }
 
     apply() {
-        const { editorArea, suggestionDropdown } = this;
+        const {editorArea, suggestionDropdown} = this;
         const selection = window.getSelection();
         if (!selection.rangeCount) {
             suggestionDropdown.hide();
@@ -59,7 +59,7 @@ export class Autosuggest {
         const suggestions = [];
         for (const key in this.schema) {
             if (key.toLowerCase().startsWith(tagName.toLowerCase())) {
-                suggestions.push({ displayText: key, tagData: this.schema[key] });
+                suggestions.push({displayText: key, tagData: this.schema[key]});
             }
         }
         return suggestions;

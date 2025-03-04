@@ -1,8 +1,8 @@
-import { createLayout } from './layout.js';
+import {createLayout} from './layout.js';
+import {View} from "./view"
 import {NoteView} from "./view.note";
 import {FriendsView} from "./view.friends";
 import {SettingsView} from "./view.settings";
-import {ContentView} from "./ui-manager";
 
 export class UIManager {
     constructor(app) {
@@ -58,4 +58,9 @@ export class UIManager {
             }
         }
     }
+}
+
+/** TODO Nostr feed, and other 'live' content */
+export class ContentView extends View {
+
 }

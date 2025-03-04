@@ -1,5 +1,3 @@
-import * as Y from 'yjs';
-
 export class NoteYjsHandler {
     constructor(yDoc) {
         this.yDoc = yDoc;

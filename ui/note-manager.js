@@ -1,7 +1,8 @@
-import { v4 as uuidv4 } from 'uuid';
+import {v4 as uuidv4} from 'uuid';
+
 /** @typedef {import('../core/types').NObject} NObject */
 /** @typedef {import('../core/types').Tag} Tag */
-import {NObject, Tag} from "../core/types";
+//import {NObject, Tag} from "../core/types";
 
 export class NoteManager {
     constructor(app, db, errorHandler, matcher, nostr, notificationManager) {
@@ -19,7 +20,7 @@ export class NoteManager {
      * @param {boolean} isPrivate - Whether the object is private.
      */
     processTags(object, isPrivate) {
-        const { tags = [] } = object;
+        const {tags = []} = object;
 
         const publicTag = tags.find(tag => tag.name === 'Public');
         const isPublic = publicTag && publicTag.value === 'true';
@@ -28,7 +29,7 @@ export class NoteManager {
 
         if (!isPublic) {
             /** @type {Tag} */
-            const visibilityTag = { name: 'visibility', value: isPrivate ? 'private' : 'public', condition: 'is' };
+            const visibilityTag = {name: 'visibility', value: isPrivate ? 'private' : 'public', condition: 'is'};
             object.tags.push(visibilityTag);
         }
     }
@@ -131,7 +132,14 @@ export class NoteManager {
 
         this.prepareObjectForSaving(object);
         /** @type {NObject} */
-        const newObject = {id: object.id, name: object.name, content: object.content, tags: object.tags || [], isPersistentQuery: object.isPersistentQuery, private: object.private};
+        const newObject = {
+            id: object.id,
+            name: object.name,
+            content: object.content,
+            tags: object.tags || [],
+            isPersistentQuery: object.isPersistentQuery,
+            private: object.private
+        };
         this.processTags(newObject, object.private);
         try {
             await this.db.save(newObject, object.isPersistentQuery);

@@ -1,7 +1,7 @@
-import { View } from "./view.js";
-import { Ontology } from "../core/ontology.js";
-import { createElement } from '../ui/utils.js';
-import { GenericForm } from "./generic-form.js";
+import {View} from "./view.js";
+import {Ontology} from "../core/ontology.js";
+import {createElement} from '../ui/utils.js';
+import {GenericForm} from "./generic-form.js";
 import * as Y from 'yjs';
 
 export class SettingsView extends View {
@@ -41,7 +41,7 @@ export class SettingsView extends View {
         this.genericForm = new GenericForm(Ontology.Settings, this.yDoc, this.settingsObjectId, this.saveSettings.bind(this));
         await this.genericForm.build();
         this.el.appendChild(this.genericForm.el);
-        const saveButton = createElement("button", { id: "save-settings-btn" }, "Save Settings");
+        const saveButton = createElement("button", {id: "save-settings-btn"}, "Save Settings");
         this.el.appendChild(saveButton);
         saveButton.addEventListener("click", () => this.saveSettings());
         this.el.addEventListener('notify', (event) => {
@@ -69,7 +69,7 @@ export class SettingsView extends View {
             settings[key] = value;
         }
         let settingsObject = await this.db.get(this.settingsObjectId);
-        settingsObject = settingsObject || { id: this.settingsObjectId, name: "Settings" };
+        settingsObject = settingsObject || {id: this.settingsObjectId, name: "Settings"};
         settingsObject.content = settings;
         await this.db.saveObject(settingsObject);
         for (const key in Ontology.Settings.tags) {

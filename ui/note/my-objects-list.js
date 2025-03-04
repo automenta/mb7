@@ -1,5 +1,5 @@
-import { GenericListComponent } from '../generic-list.js';
-import { createElement } from '../utils.js';
+import {GenericListComponent} from '../generic-list.js';
+import {createElement} from '../utils.js';
 
 export class MyObjectsList {
     constructor(noteView, yMyObjectsList) {

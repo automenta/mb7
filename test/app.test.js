@@ -1,6 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { App } from '../ui/app.js';
-import { createAppMock } from './test-utils.js';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
+import {App} from '../ui/app.js';
+import {createAppMock} from './test-utils.js';
 import * as sha256Module from 'js-sha256';
 
 // Mock the animate function
@@ -18,7 +18,7 @@ describe('App', () => {
 
     describe('createNewObject', () => {
         it('should create a new object and save it to the database', async () => {
-            const newNote = { name: 'Test Note', content: 'Test Content' };
+            const newNote = {name: 'Test Note', content: 'Test Content'};
             const newObject = await app.createNewObject(newNote);
             expect(newObject).toBeDefined();
 

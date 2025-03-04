@@ -1,4 +1,4 @@
-import { createElement } from './utils';
+import {createElement} from './utils';
 
 class ConditionSelector extends HTMLElement {
     constructor(tagDefinition, selectedCondition, onChange) {
@@ -27,7 +27,8 @@ class ConditionSelector extends HTMLElement {
         }
     }
 
-    connectedCallback() {}
+    connectedCallback() {
+    }
 
     disconnectedCallback() {
         // Clean up event listeners
@@ -53,4 +54,4 @@ class ConditionSelector extends HTMLElement {
 
 customElements.define('condition-selector', ConditionSelector);
 
-export { ConditionSelector };
+export {ConditionSelector};

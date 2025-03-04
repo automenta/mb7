@@ -1,10 +1,10 @@
 import * as Y from 'yjs';
-import { NoteUI } from './note/note.ui.js';
-import { NoteList } from "./note/note-list.js";
-import { NoteDetails } from "./note/note.details.js";
-import { TagDisplay } from "./note/tag-display.js";
-import { MyObjectsList } from "./note/my-objects-list.js";
-import { NoteYjsManager } from "../core/note.yjs.manager.js";
+import {NoteUI} from './note/note.ui.js';
+import {NoteList} from "./note/note-list.js";
+import {NoteDetails} from "./note/note.details.js";
+import {TagDisplay} from "./note/tag-display.js";
+import {MyObjectsList} from "./note/my-objects-list.js";
+import {NoteYjsHandler} from "./note/note-yjs-handler.js";
 
 class NoteCreator {
     constructor(noteView) {
@@ -15,7 +15,7 @@ class NoteCreator {
         try {
             const newObject = await this.noteView.app.noteManager.createNote();
             if (newObject) {
-                const yNoteMap = this.noteView.noteYjsManager.getYNoteMap(newObject.id);
+                const yNoteMap = this.noteView.noteYjsHandler.getYNoteMap(newObject.id);
                 if (!yNoteMap) {
                     this.noteView.yDoc.transact(() => {
                         const newYNoteMap = new Y.Map();
@@ -57,7 +57,7 @@ export class NoteView extends HTMLElement {
         this.nostr = nostr;
 
         this.yDoc = new Y.Doc();
-        this.noteYjsManager = new NoteYjsManager(this.yDoc);
+        this.noteYjsHandler = new NoteYjsHandler(this.yDoc);
 
         this.noteUI = new NoteUI();
         this.noteList = new NoteList(this, this.yDoc.getMap('notes'));
@@ -67,7 +67,7 @@ export class NoteView extends HTMLElement {
         this.noteCreator = new NoteCreator(this);
         this.noteElements = new NoteViewElements();
 
-        this.el = this.noteElements.createElement('div', { className: 'notes-view' });
+        this.el = this.noteElements.createElement('div', {className: 'notes-view'});
         this.el.style.flexDirection = 'row';
         this.el.style.display = 'flex';
 

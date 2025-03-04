@@ -61,7 +61,7 @@ async function fetchNostrFeed(relayUrl) {
             connection.onmessage = (event) => {
                 const [type, subId, eventData] = JSON.parse(event.data);
                 if (type === "EVENT") {
-                    const { content: eventContent, pubkey, created_at: createdAt } = eventData;
+                    const {content: eventContent, pubkey, created_at: createdAt} = eventData;
                     const formattedDate = formatDate(createdAt * 1000); // Convert seconds to milliseconds
                     feedHTML += `<p><strong>${pubkey}</strong> - ${formattedDate}: ${eventContent}</p>`;
                 } else if (type === "NOTICE") {

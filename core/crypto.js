@@ -1,5 +1,17 @@
 const webcrypto = globalThis.crypto;
 
+async function generateEncryptionKey() {
+    const key = await webcrypto.subtle.generateKey(
+        {
+            name: "AES-GCM",
+            length: 256,
+        },
+        true,
+        ["encrypt", "decrypt"]
+    );
+    return key;
+}
+
 /**
  * Encrypts the given data using AES-GCM with the provided key.
  * @param {string} data - The data to encrypt.
@@ -64,4 +76,4 @@ async function decrypt(data, key) {
     return decodedData;
 }
 
-export {encrypt, decrypt};
+export {encrypt, decrypt, generateEncryptionKey};

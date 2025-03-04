@@ -1,6 +1,6 @@
 import {createElement} from './utils';
+
 /** @typedef {import('../core/types').Tag} Tag */
-import {Tag} from "../core/types";
 
 class TagInput extends HTMLElement {
     /**
@@ -90,7 +90,7 @@ class TagInput extends HTMLElement {
 
         this.appendChild(inputElement);
 
-        const clearButton = createElement('button', { className: 'clear-button' }, 'X');
+        const clearButton = createElement('button', {className: 'clear-button'}, 'X');
         clearButton.addEventListener('click', () => {
             inputElement.value = '';
             this.value = '';
@@ -100,7 +100,7 @@ class TagInput extends HTMLElement {
         this.appendChild(clearButton);
 
         // Add datalist for suggestions
-        const datalist = createElement('datalist', { id: `tag-suggestions-${this.tagDefinition.name}` });
+        const datalist = createElement('datalist', {id: `tag-suggestions-${this.tagDefinition.name}`});
         inputElement.setAttribute('list', `tag-suggestions-${this.tagDefinition.name}`);
         this.appendChild(datalist);
 
@@ -111,7 +111,7 @@ class TagInput extends HTMLElement {
                 suggestion.toLowerCase().startsWith(inputValue.toLowerCase())
             );
             filteredSuggestions.forEach(suggestion => {
-                const option = createElement('option', { value: suggestion });
+                const option = createElement('option', {value: suggestion});
                 datalist.appendChild(option);
             });
         };
@@ -126,4 +126,4 @@ class TagInput extends HTMLElement {
 
 customElements.define('tag-input', TagInput);
 
-export { TagInput };
+export {TagInput};

@@ -1,11 +1,15 @@
-import { createElement } from './utils';
-import { TagInput } from './tag-input';
+import {createElement} from './utils';
+import {TagInput} from './tag-input';
 
 class Tag extends HTMLElement {
     constructor() {
         super();
         this.app = null;
-        this.shadow = this.attachShadow({ mode: 'open' });
+        this.shadow = this.attachShadow({mode: 'open'});
+    }
+
+    static get observedAttributes() {
+        return ['tag-definition', 'value', 'condition'];
     }
 
     connectedCallback() {
@@ -21,10 +25,6 @@ class Tag extends HTMLElement {
         return document.querySelector('notes-view')?.app;
     }
 
-    static get observedAttributes() {
-        return ['tag-definition', 'value', 'condition'];
-    }
-
     attributeChangedCallback(name, oldValue, newValue) {
         if (name === 'tag-definition') {
             this.tagDefinition = JSON.parse(newValue);
@@ -36,7 +36,7 @@ class Tag extends HTMLElement {
 
     remove() {
         const event = new CustomEvent('tag-removed', {
-            detail: { tag: this },
+            detail: {tag: this},
             bubbles: true,
             composed: true
         });
@@ -101,17 +101,17 @@ class Tag extends HTMLElement {
             el.classList.add('conditional');
         }
 
-        const { ui, name } = this.tagDefinition;
+        const {ui, name} = this.tagDefinition;
         const icon = ui?.icon || '🏷️';
         const display = createElement('span', {}, `${icon} ${name}:`);
         el.appendChild(display);
 
         if (this.condition) {
-            const conditionSpan = createElement('span', { className: 'tag-condition' }, this.condition);
+            const conditionSpan = createElement('span', {className: 'tag-condition'}, this.condition);
             el.appendChild(conditionSpan);
         }
 
-        const valueSpan = createElement('span', { className: 'tag-value' }, this.value || '');
+        const valueSpan = createElement('span', {className: 'tag-value'}, this.value || '');
         el.appendChild(valueSpan);
 
         this.editButton = createElement('button', {
@@ -162,7 +162,7 @@ class Tag extends HTMLElement {
         return this.condition;
     }
 
-        async removeTag() {
+    async removeTag() {
         try {
             const tagName = this.tagDefinition.name;
             const noteDetails = this.closest('note-details');

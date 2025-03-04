@@ -13,7 +13,7 @@ class TagConverter {
 
     static deserialize(tagContent) {
         const [tagName, tagValue = '', tagCondition = 'is'] = tagContent.split(':');
-        return { tagName, tagValue, tagCondition };
+        return {tagName, tagValue, tagCondition};
     }
 
     static createTagElement(tagName, tagValue, tagCondition, getTagDefinition) {
@@ -176,7 +176,7 @@ class EditorContentHandler {
             }
             try {
                 const tagContent = match[1];
-                const { tagName, tagValue, tagCondition } = TagConverter.deserialize(tagContent);
+                const {tagName, tagValue, tagCondition} = TagConverter.deserialize(tagContent);
                 const tagElement = TagConverter.createTagElement(tagName, tagValue, tagCondition, this.editor.getTagDefinition);
                 if (tagElement) {
                     this.editor.editorArea.append(tagElement);
