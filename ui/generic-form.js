@@ -1,21 +1,22 @@
 import {createElement} from "./utils.js";
+import * as Y from 'yjs';
 
 export class GenericForm {
-    constructor(schema, yDoc, objectId) {
+    constructor(schema, yDoc, objectId, saveCallback) {
         this.schema = schema;
         this.objectId = objectId;
         this.el = createElement("div", {class: "generic-form"});
         this.yDoc = yDoc
         this.yMap = this.yDoc.getMap('data')
+        this.saveCallback = saveCallback;
     }
 
     async build() {
         this.el.innerHTML = "";
-        //const object = await this.db.get(this.objectId) || {};
         const form = createElement("form");
 
-        for (const property in this.schema.properties) {
-            const propertySchema = this.schema.properties[property];
+        for (const property in this.schema.tags) {
+            const propertySchema = this.schema.tags[property];
             const label = createElement("label", {for: property}, property);
             let input;
 
@@ -54,7 +55,7 @@ export class GenericForm {
                 const value = input.value;
 
                 // Validate the input using the Ontology
-                if (this.schema.properties[property] && this.schema.validate) {
+                if (this.schema.tags[property] && this.schema.validate) {
                     const isValid = this.schema.validate({[property]: value}, 'is');
                     if (!isValid) {
                         //alert(`Invalid input for ${property}`);
@@ -68,6 +69,9 @@ export class GenericForm {
                     }
                 }
                 this.yMap.set(property, value);
+                if (this.saveCallback) {
+                    this.saveCallback();
+                }
             })
 
             if (this.yMap.has(property)) {
