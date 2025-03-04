@@ -1,6 +1,7 @@
-import {beforeEach, describe, expect, it, vi} from 'vitest';
-import {App} from '../ui/app.js';
-import {createAppMock} from './test-utils.js';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { App } from '../ui/app.js';
+import { createAppMock } from './test-utils.js';
+import { sha256 } from 'js-sha256';
 
 // Mock the animate function
 global.Element.prototype.animate = vi.fn();
@@ -13,12 +14,13 @@ describe('App', () => {
     let app;
 
     beforeEach(async () => {
+        vi.resetModules();
         app = createAppMock();
     });
 
     describe('createNewObject', () => {
         it('should create a new object and save it to the database', async () => {
-            const newNote = {name: 'Test Note', content: 'Test Content'};
+            const newNote = { name: 'Test Note', content: 'Test Content' };
             const newObject = await app.createNewObject(newNote);
             expect(newObject).toBeDefined();
 

@@ -33,7 +33,7 @@ describe('Tag Component', () => {
         // const conditionSelect = tag.querySelector('.tag-condition');
         // conditionSelect.value = 'contains';
         // conditionSelect.dispatchEvent(new Event('change'));
-        await new Promise(resolve => setTimeout(resolve, 0)); // Wait for event loop to complete
+        await new Promise(resolve => setTimeout(resolve, 0));
         expect(tag.classList.contains('conditional')).toBe(false);
     });
 

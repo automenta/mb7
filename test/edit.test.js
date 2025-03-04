@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { Edit } from '../ui/edit/edit.js';
 import { Ontology } from '../core/ontology.js';
 import * as Y from 'yjs';
