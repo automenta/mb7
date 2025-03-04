@@ -7,7 +7,7 @@ import {Ontology} from "../core/ontology.js";
 import {SettingsManager} from "./settings-manager.js";
 import {NoteManager} from "./note-manager.js";
 import {ViewManager} from "./view-manager.js";
-import {UIManager} from "./ui-manager.js";
+import {AppUI} from "./app.ui.js";
 import {Nostr} from "../core/net.js";
 import {createStore} from "../core/state.js";
 import {initialState, reducer} from "../core/reducer.js";
@@ -33,7 +33,7 @@ export class NostrInitializer {
  * Manages the database, Nostr connection, and UI.
  */
 class App {
-    constructor(db, nostr, matcher, errorHandler, notificationManager, monitoring, settingsManager, noteManager, viewManager, uiManager, ontology, store) {
+    constructor(db, nostr, matcher, errorHandler, notificationManager, monitoring, settingsManager, noteManager, viewManager, appUI, ontology, store) {
         this.db = db;
         this.nostr = nostr;
         this.matcher = matcher;
@@ -46,7 +46,7 @@ class App {
         this.settingsManager = settingsManager;
         this.noteManager = noteManager;
         this.viewManager = viewManager;
-        this.uiManager = uiManager;
+        this.appUI = appUI;
         this.ontology = ontology; // Store the ontology
     }
 
@@ -73,10 +73,10 @@ async function createApp(appDiv) {
     // Create the Redux-like store
     const store = createStore(reducer, initialState);
 
-    // Inject dependencies into UIManager
-    const uiManager = new UIManager(store, viewManager, noteManager, db, errorHandler);
+    // Inject dependencies into AppUI
+    const appUI = new AppUI(store, viewManager, noteManager, db, errorHandler, nostr, noteYjsHandler);
 
-    const app = new App(db, nostr, matcher, errorHandler, notificationManager, monitoring, settingsManager, noteManager, viewManager, uiManager, Ontology, store);
+    const app = new App(db, nostr, matcher, errorHandler, notificationManager, monitoring, settingsManager, noteManager, viewManager, appUI, Ontology, store);
     window.app = app;
     return app;
 }
@@ -85,7 +85,7 @@ async function createApp(appDiv) {
 document.addEventListener("DOMContentLoaded", async () => {
     const appDiv = document.getElementById('app');
     const app = await createApp(appDiv);
-    await app.uiManager.setupUI(appDiv);
+    await app.appUI.setupUI(appDiv);
 });
 
 export {App};
