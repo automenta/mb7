@@ -65,7 +65,7 @@ class App {
         }
 
         const newObject = {id: object.id, name: object.name, content: object.content, tags: object.tags || []};
-        newObject.tags.push(['visibility', object.private ? 'private' : 'public']);
+        this.processTags(newObject, object.private);
         try {
             await this.db.save(newObject, object.isPersistentQuery);
             const matches = await this.matcher.findMatches(newObject);
@@ -76,6 +76,19 @@ class App {
             this.errorHandler.handleError(error, 'Error saving or publishing object');
             return null;
         }
+    }
+
+    processTags(object, isPrivate) {
+        // Ensure tags is an array
+        if (!object.tags) {
+            object.tags = [];
+        }
+
+        // Remove existing visibility tag
+        object.tags = object.tags.filter(tag => tag[0] !== 'visibility');
+
+        // Add visibility tag
+        object.tags.push(['visibility', isPrivate ? 'private' : 'public']);
     }
 
     async publishObject(object) {

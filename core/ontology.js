@@ -118,6 +118,12 @@ export const Ontology = {
         validate: (value, condition) => typeof value === 'object',
         serialize: (value) => value,
         deserialize: (value) => value
+    },
+    "Public": {
+        conditions: ["is"],
+        validate: (value, condition) => typeof value === "boolean",
+        serialize: (value) => value.toString(),
+        deserialize: (value) => value === "true"
     }
 };
 
