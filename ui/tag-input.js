@@ -33,9 +33,7 @@ class TagInput extends HTMLElement {
                 margin-right: 5px;
             }
 
-            input[type="text"],
-            input[type="number"],
-            input[type="date"] {
+            input[type="text"] {
                 padding: 5px;
                 border: 1px solid #ccc;
                 border-radius: 4px;
@@ -66,7 +64,6 @@ class TagInput extends HTMLElement {
         });
         this.appendChild(conditionSelect);
 
-        const uiType = this.tagDefinition.ui?.type || 'text';
         // Render only text input
         const inputElement = createElement('input', {type: 'text', value: this.value || ''});
 
