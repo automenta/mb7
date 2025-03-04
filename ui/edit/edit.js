@@ -218,7 +218,9 @@ class Edit {
         const tagPlaceholder = `[TAG:${tagContent}]`;
 
         // Get current cursor position
-        const cursorPosition = this.editorArea.selectionStart;
+        let cursorPosition = this.editorArea.selectionStart;
+        // Calculate the new cursor position
+        let newCursorPosition = cursorPosition + tagPlaceholder.length;
 
         this.yDoc.transact(() => {
             if (this.editingTagContent) {
@@ -229,7 +231,6 @@ class Edit {
                 if (index !== -1) {
                     this.yText.delete(index, tagToReplace.length);
                     this.yText.insert(index, tagPlaceholder);
-                    // Restore cursor position
                 } else {
                     console.warn("Tag to replace not found in Yjs text!");
                     this.app.showNotification("Tag to replace not found in Yjs text!", 'warning');
@@ -247,7 +248,7 @@ class Edit {
 
         // Restore cursor position after tag insertion/replacement
         this.editorArea.focus();
-        this.editorArea.setSelectionRange(cursorPosition + tagPlaceholder.length, cursorPosition + tagPlaceholder.length);
+        this.editorArea.setSelectionRange(newCursorPosition, newCursorPosition);
     }
 
     async deleteTag() {
