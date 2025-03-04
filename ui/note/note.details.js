@@ -45,6 +45,10 @@ export class NoteDetails extends HTMLElement {
         return privacyContainer;
     }
 
+    createPriorityEdit() {
+        return this.noteView.newPriEdit();
+    }
+
     async handleTagRemoved(event) {
         const tagToRemove = event.detail.tag;
         const noteId = this.noteView.selectedNote.id;
@@ -68,13 +72,6 @@ export class NoteDetails extends HTMLElement {
             }
         } else {
             console.warn('Note not found:', noteId);
-        }
-    }
-
-    createPriorityEdit() {
-        return this.noteView.newPriEdit();
-    }
-
     createTagsSection() {
         const tagsContainer = document.createElement('div');
         tagsContainer.className = 'note-tags-container';
@@ -108,13 +105,6 @@ export class NoteDetails extends HTMLElement {
         });
 
         return this.el;
-    }
-
-    handleTagRemoved(event) {
-        const tagToRemove = event.detail.tag;
-        const noteId = this.noteView.selectedNote.id;
-
-        this.noteView.removeTagFromNote(noteId, tagToRemove.tagDefinition.name);
     }
 }
 
