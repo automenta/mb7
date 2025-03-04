@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Edit Component Dev UI</title>
+    <style>
+        body { font-family: sans-serif; }
+        .dev-ui-container { display: flex; }
+        .component-preview-area { flex: 2; padding: 20px; border-right: 1px solid #ccc; }
+        .controls-panel { flex: 1; padding: 20px; }
+        .editor-area {
+            border: 1px solid #ccc;
+            padding: 10px;
+            min-height: 200px;
+            tab-size: 4; /* Consistent tab width */
+            white-space: pre-wrap; /* Respect new lines and spaces */
+            font-family: monospace; /* Monospace font for better cursor visibility */
+        }
+    </style>
+</head>
+<body>
+    <h1>Edit Component Dev UI</h1>
+    <div class="dev-ui-container">
+        <div class="component-preview-area">
+            <h2>Edit Component Preview</h2>
+            <div id="edit-component-container">
+                <!-- Edit component will be rendered here -->
+            </div>
+        </div>
+        <div class="controls-panel">
+            <h2>Controls</h2>
+            <div id="content-input-area">
+                <h3>Initial Content (Yjs Text)</h3>
+                <textarea id="content-textarea" rows="10" cols="60" style="font-family: monospace; white-space: pre;"></textarea><br>
+                <button id="load-content-button">Load Content</button>
+            </div>
+            <div id="re-render-controls">
+                <h3>Re-render</h3>
+                <button id="re-render-button">Re-render Content</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { Edit } from './ui/edit/edit.js';
+        import { createAppMock } from './test/test-utils.js';
+        import * as Y from 'yjs';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const editComponentContainer = document.getElementById('edit-component-container');
+            const contentTextarea = document.getElementById('content-textarea');
+            const loadContentButton = document.getElementById('load-content-button');
+            const reRenderButton = document.getElementById('re-render-button');
+
+            let editInstance;
+            let yDoc = new Y.Doc();
+            let appMock = createAppMock(); // Get a mock app object
+
+            // Mock getTagDefinition - for simplicity, return a default string tag definition
+            appMock.getTagDefinition = (tagName) => {
+                return {
+                    name: tagName,
+                    label: tagName,
+                    ui: { type: "text" },
+                    validate: () => true,
+                    conditions: ["is", "contains"]
+                };
+            };
+            appMock.schema = {}; // Mock schema if needed
+
+            loadContentButton.addEventListener('click', () => {
+                const initialContent = contentTextarea.value;
+                yDoc = new Y.Doc(); // Create a new Y.Doc for each load
+                const yText = yDoc.getText('content');
+                yText.insert(0, initialContent);
+
+                if (editInstance) {
+                    editInstance.el.remove(); // Remove previous instance if exists
+                }
+                editInstance = new Edit(
+                    { id: 'dev-note', content: '' }, // Mock note object
+                    yDoc,
+                    appMock,
+                    appMock.getTagDefinition,
+                    appMock.schema
+                );
+                editComponentContainer.appendChild(editInstance.el);
+            });
+
+            reRenderButton.addEventListener('click', () => {
+                if (editInstance) {
+                    editInstance.renderContent(); // Manually trigger re-render
+                } else {
+                    alert("Load content first!");
+                }
+            });
+        });
+    </script>
+</body>
+</html>
