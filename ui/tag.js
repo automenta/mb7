@@ -50,11 +50,11 @@ class Tag extends HTMLElement {
         const display = createElement('span', {}, `${icon} ${this.tagDefinition.name}: ${this.value} `);
         this.el.appendChild(display);
 
-        const editButton = createElement('button', { className: 'edit-tag-button' }, 'Edit');
-        editButton.addEventListener('click', () => {
+        this.editButton = createElement('button', { className: 'edit-tag-button' }, 'Edit');
+        this.editButton.addEventListener('click', () => {
             this.editTag();
         });
-        this.el.appendChild(editButton);
+        this.el.appendChild(this.editButton);
 
         const removeButton = createElement('button', { className: 'remove-tag-button' }, 'X');
         removeButton.addEventListener('click', () => {
@@ -75,8 +75,12 @@ class Tag extends HTMLElement {
     }
 
     editTag() {
-        // Logic to handle tag editing
-        console.log('Editing tag:', this.tagDefinition.name);
+        this.shadow.innerHTML = '';
+        const tagInput = new TagInput(this.tagDefinition, this.value, (newValue) => {
+            this.value = newValue;
+            this.render();
+        });
+        this.shadow.appendChild(tagInput);
     }
 
     getValue() {
