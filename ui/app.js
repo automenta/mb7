@@ -1,4 +1,5 @@
-import * as Y from 'yjs'
+import * as Y from 'yjs';
+import { v4 as uuidv4 } from 'uuid';
 import {Monitoring} from '../core/monitoring.js';
 import {Matcher} from '../core/match.js';
 import {DB} from '../core/db.js';
