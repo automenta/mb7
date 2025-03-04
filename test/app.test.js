@@ -35,7 +35,7 @@ describe('App', () => {
             console.log('Test: Calling app.publishNoteToNostr with:', note);
             await app.publishNoteToNostr(note);
             console.log('Test: app.publishNoteToNostr called');
-            expect(app.nostr.publish).toHaveBeenCalledWith('Test Note Content');
+            expect(app.nostr.publish).toHaveBeenCalledWith(note.content);
         });
 
     });

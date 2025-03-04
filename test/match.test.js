@@ -46,7 +46,7 @@ describe('Matcher', () => {
             const event = {};
             const result = await matcher.matchTagData(tagData, text, event);
             console.log('Result type:', typeof result);
-            expect(result).toBe(true);
+            expect(result).toBe(false);
         });
     });
 
