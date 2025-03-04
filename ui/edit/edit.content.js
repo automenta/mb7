@@ -117,6 +117,7 @@ class EditorContentHandler {
                 const tagDefinition = this.editor.getTagDefinition(tagName);
                 if (tagDefinition) {
                     const tag = document.createElement('data-tag');
+                    tag.dataset.tagName = tagName;
                     tag.setAttribute('tag-definition', JSON.stringify(tagDefinition));
                     tag.setAttribute('value', tagValue || '');
                     tag.setAttribute('condition', tagCondition || 'is');
