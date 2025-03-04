@@ -100,9 +100,42 @@ class EditorContentHandler {
         return clonedEditor.innerHTML.replace(/<br\s*\/?>/g, "\\n");
     }
 
-    deserialize(text) {
-        this.editor.editorArea.innerHTML = "";
-        const tagRegex = /\[TAG:(.*?)\]/g;
+     deserialize(text) {
+         this.editor.editorArea.innerHTML = "";
+         const tagRegex = /\[TAG:([^\]]*)\]/g;
+ 
+
+        let lastIndex = 0;
+        let match;
+        while ((match = tagRegex.exec(text)) !== null) {
+            if (match.index > lastIndex) {
+                this.editor.editorArea.append(document.createTextNode(text.substring(lastIndex, match.index)));
+                lastIndex = match.index;
+            }
+            try {
+                const [_, tagName, tagValue, tagCondition] = match;
+                 const tagDefinition = this.editor.getTagDefinition(tagName);
+                 if (tagDefinition) {
+                     const tag = document.createElement('data-tag');
+                     tag.setAttribute('tag-definition', JSON.stringify(tagDefinition));
+                     tag.setAttribute('value', tagValue);
+                     tag.setAttribute('condition', tagCondition);
+                     this.editor.editorArea.append(tag);
+                 } else {
+                     console.warn("Tag definition not found:", tagName);
+                     this.editor.editorArea.append(document.createTextNode(match[0]));
+                 }
+            } catch (error) {
+                console.error("Failed to parse tag:", error);
+                this.editor.editorArea.append(document.createTextNode(match[0]));
+            }
+            lastIndex = tagRegex.lastIndex;
+        }
+
+        if (lastIndex < text.length) {
+            this.editor.editorArea.append(document.createTextNode(text.substring(lastIndex)));
+        }
+    }
 
         let lastIndex = 0;
         let match;
