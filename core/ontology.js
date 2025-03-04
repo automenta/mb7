@@ -142,6 +142,20 @@ export const Ontology = {
         validate: (value, condition) => typeof value === "boolean",
         serialize: (value) => value.toString(),
         deserialize: (value) => value === "true"
+    },
+    "textarea": {
+        conditions: ["is", "contains"],
+        validate: (value, condition) => typeof value === "string",
+        serialize: (value) => value,
+        deserialize: (value) => value,
+        ui: { type: "textarea", placeholder: "Enter text" }
+    },
+    "date": {
+        conditions: ["is", "before", "after", "between"],
+        validate: (value, condition) => condition === "between" ? isValidDate(value.start) && isValidDate(value.end) : isValidDate(value),
+        serialize: serializeDate,
+        deserialize: deserializeDate,
+        ui: { type: "date" }
     }
 };
 
