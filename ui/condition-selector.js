@@ -6,31 +6,37 @@ class ConditionSelector extends HTMLElement {
         this.tagDefinition = tagDefinition;
         this.selectedCondition = selectedCondition;
         this.onChange = onChange;
-        this.render();
-        this.select = null;
+        this.select = createElement('select', {});
+        this.select.addEventListener('change', this.handleConditionChange.bind(this));
+        this.appendChild(this.select);
+        this.renderOptions();
     }
 
-    connectedCallback() {
+    static get observedAttributes() {
+        return ['selectedCondition'];
     }
 
-    disconnectedCallback() {
-        // Clean up event listeners
-        if (this.select) {
-            this.select.removeEventListener('change', this.handleConditionChange);
+    attributeChangedCallback(name, oldValue, newValue) {
+        if (name === 'selectedCondition' && oldValue !== newValue) {
+            this.selectedCondition = newValue;
+            this.renderOptions();
         }
     }
 
-    handleConditionChange = (e) => {
+    connectedCallback() {}
+
+    disconnectedCallback() {
+        // Clean up event listeners
+        this.select.removeEventListener('change', this.handleConditionChange);
+    }
+
+    handleConditionChange(e) {
         this.selectedCondition = e.target.value;
         this.onChange(this.selectedCondition);
     }
 
-    render() {
-        this.innerHTML = '';
-
-        this.select = createElement('select', {});
-        this.select.addEventListener('change', this.handleConditionChange);
-
+    renderOptions() {
+        this.select.innerHTML = '';
         this.tagDefinition.conditions.forEach(condition => {
             const option = createElement('option', {
                 value: condition,
@@ -38,8 +44,6 @@ class ConditionSelector extends HTMLElement {
             }, condition);
             this.select.appendChild(option);
         });
-
-        this.appendChild(this.select);
     }
 }
 
