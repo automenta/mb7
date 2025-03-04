@@ -48,6 +48,7 @@ class Tag extends HTMLElement {
                     padding: 2px 4px;
                     margin: 2px;
                     font-size: 0.8em;
+                    transition: background-color 0.2s ease-in-out;
                 }
 
                 .tag.conditional {
@@ -73,6 +74,10 @@ class Tag extends HTMLElement {
 
                 .tag > button:hover {
                     color: #007bff;
+                }
+
+                .tag:hover {
+                    background-color: #ddd;
                 }
             </style>
         `;
