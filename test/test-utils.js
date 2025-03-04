@@ -56,7 +56,8 @@ export function createAppMock() {
         SettingsView: class MockSettingsView {
             displayProfile: vi.fn()
         },
-        FriendsView: class MockFriendsView { }
+        FriendsView: class MockFriendsView {
+        }
     };
     return app;
 }
