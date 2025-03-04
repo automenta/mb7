@@ -1,34 +1,53 @@
 import {createElement} from './utils';
 
 class TagInput extends HTMLElement {
-    constructor(tagDefinition, value, onChange) {
+    constructor(tagDefinition, value, condition, onChange) {
         super();
         this.tagDefinition = tagDefinition;
         this.value = value;
+        this.condition = condition;
         this.onChange = onChange;
         this.render();
     }
 
     render() {
         this.innerHTML = '';
+
+        const conditionSelect = document.createElement('select');
+        conditionSelect.className = 'condition-select';
+        this.tagDefinition.conditions.forEach(condition => {
+            const option = document.createElement('option');
+            option.value = condition;
+            option.textContent = condition;
+            conditionSelect.appendChild(option);
+        });
+        conditionSelect.value = this.condition;
+        conditionSelect.addEventListener('change', (e) => {
+            this.condition = e.target.value;
+            this.onChange(this.value, this.condition);
+        });
+        this.appendChild(conditionSelect);
+
         const uiType = this.tagDefinition.ui?.type || 'text';
         let inputElement;
 
         switch (uiType) {
             case 'text':
-                inputElement = createElement('input', {type: 'text', value: this.value});
+                inputElement = createElement('input', {type: 'text', value: this.value || ''});
                 break;
             case 'number':
-                inputElement = createElement('input', {type: 'number', value: this.value});
+                inputElement = createElement('input', {type: 'number', value: this.value || ''});
                 break;
-            // Add more cases for other UI types (select, date, etc.)
+            case 'date':
+                inputElement = createElement('input', {type: 'date', value: this.value || ''});
+                break;
             default:
-                inputElement = createElement('input', {type: 'text', value: this.value});
-                break;
+                inputElement = createElement('input', {type: 'text', value: this.value || ''});
         }
 
         inputElement.addEventListener('input', (e) => {
-            this.handleInputChange(e.target.value);
+            this.value = e.target.value;
+            this.onChange(this.value, this.condition);
         });
 
         this.appendChild(inputElement);
@@ -38,7 +57,7 @@ class TagInput extends HTMLElement {
         inputElement.setAttribute('list', `tag-suggestions-${this.tagDefinition.name}`);
         this.appendChild(datalist);
 
-        this.updateSuggestions = (inputValue) => {
+       this.updateSuggestions = (inputValue) => {
             datalist.innerHTML = ''; // Clear existing suggestions
             const tagSuggestions = this.tagDefinition.suggestions || [];
             const filteredSuggestions = tagSuggestions.filter(suggestion =>
@@ -55,15 +74,6 @@ class TagInput extends HTMLElement {
         });
 
         this.updateSuggestions(''); // Initial population
-    }
-
-    handleInputChange(newValue) {
-        if (this.tagDefinition.validate(newValue, 'is')) {
-            this.value = newValue;
-            this.onChange(newValue);
-        } else {
-            console.error('Invalid tag value:', newValue);
-        }
     }
 }
 
