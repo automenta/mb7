@@ -253,6 +253,26 @@ class Edit {
             }
         );
     }
+
+    async updateTag(tagName, newValue, newCondition) {
+        try {
+            if (this.note) {
+                const tagIndex = this.note.tags.findIndex(tag => tag.name === tagName);
+                if (tagIndex !== -1) {
+                    this.note.tags[tagIndex].value = newValue;
+                    this.note.tags[tagIndex].condition = newCondition;
+                    await this.app.db.saveObject(this.note, false);
+                    this.renderTags();
+                } else {
+                    console.error('Tag not found');
+                }
+            } else {
+                console.error('Note not found');
+            }
+        } catch (error) {
+            console.error('Error updating tag:', error);
+        }
+    }
 }
 
 export { Edit };
