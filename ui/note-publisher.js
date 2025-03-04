@@ -1,5 +1,3 @@
-/** @typedef {import('../core/types').NObject} NObject */
-
 /**
  * The `NotePublisher` class is responsible for publishing notes to Nostr.
  */
