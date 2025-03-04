@@ -1,5 +1,6 @@
 import {createElement} from "./utils.js";
 import {YjsHelper} from '../core/yjs-helper.js';
+import {TagInput} from './tag-input.js'; // Import TagInput
 
 export class GenericForm {
     constructor(schema, yDoc, objectId, saveCallback, app) { // Add app to constructor
@@ -22,7 +23,7 @@ export class GenericForm {
         for (const property in this.schema.tags) {
             if (!this.schema.tags.hasOwnProperty(property)) continue;
 
-            const propertySchema = this.schema.tags[property];
+            const tagDef = this.schema.tags[property];
             const label = createElement("label", {
                 for: property,
                 className: 'generic-form-label'
@@ -91,47 +92,30 @@ export class GenericForm {
                     });
                     break;
                 default:
-                    input = createElement("input", {
-                        type: "text",
-                        id: property,
-                        name: property,
-                        className: 'generic-form-input'
-                    });
-            }
-
-            input.addEventListener('change', () => {
-                let value = input.type === 'checkbox' ? input.checked : input.value;
-                if (propertySchema && propertySchema.validate) {
-                    const isValid = propertySchema.validate(value, 'is');
-                    if (!isValid) {
-                        this.el.dispatchEvent(new CustomEvent('notify', {
-                            detail: {
-                                message: `Invalid input for ${propertySchema.label || property}`,
-                                type: 'error'
+                    // Use TagInput for other types, passing the app instance
+                    input = new TagInput(
+                        propertySchema,
+                        this.yMap.get(property) || propertySchema.default || '',
+                        'is', // Default condition, can be adjusted as needed
+                        (tagDefinition, condition, value) => {
+                            if (value === null) {
+                                this.yMap.delete(property); // Remove property if value is null (for tag removal)
+                            } else {
+                                this.yMap.set(property, value);
                             }
-                        }));
-                        return;
-                    }
-                }
-                YjsHelper.updateYMapValue(this.yDoc, this.yMap, property, value);
-                if (this.saveCallback) this.saveCallback();
-            });
-
-            let initialValue = this.yMap.has(property) ? this.yMap.get(property) : propertySchema.default;
-            if (initialValue !== undefined) {
-                if (input.type === 'checkbox') {
-                    input.checked = initialValue;
-                } else {
-                    input.value = initialValue;
-                }
-            } else {
-                if (propertySchema.type === 'boolean') this.yMap.set(property, false);
-                else this.yMap.set(property, "");
+                            if (this.saveCallback) this.saveCallback();
+                        },
+                        this.app // Pass the app instance here
+                    );
             }
 
-            const formGroup = createElement('div', {className: 'generic-form-group'});
-            formGroup.append(label, input);
-            form.appendChild(formGroup);
+            if (propertySchema.type !== 'tag') { // Only append label and input for non-tag types
+                const formGroup = createElement('div', {className: 'generic-form-group'});
+                formGroup.append(label, input);
+                form.appendChild(formGroup);
+            } else {
+                form.appendChild(input); // For 'tag' type, input itself is the form group
+            }
         }
 
         this.el.appendChild(form);

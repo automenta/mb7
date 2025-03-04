@@ -3,34 +3,41 @@
  * @property {string} name
  */
 
- class TagInput extends HTMLElement {
+class TagInput extends HTMLElement {
     /**
      * @param {TagDefinition} tagDefinition
      * @param {string} value
      * @param {string} condition
      * @param {function} onChange
+     * @param {object} app - The application instance (to access notificationManager)
      */
-    constructor(tagDefinition, value, condition, onChange) {
+    constructor(tagDefinition, value, condition, onChange, app) { // Add app parameter
         super();
         this.tagDefinition = tagDefinition;
         this.value = value;
         this.condition = condition;
         this.onChange = onChange;
+        this.app = app; // Store the app instance
+        this.rendered = false;
+        this.attachShadow({mode: 'open'}); // Use shadow DOM
     }
 
     render() {
-        this.innerHTML = /*html*/`
+        this.shadowRoot.innerHTML = /*html*/`
             <style>
-
             .tag-input-container {
                 display: flex;
                 align-items: center;
+                padding: 5px;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+                margin-bottom: 5px;
             }
 
             .tag-input {
                 flex-grow: 1;
                 padding: 8px;
-                border: 1px solid #ccc;
+                border: none; /* Remove border for input */
                 border-radius: 4px;
                 margin-right: 5px;
             }
@@ -51,7 +58,7 @@
             </style>
 
         <div class="tag-input-container">
-            <span class="tag-name">${this.tagDefinition.name}</span>
+            <span class="tag-name">${this.tagDefinition.label || this.tagDefinition.name}</span>
             <select class="tag-condition">
                 <option value="is" ${this.condition === 'is' ? 'selected' : ''}>is</option>
                 <option value="is-not" ${this.condition === 'is-not' ? 'selected' : ''}>is not</option>
@@ -63,25 +70,27 @@
         </div>
         `;
 
-        this.querySelector('.tag-input').addEventListener('input', (event) => {
+        this.shadowRoot.querySelector('.tag-input').addEventListener('input', (event) => {
             this.value = event.target.value;
             if (this.tagDefinition.validate && !this.tagDefinition.validate(this.value, this.condition)) {
-                alert(`Invalid value for tag '${this.tagDefinition.name}' with condition '${this.condition}'.`);
+                // Replace alert with notificationManager
+                this.app.notificationManager.showNotification(`Invalid value for tag '${this.tagDefinition.label || this.tagDefinition.name}' with condition '${this.condition}'.`, 'warning');
                 return;
             }
             this.onChange(this.tagDefinition, this.condition, this.value);
         });
 
-        this.querySelector('.tag-condition').addEventListener('change', (event) => {
+        this.shadowRoot.querySelector('.tag-condition').addEventListener('change', (event) => {
             this.condition = event.target.value;
             if (this.tagDefinition.validate && !this.tagDefinition.validate(this.value, this.condition)) {
-                alert(`Invalid value for tag '${this.tagDefinition.name}' with condition '${this.condition}'.`);
+                // Replace alert with notificationManager
+                this.app.notificationManager.showNotification(`Invalid value for tag '${this.tagDefinition.label || this.tagDefinition.name}' with condition '${this.condition}'.`, 'warning');
                 return;
             }
             this.onChange(this.tagDefinition, this.condition, this.value);
         });
 
-        this.querySelector('.tag-remove-button').addEventListener('click', () => {
+        this.shadowRoot.querySelector('.tag-remove-button').addEventListener('click', () => {
             this.onChange(this.tagDefinition, null, null); // Indicate removal
         });
     }
