@@ -1,86 +1,83 @@
-import {createElement} from '../utils.js';
+import {createElement} from '../ui/utils.js';
 
 class Autosuggest {
     constructor(editor) {
         this.editor = editor;
-        this.debouncedApply = debounce(this.apply.bind(this), 100);
+        this.debouncedApply = this.apply.bind(this);
     }
 
     apply() {
         const editorContent = this.editor.editorArea;
 
-        // Efficiently remove existing .autosuggest spans
-        editorContent.querySelectorAll('.autosuggest').forEach(span =>
-            span.replaceWith(span.textContent)
-        );
+        // Get the current cursor position
+        const selection = window.getSelection();
+        if (!selection.rangeCount) {
+            this.editor.suggestionDropdown.hide();
+            return;
+        }
+        const range = selection.getRangeAt(0);
+        const cursorPosition = range.getBoundingClientRect();
 
-        const walker = document.createTreeWalker(
-            editorContent,
-            NodeFilter.SHOW_TEXT,
-            {acceptNode: node => node.parentNode.closest(".inline-tag, .autosuggest") ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT}
-        );
-        const wordRegex = /\b[a-zA-Z]{3,}\b/g;
+        // Get the text around the cursor
+        const text = editorContent.textContent;
+        const cursorIndex = selection.anchorOffset;
+        let tagStart = -1;
 
-        let node;
-        while ((node = walker.nextNode())) {
-            const text = node.nodeValue.trim();
-            if (!text) continue;
-
-            let hasMatch = false;
-            let match;
-            while ((match = wordRegex.exec(text)) !== null) {
-                const word = match[0];
-                if (this.editor.matchesOntology(word)) {
-                    hasMatch = true;
-                    this.showSuggestions(word, node, match.index, match[0].length);
-                }
+        // Find the start of the tag
+        for (let i = cursorIndex - 1; i >= 0; i--) {
+            if (text[i] === '[') {
+                tagStart = i;
+                break;
             }
         }
+
+        // If no tag start is found, hide the suggestion dropdown
+        if (tagStart === -1) {
+            this.editor.suggestionDropdown.hide();
+            return;
+        }
+
+        // Extract the tag name
+        const tagName = text.substring(tagStart + 1, cursorIndex);
+
+        // If the tag name is empty, hide the suggestion dropdown
+        if (tagName.length === 0) {
+            this.editor.suggestionDropdown.hide();
+            return;
+        }
+
+        // Get the suggestions
+        const suggestions = this.getSuggestions(tagName);
+
+        // If there are no suggestions, hide the suggestion dropdown
+        if (suggestions.length === 0) {
+            this.editor.suggestionDropdown.hide();
+            return;
+        }
+
+        // Show the suggestion dropdown
+        this.editor.suggestionDropdown.show(
+            suggestions,
+            cursorPosition.x,
+            cursorPosition.bottom,
+            (selectedSuggestion) => {
+                // Replace the tag name with the selected suggestion
+                const newText = text.substring(0, tagStart + 1) + selectedSuggestion.displayText + text.substring(cursorIndex);
+                this.editor.editorArea.textContent = newText;
+                this.editor.autosuggest.apply();
+            }
+        );
     }
 
-    showSuggestions(word, node, startIndex, length) {
-        const tagDefinition = this.editor.getTagDefinition(word);
-        if (!tagDefinition) return;
-
+    getSuggestions(tagName) {
         const suggestions = [];
-        if (tagDefinition.instances) {
-            tagDefinition.instances.forEach(instance => {
-                suggestions.push(this.editor.createSuggestion(instance));
-            });
-        } else {
-            suggestions.push(this.editor.createSuggestion(tagDefinition));
-        }
-
-        if (suggestions.length === 0) return;
-
-        // Calculate position for the dropdown
-        const range = document.createRange();
-        range.setStart(node, startIndex);
-        range.setEnd(node, startIndex + length);
-        const rect = range.getBoundingClientRect();
-
-        // Filter suggestions based on partial matches
-        const filteredSuggestions = suggestions.filter(suggestion =>
-            suggestion.displayText.toLowerCase().startsWith(word.toLowerCase())
-        );
-
-        this.editor.suggestionDropdown.show(
-            filteredSuggestions,
-            rect.left + window.scrollX,
-            rect.bottom + window.scrollY,
-            (suggestion) => {
-                this.editor.contentHandler.insertTagFromSuggestion(suggestion);
+        for (const key in this.editor.schema) {
+            if (key.toLowerCase().startsWith(tagName.toLowerCase())) {
+                suggestions.push({displayText: key, tagData: this.editor.schema[key]});
             }
-        );
+        }
+        return suggestions;
     }
 }
 
-const debounce = (fn, delay) => {
-    let timeoutId;
-    return (...args) => {
-        clearTimeout(timeoutId);
-        timeoutId = setTimeout(() => fn(...args), delay);
-    };
-};
-
-export {Autosuggest};
+export { Autosuggest };
