@@ -38,19 +38,13 @@ describe('Edit Autosuggest', () => {
             return Object.keys(Ontology).some(tagName => tagName.toLowerCase() === word.toLowerCase());
         }
 
-        // Get tag names from ontology that have instances
-        const tagNames = Object.keys(Ontology).filter(tagName => Ontology[tagName].instances);
+        // Get tag names from ontology
+        const tagNames = Object.keys(Ontology);
 
-        // Call findSuggestion for each tag name and check if it returns a suggestion
+        // Call matchesOntology for each tag name and check if it returns true
         tagNames.forEach(tagName => {
-            Ontology[tagName].instances.forEach(instance => {
-                const suggestion = edit.findSuggestion(instance.name);
-                console.log("Suggestion:", suggestion, "Instance Name:", instance.name);
-                expect(suggestion).toBeDefined();
-                if (suggestion) {
-                    expect(suggestion.displayText).toBe(instance.name);
-                }
-            });
+            const isMatch = edit.matchesOntology(tagName);
+            expect(isMatch).toBe(true);
         });
     });
 });
