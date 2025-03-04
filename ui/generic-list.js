@@ -1,4 +1,5 @@
-import {UIComponent} from './view.js';
+ui/generic-list.js
+import { UIComponent } from './component.js';
 
 export class GenericListComponent extends UIComponent {
     constructor(renderer, yArray) {
@@ -10,12 +11,7 @@ export class GenericListComponent extends UIComponent {
         this.renderList = this.renderList.bind(this);
         this.createListItem = this.createListItem.bind(this);
 
-        if (this.yArray) {
-            this.yArray.observe(() => {
-                this.renderList();
-            });
-        }
-
+        this.yArray.observe(this.renderList);
         this.renderList();
     }
 
@@ -37,5 +33,9 @@ export class GenericListComponent extends UIComponent {
         const listItemContent = this.renderer.renderListItem(item);
         listItem.appendChild(listItemContent);
         return listItem;
+    }
+
+    render() {
+        return this.el;
     }
 }

@@ -1,6 +1,6 @@
-import {View} from './view';
-import {createElement} from './utils';
-import * as NostrTools from 'nostr-tools';
+ui/view.friends.js
+import { View } from '../view.js';
+import { createElement } from '../utils.js';
 
 export class FriendsView extends View {
     constructor(store, db, addFriend, removeFriend, subscribeToPubkey, unsubscribeToPubkey, showNotification) {
@@ -12,6 +12,7 @@ export class FriendsView extends View {
         this.subscribeToPubkey = subscribeToPubkey;
         this.unsubscribeToPubkey = unsubscribeToPubkey;
         this.showNotification = showNotification;
+        this.friendsList = createElement('ul', {id: 'friends-list'});
     }
 
     build() {
@@ -21,33 +22,48 @@ export class FriendsView extends View {
 
         this.el.appendChild(createElement('h2', {}, 'Friends'));
 
-        // Input field for adding a friend
         const inputContainer = createElement('div', {style: 'margin-bottom: 10px;'});
         const pubkeyInput = createElement('input', {
             type: 'text',
-            id: 'friend-pubkey',
-            placeholder: 'npub or hex pubkey',
-            style: 'width: 200px; margin-right: 10px;'
+            placeholder: 'Enter Pubkey to Add Friend',
+            id: 'pubkeyInput'
         });
         inputContainer.appendChild(pubkeyInput);
 
-        // Add friend button
-        const addFriendButton = createElement('button', {id: 'add-friend', style: 'margin-right: 10px;'}, 'Add Friend');
-        addFriendButton.addEventListener('click', this.handleAddFriend.bind(this));
-        inputContainer.appendChild(addFriendButton);
-
+        const addButton = createElement('button', {}, 'Add Friend');
+        addButton.addEventListener('click', async () => {
+            const pubkey = pubkeyInput.value.trim();
+            if (pubkey) {
+                await this.handleAddFriend(pubkey);
+                pubkeyInput.value = '';
+            }
+        });
+        inputContainer.appendChild(addButton);
         this.el.appendChild(inputContainer);
 
-        // List of friends
-        this.friendsList = createElement('ul', {id: 'friends-list', style: 'list-style-type: none; padding: 0;'});
+
         this.el.appendChild(this.friendsList);
 
         this.loadFriends();
         return this.el;
     }
 
+
+    async handleAddFriend(pubkey) {
+        try {
+            await this.addFriend(pubkey);
+            await this.subscribeToPubkey(`friend-profile-${pubkey}`);
+            await this.loadFriends();
+            this.showNotification(`Friend ${pubkey} added successfully.`, 'success');
+        } catch (error) {
+            console.error("Error adding friend:", error);
+            this.showNotification(`Failed to add friend: ${error.message}`, 'error');
+        }
+    }
+
+
     async loadFriends() {
-        this.friendsList.innerHTML = ''; // Clear existing list
+        this.friendsList.innerHTML = '';
 
         try {
             const friendsObject = await this.db.getFriends();
@@ -60,14 +76,15 @@ export class FriendsView extends View {
                 }
             }
         } catch (error) {
-            this.showNotification("Failed to load friends.", "error");
+            console.error("Error loading friends:", error);
+            this.showNotification('Failed to load friends.', 'error');
         }
     }
 
-    addFriendToList(friendObject) {
-        const listItem = createElement('li', {style: 'display: flex; align-items: center; justify-content: space-between; padding: 5px; border-bottom: 1px solid #eee;'});
 
-        // Friend Info
+    addFriendToList(friendObject) {
+        const listItem = createElement('li', {style: 'display: flex; align-items: center; justify-content: space-between; padding: 5px; margin-bottom: 5px; border-bottom: 1px solid #eee;'});
+
         const friendInfo = createElement('div', {style: 'display: flex; align-items: center;'});
         const picture = createElement('img', {
             src: friendObject.tags.find(tag => tag[0] === 'picture')?.[1] || 'default_profile_image.png',
@@ -76,90 +93,39 @@ export class FriendsView extends View {
         });
         friendInfo.appendChild(picture);
 
-        const name = friendObject.tags.find(tag => tag[0] === 'name')?.[1] || 'Unknown';
-        friendInfo.appendChild(createElement('span', {}, name));
-
+        const name = createElement('span', {}, friendObject.tags.find(tag => tag[0] === 'profileName')?.[1] || 'Unknown Name');
+        friendInfo.appendChild(name);
         listItem.appendChild(friendInfo);
 
-        // Remove Button
+
         const removeButton = createElement('button', {}, 'Remove');
-        removeButton.addEventListener('click', () => this.handleRemoveFriend(friendObject.tags[0][1]));
+        removeButton.addEventListener('click', async () => {
+            const pubkeyTag = friendObject.tags.find(tag => tag[0] === 'pubkey');
+            if (pubkeyTag && pubkeyTag[1]) {
+                await this.handleRemoveFriend(pubkeyTag[1]);
+            }
+        });
         listItem.appendChild(removeButton);
 
         this.friendsList.appendChild(listItem);
     }
 
-    /**
-     * Adds a friend to the list.
-     */
-    async handleAddFriend() {
-        // Get the pubkey from the input field
-        let pubkey = this.el.querySelector("#friend-pubkey").value.trim();
-        console.log('addFriend called');
-        if (!pubkey) return;
 
-        // Check if input is an npub and decode to hex
+    async handleRemoveFriend(pubkey) {
         try {
-            if (pubkey.startsWith("npub")) {
-                pubkey = NostrTools.nip19.decode(pubkey).data;
-            }
-        } catch (error) {
-            this.showNotification("Invalid npub format.", "error");
-            return;
-        }
-
-        // Validate pubkey
-        if (!/^[0-9a-f]{64}$/i.test(pubkey)) {
-            this.showNotification("Invalid pubkey format.", "error");
-            return;
-        }
-
-        try {
-            // Add the friend to the database
-            await this.addFriend(pubkey);
-
-            // Subscribe to the friend's profile
-            await this.subscribeToPubkey(pubkey, async event => {
-                console.log('Event received for friend pubkey:', event);
-                if (event.kind === 0) {
-                    try {
-                        const profile = JSON.parse(event.content);
-                        const name = profile.name || 'Unknown';
-                        const picture = profile.picture || 'default_profile_image.png';
-                        await this.db.updateFriendProfile(pubkey, name, picture);
-                        await this.loadFriends(); // Refresh the friend list
-                    } catch (parseError) {
-                        console.error('Failed to parse profile content:', parseError);
-                        this.showNotification("Failed to parse profile content.", "error");
-                    }
-                }
-            });
-
-            // Refresh the friend list
+            await this.unsubscribeToPubkey(`friend-profile-${pubkey}`);
+            await this.removeFriend(pubkey);
             await this.loadFriends();
-            this.showNotification("Friend added successfully.", "success");
+            this.showNotification(`Friend ${pubkey} removed.`, 'success');
         } catch (error) {
-            this.showNotification("Failed to add friend.", "error");
+            console.error("Error removing friend:", error);
+            this.showNotification(`Failed to remove friend: ${error.message}`, 'error');
         }
     }
 
-    /**
-     * Removes a friend from the list.
-     * @param {string} pubkey - The pubkey of the friend to remove.
-     */
-    async handleRemoveFriend(pubkey) {
-        try {
-            // Unsubscribe from the friend's profile
-            await this.unsubscribeToPubkey(`friend-profile-${pubkey}`);
 
-            // Remove the friend from the database
-            await this.removeFriend(pubkey);
-
-            // Refresh the friend list
-            await this.loadFriends();
-            this.showNotification("Friend removed successfully.", "success");
-        } catch (error) {
-            this.showNotification("Failed to remove friend.", "error");
-        }
+    render() {
+        this.build();
+        return this.el;
     }
 }

@@ -1,20 +1,15 @@
-export class Autosuggest {
-    constructor(editor) {
-        this.editor = editor;
-        this.suggestionDropdown = editor.suggestionDropdown;
-        this.schema = editor.schema;
-        this.editorArea = editor.editorArea;
-        this.selectedIndex = -1;
-        this.apply = this.apply.bind(this);
-        this.debouncedApply = this.debounce(this.apply, 200);
-    }
+ui/edit/suggest.js
+import { SuggestionDropdown } from './suggestion-dropdown.js';
+import { createElement } from '../utils.js';
 
-    debounce(func, delay) {
-        let timeout;
-        return function (...args) {
-            clearTimeout(timeout);
-            timeout = setTimeout(() => func.apply(this, args), delay);
-        }
+export class Suggest {
+    constructor(editorArea, app) {
+        this.editorArea = editorArea;
+        this.app = app;
+        this.suggestionDropdown = new SuggestionDropdown();
+        this.editorArea.parentNode.appendChild(this.suggestionDropdown.el);
+        this.selectedIndex = -1;
+        this.suggestions = [];
     }
 
     apply() {
@@ -27,42 +22,6 @@ export class Autosuggest {
         const range = selection.getRangeAt(0);
         const cursorPosition = range.getBoundingClientRect();
         const text = editorArea.textContent;
-        const cursorIndex = selection.anchorOffset;
-        let tagStart = -1;
-        for (let i = cursorIndex - 1; i >= 0; i--) {
-            if (text[i] === '[') {
-                tagStart = i;
-                break;
-            }
-        }
-        if (tagStart === -1) {
-            suggestionDropdown.hide();
-            return;
-        }
-        const tagName = text.substring(tagStart + 1, cursorIndex).trim();
-        if (!tagName) {
-            suggestionDropdown.hide();
-            return;
-        }
-        const suggestions = this.getSuggestions(tagName);
-        if (!suggestions.length) {
-            suggestionDropdown.hide();
-            return;
-        }
-        this.selectedIndex = -1;
-        suggestionDropdown.show(suggestions, cursorPosition.x, cursorPosition.bottom, (selectedSuggestion) => {
-            this.selectSuggestion(selectedSuggestion, tagStart, cursorIndex, text);
-        });
-    }
-
-    getSuggestions(tagName) {
-        const suggestions = [];
-        for (const key in this.schema) {
-            if (key.toLowerCase().startsWith(tagName.toLowerCase())) {
-                suggestions.push({displayText: key, tagData: this.schema[key]});
-            }
-        }
-        return suggestions;
     }
 
     selectSuggestion(selectedSuggestion, tagStart, cursorIndex, text) {
@@ -82,15 +41,17 @@ export class Autosuggest {
                 this.moveSelection(1);
                 break;
             case 'Enter':
+            case 'Tab':
                 event.preventDefault();
-                this.selectCurrentSuggestion();
-                break;
-            case 'Escape':
-                event.preventDefault();
+                const selectedSuggestion = this.suggestionDropdown.getSelectedSuggestion();
+                if (selectedSuggestion) {
+                    this.applySuggestion(selectedSuggestion);
+                }
                 this.suggestionDropdown.hide();
                 break;
-            default:
-                return;
+            case 'Escape':
+                this.suggestionDropdown.hide();
+                break;
         }
     }
 
@@ -104,13 +65,5 @@ export class Autosuggest {
             this.selectedIndex = 0;
         }
         this.suggestionDropdown.updateSelection(this.selectedIndex);
-    }
-
-    selectCurrentSuggestion() {
-        const selectedSuggestion = this.suggestionDropdown.getSelectedSuggestion(this.selectedIndex);
-        if (selectedSuggestion) {
-            this.selectSuggestion(selectedSuggestion.suggestion, this.tagStart, this.cursorIndex, this.editorArea.textContent);
-            this.suggestionDropdown.hide();
-        }
     }
 }

@@ -1,5 +1,4 @@
-/** @typedef {import('../core/types').NObject} NObject */
-
+ui/object-preparer.js
 export class ObjectPreparer {
     /**
      * Prepares an object for saving, validating its tags.

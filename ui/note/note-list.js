@@ -1,34 +1,33 @@
-export class NoteList {
-    constructor(app, noteView, yDoc, yNotesList) {
-        this.app = app;
-        this.noteView = noteView;
-        this.yDoc = yDoc;
-        this.yNotesList = yNotesList;
-        this.loadNotes(); // Load notes on initialization
+ui/note/note-list.js
+import { GenericListComponent } from '../generic-list.component.js';
+import { NoteListItemRenderer } from './note-list-item-renderer.js';
 
-        // Observe Yjs array changes
-        this.yNotesList.observe(() => {
-            this.loadNotes();
-        });
-        // TODO [NOTELIST-2]: Implement lazy loading or pagination for very long note lists
-        // TODO [NOTELIST-3]: Consider adding visual cues for note status (e.g., syncing, private, etc.) in the list
+export class NoteListComponent {
+    constructor(noteView, yNotesList, app) {
+        this.noteView = noteView;
+        this.yNotesList = yNotesList;
+        this.app = app;
+        this.renderer = new NoteListItemRenderer(this, this.app);
+        this.genericListComponent = new GenericListComponent(this.renderer, this.yNotesList);
     }
+
 
     async loadNotes() {
         try {
             const notes = await this.app.db.getAll();
             this.yDoc.transact(() => {
-                this.yNotesList.deleteRange(0, this.yNotesList.length); // Clear existing notes
+                this.yNotesList.deleteRange(0, this.yNotesList.length);
                 notes.forEach(note => {
-                    this.yNotesList.push([note.id]); // Add note IDs to the Yjs array
+                    this.yNotesList.push([note.id]);
                 });
             });
             this.app.notificationManager.showNotification('Notes loaded', 'success');
         } catch (error) {
             console.error('Error loading notes:', error);
-            this.app.notificationManager.showNotification('Error loading notes', 'error');
+            this.app.notificationManager.showNotification('Failed to load notes', 'error');
         }
     }
+
 
     async handleDeleteNote(note) {
         try {
@@ -40,23 +39,15 @@ export class NoteList {
                         this.yNotesList.delete(index);
                     }
                 });
-                this.app.notificationManager.showNotification('Deleted', 'success');
             }
         } catch (error) {
             console.error('Error deleting note:', error);
-            this.app.notificationManager.showNotification('Error deleting note', 'error');
+            this.app.notificationManager.showNotification('Failed to delete note', 'error');
         }
     }
 
-    async addNoteToList(noteId) {
-        console.log('yDoc in addNoteToList:', this.yDoc);
-        console.log('yNotesList in addNoteToList:', this.yNotesList);
-        try {
-            this.yDoc.transact(() => {
-                this.yNotesList.push([noteId]);
-            });
-        } catch (error) {
-            console.error("Yjs error:", error);
-        }
+
+    render() {
+        return this.genericListComponent.render();
     }
 }

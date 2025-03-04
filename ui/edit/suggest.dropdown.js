@@ -1,4 +1,5 @@
-import {createElement} from '../utils.js';
+ui/edit/suggest.dropdown.js
+import { createElement } from '../utils.js';
 
 export class SuggestionDropdown {
     constructor() {
@@ -18,8 +19,6 @@ export class SuggestionDropdown {
             });
             this.list.appendChild(item);
         });
-        this.visible = true;
-        return this.el;
     }
 
     hide() {
@@ -29,9 +28,5 @@ export class SuggestionDropdown {
 
     isVisible() {
         return this.visible;
-    }
-
-    getElement() {
-        return this.el;
     }
 }

@@ -1,7 +1,71 @@
-// ui/note/note.ui.js
-import {createElement} from '../utils.js';
+ui/note/note.ui.js
+import { createElement } from '../utils.js';
+import { NoteDetails } from './note-details.js';
+import { NotesSidebar } from './note.sidebar.js';
+import { NoteToolbar } from './note.toolbar.js';
+import { Edit } from '../edit/edit.js';
+import { MyObjectsList } from './my-objects-list.js';
 
 export class NoteUI {
+    constructor(noteView) {
+        this.noteView = noteView;
+        this.el = createElement('div', {className: 'note-view'});
+        this.elements = {};
+    }
+
+    render() {
+        this.elements.sidebar = this.createSidebarContainer();
+        this.elements.detailArea = this.createDetailArea();
+        this.elements.toolbar = this.createToolbarContainer();
+        this.elements.editArea = this.createEditArea();
+        this.elements.myObjectsArea = this.createMyObjectsArea();
+
+        this.el.appendChild(this.elements.sidebar);
+        this.el.appendChild(this.elements.detailArea);
+        this.el.appendChild(this.elements.toolbar);
+        this.el.appendChild(this.elements.editArea);
+        this.el.appendChild(this.elements.myObjectsArea);
+
+        return this.el;
+    }
+
+    renderSidebar(notesSidebar) {
+        this.elements.sidebar.appendChild(notesSidebar.render());
+    }
+
+    renderDetails(noteDetails) {
+        this.elements.detailArea.appendChild(noteDetails);
+    }
+
+    renderToolbar(noteToolbar) {
+        this.elements.toolbar.appendChild(noteToolbar.render());
+    }
+
+    renderEdit(editView) {
+        this.elements.editArea.appendChild(editView.render());
+    }
+
+    renderMyObjectsList(myObjectsList) {
+        this.elements.myObjectsArea.appendChild(myObjectsList.render());
+    }
+
+
+    createSidebarContainer() {
+        return createElement('div', {className: 'sidebar-container'});
+    }
+
+    createDetailArea() {
+        return createElement('div', {className: 'detail-area'});
+    }
+
+    createToolbarContainer() {
+        return createElement('div', {className: 'toolbar-container'});
+    }
+
+    createEditArea() {
+        return createElement('div', {className: 'edit-area-container'});
+    }
+
     createPrivacyContainer() {
         return createElement('div', {className: 'privacy-container'});
     }
@@ -10,17 +74,6 @@ export class NoteUI {
         const prioritySelect = document.createElement('select');
         prioritySelect.className = 'note-priority-select';
         return prioritySelect;
-    }
-
-    createTitleInput(onInput) {
-        const titleInput = document.createElement('input');
-        titleInput.type = 'text';
-        titleInput.placeholder = 'Note Title';
-        titleInput.className = 'note-title-input';
-        titleInput.addEventListener('input', () => {
-            onInput(titleInput.value);
-        });
-        return titleInput;
     }
 
     createTextView(text) {
@@ -35,64 +88,6 @@ export class NoteUI {
 
     createPrivacyCheckbox() {
         return createElement('input', {type: 'checkbox', id: 'privacyCheckbox'});
-    }
-
-    createPrivacyEdit() {
-        const container = this.createPrivacyContainer();
-        const label = this.createPrivacyLabel();
-        const checkbox = this.createPrivacyCheckbox();
-        container.appendChild(label);
-        container.appendChild(checkbox);
-        return container;
-    }
-
-    createLinkedView() {
-        return this.createTextView('Linked View');
-    }
-
-    createMatchesView() {
-        const matchesView = document.createElement('div');
-        matchesView.className = 'matches-view';
-        matchesView.style.padding = '10px';
-        return matchesView;
-    }
-
-    createOriginalNoteView() {
-        const originalNoteView = document.createElement('div');
-        originalNoteView.className = 'original-note-view';
-        originalNoteView.style.padding = '10px';
-        originalNoteView.style.border = '1px solid #ccc';
-        originalNoteView.style.margin = '10px 0';
-        return originalNoteView;
-    }
-
-    createMainArea() {
-        const mainArea = document.createElement('div');
-        mainArea.style.flex = '1';
-        mainArea.style.flexGrow = '1';
-        mainArea.style.padding = '10px';
-        return mainArea;
-    }
-
-    createContentArea() {
-        const contentArea = document.createElement('div');
-        contentArea.className = 'note-content-area';
-        contentArea.style.padding = '10px';
-        return contentArea;
-    }
-
-    createTodoArea() {
-        const todoArea = document.createElement('div');
-        todoArea.className = 'note-todo-area';
-        todoArea.style.padding = '10px';
-        return todoArea;
-    }
-
-    createTagArea() {
-        const tagArea = document.createElement('div');
-        tagArea.className = 'note-tag-area';
-        tagArea.style.padding = '10px';
-        return tagArea;
     }
 
     createMyObjectsArea() {

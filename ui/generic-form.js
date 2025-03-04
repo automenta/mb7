@@ -1,6 +1,6 @@
-import {createElement} from "./utils.js";
-import {YjsHelper} from '../core/yjs-helper.js';
-import {TagInput} from './tag-input.js';
+ui/generic-form.js
+import { createElement } from '../utils.js';
+import { YjsHelper } from '../yjs-helper.js';
 
 export class GenericForm {
     constructor(schema, yDoc, objectId, saveCallback, app) {
@@ -23,113 +23,56 @@ export class GenericForm {
             const tagDef = this.schema.tags[property];
 
             if (!tagDef) {
-                console.warn(`Tag definition missing for property: ${property} in schema:`, this.schema);
                 continue;
             }
-
-            const label = createElement("label", {
-                for: property,
-                className: 'generic-form-label'
-            }, tagDef.label || property);
+            const fieldContainer = createElement('div', {class: 'form-field'});
+            const label = createElement('label', {for: property}, tagDef.label || property);
+            fieldContainer.appendChild(label);
 
             let input;
-            const yjsValue = this.yMap.get(property);
-            const defaultValue = tagDef.default !== undefined ? tagDef.default : '';
-            const initialValue = yjsValue !== undefined ? yjsValue : defaultValue;
-
-            const uiOverrides = tagUIOverrides[property] || {};
-            const ui = {...tagDef.ui, ...uiOverrides};
-
-            switch (tagDef.type) {
-                case "string":
-                    input = createElement("input", {
-                        type: "text",
-                        id: property,
-                        name: property,
-                        className: 'generic-form-input',
-                        placeholder: ui.placeholder || '',
-                        required: ui.required || false,
-                        value: initialValue
-                    });
-                    break;
-                case "number":
-                    input = createElement("input", {
-                        type: "number",
-                        id: property,
-                        name: property,
-                        className: 'generic-form-input',
-                        value: initialValue
-                    });
-                    break;
-                case "boolean":
-                    input = createElement("input", {
-                        type: "checkbox",
-                        id: property,
-                        name: property,
-                        className: 'generic-form-input',
-                        checked: initialValue === true
-                    });
+            switch (tagDef.ui?.type) {
+                case "textarea":
+                    input = createElement('textarea', {id: property, name: property});
                     break;
                 case "select":
-                    input = createElement("select", {
-                        id: property,
-                        name: property,
-                        className: 'generic-form-input'
-                    });
-                    if (tagDef.ui.options && Array.isArray(tagDef.ui.options)) {
+                    input = document.createElement('select');
+                    input.id = property;
+                    input.name = property;
+                    if (tagDef.ui.options) {
                         tagDef.ui.options.forEach(option => {
-                            const optionElement = createElement("option", {value: option, selected: option === initialValue}, option);
+                            const optionElement = createElement('option', {value: option}, option);
                             input.appendChild(optionElement);
                         });
                     }
                     break;
-                case "textarea":
-                    input = createElement("textarea", {
-                        id: property,
-                        name: property,
-                        className: 'generic-form-input',
-                        rows: 4
-                    }, initialValue);
-                    break;
-                case "date":
-                    input = createElement("input", {
-                        type: "date",
-                        id: property,
-                        name: property,
-                        className: 'generic-form-input',
-                        value: initialValue
-                    });
-                    break;
                 default:
-                    input = new TagInput(
-                        tagDef,
-                        initialValue,
-                        'is',
-                        (tagDefinition, condition, value) => {
-                            if (value === null) {
-                                this.yMap.delete(property);
-                            } else {
-                                this.yMap.set(property, value);
-                            }
-                            if (this.saveCallback) this.saveCallback();
-                        },
-                        this.app
-                    );
+                    input = createElement('input', {type: tagDef.type || 'text', id: property, name: property});
             }
 
-            if (tagDef.type !== 'tag') {
-                const formGroup = createElement('div', {className: 'generic-form-group'});
-                formGroup.append(label, input);
-                form.appendChild(formGroup);
-            } else {
-                form.appendChild(input);
+
+            if (tagDef.description) {
+                label.title = tagDef.description;
+                input.title = tagDef.description;
             }
+
+            fieldContainer.appendChild(input);
+            form.appendChild(fieldContainer);
         }
 
-        this.el.appendChild(form);
 
+        const saveButton = createElement('button', {type: 'submit'}, 'Save');
+        form.appendChild(saveButton);
+
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            await this.saveForm();
+        });
+
+
+        this.el.appendChild(form);
         return this.el;
     }
+
 
     async loadTagUIOverrides() {
         if (!this.app || !this.app.settings) {
@@ -138,5 +81,27 @@ export class GenericForm {
         }
         let settings = await this.app.db.getSettings();
         return settings.tagUIOverrides || {};
+    }
+
+
+    async saveForm() {
+        const formData = {};
+        for (const property in this.schema.tags) {
+            formData[property] = this.el.querySelector(`#${property}`).value;
+        }
+
+        this.yDoc.transact(() => {
+            for (const key in formData) {
+                this.yMap.set(key, formData[key]);
+            }
+        });
+
+        if (this.saveCallback) {
+            await this.saveCallback(formData);
+        }
+    }
+
+    render() {
+        return this.el;
     }
 }
