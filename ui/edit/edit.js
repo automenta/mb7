@@ -1,5 +1,5 @@
 import { createElement } from '../utils.js';
-import { SuggestionDropdown } from './suggestion-dropdown.js';
+import { SuggestionDropdown } from './suggest.dropdown.js';
 import { YjsHelper } from '../../core/yjs-helper.js';
 
 class Edit {

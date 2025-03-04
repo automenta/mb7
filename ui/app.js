@@ -9,7 +9,7 @@ import {NoteManager} from "@/ui/note-manager.js";
 import {ViewManager} from "@/ui/view-manager.js";
 import {AppUI} from "@/ui/app.ui.js";
 import {Nostr} from "@/core/net.js";
-import {createStore} from "@/core/state.js";
+import {createStore} from "@/core/store.js";
 import {initialState, reducer} from "@/core/reducer.js";
 import {NoteYjsHandler} from "@/ui/note/note-yjs-handler.js";
 
