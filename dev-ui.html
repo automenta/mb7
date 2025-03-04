@@ -6,21 +6,17 @@
         body { font-family: sans-serif; }
         .dev-ui-container { display: flex; }
         .component-preview-area { flex: 2; padding: 20px; border-right: 1px solid #ccc; }
-        .controls-panel { flex: 1; padding: 20px; }
+        .controls-panel { flex: 1; padding: 20px; overflow-y: auto; height: 90vh; } /* Added scroll for controls */
         .editor-area { /* Keep editor-area styles for Edit component within NoteView */
             border: 1px solid #ccc;
             padding: 10px;
-            min-height: 200px;
+            min-height: 100px; /* Reduced min-height */
             tab-size: 4;
             white-space: pre-wrap;
             font-family: monospace;
         }
-        #note-view-container { /* Style for NoteView container if needed */
-            border: 1px dashed blue; /* Example border to visualize NoteView area */
-            padding: 10px;
-        }
-        #tag-input-container {
-            border: 1px dashed green;
+        #note-view-container, #tag-input-container, #tag-container, #note-details-container, #notes-sidebar-container, #generic-list-container {
+            border: 1px dashed blue; /* Example border to visualize containers */
             padding: 10px;
             margin-top: 20px;
         }
@@ -38,6 +34,26 @@
             <h2>TagInput Component Preview</h2>
             <div id="tag-input-container">
                 <!-- TagInput component will be rendered here -->
+            </div>
+
+            <h2>Tag Component Preview</h2>
+            <div id="tag-container">
+                <!-- Tag component will be rendered here -->
+            </div>
+
+            <h2>NoteDetails Component Preview</h2>
+            <div id="note-details-container">
+                <!-- NoteDetails component will be rendered here -->
+            </div>
+
+            <h2>NotesSidebar Component Preview</h2>
+            <div id="notes-sidebar-container">
+                <!-- NotesSidebar component will be rendered here -->
+            </div>
+
+            <h2>GenericListComponent Preview</h2>
+            <div id="generic-list-container">
+                <!-- GenericListComponent will be rendered here -->
             </div>
         </div>
         <div class="controls-panel">
@@ -71,12 +87,45 @@
                 <button id="render-tag-input-button">Render TagInput</button>
                 <div id="tag-input-output"></div> <!-- For displaying output/messages -->
             </div>
+
+            <div id="tag-controls">
+                <h3>Tag Controls</h3>
+                <label for="tag-def-select">Tag Definition:</label>
+                <select id="tag-def-select">
+                    <option value='{"name": "location", "label": "location", "ui": {"icon": "📍"}, "conditions": ["is", "contains"]}'>location</option>
+                    <option value='{"name": "time", "label": "time", "ui": {"icon": "⏱️"}, "conditions": ["is", "before", "after"]}'>time</option>
+                </select><br><br>
+                <label for="tag-value-text">Value:</label>
+                <input type="text" id="tag-value-text" value="Test Value"><br><br>
+                <label for="tag-condition-text">Condition:</label>
+                <input type="text" id="tag-condition-text" value="is"><br><br>
+                <button id="render-tag-button">Render Tag</button>
+            </div>
+
+            <div id="note-details-controls">
+                <h3>NoteDetails Controls</h3>
+                <button id="render-note-details-button">Render NoteDetails</button>
+            </div>
+
+            <div id="notes-sidebar-controls">
+                <h3>NotesSidebar Controls</h3>
+                <button id="render-notes-sidebar-button">Render NotesSidebar</button>
+            </div>
+
+             <div id="generic-list-controls">
+                <h3>GenericListComponent Controls</h3>
+                <button id="render-generic-list-button">Render GenericListComponent</button>
+            </div>
         </div>
     </div>
 
     <script type="module">
         import { NoteView } from './ui/view.note.js';
         import { TagInput } from './ui/tag-input.js';
+        import { Tag } from './ui/tag.js';
+        import { NoteDetails } from './ui/note/note.details.js';
+        import { NotesSidebar } from './ui/note/note.sidebar.js';
+        import { GenericListComponent } from './ui/generic-list-component.js';
         import { createAppMock } from './test/test-utils.js';
         import { Ontology, getTagDefinition } from './core/ontology.js'; // Import Ontology and getTagDefinition
         import * as Y from 'yjs';
@@ -113,6 +162,7 @@
             appMock.noteYjsHandler = { getYNoteMap: () => {} }; // Mock noteYjsHandler
             appMock.notificationManager = { showNotification: console.log }; // Mock notificationManager
             appMock.ontology = Ontology; // Use actual Ontology for TagInput testing
+            appMock.db.saveObject = () => Promise.resolve(); // Mock saveObject for NoteDetails
 
             noteViewInstance = new NoteView( // Create NoteView instance
                 appMock.store,
@@ -142,11 +192,8 @@
             const tagConditionSelect = document.getElementById('tag-condition-select');
             const renderTagInputButton = document.getElementById('render-tag-input-button');
             const tagInputOutput = document.getElementById('tag-input-output');
-
             let tagInputInstance;
-
-            // Function to render TagInput based on selected tag definition
-            const renderTagInput = () => {
+            const renderTagInput = () => { // ... (renderTagInput function - same as before) ...
                 tagInputContainer.innerHTML = ''; // Clear previous TagInput
                 tagInputOutput.innerHTML = ''; // Clear output messages
 
@@ -179,17 +226,82 @@
                     tagInputOutput.textContent = `Tag definition not found for: ${selectedTagName}`;
                 }
             };
-
             renderTagInputButton.addEventListener('click', renderTagInput);
+            tagNameSelect.addEventListener('change', () => { renderTagInput(); });
+            tagConditionSelect.addEventListener('change', () => { if (tagInputInstance) { tagInputInstance.onChange(tagValueInput.value, tagConditionSelect.value); } });
 
-            tagNameSelect.addEventListener('change', () => {
-                renderTagInput(); // Re-render TagInput when tag definition changes
+
+            // --- Tag Dev UI ---
+            const tagContainer = document.getElementById('tag-container');
+            const tagDefSelect = document.getElementById('tag-def-select');
+            const tagValueText = document.getElementById('tag-value-text');
+            const tagConditionText = document.getElementById('tag-condition-text');
+            const renderTagButton = document.getElementById('render-tag-button');
+
+            renderTagButton.addEventListener('click', () => {
+                tagContainer.innerHTML = ''; // Clear previous Tag
+                const tagDefinition = JSON.parse(tagDefSelect.value);
+                const tagElement = new Tag();
+                tagElement.setAttribute('tag-definition', JSON.stringify(tagDefinition));
+                tagElement.setAttribute('value', tagValueText.value);
+                tagElement.setAttribute('condition', tagConditionText.value);
+                tagContainer.appendChild(tagElement);
             });
-            tagConditionSelect.addEventListener('change', () => {
-                if (tagInputInstance) {
-                    tagInputInstance.onChange(tagValueInput.value, tagConditionSelect.value); // Simulate onChange when condition changes
-                }
+
+
+            // --- NoteDetails Dev UI ---
+            const noteDetailsContainer = document.getElementById('note-details-container');
+            const renderNoteDetailsButton = document.getElementById('render-note-details-button');
+            let noteDetailsInstance;
+
+            renderNoteDetailsButton.addEventListener('click', async () => {
+                noteDetailsContainer.innerHTML = ''; // Clear previous NoteDetails
+                // Mock selectedNote - for simplicity, a basic object
+                const mockSelectedNote = { id: 'test-note-id', name: 'Test Note', content: 'Test content.', tags: [] };
+                noteDetailsInstance = new NoteDetails(noteViewInstance, appMock); // Pass noteViewInstance and appMock
+                noteDetailsInstance.selectedNote = mockSelectedNote; // Set selectedNote
+                await noteDetailsInstance.render(); // Render NoteDetails
+                noteDetailsContainer.appendChild(noteDetailsInstance.el);
             });
+
+
+            // --- NotesSidebar Dev UI ---
+            const notesSidebarContainer = document.getElementById('notes-sidebar-container');
+            const renderNotesSidebarButton = document.getElementById('render-notes-sidebar-button');
+            let notesSidebarInstance;
+
+            renderNotesSidebarButton.addEventListener('click', () => {
+                notesSidebarContainer.innerHTML = ''; // Clear previous NotesSidebar
+                notesSidebarInstance = new NotesSidebar(appMock, noteViewInstance); // Pass appMock and noteViewInstance
+                notesSidebarContainer.appendChild(notesSidebarInstance.render()); // Render NotesSidebar
+            });
+
+            // --- GenericListComponent Dev UI ---
+            const genericListContainer = document.getElementById('generic-list-container');
+            const renderGenericListButton = document.getElementById('render-generic-list-button');
+            let genericListComponentInstance;
+
+            renderGenericListButton.addEventListener('click', () => {
+                genericListContainer.innerHTML = ''; // Clear previous GenericListComponent
+
+                // Mock renderer for GenericListComponent - simple text renderer
+                const mockRenderer = {
+                    createListItem: (item) => {
+                        const li = document.createElement('li');
+                        li.textContent = `Item: ${item}`;
+                        return li;
+                    }
+                };
+                // Mock Yjs Array with some data
+                const yArray = new Y.Array();
+                yArray.push(['Item 1', 'Item 2', 'Item 3']); // Example data
+
+                genericListComponentInstance = new GenericListComponent(mockRenderer, yArray);
+                genericListContainer.appendChild(genericListComponentInstance.render()); // Render GenericListComponent
+                genericListComponentInstance.renderList(); // Initial render of the list
+            });
+
+
         });
     </script>
 </body>
