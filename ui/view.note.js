@@ -9,6 +9,7 @@ import {NoteDetails} from "./note/note-details";
 import {TagDisplay} from "./note/tag-display";
 import {MyObjectsList} from "./note/my-objects-list";
 import { createElement } from '../utils.js';
+import { YjsHelper } from '../../core/yjs-helper';
 
 class NoteViewRenderer {
     constructor(noteView, noteUI) {
@@ -159,6 +160,8 @@ export class NoteView extends HTMLElement {
 
         this.yDoc = new Y.Doc();
         this.noteYjsManager = new NoteYjsManager(this.yDoc);
+
+        YjsHelper.setSyncLatencyHook(this.yDoc, this.app.monitoring.addSyncLatency.bind(this.app.monitoring)); // Set sync latency hook
 
         this.elements = new NoteViewElements();
         this.el = this.elements.el;

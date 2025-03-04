@@ -37,4 +37,22 @@ export class YjsHelper {
             yMap.set(key, value);
         });
     }
+
+    /**
+     * Sets a before transaction hook to track sync latency.
+     * @param {Y.Doc} yDoc - The Yjs document.
+     * @param {function} addSyncLatency - The function to call with the sync latency.
+     */
+    static setSyncLatencyHook(yDoc, addSyncLatency) {
+        yDoc.on('beforeTransaction', transaction => {
+            transaction.origin = { timestamp: Date.now() };
+        });
+
+        yDoc.on('afterTransaction', transaction => {
+            if (transaction.origin && transaction.origin.timestamp) {
+                const latency = Date.now() - transaction.origin.timestamp;
+                addSyncLatency(latency);
+            }
+        });
+    }
 }
