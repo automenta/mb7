@@ -70,5 +70,8 @@ export class AppUI {
 
 /** TODO Nostr feed, and other 'live' content */
 export class ContentView extends View {
-
+    constructor(store) {
+        super(store, `<div id="content-view" class="view"><h2>Content</h2></div>`);
+        this.store = store;
+    }
 }
