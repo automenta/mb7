@@ -1,2 +1,5 @@
-import { FakeIndexedDB } from 'fake-indexeddb';
-global.indexedDB = new FakeIndexedDB();
+import fakeIndexedDB from 'fake-indexeddb';
+import FDBKeyRange from 'fake-indexeddb/lib/FDBKeyRange';
+
+global.indexedDB = fakeIndexedDB
+global.IDBKeyRange = FDBKeyRange
