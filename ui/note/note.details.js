@@ -1,21 +1,36 @@
 import { createElement } from '../utils.js';
 
 export class NoteDetails extends HTMLElement {
+    /**
+     * Constructor for the NoteDetails class.
+     * @param {object} noteView - The note view object.
+     */
     constructor(noteView) {
         super();
         this.noteView = noteView;
         this.shadow = this.attachShadow({ mode: 'open' });
     }
 
+    /**
+     * Called when the element is connected to the DOM.
+     */
     connectedCallback() {
         this.shadow.addEventListener('tag-removed', this.handleTagRemoved.bind(this));
     }
 
+    /**
+     * Handles the tag-removed event.
+     * @param {Event} event - The tag-removed event.
+     */
     handleTagRemoved(event) {
         const tag = event.detail.tag;
         this.removeTag(tag);
     }
 
+    /**
+     * Removes a tag from the note.
+     * @param {object} tag - The tag to remove.
+     */
     async removeTag(tag) {
         try {
             const tagName = tag.getTagDefinition().name;
@@ -38,10 +53,17 @@ export class NoteDetails extends HTMLElement {
         }
     }
 
+    /**
+     * Populates the note details.
+     * @param {object} note - The note to populate the details with.
+     */
     populateNoteDetails(note) {
         this.render();
     }
 
+    /**
+     * Renders the note details.
+     */
     render() {
         this.shadow.innerHTML = `
             <style>
@@ -74,6 +96,9 @@ export class NoteDetails extends HTMLElement {
         shareButton.addEventListener('click', () => this.shareNote());
     }
 
+    /**
+     * Renders the tags.
+     */
     async renderTags() {
         const tagsContainer = this.shadow.querySelector('.note-tags-container');
         tagsContainer.innerHTML = ''; // Clear existing tags
@@ -89,10 +114,13 @@ export class NoteDetails extends HTMLElement {
         }
     }
 
+    /**
+     * Shares the note.
+     */
     async shareNote() {
         if (this.noteView.selectedNote) {
             try {
-                await this.noteView.app.noteManager.notePublisher.publishObject(this.noteView.selectedNote);
+                await this.noteView.app.noteManager.publishObject(this.noteView.selectedNote);
             } catch (error) {
                 console.error('Error sharing note:', error);
                 this.noteView.app.errorHandler.handleError(error, 'Error sharing note');
