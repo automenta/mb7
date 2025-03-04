@@ -25,6 +25,12 @@ export class GenericForm {
             if (!this.schema.tags.hasOwnProperty(property)) continue;
 
             const tagDef = this.schema.tags[property];
+
+            if (!tagDef) {
+                console.warn(`Tag definition missing for property: ${property} in schema:`, this.schema);
+                continue; // Skip to the next property if tagDef is missing
+            }
+
             const label = createElement("label", {
                 for: property,
                 className: 'generic-form-label'
