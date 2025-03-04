@@ -1,4 +1,4 @@
-import {createElement} from '../utils.js';
+import {createElement} from '../ui/utils.js';
 
 export class SuggestionDropdown {
     constructor() {
@@ -18,20 +18,20 @@ export class SuggestionDropdown {
             return;
         }
 
-        suggestions.forEach(suggestion =>
-            this.el.append(
-                createElement("div", {
-                    class: "suggestion-item",
-                    onclick: () => {
-                        this.onSelectCallback?.(suggestion);
-                        this.hide();
-                    },
-                }, `${suggestion.tagData.emoji || ""} ${suggestion.displayText}`)
-            )
-        );
+        suggestions.forEach(suggestion => {
+            const suggestionElement = createElement("div", {class: "suggestion-item"}, suggestion.displayText);
+            suggestionElement.addEventListener("click", () => {
+                onSelect(suggestion);
+                this.hide();
+            });
+            suggestionElement.suggestion = suggestion; // Store suggestion data on the element
+            this.el.appendChild(suggestionElement);
+        });
 
-        Object.assign(this.el.style, {left: `${x}px`, top: `${y}px`, display: "block"});
-        this.selectedIndex = -1;
+        this.el.style.position = 'fixed';
+        this.el.style.left = `${x}px`;
+        this.el.style.top = `${y}px`;
+        this.el.style.display = 'block';
         this.updateSelection();
     }
 
@@ -46,20 +46,10 @@ export class SuggestionDropdown {
         this.el.remove();
     }
 
-    moveSelection(direction) {
-        const count = this.el.children.length;
-        this.selectedIndex = count > 0 ? (this.selectedIndex + direction + count) % count : -1;
-        this.updateSelection();
-    }
-
-    updateSelection() {
+    updateSelection(selectedIndex = this.selectedIndex) {
+        this.selectedIndex = selectedIndex;
         Array.from(this.el.children).forEach((child, i) =>
             child.classList.toggle("selected", i === this.selectedIndex)
         );
     }
-
-    getSelectedSuggestion() {
-        return this.el.children[this.selectedIndex]?.textContent ?? null;
-    }
 }
-
