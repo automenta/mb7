@@ -1,12 +1,11 @@
-import {Ontology} from '../../core/ontology.js';
-import {createElement} from '../utils.js';
+import { Ontology } from '../../core/ontology.js';
+import { createElement } from '../utils.js';
 
 export class NoteDetails extends HTMLElement {
     constructor(noteView) {
         super();
         this.noteView = noteView;
         this.shadow = this.attachShadow({ mode: 'open' });
-        this.render();
     }
 
     connectedCallback() {
@@ -96,12 +95,35 @@ export class NoteDetails extends HTMLElement {
                 .priority-label {
                     margin-right: 5px;
                 }
+                .note-tags-container {
+                    margin-top: 10px;
+                    padding: 5px;
+                    border: 1px solid #ddd;
+                    border-radius: 5px;
+                }
             </style>
             <div class="note-details-container">
                 <div class="priority-edit-container">${this.createPriorityEdit().outerHTML}</div>
                 ${this.createPrivacyEdit().outerHTML}
+                <div class="note-tags-container"></div>
             </div>
         `;
+        this.renderTags();
+    }
+
+    async renderTags() {
+        const tagsContainer = this.shadow.querySelector('.note-tags-container');
+        tagsContainer.innerHTML = ''; // Clear existing tags
+
+        if (this.noteView.selectedNote && this.noteView.selectedNote.tags) {
+            this.noteView.selectedNote.tags.forEach(tag => {
+                const tagElement = document.createElement('data-tag');
+                tagElement.setAttribute('tag-definition', JSON.stringify(tag));
+                tagElement.setAttribute('value', tag.value || '');
+                tagElement.setAttribute('condition', tag.condition || 'is');
+                tagsContainer.appendChild(tagElement);
+            });
+        }
     }
 }
 

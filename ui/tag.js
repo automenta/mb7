@@ -63,6 +63,11 @@ class Tag extends HTMLElement {
                     margin-right: 4px;
                 }
 
+                .tag-condition {
+                    font-style: italic;
+                    margin-right: 4px;
+                }
+
                 .tag > button {
                     background-color: transparent;
                     border: none;
@@ -174,8 +179,16 @@ class Tag extends HTMLElement {
         }
 
         const icon = this.tagDefinition.ui?.icon || '🏷️';
-        const display = createElement('span', {}, `${icon} ${this.tagDefinition.name}: ${this.value || ''}`);
+        const display = createElement('span', {}, `${icon} ${this.tagDefinition.name}:`);
         el.appendChild(display);
+
+        if (this.condition) {
+            const conditionSpan = createElement('span', { className: 'tag-condition' }, this.condition);
+            el.appendChild(conditionSpan);
+        }
+
+        const valueSpan = createElement('span', { className: 'tag-value' }, this.value || '');
+        el.appendChild(valueSpan);
 
         this.editButton = createElement('button', {
             className: 'edit-tag-button',
