@@ -67,34 +67,24 @@ class TagInput extends HTMLElement {
         this.appendChild(conditionSelect);
 
         const uiType = this.tagDefinition.ui?.type || 'text';
-        let inputElement;
-
-        switch (uiType) {
-            case 'boolean':
-                inputElement = createElement('input', {type: 'checkbox', checked: this.value === 'true'});
-                break;
-            case 'text':
-                inputElement = createElement('input', {type: 'text', value: this.value || ''});
-                break;
-            case 'number':
-                inputElement = createElement('input', {type: 'number', value: this.value || ''});
-                break;
-            case 'date':
-                inputElement = createElement('input', {type: 'date', value: this.value || ''});
-                break;
-            default:
-                inputElement = createElement('input', {type: 'text', value: this.value || ''});
-        }
+        // Render only text input
+        const inputElement = createElement('input', {type: 'text', value: this.value || ''});
 
         inputElement.addEventListener('change', (e) => {
-            if (inputElement.type === 'checkbox') {
-                this.value = e.target.checked ? 'true' : 'false'; // Store boolean as string 'true' or 'false'
+            this.value = e.target.value;
+            // Basic Validation
+            if (this.tagDefinition.validate) {
+                if (!this.tagDefinition.validate(this.value, this.condition)) {
+                    alert(`Invalid value for tag: ${this.tagDefinition.name}`); // Basic error message
+                    return; // Stop processing if invalid
+                }
             } else {
-                this.value = e.target.value;
+                console.warn(`No validate function for tag: ${this.tagDefinition.name}`);
             }
             this.onChange(this.value, this.condition); // Notify parent component of value and condition changes
             this.updateSuggestions(this.value);
         });
+
 
         this.appendChild(inputElement);
 
