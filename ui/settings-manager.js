@@ -36,7 +36,6 @@ export class SettingsManager {
                     id: 'settings', // Assuming 'settings' is the ID for the settings object
                     kind: 'settings',
                     name: 'Settings',
-                     {},
                     tags: []
                 };
             }
