@@ -33,7 +33,15 @@ class Tag extends HTMLElement {
         this.el.appendChild(display);
 
         const removeButton = createElement('button', { className: 'remove-tag-button' }, 'X');
-        removeButton.addEventListener('click', () => this.remove());
+        removeButton.addEventListener('click', () => {
+            const event = new CustomEvent('tag-removed', {
+                detail: { tag: this },
+                bubbles: true,
+                composed: true
+            });
+            this.dispatchEvent(event);
+            this.remove();
+        });
         this.el.appendChild(removeButton);
 
         if (!this.tagDefinition.validate(this.value, this.condition)) {

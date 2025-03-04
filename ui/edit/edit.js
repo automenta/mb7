@@ -78,6 +78,9 @@ class Edit {
                 });
                 const listItem = createElement('li', { className: 'tag-list-item' });
                 listItem.appendChild(tagComponent);
+                listItem.addEventListener('tag-removed', () => {
+                    this.removeTagFromNote(tag.name);
+                });
                 this.tagList.appendChild(listItem);
             }
         }
@@ -103,6 +106,21 @@ class Edit {
             this.tagInput.value = ''; // Clear the input field
         } catch (error) {
             console.error('Error adding tag to note:', error);
+        }
+    }
+
+    async removeTagFromNote(tagName) {
+        try {
+            if (!this.note || !this.note.id) {
+                console.error('No note selected');
+                return;
+            }
+
+            this.note.tags = this.note.tags.filter(tag => tag.name !== tagName);
+            await this.app.db.saveObject(this.note, false);
+            this.renderTags();
+        } catch (error) {
+            console.error('Error removing tag from note:', error);
         }
     }
 
