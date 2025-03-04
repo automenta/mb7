@@ -28,7 +28,7 @@ export class NoteDetails extends HTMLElement {
 
         const label = document.createElement('label');
         label.className = 'privacy-label';
-        label.textContent = 'Private ';
+        label.textContent = 'Private';
         privacyContainer.appendChild(label);
 
         this.privacyCheckbox = document.createElement('input');

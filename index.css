@@ -72,6 +72,28 @@ body {
     padding: 0.25em;
 }
 
+.note-priority-select {
+    background-color: #424242;
+    color: #e0e0e0;
+    border: none;
+    padding: 5px;
+    border-radius: 3px;
+    margin-left: 5px;
+}
+
+.privacy-container {
+    display: flex;
+    align-items: center;
+}
+
+.privacy-label {
+    margin-right: 5px;
+}
+
+.privacy-checkbox {
+    /* Add your checkbox styles here */
+}
+
 .menubar-top {
     background-color: #212121;
     color: #e0e0e0;
