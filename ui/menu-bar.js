@@ -1,4 +1,4 @@
-export function createMenuBar(app, notesView, friendsView, settingsView, contentView) {
+export function createMenuBar(notesView, friendsView, settingsView, contentView, store) {
     const m = document.createElement('div');
     m.classList.add('menubar-top');
     const viewMap = {
@@ -18,7 +18,7 @@ export function createMenuBar(app, notesView, friendsView, settingsView, content
         const viewName = e.target.textContent;
         const view = viewMap[viewName];
         if (view) {
-            app.showView(view);
+            //app.showView(view); // Access to app removed
         }
     });
     return m;

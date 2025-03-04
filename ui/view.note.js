@@ -2,9 +2,9 @@ import * as Y from 'yjs';
 import {NoteUI} from './note/note.ui.js';
 import {NoteList} from "./note/note-list.js";
 import {NoteDetails} from "./note/note.details.js";
-import {TagDisplay} from "./note/tag-display.js";
-import {MyObjectsList} from "./note/my-objects-list.js";
-import {NoteYjsHandler} from "./note/note-yjs-handler.js";
+import {TagDisplay} from "./tag-display.js";
+import {MyObjectsList} from "./my-objects-list.js";
+import {NoteYjsHandler} from "./note-yjs-handler.js";
 import {GenericListComponent} from "../generic-list-component";
 
 class NoteCreator {
@@ -51,18 +51,18 @@ class NoteViewElements {
 }
 
 export class NoteView extends HTMLElement {
-    constructor(app, db, nostr) {
+    constructor(store, db, errorHandler) {
         super();
-        this.app = app;
+        this.store = store;
         this.db = db;
-        this.nostr = nostr;
+        this.errorHandler = errorHandler;
 
         this.yDoc = new Y.Doc();
         this.noteYjsHandler = new NoteYjsHandler(this.yDoc);
 
         this.noteUI = new NoteUI();
         this.notesListComponent = new GenericListComponent(this.renderNoteItem.bind(this), 'notes-list');
-        this.noteList = new NoteList(this.app, this, this.yDoc, this.yDoc.getMap('notes'));
+        this.noteList = new NoteList(this.store, this, this.yDoc, this.yDoc.getMap('notes'));
         this.noteDetails = new NoteDetails(this);
         this.tagDisplay = new TagDisplay();
         this.myObjectsList = new MyObjectsList(this, this.yDoc.getArray('myObjects'));
@@ -97,7 +97,7 @@ export class NoteView extends HTMLElement {
         deleteButton.textContent = 'Delete';
         deleteButton.addEventListener('click', async (event) => {
             event.stopPropagation(); // Prevent note selection
-            const note = await this.app.db.get(noteId);
+            const note = await this.db.get(noteId);
             if (note) {
                 await this.noteList.handleDeleteNote(note);
             }
@@ -117,6 +117,10 @@ export class NoteView extends HTMLElement {
 
     remove() {
         this.el.remove();
+    }
+
+    async selectNote(noteId) {
+        this.store.dispatch({type: 'SET_SELECTED_NOTE', payload: noteId});
     }
 }
 

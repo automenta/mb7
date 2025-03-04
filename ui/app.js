@@ -9,6 +9,8 @@ import {NoteManager} from "./note-manager.js";
 import {ViewManager} from "./view-manager.js";
 import {UIManager} from "./ui-manager.js";
 import {Nostr} from "../core/net.js";
+import {createStore} from "../core/state.js";
+import {initialState, reducer} from "../core/reducer.js";
 
 export class NostrInitializer {
     constructor(db, errorHandler) {
@@ -30,14 +32,14 @@ export class NostrInitializer {
  * Manages the database, Nostr connection, and UI.
  */
 class App {
-    constructor(db, nostr, matcher, errorHandler, notificationManager, monitoring, settingsManager, noteManager, viewManager, uiManager, ontology) {
+    constructor(db, nostr, matcher, errorHandler, notificationManager, monitoring, settingsManager, noteManager, viewManager, uiManager, ontology, store) {
         this.db = db;
         this.nostr = nostr;
         this.matcher = matcher;
         this.errorHandler = errorHandler;
         this.notificationManager = notificationManager;
         this.monitoring = monitoring;
-        this.selected = null;
+        this.store = store; // Store the Redux-like store
         this.elements = {};
 
         this.settingsManager = settingsManager;
@@ -65,11 +67,14 @@ async function createApp(appDiv) {
     const settingsManager = new SettingsManager(db, errorHandler, Ontology);
     const noteManager = new NoteManager(db, errorHandler, matcher, nostr, notificationManager);
     const viewManager = new ViewManager();
-    const uiManager = new UIManager();
 
-    const app = new App(db, nostr, matcher, errorHandler, notificationManager, monitoring, settingsManager, noteManager, viewManager, uiManager, Ontology);
-    app.settings = await app.settingsManager.getSettings();
-    app.uiManager.app = app; //HACK
+    // Create the Redux-like store
+    const store = createStore(reducer, initialState);
+
+    // Inject dependencies into UIManager
+    const uiManager = new UIManager(store, viewManager, noteManager, db, errorHandler);
+
+    const app = new App(db, nostr, matcher, errorHandler, notificationManager, monitoring, settingsManager, noteManager, viewManager, uiManager, Ontology, store);
     return app;
 }
 
@@ -77,7 +82,6 @@ async function createApp(appDiv) {
 document.addEventListener("DOMContentLoaded", async () => {
     const appDiv = document.getElementById('app');
     const app = await createApp(appDiv);
-    window.app = app; // Make app globally accessible
     await app.uiManager.setupUI(appDiv);
 });
 

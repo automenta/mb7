@@ -6,13 +6,13 @@ function createAppMainContent() {
     return mainContent;
 }
 
-function createLayout(app, appDiv, noteView, friendsView, settingsView, contentView) {
-    const menubar = createMenuBar(app, noteView, friendsView, settingsView, contentView);
+function createLayout(appDiv, noteView, friendsView, settingsView, contentView, store) {
+    const menubar = createMenuBar(noteView, friendsView, settingsView, contentView, store);
     const mainContent = createAppMainContent();
 
     appDiv.appendChild(menubar);
     appDiv.appendChild(mainContent);
-    appDiv.appendChild(app.elements.notificationArea);
+    //appDiv.appendChild(app.elements.notificationArea); // Access to app removed
     return {menubar, mainContent};
 }
 
