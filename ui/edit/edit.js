@@ -164,12 +164,59 @@ class SuggestionHandler {
     }
 }
 
+class EditorArea {
+    constructor() {
+        this.el = this.createEditorArea();
+    }
+
+    createEditorArea() {
+        const editorArea = createElement('div', {
+            contenteditable: "true",
+            className: "editor-area"
+        });
+        return editorArea;
+    }
+}
+
+class EditorMenu {
+    constructor(app, saveHandler) {
+        this.app = app;
+        this.saveHandler = saveHandler;
+        this.el = createElement('div');
+        this.persistentQueryCheckbox = createElement('input', {type: 'checkbox', id: 'persistentQueryCheckbox'});
+        this.build();
+    }
+
+    build() {
+        const persistentQueryLabel = createElement('label', {htmlFor: 'persistentQueryCheckbox'}, 'Save as Persistent Query');
+        const persistentQueryContainer = createElement('div', { className: 'persistent-query-container' });
+        persistentQueryContainer.append(persistentQueryLabel, this.persistentQueryCheckbox);
+        this.el.append(persistentQueryContainer);
+    }
+
+    getElement() {
+        return this.el;
+    }
+}
+
+class EditorSaveHandler {
+    constructor(app, persistentQueryCheckbox) {
+        this.app = app;
+        this.persistentQueryCheckbox = persistentQueryCheckbox;
+    }
+
+    save(object) {
+        const isPersistentQuery = this.persistentQueryCheckbox.checked;
+        this.app.db.saveObject(object, isPersistentQuery).catch(error => this.app.errorHandler.handleError(error, "Failed to save object"));
+    }
+}
+
 /**
  * The main editor class.
  * Manages the editor area, autosuggestions, ontology browser, and toolbar.
  */
 class Edit {
-    constructor(note, yDoc, autosuggest, contentHandler, ontologyBrowser, toolbar, getTagDefinition, schema) {
+    constructor(note, yDoc, app, autosuggest, contentHandler, ontologyBrowser, toolbar, getTagDefinition, schema) {
         this.note = note;
         this.getTagDefinition = getTagDefinition;
         this.schema = schema;
@@ -177,19 +224,9 @@ class Edit {
         this.yText = this.yDoc.getText('content');
         this.el = createElement('div', { className: 'edit-view' });
 
-        this.editorArea = this.createEditorArea();
-        this.app = autosuggest.app;
+        this.editorArea = new EditorArea().el;
+        this.app = app;
         this.el.appendChild(this.editorArea);
-
-        const menu = createElement('div');
-        this.el.append(menu, this.editorArea);
-
-        // Add persistent query checkbox
-        this.persistentQueryCheckbox = createElement('input', {type: 'checkbox', id: 'persistentQueryCheckbox'});
-        const persistentQueryLabel = createElement('label', {htmlFor: 'persistentQueryCheckbox'}, 'Save as Persistent Query');
-        const persistentQueryContainer = createElement('div', { className: 'persistent-query-container' });
-        persistentQueryContainer.append(persistentQueryLabel, this.persistentQueryCheckbox);
-        menu.append(persistentQueryContainer);
 
         this.suggestionDropdown = new SuggestionDropdown();
         this.autosuggest = autosuggest || new Autosuggest(this);
@@ -199,26 +236,21 @@ class Edit {
         this.eventHandler = new EditorEventHandler(this);
         this.suggestionHandler = new SuggestionHandler(this);
 
-        menu.append(this.toolbar.getElement(), this.ontologyBrowser.getElement());
+        this.saveHandler = new EditorSaveHandler(this.app, this.persistentQueryCheckbox);
+        this.menu = new EditorMenu(this.app, this.saveHandler);
+
+        this.el.append(this.menu.getElement(), this.editorArea);
+        this.menu.getElement().append(this.toolbar.getElement(), this.ontologyBrowser.getElement());
 
         this.tagManager = new TagManager(this.app, this.note);
-        menu.append(this.tagManager);
+        this.menu.getElement().append(this.tagManager);
 
         this.setupEditorEvents();
 
         // Save function
         this.save = (object) => {
-            const isPersistentQuery = this.persistentQueryCheckbox.checked;
-            this.app.db.saveObject(object, isPersistentQuery).catch(error => this.app.errorHandler.handleError(error, "Failed to save object"));
+            this.saveHandler.save(object);
         };
-    }
-
-    createEditorArea() {
-        const editorArea = createElement('div', {
-            contenteditable: "true",
-            className: "editor-area"
-        });
-        return editorArea;
     }
 
     setupEditorAreaEvents() {
