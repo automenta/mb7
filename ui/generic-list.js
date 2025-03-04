@@ -24,7 +24,8 @@ export class GenericListComponent extends UIComponent {
         this.listElement.innerHTML = ''; // Clear existing list
         const data = this.yArray.toArray();
         if (data.length === 0) {
-            this.listElement.textContent = 'No items yet.';
+            // Do not set default "No items yet." text here.
+            // Let the component using GenericListComponent handle empty list messages if needed.
         } else {
             data.forEach(item => { // item is noteId
                 const listItem = this.createListItem(item); // Use createListItem to create the <li> element
