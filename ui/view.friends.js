@@ -3,11 +3,15 @@ import {createElement} from './utils';
 import * as NostrTools from 'nostr-tools';
 
 export class FriendsView extends View {
-    constructor(app, db, nostr) {
-        super(app, `<div id="friends-view" class="view"><h2>Friends</h2></div>`);
-        this.app = app;
+    constructor(store, db, addFriend, removeFriend, subscribeToPubkey, unsubscribeToPubkey, showNotification) {
+        super(store, `<div id="friends-view" class="view"><h2>Friends</h2></div>`);
+        this.store = store;
         this.db = db;
-        this.nostr = nostr
+        this.addFriend = addFriend;
+        this.removeFriend = removeFriend;
+        this.subscribeToPubkey = subscribeToPubkey;
+        this.unsubscribeToPubkey = unsubscribeToPubkey;
+        this.showNotification = showNotification;
     }
 
     build() {
@@ -29,7 +33,7 @@ export class FriendsView extends View {
 
         // Add friend button
         const addFriendButton = createElement('button', {id: 'add-friend', style: 'margin-right: 10px;'}, 'Add Friend');
-        addFriendButton.addEventListener('click', this.addFriend.bind(this));
+        addFriendButton.addEventListener('click', this.handleAddFriend.bind(this));
         inputContainer.appendChild(addFriendButton);
 
         this.el.appendChild(inputContainer);
@@ -56,7 +60,7 @@ export class FriendsView extends View {
                 }
             }
         } catch (error) {
-            this.app.showNotification("Failed to load friends.", "error");
+            this.showNotification("Failed to load friends.", "error");
         }
     }
 
@@ -79,7 +83,7 @@ export class FriendsView extends View {
 
         // Remove Button
         const removeButton = createElement('button', {}, 'Remove');
-        removeButton.addEventListener('click', () => this.removeFriend(friendObject.tags[0][1]));
+        removeButton.addEventListener('click', () => this.handleRemoveFriend(friendObject.tags[0][1]));
         listItem.appendChild(removeButton);
 
         this.friendsList.appendChild(listItem);
@@ -88,7 +92,7 @@ export class FriendsView extends View {
     /**
      * Adds a friend to the list.
      */
-    async addFriend() {
+    async handleAddFriend() {
         // Get the pubkey from the input field
         let pubkey = this.el.querySelector("#friend-pubkey").value.trim();
         console.log('addFriend called');
@@ -112,10 +116,10 @@ export class FriendsView extends View {
 
         try {
             // Add the friend to the database
-            await this.db.addFriend(pubkey);
+            await this.addFriend(pubkey);
 
             // Subscribe to the friend's profile
-            await this.nostr.subscribeToPubkey(pubkey, async event => {
+            await this.subscribeToPubkey(pubkey, async event => {
                 console.log('Event received for friend pubkey:', event);
                 if (event.kind === 0) {
                     try {
@@ -143,13 +147,13 @@ export class FriendsView extends View {
      * Removes a friend from the list.
      * @param {string} pubkey - The pubkey of the friend to remove.
      */
-    async removeFriend(pubkey) {
+    async handleRemoveFriend(pubkey) {
         try {
             // Unsubscribe from the friend's profile
-            await this.nostr.unsubscribeToPubkey(`friend-profile-${pubkey}`);
+            await this.unsubscribeToPubkey(`friend-profile-${pubkey}`);
 
             // Remove the friend from the database
-            await this.db.removeFriend(pubkey);
+            await this.removeFriend(pubkey);
 
             // Refresh the friend list
             await this.loadFriends();
