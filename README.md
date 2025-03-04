@@ -1,49 +1,48 @@
 # Netention
 
-Organize, prioritize, and grow thoughts into actionable results: real-time communication, matching, planning, and
-analysis.
+Organize, prioritize, and grow thoughts into actionable results: real-time communication, matching, planning, and analysis.
 
 ### NObjects
 
 - **Shared Objects:** Create, prioritize, and manage data collaboratively as `NObject`s.
-- **Thought Evolution:** `NObject`s describe thoughts and ideas using semantic Tags
+- **Semantic Richness:** `NObject`s describe thoughts and ideas using semantic Tags.
 - **Privacy by Default:** All `NObject`s are private unless explicitly shared.
 
 ### Search and Match
 
-- **Persistent Queries:** `NObject`s can act as ongoing search interests when describing 'imaginary' things
-- **Semantic Matching:** `NObject`s capture meaning and intent: unambiguously, efficiently, and precisely
-- **Notifications:** Matches are received, linked via your matching NObject, enabling contact and discussion
+- **Persistent Queries:** `NObject`s can act as ongoing search interests when describing 'imaginary' things.
+- **Semantic Matching:** `NObject`s capture meaning and intent: unambiguously, efficiently, and precisely.
+- **Notifications:** Matches are received and linked via your matching NObject, enabling contact and discussion.
 
 ### Notes
 
-- Semantic note-taking application
-- Create, list, update, delete Note NObjects
+- Semantic note-taking application.
+- Create, list, update, delete Note NObjects.
 
 ### Friends
 
-- Buddy List w/ secure Direct Messaging, Status
+- Buddy List with secure Direct Messaging and Status.
 
 ### Settings
 
-- Profile editor, Network settings, etc...
+- Profile editor, Network settings, etc.
 
 ### Feed
 
-- Public network content (Nostr messages, etc...)
-- Analyzed, annotated, categorized, matched, etc...
+- Public network content (Nostr messages, etc.).
+- Analyzed, annotated, categorized, matched, etc.
 
 ### Networking
 
 #### Decentralized
 
-    - Nostr public p2p communication
+    - Nostr public p2p communication.
 
 #### Realtime
 
-    - WebRTC direct communication
-      - Yjs synchronizes incremental updates (CRDT), persists data in IndexedDB, and supports offline editing
-      - Bootstrap: WebRTC signaling servers, or Nostr
+    - WebRTC direct communication.
+      - Yjs synchronizes incremental updates (CRDT), persists data in IndexedDB, and supports offline editing.
+      - Bootstrap: WebRTC signaling servers, or Nostr.
 
 #### Secure
 
@@ -52,25 +51,19 @@ analysis.
 
 ----
 
-## Code
+## Code Guidelines
 
-- Clear, complete, clean, compact, efficient, self-documenting ES6+ code.
-- Comments explain complex logic or design decisions
-- Use the latest JavaScript language features and APIs
-- Deduplicate and unify redundant declarations
-- Use descriptive test names
-- Combine related test cases
-- Maximally leverage Ontology and Tag semantics to drive application functionality (elegant dogfooding)
+- **Clarity:** Write clear, self-documenting ES6+ code.
+- **Comments:** Explain complex logic or design decisions.
+- **Modern JavaScript:** Use the latest JavaScript language features and APIs.
+- **DRY (Don't Repeat Yourself):** Deduplicate and unify redundant declarations.
+- **Test Clarity:** Use descriptive test names.
+- **Concise Tests:** Combine related test cases.
+- **Ontology Driven:** Maximally leverage Ontology and Tag semantics to drive application functionality (elegant dogfooding).
 
-## UI Design
+## UI Design Principles
 
-- *Progressive Disclosure*: This was a recurring theme. Hiding complexity until it's needed (e.g., the "Edit Details"
-  button, collapsible sections) is vital for a clean and intuitive UI.
-- *Consistency and Familiarity*: Using established UI patterns (like email-style replies, inline editing, common icons)
-  makes the application easier to learn and use. Leveraging existing mental models is key.
-- *Visual Hierarchy*: Using whitespace, font sizes, and subtle visual cues (like indentation and color) to guide the
-  user's eye and create a clear visual hierarchy is critical, especially in text-based representations.
-- *Minimizing Cognitive Load*: Reducing clutter, simplifying interactions, and providing clear feedback all contribute
-  to a lower cognitive load, making the application feel more fluent and less overwhelming.```
-
-test/tag.test.js
+- **Progressive Disclosure:** Hide complexity until it's needed for a clean and intuitive UI.
+- **Consistency and Familiarity:** Use established UI patterns and common icons for ease of learning and use.
+- **Visual Hierarchy:** Use whitespace, font sizes, and visual cues to guide the user's eye and create a clear structure.
+- **Minimize Cognitive Load:** Reduce clutter, simplify interactions, and provide clear feedback for a fluent user experience.
