@@ -1,4 +1,4 @@
-import {createElement} from '../../ui/utils.js';
+import {createElement} from '../utils.js';
 
 export class SuggestionDropdown {
     constructor() {

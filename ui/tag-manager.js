@@ -118,7 +118,7 @@ class TagManager extends HTMLElement {
         this.tagInput.addEventListener('keydown', (e) => this.handleTagInputKeyDown(e));
         this.addTagButton.addEventListener('click', () => this.addTagToNote(this.tagInput.value));
 
-        this.renderTags();
+        await this.renderTags();
     }
 
     /**
@@ -243,7 +243,7 @@ class TagManager extends HTMLElement {
             const newTag = {name: tagName, value: defaultValue, condition: 'is'};
             this.note.tags.push(newTag);
             await this.app.db.saveObject(this.note, false);
-            this.renderTags();
+            await this.renderTags();
             this.clearTagInput();
             this.clearTagSuggestions();
         } catch (error) {
@@ -264,7 +264,7 @@ class TagManager extends HTMLElement {
 
             this.note.tags = this.note.tags.filter(tag => tag.name !== tagName);
             await this.app.db.saveObject(this.note, false);
-            this.renderTags();
+            await this.renderTags();
         } catch (error) {
             console.error('Error removing tag from note:', error);
         }

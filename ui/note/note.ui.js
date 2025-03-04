@@ -3,8 +3,7 @@ import {createElement} from '../utils.js';
 
 export class NoteUI {
     createPrivacyContainer() {
-        const privacyContainer = createElement('div', {className: 'privacy-container'});
-        return privacyContainer;
+        return createElement('div', {className: 'privacy-container'});
     }
 
     createPrioritySelect() {
@@ -31,13 +30,11 @@ export class NoteUI {
     }
 
     createPrivacyLabel() {
-        const privacyLabel = createElement('label', {htmlFor: 'privacyCheckbox'}, 'Private:');
-        return privacyLabel;
+        return createElement('label', {htmlFor: 'privacyCheckbox'}, 'Private:');
     }
 
     createPrivacyCheckbox() {
-        const privacyCheckbox = createElement('input', {type: 'checkbox', id: 'privacyCheckbox'});
-        return privacyCheckbox;
+        return createElement('input', {type: 'checkbox', id: 'privacyCheckbox'});
     }
 
     createPrivacyEdit() {

@@ -143,7 +143,7 @@ export class NoteManager {
         this.processTags(newObject, object.private);
         try {
             await this.db.save(newObject, object.isPersistentQuery);
-            const matches = await this.matcher.findMatches(newObject);
+            const matches = this.matcher.findMatches(newObject);
             await this.publishObject(newObject);
             await this.publishMatches(matches);
             return newObject;

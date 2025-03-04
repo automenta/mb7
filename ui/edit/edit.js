@@ -1,4 +1,4 @@
-import {createElement} from '../../ui/utils.js';
+import {createElement} from '../utils.js';
 import {YjsHelper} from '../../core/yjs-helper';
 import {SuggestionDropdown} from './suggest.dropdown.js';
 import {Autosuggest} from './suggest.js';
@@ -54,8 +54,7 @@ class Edit {
      * Saves the content of the editor to the database.
      */
     async saveContent() {
-        const content = this.serializeContent();
-        this.note.content = content;
+        this.note.content = this.serializeContent();
         await this.app.noteManager.saveObject(this.note);
     }
 

@@ -314,8 +314,7 @@ export class DB {
     }
 
     async getSettings(yDoc) {
-        let settings = await DB.getDefaultObject(SETTINGS_OBJECT_ID);
-        return settings;
+        return await DB.getDefaultObject(SETTINGS_OBJECT_ID);
     }
 
     async saveSettings(settings) {
@@ -368,7 +367,7 @@ export class DB {
             const persistentQueries = await this.getAll().filter(obj => obj.isPersistentQuery === true);
 
             await Promise.all(persistentQueries.map(async query => {
-                const matches = await matcher.findMatches(query);
+                const matches = matcher.findMatches(query);
                 if (matches.length > 0) {
                     this.notifyPersistentQueryMatches(query, matches, notificationManager);
                 }

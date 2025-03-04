@@ -2,8 +2,7 @@ import {createElement} from './utils';
 import {createMenuBar} from './menu-bar.js';
 
 function createAppMainContent() {
-    const mainContent = createElement('main', {id: 'main-content'});
-    return mainContent;
+    return createElement('main', {id: 'main-content'});
 }
 
 function createLayout(appDiv, noteView, friendsView, settingsView, contentView, store) {

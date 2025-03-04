@@ -41,9 +41,7 @@ class App {
         this.notificationManager = notificationManager;
         this.monitoring = monitoring;
         this.store = store; // Store the Redux-like store
-        this.elements = {};
 
-        this.settingsManager = settingsManager;
         this.noteManager = noteManager;
         this.viewManager = viewManager;
         this.appUI = appUI;

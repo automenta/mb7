@@ -164,14 +164,12 @@ export class Nostr {
             return;
         }
 
-        const sub = {
+        this.subscriptions[subscriptionId] = {
             filter: {
                 authors: [pubkey]
             },
             callback: callback
         };
-
-        this.subscriptions[subscriptionId] = sub;
 
         const relaysToSubscribe = this.nostrRelays ? this.nostrRelays.split(',').map(url => url.trim()) : this.relays;
 
@@ -262,14 +260,12 @@ export class Nostr {
             return;
         }
 
-        const sub = {
+        this.subscriptions[subscriptionId] = {
             filter: {
                 '#e': [objectId] // Assuming 'e' tag is used to reference the original object
             },
             callback: callback
         };
-
-        this.subscriptions[subscriptionId] = sub;
 
         const relaysToSubscribe = this.nostrRelays ? this.nostrRelays.split(',').map(url => url.trim()) : this.relays;
 

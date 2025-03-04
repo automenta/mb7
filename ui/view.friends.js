@@ -127,7 +127,7 @@ export class FriendsView extends View {
                         const name = profile.name || 'Unknown';
                         const picture = profile.picture || 'default_profile_image.png';
                         await this.db.updateFriendProfile(pubkey, name, picture);
-                        this.loadFriends(); // Refresh the friend list
+                        await this.loadFriends(); // Refresh the friend list
                     } catch (parseError) {
                         console.error('Failed to parse profile content:', parseError);
                         this.showNotification("Failed to parse profile content.", "error");

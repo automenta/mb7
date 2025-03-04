@@ -75,9 +75,7 @@ export class Matcher {
         }
 
         //dedupe matches
-        const uniqueMatches = [...new Set(matches.map(m => m.id))].map(id => matches.find(m => m.id === id));
-
-        return uniqueMatches;
+        return [...new Set(matches.map(m => m.id))].map(id => matches.find(m => m.id === id));
     }
 
     /**

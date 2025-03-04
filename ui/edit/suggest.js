@@ -66,8 +66,7 @@ export class Autosuggest {
     }
 
     selectSuggestion(selectedSuggestion, tagStart, cursorIndex, text) {
-        const newText = text.substring(0, tagStart + 1) + selectedSuggestion.displayText + text.substring(cursorIndex);
-        this.editorArea.textContent = newText;
+        this.editorArea.textContent = text.substring(0, tagStart + 1) + selectedSuggestion.displayText + text.substring(cursorIndex);
         this.apply();
     }
 

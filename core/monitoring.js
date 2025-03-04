@@ -45,13 +45,13 @@ class Monitoring {
 
     async collectMetrics() {
         // Collect the metrics
-        this.metrics.synchronizationLatency = await this.getSynchronizationLatency();
-        this.metrics.errorRate = await this.getErrorRate();
-        this.metrics.cpuUsage = await this.getCpuUsage();
-        this.metrics.memoryUsage = await this.getMemoryUsage();
-        this.metrics.networkIO = await this.getNetworkIO();
+        this.metrics.synchronizationLatency = this.getSynchronizationLatency();
+        this.metrics.errorRate = this.getErrorRate();
+        this.metrics.cpuUsage = this.getCpuUsage();
+        this.metrics.memoryUsage = this.getMemoryUsage();
+        this.metrics.networkIO = this.getNetworkIO();
         // Pass the Yjs document to getDataConsistency()
-        this.metrics.dataConsistency = await this.getDataConsistency(() => this.app.yDoc.getText('content').toString());
+        this.metrics.dataConsistency = this.getDataConsistency(() => this.app.yDoc.getText('content').toString());
     }
 
     async storeMetrics() {
@@ -87,8 +87,7 @@ class Monitoring {
     async getSynchronizationLatency() {
         if (this.syncLatencies.length === 0) return 0;
         const sum = this.syncLatencies.reduce((a, b) => a + b, 0);
-        const avg = (sum / this.syncLatencies.length) || 0;
-        return avg;
+        return (sum / this.syncLatencies.length) || 0;
     }
 
     addSyncLatency(latency) {
@@ -126,8 +125,7 @@ class Monitoring {
         // This is a placeholder.  The actual implementation will depend on the
         // browser and the available APIs.  It may not be possible to get
         // accurate CPU usage data in all browsers.
-        const cpu = window.performance.now();
-        return cpu;
+        return window.performance.now();
     }
 
     /**
@@ -144,8 +142,7 @@ class Monitoring {
         // This is a placeholder.  The actual implementation will depend on the
         // browser and the available APIs.  It may not be possible to get
         // accurate memory usage data in all browsers.
-        const memory = window.performance.memory.usedJSHeapSize / 1048576;
-        return memory;
+        return window.performance.memory.usedJSHeapSize / 1048576;
     }
 
     /**

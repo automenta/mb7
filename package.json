@@ -29,13 +29,14 @@
     "fuse.js": "^7.1.0",
     "idb": "^8.0.2",
     "jquery": "^3.7.1",
+    "js-sha256": "latest",
     "lodash": "^4.17.21",
     "nanoid": "^5.1.2",
     "natural": "^8.0.1",
     "nostr-tools": "^2.10.4",
+    "uuid": "^11.1.0",
     "y-indexeddb": "^9.0.12",
     "y-webrtc": "^10.3.0",
-    "yjs": "^13.6.23",
-    "js-sha256": "latest"
+    "yjs": "^13.6.23"
   }
 }

@@ -95,7 +95,7 @@ export class NoteView extends HTMLElement {
         this.el.appendChild(await this.noteCreator.createNote());
         document.body.appendChild(this.el);
 
-        this.store.subscribe(() => {
+        await this.store.subscribe(() => {
             this.updateView();
         });
     }

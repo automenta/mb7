@@ -19,21 +19,17 @@ class Tag extends HTMLElement {
     }
 
     attributeChangedCallback(name, oldValue, newValue) {
-        if (name === 'tag-definition') {
+        if (name === 'tag-definition')
             this.tagDefinition = JSON.parse(newValue);
-        }
-        if (this.isConnected) {
+
+        if (this.isConnected)
             this.render();
-        }
     }
 
     remove() {
-        const event = new CustomEvent('tag-removed', {
-            detail: {tag: this},
-            bubbles: true,
-            composed: true
-        });
-        this.dispatchEvent(event);
+        this.dispatchEvent(new CustomEvent('tag-removed', {
+            detail: {tag: this}, bubbles: true, composed: true
+        }));
     }
 
     render() {
@@ -86,6 +82,7 @@ class Tag extends HTMLElement {
                 }
             </style>
         `;
+
         const el = document.createElement('div');
         el.className = 'tag';
         el.dataset.tagName = this.tagDefinition.name;
@@ -99,17 +96,13 @@ class Tag extends HTMLElement {
         const display = createElement('span', {}, `${icon} ${name}:`);
         el.appendChild(display);
 
-        if (this.condition) {
-            const conditionSpan = createElement('span', {className: 'tag-condition'}, this.condition);
-            el.appendChild(conditionSpan);
-        }
+        if (this.condition)
+            el.appendChild(createElement('span', {className: 'tag-condition'}, this.condition));
 
-        const valueSpan = createElement('span', {className: 'tag-value'}, this.value || '');
-        el.appendChild(valueSpan);
+        el.appendChild(createElement('span', {className: 'tag-value'}, this.value || ''));
 
         this.editButton = createElement('button', {
-            className: 'edit-tag-button',
-            title: `Edit ${name} Value`
+            className: 'edit-tag-button', title: `Edit ${name} Value`
         }, 'Edit');
         this.editButton.addEventListener('click', () => {
             this.editTag();
@@ -117,8 +110,7 @@ class Tag extends HTMLElement {
         el.appendChild(this.editButton);
 
         const removeButton = createElement('button', {
-            className: 'remove-tag-button',
-            title: `Remove ${name}`
+            className: 'remove-tag-button', title: `Remove ${name}`
         }, 'X');
         removeButton.addEventListener('click', () => {
             this.removeTag();
@@ -143,60 +135,64 @@ class Tag extends HTMLElement {
             this.value = newValue;
             this.condition = newCondition;
             this.render();
-            set
-            app(value)
-            {
-                this._app = value;
-            }
-            getValue()
-            {
-                return this.value;
-            }
+        });
+        //TODO fix this broken code
 
-            getCondition()
-            {
-                get
-                app()
-                {
-                    return this._app;
-                }
+        //     setapp(value)
+        //     {
+        //         this._app = value;
+        //     }
+        //     getValue()
+        //     {
+        //         return this.value;
+        //     }
+        //
+        //     getCondition()
+        //     {
+        //         get
+        //         app()
+        //         {
+        //             return this._app;
+        //         }
+        //
+        //         async
+        //         removeTag()
+        //         {
+        //             try {
+        //                 const tagName = this.tagDefinition.name;
+        //                 const noteDetails = this.closest('note-details');
+        //                 if (noteDetails) {
+        //                     const noteView = noteDetails.noteView;
+        //                     if (noteView && noteView.selectedNote) {
+        //                         const note = noteView.selectedNote;
+        //                         const tagIndex = note.tags.findIndex(tag => tag.name === tagName);
+        //                         if (tagIndex !== -1) {
+        //                             note.tags.splice(tagIndex, 1);
+        //                             await noteView.app.db.saveObject(note, false);
+        //                             noteDetails.renderTags();
+        //                             noteView.displayTags(note.id);
+        //                         } else {
+        //                             console.error('Tag not found');
+        //                         }
+        //                     } else {
+        //                         console.error('NoteView or selectedNote not found');
+        //                     }
+        //                 } else {
+        //                     console.error('NoteDetails component not found');
+        //                 }
+        //             } catch (error) {
+        //                 console.error('Error removing tag:', error);
+        //             }
+        //         }
+        //
+        //         getTagDefinition()
+        //         {
+        //             return this.tagDefinition;
+        //         }
+    }
+}
 
-                async
-                removeTag()
-                {
-                    try {
-                        const tagName = this.tagDefinition.name;
-                        const noteDetails = this.closest('note-details');
-                        if (noteDetails) {
-                            const noteView = noteDetails.noteView;
-                            if (noteView && noteView.selectedNote) {
-                                const note = noteView.selectedNote;
-                                const tagIndex = note.tags.findIndex(tag => tag.name === tagName);
-                                if (tagIndex !== -1) {
-                                    note.tags.splice(tagIndex, 1);
-                                    await noteView.app.db.saveObject(note, false);
-                                    noteDetails.renderTags();
-                                    noteView.displayTags(note.id);
-                                } else {
-                                    console.error('Tag not found');
-                                }
-                            } else {
-                                console.error('NoteView or selectedNote not found');
-                            }
-                        } else {
-                            console.error('NoteDetails component not found');
-                        }
-                    } catch (error) {
-                        console.error('Error removing tag:', error);
-                    }
-                }
+if (!customElements.get('data-tag')) {
+    customElements.define('data-tag', Tag);
+}
 
-                getTagDefinition()
-                {
-                    return this.tagDefinition;
-                }
-            }
-
-            if (!customElements.get('data-tag')) {
-                customElements.define('data-tag', Tag);
-            }

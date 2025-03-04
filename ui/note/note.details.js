@@ -43,8 +43,8 @@ export class NoteDetails extends HTMLElement {
                 if (tagIndex !== -1) {
                     note.tags.splice(tagIndex, 1);
                     await this.noteView.app.db.saveObject(note, false);
-                    this.renderTags();
-                    this.noteView.displayTags(note.id);
+                    await this.renderTags();
+                    await this.noteView.displayTags(note.id);
                 } else {
                     console.error('Tag not found');
                 }
@@ -78,7 +78,7 @@ export class NoteDetails extends HTMLElement {
     render() {
         if (!this.selectedNote) {
             this.shadow.innerHTML = `<p>No note selected.</p>`;
-            return;
+            return this;
         }
 
         this.shadow.innerHTML = `
@@ -119,6 +119,7 @@ export class NoteDetails extends HTMLElement {
 
         const shareButton = this.shadow.querySelector('#share-button');
         shareButton.addEventListener('click', () => this.shareNote());
+        return this;
     }
 
     /**

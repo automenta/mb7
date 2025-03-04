@@ -21,7 +21,7 @@ export class AppUI {
     async setupUI(appDiv) {
         document.title = "Netention"; // Set the document title
         const {noteView, friendsView, settingsView, contentView} = this.initializeViews();
-        this.setupDefaultView(noteView, contentView);
+        await this.setupDefaultView(noteView, contentView);
 
         // Select the first note if no notes exist
         let notes;
