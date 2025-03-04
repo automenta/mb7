@@ -141,12 +141,16 @@ class Edit {
         this.tagInput.value = '';
     }
 
-    selectSuggestion(suggestion) {
-        this.tagInput.value = suggestion;
-        this.addTagToNote(suggestion);
-        this.clearTagSuggestions();
-        this.editorArea.focus();
+    clearTagSuggestions() {
+        this.tagSuggestions.innerHTML = '';
     }
+
+     selectSuggestion(suggestion) {
+         this.tagInput.value = suggestion;
+         this.addTagToNote(suggestion);
+         this.clearTagSuggestions();
+         this.editorArea.focus();
+     }
 
     createEditorArea() {
         const editorArea = createElement('div', {
