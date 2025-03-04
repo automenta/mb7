@@ -1,37 +1,105 @@
-.tag-input-container {
+.edit-view {
     display: flex;
+    flex-direction: column;
+    height: 100%; /* Make sure it takes full height of parent */
 }
 
-.tag-input {
-    flex-grow: 1;
-    padding: 5px;
+.editor-area {
+    flex-grow: 1; /* Take up remaining vertical space */
+    padding: 10px;
     border: 1px solid #ccc;
-    border-radius: 4px;
-    margin-right: 5px;
+    border-radius: 5px;
+    font-family: monospace; /* Monospace font for editor */
+    font-size: 14px;
+    line-height: 1.5;
+    overflow-y: auto; /* Enable vertical scrolling if content overflows */
+    white-space: pre-wrap; /* Preserve line breaks and spaces */
+    word-wrap: break-word; /* Break long words */
+    outline: none; /* Remove default focus outline */
+    min-height: 200px; /* Minimum height for the editor */
 }
 
-.add-tag-button {
-    padding: 5px 10px;
+.details-area {
+    padding: 10px;
+    border-top: 1px solid #eee;
+    background-color: #f9f9f9;
+}
+
+.tag-edit-area {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    margin-top: 10px;
+    background-color: #fff;
+}
+
+.tag-element {
+    background-color: #e0f7fa; /* Light cyan background */
+    color: #004d40; /* Dark teal text */
+    border: 1px solid #b2ebf2; /* Light cyan border */
+    border-radius: 4px;
+    padding: 2px 4px;
+    margin: 2px;
+    cursor: pointer;
+    display: inline-block; /* Ensure inline behavior */
+}
+
+.tag-stub {
+    background-color: #eee; /* Different background for stubs */
+    color: #555;
+    border: 1px dashed #ccc; /* Dashed border to indicate stub */
+    border-radius: 4px;
+    padding: 2px 4px;
+    margin: 2px;
+    display: inline-block; /* Ensure inline behavior */
+}
+
+.generic-form {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+.generic-form-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px; /* Increased gap for better spacing */
+}
+
+.generic-form-group {
+    margin-bottom: 5px; /* Spacing between form groups */
+}
+
+.generic-form-label {
+    display: block; /* Label on its own line */
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.generic-form-input {
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    width: 100%; /* Full width input */
+    box-sizing: border-box; /* Include padding and border in element's total width and height */
+    font-size: 14px;
+}
+
+.save-button, .delete-tag-button {
+    padding: 10px 15px;
     border: none;
-    background-color: #007bff;
+    border-radius: 4px;
     color: white;
-    border-radius: 4px;
+    background-color: #007bff; /* Primary button color */
     cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s ease; /* Smooth transition for hover effect */
 }
 
-.tag-suggestions {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    position: absolute;
-    z-index: 10;
-    background-color: white;
-    display: none;
+.delete-tag-button {
+    background-color: #dc3545; /* Danger button color for delete */
 }
 
-.tag-suggestions li {
-    padding: 5px;
-    cursor: pointer;
+.save-button:hover, .delete-tag-button:hover {
+    background-color: #0056b3; /* Darker shade on hover */
 }

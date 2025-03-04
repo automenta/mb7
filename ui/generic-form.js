@@ -1,6 +1,8 @@
 import {createElement} from "./utils.js";
 import {YjsHelper} from '../core/yjs-helper.js';
 import {TagInput} from './tag-input.js'; // Import TagInput
+import './edit.css'; // Import CSS for styling generic form elements (assuming styles are in edit.css)
+
 
 export class GenericForm {
     constructor(schema, yDoc, objectId, saveCallback, app) { // Add app to constructor
@@ -27,15 +29,15 @@ export class GenericForm {
             const label = createElement("label", {
                 for: property,
                 className: 'generic-form-label'
-            }, propertySchema.label || property);
+            }, tagDef.label || property);
 
             let input;
 
             // Apply UI overrides from settings
             const uiOverrides = tagUIOverrides[property] || {}; // Use property as the key
-            const ui = {...propertySchema.ui, ...uiOverrides};
+            const ui = {...tagDef.ui, ...uiOverrides};
 
-            switch (propertySchema.type) {
+            switch (tagDef.type) {
                 case "string":
                     input = createElement("input", {
                         type: "text",
@@ -68,8 +70,8 @@ export class GenericForm {
                         name: property,
                         className: 'generic-form-input'
                     });
-                    if (propertySchema.options && Array.isArray(propertySchema.options)) {
-                        propertySchema.options.forEach(option => {
+                    if (tagDef.ui.options && Array.isArray(tagDef.ui.options)) {
+                        tagDef.ui.options.forEach(option => {
                             const optionElement = createElement("option", {value: option}, option);
                             input.appendChild(optionElement);
                         });
@@ -94,8 +96,8 @@ export class GenericForm {
                 default:
                     // Use TagInput for other types, passing the app instance
                     input = new TagInput(
-                        propertySchema,
-                        this.yMap.get(property) || propertySchema.default || '',
+                        tagDef,
+                        this.yMap.get(property) || tagDef.default || '',
                         'is', // Default condition, can be adjusted as needed
                         (tagDefinition, condition, value) => {
                             if (value === null) {
@@ -109,7 +111,7 @@ export class GenericForm {
                     );
             }
 
-            if (propertySchema.type !== 'tag') { // Only append label and input for non-tag types
+            if (tagDef.type !== 'tag') { // Only append label and input for non-tag types
                 const formGroup = createElement('div', {className: 'generic-form-group'});
                 formGroup.append(label, input);
                 form.appendChild(formGroup);
@@ -119,15 +121,6 @@ export class GenericForm {
         }
 
         this.el.appendChild(form);
-
-        // Basic Styling
-        this.el.style.padding = '10px';
-        this.el.style.border = '1px solid #ccc';
-        this.el.style.borderRadius = '5px';
-
-        form.style.display = 'flex';
-        form.style.flexDirection = 'column';
-        form.style.gap = '5px';
 
         return this.el;
     }
