@@ -196,6 +196,26 @@ function initializeViews(app) {
     return {noteView, friendsView, settingsView, contentView};
 }
 
+async function setupDefaultView(app, noteView, contentView) {
+    // Default to showing the NoteView
+    app.showView(noteView);
+
+    // Load the first note if no note is selected
+    if (!app.selected) {
+        let notes;
+        try {
+            notes = await app.db.getAll();
+            if (notes && notes.length > 0) {
+                await noteView.selectNote(notes[0].id);
+            } else {
+                console.warn('No notes available to select.');
+            }
+        } catch (error) {
+            app.errorHandler.handleError(error, 'Error loading notes');
+        }
+    }
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
     await setupUI();
 });
