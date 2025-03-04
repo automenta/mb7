@@ -66,43 +66,9 @@ class NoteSelector {
         try {
             const note = await this.noteView.app.db.get(noteId);
             if (note) {
-                const previousSelected = this.noteView.el.querySelector('.note-list-item.selected');
-                if (previousSelected) {
-                    previousSelected.classList.remove('selected');
-                }
-
-                this.noteView.selectedNote = note;
-                this.noteView.noteDetails.populateNoteDetails(note);
-                if (this.noteView.editor && this.noteView.editor.contentHandler) {
-                    this.noteView.editor.contentHandler.deserialize(note.content);
-                }
-                await this.noteView.tagDisplay.displayTags(this.noteView, noteId);
-
-                const listItem = this.noteView.el.querySelector(`.note-list-item[data-id="${noteId}"]`);
-                if (listItem) {
-                    listItem.classList.add('selected');
-                }
-
-                const yNoteMap = this.noteView.noteYjsManager.getYNoteMap(noteId);
-                const nameElement = listItem?.querySelector('.note-name');
-                if (yNoteMap && nameElement) {
-                    yNoteMap.observe((event) => {
-                        if (event.changes.keys.has("name")) {
-                            nameElement.textContent = yNoteMap.get("name");
-                        }
-                        if (event.changes.keys.has("content") && this.noteView.editor.contentHandler) {
-                            this.noteView.editor.contentHandler.deserialize(yNoteMap.get("content"));
-                        }
-                    });
-                    nameElement.textContent = yNoteMap.get("name") || note.name;
-                }
-
-                // Subscribe to match events for the selected note
-                this.noteView.app.nostr.subscribeToMatches(noteId, (event) => {
-                    console.log(`Match received for note ${noteId}:`, event);
-                    this.displayMatch(event); // Display the match in the UI
-                    this.noteView.app.notificationManager.showNotification(`Match received: ${event.content}`, 'success');
-                });
+                this.updateSelectedNoteUI(noteId, note);
+                this.setupYNoteMapObservation(noteId);
+                this.subscribeToMatchEvents(noteId);
 
                 // Check for 'e' tag and load original note if it exists
                 const originalNoteId = note.tags.find(tag => tag[0] === 'e')?.[1];
@@ -115,6 +81,57 @@ class NoteSelector {
         } catch (error) {
             this.noteView.app.errorHandler.handleError(error, 'Error selecting note');
         }
+    }
+
+    updateSelectedNoteUI(noteId, note) {
+        this.clearPreviousSelection();
+        this.noteView.selectedNote = note;
+        this.noteView.noteDetails.populateNoteDetails(note);
+        if (this.noteView.editor && this.noteView.editor.contentHandler) {
+            this.noteView.editor.contentHandler.deserialize(note.content);
+        }
+        this.noteView.tagDisplay.displayTags(this.noteView, noteId);
+        this.highlightSelectedListItem(noteId);
+    }
+
+    clearPreviousSelection() {
+        const previousSelected = this.noteView.el.querySelector('.note-list-item.selected');
+        if (previousSelected) {
+            previousSelected.classList.remove('selected');
+        }
+    }
+
+    highlightSelectedListItem(noteId) {
+        const listItem = this.noteView.el.querySelector(`.note-list-item[data-id="${noteId}"]`);
+        if (listItem) {
+            listItem.classList.add('selected');
+        }
+    }
+
+    setupYNoteMapObservation(noteId) {
+        const yNoteMap = this.noteView.noteYjsManager.getYNoteMap(noteId);
+        const listItem = this.noteView.el.querySelector(`.note-list-item[data-id="${noteId}"]`);
+        const nameElement = listItem?.querySelector('.note-name');
+
+        if (yNoteMap && nameElement) {
+            yNoteMap.observe((event) => {
+                if (event.changes.keys.has("name")) {
+                    nameElement.textContent = yNoteMap.get("name");
+                }
+                if (event.changes.keys.has("content") && this.noteView.editor.contentHandler) {
+                    this.noteView.editor.contentHandler.deserialize(yNoteMap.get("content"));
+                }
+            });
+            nameElement.textContent = yNoteMap.get("name") || this.noteView.selectedNote.name;
+        }
+    }
+
+    subscribeToMatchEvents(noteId) {
+        this.noteView.app.nostr.subscribeToMatches(noteId, (event) => {
+            console.log(`Match received for note ${noteId}:`, event);
+            this.displayMatch(event); // Display the match in the UI
+            this.noteView.app.notificationManager.showNotification(`Match received: ${event.content}`, 'success');
+        });
     }
 
     async displayOriginalNote(originalNoteId) {
@@ -174,7 +191,7 @@ class NoteSelector {
         matchElement.appendChild(replyButton);
 
         // Append the match element to the matchesView container
-        this.matchesView.appendChild(matchElement);
+        this.noteView.matchesView.appendChild(matchElement);
     }
 
     async replyToMatch(event) {
