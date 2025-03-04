@@ -60,6 +60,15 @@ export class NoteUI {
          return matchesView;
     }
 
+    createOriginalNoteView() {
+        const originalNoteView = document.createElement('div');
+        originalNoteView.className = 'original-note-view';
+        originalNoteView.style.padding = '10px';
+        originalNoteView.style.border = '1px solid #ccc';
+        originalNoteView.style.margin = '10px 0';
+        return originalNoteView;
+    }
+
     createMainArea() {
         const mainArea = document.createElement('div');
         mainArea.style.flex = '1';

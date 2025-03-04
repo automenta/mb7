@@ -27,6 +27,8 @@ class NoteViewRenderer {
         mainArea.appendChild(this.noteUI.createLinkedView());
         this.noteView.matchesView = this.noteUI.createMatchesView(); // Store matchesView in NoteView
         mainArea.appendChild(this.noteView.matchesView);
+        this.noteView.originalNoteView = this.noteUI.createOriginalNoteView(); // Create originalNoteView
+        mainArea.appendChild(this.noteView.originalNoteView); // Append originalNoteView
         mainArea.appendChild(this.noteView.editor.el);
         mainArea.appendChild(this.noteView.tagManager);
         mainArea.appendChild(this.noteView.myObjectsList.render());
@@ -101,10 +103,45 @@ class NoteSelector {
                     this.displayMatch(event); // Display the match in the UI
                     this.noteView.app.notificationManager.showNotification(`Match received: ${event.content}`, 'success');
                 });
+
+                // Check for 'e' tag and load original note if it exists
+                const originalNoteId = note.tags.find(tag => tag[0] === 'e')?.[1];
+                if (originalNoteId) {
+                    await this.displayOriginalNote(originalNoteId);
+                } else {
+                    this.clearOriginalNote();
+                }
             }
         } catch (error) {
             this.noteView.app.errorHandler.handleError(error, 'Error selecting note');
         }
+    }
+
+    async displayOriginalNote(originalNoteId) {
+        try {
+            const originalNote = await this.noteView.app.db.get(originalNoteId);
+            if (originalNote) {
+                this.noteView.originalNoteView.innerHTML = `
+                    <h3>Original Note:</h3>
+                    <p>${originalNote.content}</p>
+                `;
+            } else {
+                this.noteView.originalNoteView.innerHTML = `
+                    <h3>Original Note:</h3>
+                    <p>Original note not found.</p>
+                `;
+            }
+        } catch (error) {
+            console.error('Error loading original note:', error);
+            this.noteView.originalNoteView.innerHTML = `
+                <h3>Original Note:</h3>
+                <p>Error loading original note.</p>
+            `;
+        }
+    }
+
+    clearOriginalNote() {
+        this.noteView.originalNoteView.innerHTML = '';
     }
 
     displayMatch(event) {
@@ -142,10 +179,10 @@ class NoteSelector {
 
     async replyToMatch(event) {
         // Create a new note with the content of the match and a reference to the original note
-        const newNote = await this.app.noteManager.createNote(`Reply to ${this.selectedNote.name}`);
+        const newNote = await this.noteView.app.noteManager.createNote(`Reply to ${this.noteView.selectedNote.name}`);
         newNote.content = event.content;
-        newNote.tags.push(['e', this.selectedNote.id]); // Add a tag to reference the original note
-        await this.app.db.saveObject(newNote);
+        newNote.tags.push(['e', this.noteView.selectedNote.id]); // Add a tag to reference the original note
+        await this.noteView.app.db.saveObject(newNote);
 
         // Select the new note
         await this.selectNote(newNote.id);
