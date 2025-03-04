@@ -22,7 +22,7 @@ describe('Tag Component', () => {
     });
 
     it('should render the tag correctly with the given data', () => {
-        expect(tag.textContent).toContain(tagData.name);
+        expect(tag.shadowRoot.textContent).toContain(tagData.name);
         // expect(tag.querySelector('.tag-condition').value).toBe(tagData.condition);
     });
 
