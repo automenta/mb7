@@ -1,17 +1,17 @@
-import {ErrorHandler} from "../core/error.js";
-import {DB} from "../core/db.js";
-import {NotificationManager} from "./notification-manager.js";
-import {Monitoring} from "../core/monitoring.js";
-import {Matcher} from "../core/match.js";
-import {Ontology} from "../core/ontology.js";
-import {SettingsManager} from "./settings-manager.js";
-import {NoteManager} from "./note-manager.js";
-import {ViewManager} from "./view-manager.js";
-import {AppUI} from "./app.ui.js";
-import {Nostr} from "../core/net.js";
-import {createStore} from "../core/state.js";
-import {initialState, reducer} from "../core/reducer.js";
-import {NoteYjsHandler} from "./note/note-yjs-handler";
+import {ErrorHandler} from "@/core/error.js";
+import {DB} from "@/core/db.js";
+import {NotificationManager} from "@/ui/notification-manager.js";
+import {Monitoring} from "@/core/monitoring.js";
+import {Matcher} from "@/core/match.js";
+import {Ontology} from "@/core/ontology.js";
+import {SettingsManager} from "@/ui/settings-manager.js";
+import {NoteManager} from "@/ui/note-manager.js";
+import {ViewManager} from "@/ui/view-manager.js";
+import {AppUI} from "@/ui/app.ui.js";
+import {Nostr} from "@/core/net.js";
+import {createStore} from "@/core/state.js";
+import {initialState, reducer} from "@/core/reducer.js";
+import {NoteYjsHandler} from "@/ui/note/note-yjs-handler.js";
 
 export class NostrInitializer {
     constructor(db, errorHandler) {

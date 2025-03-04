@@ -1,6 +1,6 @@
-import {defineConfig} from 'vite'
-import {configDefaults} from 'vitest/config'
-import {fileURLToPath} from 'url';
+import { defineConfig } from 'vite'
+import { configDefaults } from 'vitest/config'
+import { fileURLToPath } from 'url';
 import path from 'path';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -20,7 +20,7 @@ export default defineConfig({
         },
         mockReset: true,
         setupFiles: ['./test/vitest-global-setup.js'],
-        define: {'process.env.NODE_ENV': '"test"'},
+        define: { 'process.env.NODE_ENV': '"test"' },
         deps: {
             inline: [/yjs/, /js-sha256/],
         },

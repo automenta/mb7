@@ -1,8 +1,13 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { Tag } from '../ui/tag.js'; // Corrected import path
-import { createElement } from '../ui/utils.js'; // Corrected import path
+import { Tag } from '@/ui/tag.js'; // Corrected import path
+import { createElement } from '@/ui/utils.js'; // Corrected import path
 
 describe('Tag Component', () => {
+    beforeEach(() => {
+        if (!customElements.get('data-tag')) {
+            customElements.define('data-tag', Tag); // Explicitly register Tag
+        }
+    });
     it('should render the tag correctly with the given data', async () => {
         const tagDef = {
             name: 'testTag',

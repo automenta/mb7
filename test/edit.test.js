@@ -1,9 +1,7 @@
-import {describe, expect, it, vi} from 'vitest';
-import * as EditModule from '../ui/edit/edit.js';
-import {Ontology} from '../core/ontology.js';
-import * as Y from 'yjs';
-
-const {Edit} = EditModule;
+import * as Y from 'yjs'
+import {Edit} from "@/ui/edit/edit.js";
+import {Ontology} from "@/core/ontology.js";
+import {describe, expect, it} from "vitest";
 
 describe('Edit Autosuggest', () => {
     it('should suggest tag names from ontology', () => {
@@ -17,36 +15,62 @@ describe('Edit Autosuggest', () => {
             }
 
             apply() {
+                // Mock apply method
             }
         }
 
-        const autosuggest = new MockAutosuggest(); // Mock Autosuggest
-
-        class MockContentHandler {
-            constructor(edit) {
-                this.edit = edit;
+        class MockSuggestionDropdown {
+            constructor() {
+                // Mock constructor
+            }
+            show(suggestions, onSelect) {
+                // Mock show method
+            }
+            hide() {
+                // Mock hide method
             }
         }
 
-        const contentHandler = new MockContentHandler(); // Mock ContentHandler
-        const ontologyBrowser = {getElement: () => ({})}; // Mock OntologyBrowser
-        const toolbar = {getElement: () => ({})}; // Mock Toolbar
-        const schema = Ontology; // Mock Schema
+        class MockOntologyBrowser {
+            constructor(editor, onTagSelect) {
+                this.editor = editor;
+                this.onTagSelect = onTagSelect;
+            }
+            render(ontology) {
+                // Mock render method
+            }
+            getElement() {
+                return document.createElement('div'); // Mock getElement
+            }
+        }
+
+
         const app = {showNotification: vi.fn()}
 
-        const edit = new Edit({}, yDoc, app, getTagDefinition, schema);
+        const edit = new Edit({}, yDoc, app, getTagDefinition, Ontology);
+        edit.autosuggest = new MockAutosuggest(edit); // Mock autosuggest
+        edit.suggestionDropdown = new MockSuggestionDropdown(); // Mock suggestionDropdown
+        edit.ontologyBrowser = new MockOntologyBrowser(edit, () => {}); // Mock ontologyBrowser
 
         edit.matchesOntology = (word) => {
-            return Object.keys(Ontology).some(tagName => tagName.toLowerCase() === word.toLowerCase());
+            const suggestions = [];
+            for (const tagCategory in Ontology) {
+                const category = Ontology[tagCategory];
+                if (category.tags) {
+                    for (const tagName in category.tags) {
+                        if (tagName.startsWith(word)) {
+                            suggestions.push(tagName);
+                        }
+                    }
+                } else if (tagCategory.startsWith(word)) {
+                    suggestions.push(tagCategory);
+                }
+            }
+            return suggestions;
         }
 
-        // Get tag names from ontology
-        const tagNames = Object.keys(Ontology);
 
-        // Call matchesOntology for each tag name and check if it returns true
-        tagNames.forEach(tagName => {
-            const isMatch = edit.matchesOntology(tagName);
-            expect(isMatch).toBe(true);
-        });
-    });
-});
+        const suggestions = edit.getSuggestionsForWord("l");
+        expect(suggestions).toContain("location");
+    })
+})

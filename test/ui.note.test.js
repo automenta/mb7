@@ -1,6 +1,6 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest';
-import {NoteView} from '../ui/view.note.js';
-import {createAppMock} from './test-utils.js';
+import {NoteView} from '@/ui/view.note.js';
+import {createAppMock} from '@/test/test-utils.js';
 
 describe('NoteView', () => {
     let noteView;

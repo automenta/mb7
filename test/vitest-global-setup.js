@@ -1,5 +1,5 @@
-import fakeIndexedDB from 'fake-indexeddb';
-import FDBKeyRange from 'fake-indexeddb/lib/FDBKeyRange';
+import { Tag } from '@/ui/tag.js';
 
-global.indexedDB = fakeIndexedDB
-global.IDBKeyRange = FDBKeyRange
+if (!customElements.get('data-tag')) {
+    customElements.define('data-tag', Tag);
+}
