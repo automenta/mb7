@@ -6,7 +6,7 @@ import {signEvent} from 'nostr-tools';
 import {encrypt, decrypt} from './crypto';
 
 export class Nostr {
-    constructor(app, signalingStrategy, nostrRelays, nostrPrivateKey, yDoc) {
+    constructor(app, signalingStrategy, nostrRelays, nostrPrivateKey) {
         this.app = app;
         this.signalingStrategy = signalingStrategy;
         this.nostrRelays = nostrRelays;
@@ -15,7 +15,6 @@ export class Nostr {
         this.subscriptions = {};
         this.relayStatuses = {};
         this.relayObjects = {};
-        this.yDoc = yDoc;
     }
 
     async init() {
@@ -90,7 +89,7 @@ export class Nostr {
         for (const relayUrl of relaysToPublish) {
             try {
                 const relay = this.relayObjects[relayUrl];
-                if (relay && relay.status === 1) {
+                if (relay?.status === 1) {
                     let pub = relay.publish(event);
 
                     pub.on('ack', () => {
@@ -146,7 +145,7 @@ export class Nostr {
         for (const relayUrl of relaysToSubscribe) {
             try {
                 const relay = this.relayObjects[relayUrl];
-                if (relay && relay.status === 1) {
+                if (relay?.status === 1) {
                     const subscription = relay.sub([
                         {
                             authors: [pubkey]
@@ -188,7 +187,7 @@ export class Nostr {
         for (const relayUrl of relaysToUnsubscribe) {
             try {
                 const relay = this.relayObjects[relayUrl];
-                if (relay && relay.status === 1) {
+                if (relay?.status === 1) {
                     relay.unsub([
                         {
                             id: subscriptionId
@@ -240,7 +239,7 @@ export class Nostr {
         for (const relayUrl of relaysToSubscribe) {
             try {
                 const relay = this.relayObjects[relayUrl];
-                if (relay && relay.status === 1) {
+                if (relay?.status === 1) {
                     const subscription = relay.sub([
                         {
                             '#e': [objectId]
@@ -286,7 +285,7 @@ export class Nostr {
         for (const relayUrl of relaysToUnsubscribe) {
             try {
                 const relay = this.relayObjects[relayUrl];
-                if (relay && relay.status === 1) {
+                if (relay?.status === 1) {
                     relay.unsub([
                         {
                             id: subscriptionId
