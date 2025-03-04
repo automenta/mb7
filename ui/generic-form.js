@@ -1,13 +1,14 @@
 import {createElement} from "./utils.js";
 import * as Y from 'yjs';
+import {YjsHelper} from '../../core/yjs-helper'; // Import YjsHelper
 
 export class GenericForm {
     constructor(schema, yDoc, objectId, saveCallback) {
         this.schema = schema;
         this.objectId = objectId;
         this.el = createElement("div", {class: "generic-form"});
-        this.yDoc = yDoc
-        this.yMap = this.yDoc.getMap('data')
+        this.yDoc = yDoc;
+        this.yMap = YjsHelper.createYMap(this.yDoc, 'data'); // Use YjsHelper to create YMap
         this.saveCallback = saveCallback;
     }
 
@@ -68,7 +69,7 @@ export class GenericForm {
                         return;
                     }
                 }
-                this.yMap.set(property, value);
+                YjsHelper.updateYMapValue(this.yDoc, this.yMap, property, value); // Use YjsHelper to update YMap
                 if (this.saveCallback) {
                     this.saveCallback();
                 }

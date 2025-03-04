@@ -5,6 +5,7 @@ import {Autosuggest} from './suggest';
 import {SuggestionDropdown} from './suggest.dropdown';
 import {EditorContentHandler} from './edit.content';
 import {Toolbar} from './edit.toolbar';
+import {YjsHelper} from '../../core/yjs-helper'; // Import YjsHelper
 
 class EditorEventHandler {
     constructor(edit) {
