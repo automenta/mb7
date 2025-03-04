@@ -23,29 +23,26 @@ export class NoteDetails extends HTMLElement {
     }
 
     createPrivacyEdit() {
-        if (!this.privacyContainer) {
-            this.privacyContainer = document.createElement('div');
-            this.privacyContainer.className = 'privacy-container';
+        const privacyContainer = document.createElement('div');
+        privacyContainer.className = 'privacy-container';
 
-            const label = document.createElement('label');
-            label.textContent = 'Private ';
-            this.privacyContainer.appendChild(label);
+        const label = document.createElement('label');
+        label.textContent = 'Private ';
+        privacyContainer.appendChild(label);
 
-            this.privacyCheckbox = document.createElement('input');
-            this.privacyCheckbox.className = 'privacy-checkbox';
-            this.privacyCheckbox.type = 'checkbox';
-            this.privacyCheckbox.checked = true; // Default to private
-            label.appendChild(this.privacyCheckbox);
+        this.privacyCheckbox = document.createElement('input');
+        this.privacyCheckbox.className = 'privacy-checkbox';
+        this.privacyCheckbox.type = 'checkbox';
+        this.privacyCheckbox.checked = true; // Default to private
+        privacyContainer.appendChild(this.privacyCheckbox);
 
-            this.privacyCheckbox.addEventListener('change', () => {
-                const noteId = this.noteView.selectedNote.id;
-                const isPrivate = this.privacyCheckbox.checked;
-                this.noteView.updateNotePrivacy(noteId, isPrivate);
-            });
+        this.privacyCheckbox.addEventListener('change', () => {
+            const noteId = this.noteView.selectedNote.id;
+            const isPrivate = this.privacyCheckbox.checked;
+            this.noteView.updateNotePrivacy(noteId, isPrivate);
+        });
 
-            this.privacyContainer.appendChild(label);
-        }
-        return this.privacyContainer;
+        return privacyContainer;
     }
 
     async handleTagRemoved(event) {

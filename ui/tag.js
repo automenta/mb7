@@ -18,7 +18,6 @@ class Tag extends HTMLElement {
             composed: true
         });
         this.dispatchEvent(event);
-        this.el.remove();
     }
 
     render() {
