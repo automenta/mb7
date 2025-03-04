@@ -225,7 +225,7 @@ class Edit {
         this.getTagDefinition = getTagDefinition;
         this.schema = schema;
         this.yDoc = yDoc;
-        this.yText = this.yDoc.getText('content');
+        this.yText = YjsHelper.createYMap(this.yDoc, 'content'); // Use YjsHelper to create YText
         this.el = createElement('div', { className: 'edit-view' });
         this.app = app;
 
