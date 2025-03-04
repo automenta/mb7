@@ -54,7 +54,10 @@ export class NoteUI {
     }
 
     createMatchesView() {
-        return this.createTextView('Matches View');
+         const matchesView = document.createElement('div');
+         matchesView.className = 'matches-view';
+         matchesView.style.padding = '10px';
+         return matchesView;
     }
 
     createMainArea() {

@@ -25,7 +25,8 @@ class NoteViewRenderer {
         mainArea.appendChild(this.noteView.contentArea);
         mainArea.appendChild(this.noteView.todoArea);
         mainArea.appendChild(this.noteUI.createLinkedView());
-        mainArea.appendChild(this.noteUI.createMatchesView());
+        this.noteView.matchesView = this.noteUI.createMatchesView(); // Store matchesView in NoteView
+        mainArea.appendChild(this.noteView.matchesView);
         mainArea.appendChild(this.noteView.editor.el);
         mainArea.appendChild(this.noteView.tagManager);
         mainArea.appendChild(this.noteView.myObjectsList.render());
@@ -97,12 +98,22 @@ class NoteSelector {
                 // Subscribe to match events for the selected note
                 this.noteView.app.nostr.subscribeToMatches(noteId, (event) => {
                     console.log(`Match received for note ${noteId}:`, event);
+                    this.displayMatch(event); // Display the match in the UI
                     this.noteView.app.notificationManager.showNotification(`Match received: ${event.content}`, 'success');
                 });
             }
         } catch (error) {
             this.noteView.app.errorHandler.handleError(error, 'Error selecting note');
         }
+    }
+
+    displayMatch(event) {
+        // Create a new element to display the match
+        const matchElement = document.createElement('div');
+        matchElement.textContent = event.content;
+
+        // Append the match element to the matchesView container
+        this.matchesView.appendChild(matchElement);
     }
 }
 
