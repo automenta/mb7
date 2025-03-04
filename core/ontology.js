@@ -159,7 +159,8 @@ export const Ontology = {
                 description: "Comma-separated list of Nostr relay URLs.",
                 validate: (value, condition) => typeof value === "string",
                 serialize: (value) => value,
-                deserialize: (value) => value
+                deserialize: (value) => value,
+                default: ""
             },
             "webrtcNostrRelays": {
                 type: "string",
@@ -168,7 +169,8 @@ export const Ontology = {
                 description: "Comma-separated list of WebRTC Nostr relay URLs.",
                 validate: (value, condition) => typeof value === "string",
                 serialize: (value) => value,
-                deserialize: (value) => value
+                deserialize: (value) => value,
+                default: ""
             },
             "privateKey": {
                 type: "string",
@@ -177,7 +179,8 @@ export const Ontology = {
                 description: "Your Nostr private key (hex or npriv).",
                 validate: (value, condition) => typeof value === "string",
                 serialize: (value) => value,
-                deserialize: (value) => value
+                deserialize: (value) => value,
+                default: ""
             },
             "dateFormat": {
                 type: "string",
@@ -186,7 +189,8 @@ export const Ontology = {
                 description: "The format for displaying dates.",
                 validate: (value, condition) => typeof value === "string",
                 serialize: (value) => value,
-                deserialize: (value) => value
+                deserialize: (value) => value,
+                default: "yyyy-MM-dd"
             },
             "profileName": {
                 type: "string",
@@ -195,7 +199,8 @@ export const Ontology = {
                 description: "Your profile name.",
                 validate: (value, condition) => typeof value === "string",
                 serialize: (value) => value,
-                deserialize: (value) => value
+                deserialize: (value) => value,
+                default: ""
             },
             "profilePicture": {
                 type: "string",
@@ -204,7 +209,8 @@ export const Ontology = {
                 description: "URL for your profile picture.",
                 validate: (value, condition) => typeof value === "string",
                 serialize: (value) => value,
-                deserialize: (value) => value
+                deserialize: (value) => value,
+                default: ""
             },
             "signalingStrategy": {
                 type: "select",
@@ -223,7 +229,8 @@ export const Ontology = {
                 description: "Path to the Word2Vec model file.",
                 validate: (value, condition) => typeof value === "string",
                 serialize: (value) => value,
-                deserialize: (value) => value
+                deserialize: (value) => value,
+                default: ""
             }
         },
         serialize: (value) => JSON.stringify(value),
