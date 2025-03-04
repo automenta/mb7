@@ -5,7 +5,7 @@ import { NotesSidebar } from './note/note.sidebar.js';
 import { GenericListComponent } from './generic-list.js';
 import { NoteUI } from './note/note.ui.js';
 import {NoteList} from "./note/note-list";
-import {NoteDetails} from "./note/note-details";
+import {NoteDetails} from "./note-details";
 import {TagDisplay} from "./tag-display";
 import {MyObjectsList} from "./my-objects-list";
 import { createElement } from '../utils.js';
@@ -130,8 +130,25 @@ class NoteSelector {
         contentElement.textContent = `Content: ${event.content}`;
         matchElement.appendChild(contentElement);
 
+        // Add a "Reply" button
+        const replyButton = document.createElement('button');
+        replyButton.textContent = 'Reply';
+        replyButton.addEventListener('click', () => this.replyToMatch(event));
+        matchElement.appendChild(replyButton);
+
         // Append the match element to the matchesView container
         this.matchesView.appendChild(matchElement);
+    }
+
+    async replyToMatch(event) {
+        // Create a new note with the content of the match and a reference to the original note
+        const newNote = await this.app.noteManager.createNote(`Reply to ${this.selectedNote.name}`);
+        newNote.content = event.content;
+        newNote.tags.push(['e', this.selectedNote.id]); // Add a tag to reference the original note
+        await this.app.db.saveObject(newNote);
+
+        // Select the new note
+        await this.selectNote(newNote.id);
     }
 }
 
