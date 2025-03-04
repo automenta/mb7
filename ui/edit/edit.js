@@ -90,8 +90,7 @@ class Edit {
         const rect = this.editor.getBoundingClientRect();
         const caretPosition = this.getCaretPosition();
         const x = caretPosition.x - rect.left;
-        const y = caretPosition.y - rect.top + 20; // Offset to appear below the line
-
+        const y = caretPosition.y - rect.top + 20;
         this.suggestionDropdown.show(x, y, this.editorArea,
             this.createAutosuggest(),
             (suggestion) => this.handleSuggestionSelection(event, suggestion)
@@ -124,7 +123,7 @@ class Edit {
 
     handleSuggestionSelection(event, suggestion) {
         if (event) {
-            event.preventDefault(); // Prevent inserting the default character
+            event.preventDefault();
         }
         const selectedTag = suggestion.name;
         this.insertTag(selectedTag);
@@ -133,17 +132,14 @@ class Edit {
 
 
     insertTag(tagName) {
-        // Insert tag at the current cursor position in the editor
         const selection = window.getSelection();
         if (!selection.rangeCount) return;
         const range = selection.getRangeAt(0);
-        range.deleteContents(); // Delete any selected text
+        range.deleteContents();
 
-        // Create a text node for the tag
         const tagText = document.createTextNode(`#${tagName} `);
         range.insertNode(tagText);
 
-        // Move the cursor to the end of the inserted tag
         range.collapse(false);
         selection.removeAllRanges();
         selection.addRange(range);

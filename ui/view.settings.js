@@ -1,5 +1,5 @@
 import { View } from './view.js';
-import { createElement } from './utils.js';
+import { createElement } from '../utils.js';
 import * as ace from 'ace-builds';
 import 'ace-builds/src-noconflict/mode-json';
 import 'ace-builds/src-noconflict/theme- Cobolt';
@@ -26,7 +26,6 @@ export class SettingsView extends View {
         });
         this.el.appendChild(jsonEditor);
 
-        // Initialize Ace Editor
         const editor = ace.edit(jsonEditor, {
             mode: 'ace/mode/json',
             theme: 'ace/theme/cobalt',

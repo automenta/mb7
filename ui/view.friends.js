@@ -36,7 +36,7 @@ export class FriendsView extends View {
                     await this.addFriend(pubkey);
                     this.showNotification('Friend added successfully.', 'success');
                     pubkeyInput.value = '';
-                    this.render(); // Re-render the view to update the friends list
+                    this.render();
                 } catch (error) {
                     console.error('Error adding friend:', error);
                     this.showNotification(`Failed to add friend: ${error.message}`, 'error');
@@ -57,7 +57,7 @@ export class FriendsView extends View {
                 try {
                     await this.removeFriend(friendPubkey);
                     this.showNotification('Friend removed successfully.', 'success');
-                    this.render(); // Re-render the view to update the friends list
+                    this.render();
                 } catch (error) {
                     console.error('Error removing friend:', error);
                     this.showNotification(`Failed to remove friend: ${error.message}`, 'error');

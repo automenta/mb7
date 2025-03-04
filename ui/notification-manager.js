@@ -25,7 +25,7 @@ export class NotificationManager {
         await notification.animateIn();
         this.notificationTimeout = setTimeout(() => {
             this.animateAndRemoveNotification(notification);
-        }, 3000); // Duration notification is visible
+        }, 3000);
     }
 
 
