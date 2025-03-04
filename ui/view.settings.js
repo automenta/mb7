@@ -18,14 +18,14 @@ export class SettingsView extends View {
         this.el.innerHTML = '';
 
         // Load the settings object
-        let settingsObject = await this.db.getSettings();
+        const settings = await this.app.db.getSettings();
 
         // Create a JSON editor
         const jsonEditor = createElement('textarea', {
             className: 'json-editor',
             rows: 10,
             cols: 50,
-            value: JSON.stringify(settingsObject, null, 2) // Pretty print the JSON
+            value: JSON.stringify(settings, null, 2) // Pretty print the JSON
         });
         this.el.appendChild(jsonEditor);
 
@@ -38,9 +38,6 @@ export class SettingsView extends View {
 
                 // Save the settings to the database
                 await this.app.db.saveSettings(newSettings);
-
-                // Update Nostr settings
-                await this.nostr.updateSettings(newSettings);
 
                 // Show a success notification
                 this.app.showNotification('Settings saved successfully', 'success');
