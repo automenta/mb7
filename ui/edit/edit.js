@@ -84,9 +84,9 @@ class Edit {
      */
     renderContent() {
         // Save current cursor position
-        let cursorOffset = 0;
+        let cursorOffset = null; // Initialize to null
         const selection = window.getSelection();
-        if (selection.rangeCount > 0) {
+        if (selection.rangeCount > 0 && document.activeElement === this.editorArea) { // Check if editorArea is focused
             const range = selection.getRangeAt(0);
             const preCaretRange = range.cloneRange();
             preCaretRange.selectNodeContents(this.editorArea);
@@ -169,19 +169,36 @@ class Edit {
             }
 
             if (nodeFound) {
-                const range = document.createRange();
-                range.setStart(nodeFound, offsetInNode);
-                range.collapse(true);
-                selection.removeAllRanges();
-                selection.addRange(range);
+                try {
+                    const range = document.createRange();
+                    range.setStart(nodeFound, offsetInNode);
+                    range.collapse(true);
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                } catch (error) {
+                    console.error("Error restoring cursor position:", error);
+                    // Fallback: focus at the end if range creation fails
+                    this.editorArea.focus();
+                    selection.collapse(this.editorArea, this.editorArea.childNodes.length);
+                    return;
+                }
+
             } else if (textNodes.length > 0) {
                 // Fallback: if cursorOffset is beyond text length, put cursor at the end
                 const lastTextNodeInfo = textNodes[textNodes.length - 1];
-                const range = document.createRange();
-                range.setStart(lastTextNodeInfo.node, lastTextNodeInfo.length);
-                range.collapse(true);
-                selection.removeAllRanges();
-                selection.addRange(range);
+                try {
+                    const range = document.createRange();
+                    range.setStart(lastTextNodeInfo.node, lastTextNodeInfo.length);
+                    range.collapse(true);
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                } catch (error) {
+                    console.error("Error restoring cursor position to end:", error);
+                    // Even more basic fallback: focus at the end of editor
+                    this.editorArea.focus();
+                    selection.collapse(this.editorArea, this.editorArea.childNodes.length);
+                    return;
+                }
             } else {
                 // If no text nodes, focus at the beginning of the editor
                 this.editorArea.focus();

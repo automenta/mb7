@@ -195,4 +195,3 @@ class Tag extends HTMLElement {
 if (!customElements.get('data-tag')) {
     customElements.define('data-tag', Tag);
 }
-
