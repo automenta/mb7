@@ -22,7 +22,7 @@ export class NotificationManager {
         }
         const {message, type} = this.notificationQueue.shift();
         const notification = new Notification(message, type);
-        const notificationArea = this.app.elements.notificationArea;
+        const notificationArea = document.getElementById('notification-area');
         notification.appendTo(notificationArea);
 
         await notification.animateIn();
@@ -34,7 +34,7 @@ export class NotificationManager {
 
     async animateAndRemoveNotification(notification) {
         await notification.animateOut();
-        await notification.remove();
+        notification.remove();
         await this.showNextNotification();
     }
 }
