@@ -43,15 +43,12 @@ describe('EventHandler', () => {
         });
 
         it('should create a new NObject if it does not exist', async () => {
-            // Arrange
             app.db.get.mockResolvedValue(null);
             const event = { created_at: 1678886400, tags: [] };
             const data = { id: '123', name: 'Test', content: 'Test Content' };
 
-            // Act
             await eventHandler.createOrUpdateNObject(event, data);
 
-            // Assert
             expect(app.db.save).toHaveBeenCalledWith(
                 expect.objectContaining({
                     id: '123',
@@ -64,15 +61,12 @@ describe('EventHandler', () => {
         });
 
         it('should update an existing NObject if it exists', async () => {
-            // Arrange
             app.db.get.mockResolvedValue({ id: '123', name: 'Old Name', content: 'Old Content' });
             const event = { created_at: 1678886400, tags: [] };
             const data = { id: '123', name: 'New Name', content: 'New Content' };
 
-            // Act
             await eventHandler.createOrUpdateNObject(event, data);
 
-            // Assert
             expect(app.db.save).toHaveBeenCalledWith(
                 expect.objectContaining({
                     id: '123',
